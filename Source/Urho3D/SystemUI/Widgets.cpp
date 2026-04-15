@@ -43,15 +43,25 @@ namespace Widgets
 namespace
 {
 
-ea::string GetFormatStringForStep(double step)
+unsigned GetFloatNumberOfDigits(ea::span<const float> values, const EditVariantOptions& options)
 {
-    if (step >= 1.0 || step <= 0.0)
-        return "%.0f";
-    else
+    if (options.step_ >= 1.0 || options.step_ <= 0.0)
+        return 0;
+
+    int result = RoundToInt(-std::log10(options.step_));
+    for (float value : values)
     {
-        const auto numDigits = Clamp(RoundToInt(-std::log10(step)), 1, 8);
-        return Format("%.{}f", numDigits);
+        const float absValue = Abs(value);
+        const int numDigits = absValue != 0.0f ? RoundToInt(-std::log10(absValue)) + 1 : 0;
+        result = ea::max(result, numDigits);
     }
+    return Clamp(result, 1, 8);
+}
+
+ea::string GetFloatFormatString(ea::span<const float> values, const EditVariantOptions& options)
+{
+    const unsigned numDigits = GetFloatNumberOfDigits(values, options);
+    return Format("%.{}f", numDigits);
 }
 
 ea::optional<StringHash> GetMatchingType(const ResourceFileDescriptor& desc, StringHash currentType, const StringVector* allowedTypes)
@@ -470,8 +480,10 @@ bool EditVariantType(VariantType& value, const char* button)
         VAR_BOOL,
         VAR_FLOAT,
         VAR_VECTOR2,
+        VAR_DOUBLEVECTOR2,
         VAR_VECTOR3,
         VAR_VECTOR4,
+        VAR_DOUBLEVECTOR3,
         VAR_QUATERNION,
         VAR_COLOR,
         VAR_STRING,
@@ -767,11 +779,43 @@ bool EditVariantColor(Variant& var, const EditVariantOptions& options)
     return false;
 }
 
+bool EditVariantDoubleVector2(Variant& var, const EditVariantOptions& options)
+{
+    DoubleVector2 value = var.GetDoubleVector2();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+
+    const char* format = "%.6f";
+    if (ui::DragScalarN(
+            "", ImGuiDataType_Double, value.MutableData(), 2, options.step_, &options.min_, &options.max_, format))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantDoubleVector3(Variant& var, const EditVariantOptions& options)
+{
+    DoubleVector3 value = var.GetDoubleVector3();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+
+    const char* format = "%.6f";
+    if (ui::DragScalarN(
+            "", ImGuiDataType_Double, value.MutableData(), 3, options.step_, &options.min_, &options.max_, format))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
 bool EditVariantFloat(Variant& var, const EditVariantOptions& options)
 {
     float value = var.GetFloat();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat("", &value, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
+
+    const ea::string format = GetFloatFormatString({&value, 1}, options);
+    if (ui::DragFloat("", &value, options.step_, options.min_, options.max_, format.c_str()))
     {
         var = value;
         return true;
@@ -783,7 +827,9 @@ bool EditVariantVector2(Variant& var, const EditVariantOptions& options)
 {
     Vector2 value = var.GetVector2();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat2("", &value.x_, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
+
+    const ea::string format = GetFloatFormatString({value.Data(), 2}, options);
+    if (ui::DragFloat2("", &value.x_, options.step_, options.min_, options.max_, format.c_str()))
     {
         var = value;
         return true;
@@ -807,7 +853,9 @@ bool EditVariantVector3(Variant& var, const EditVariantOptions& options)
 {
     Vector3 value = var.GetVector3();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat3("", &value.x_, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
+
+    const ea::string format = GetFloatFormatString({value.Data(), 3}, options);
+    if (ui::DragFloat3("", &value.x_, options.step_, options.min_, options.max_, format.c_str()))
     {
         var = value;
         return true;
@@ -831,7 +879,9 @@ bool EditVariantVector4(Variant& var, const EditVariantOptions& options)
 {
     Vector4 value = var.GetVector4();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat4("", &value.x_, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
+
+    const ea::string format = GetFloatFormatString({value.Data(), 4}, options);
+    if (ui::DragFloat4("", &value.x_, options.step_, options.min_, options.max_, format.c_str()))
     {
         var = value;
         return true;
@@ -843,8 +893,9 @@ bool EditVariantRect(Variant& var, const EditVariantOptions& options)
 {
     Rect value = var.GetRect();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat4("", &value.min_.x_, options.step_, options.min_, options.max_,
-            GetFormatStringForStep(options.step_).c_str()))
+
+    const ea::string format = GetFloatFormatString({value.Data(), 4}, options);
+    if (ui::DragFloat4("", &value.min_.x_, options.step_, options.min_, options.max_, format.c_str()))
     {
         var = value;
         return true;
@@ -890,6 +941,18 @@ bool EditVariantInt(Variant& var, const EditVariantOptions& options)
     int value = var.GetInt();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
     if (ui::DragInt("", &value, ea::max(1.0, options.step_), options.min_, options.max_))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantInt64(Variant& var, const EditVariantOptions& options)
+{
+    long long value = var.GetInt64();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::InputScalar("", ImGuiDataType_S64, &value))
     {
         var = value;
         return true;
@@ -1073,11 +1136,17 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     case VAR_VECTOR2:
         return EditVariantVector2(var, options);
 
+    case VAR_DOUBLEVECTOR2:
+        return EditVariantDoubleVector2(var, options);
+
     case VAR_VECTOR3:
         if (options.asColor_)
             return EditVariantColor(var, options);
         else
             return EditVariantVector3(var, options);
+
+    case VAR_DOUBLEVECTOR3:
+        return EditVariantDoubleVector3(var, options);
 
     case VAR_VECTOR4:
         if (options.asColor_)
@@ -1125,7 +1194,10 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
         return EditVariantRect(var, options);
 
     // case VAR_INTVECTOR3:
-    // case VAR_INT64:
+
+    case VAR_INT64:
+        return EditVariantInt64(var, options);
+
     // case VAR_VARIANTCURVE:
 
     case VAR_STRINGVARIANTMAP:

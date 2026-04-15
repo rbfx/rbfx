@@ -57,9 +57,8 @@ public:
     virtual bool IsLoaded() const { return application_ != nullptr; }
     /// Returns true if plugin was modified on the disk and should be reloaded.
     virtual bool IsOutOfDate() const { return false; }
-    /// This function will block until plugin file is complete and ready to be loaded.
-    /// Returns false if timeout exceeded, but file is still incomplete.
-    virtual bool WaitForCompleteFile(unsigned timeoutMs) const { return true; }
+    /// Returns true if plugin file is ready to reload.
+    virtual bool IsReadyToReload() const { return true; }
 
     /// Actually unloads the module. Called by %PluginManager at the end of frame when IsUnloading is true.
     virtual bool PerformUnload() { return true; }

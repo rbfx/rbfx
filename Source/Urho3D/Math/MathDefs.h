@@ -43,6 +43,21 @@
 namespace Urho3D
 {
 
+// TODO: Convert other vectors to templates
+class Vector4;
+
+template <class T> class BaseVector2;
+template <class T> class BaseIntegerVector2;
+using IntVector2 = BaseIntegerVector2<int>;
+using Vector2 = BaseVector2<float>;
+using DoubleVector2 = BaseVector2<double>;
+
+template <class T> class BaseVector3;
+template <class T> class BaseIntegerVector3;
+using IntVector3 = BaseIntegerVector3<int>;
+using Vector3 = BaseVector3<float>;
+using DoubleVector3 = BaseVector3<double>;
+
 #undef M_PI
 static const float M_PI = 3.14159265358979323846264338327950288f;
 static const float M_HALF_PI = M_PI * 0.5f;
@@ -50,6 +65,8 @@ static const int M_MIN_INT = 0x80000000;
 static const int M_MAX_INT = 0x7fffffff;
 static const unsigned M_MIN_UNSIGNED = 0x00000000;
 static const unsigned M_MAX_UNSIGNED = 0xffffffff;
+static const int M_MIN_SHORT = 0x8000;
+static const int M_MAX_SHORT = 0x7fff;
 
 static const float M_EPSILON = 0.000001f;
 static const float M_LARGE_EPSILON = 0.00005f;
@@ -227,6 +244,9 @@ inline T AbsMod(T x, T y)
 /// Return fractional part of passed value in range [0, 1).
 /// @specialization{float}
 template <class T> inline T Fract(T value) { return value - floor(value); }
+
+/// Return exact value of y if x is close to it, return x as-is otherwise.
+template <class T> inline T SnapTo(T x, T y, T eps = M_EPSILON) { return Equals(x, y, eps) ? y : x; }
 
 /// Round value down.
 /// @specialization{float}
@@ -448,7 +468,22 @@ bool DecodeVariableLength(T& value, unsigned& offset, unsigned char byte)
     return !(byte & 0x80);
 }
 
+/// Zigzag encode signed integer as unsigned.
+template <class Integer> constexpr std::make_unsigned_t<Integer> ZigzagEncode(Integer x)
+{
+    using UnsignedInteger = std::make_unsigned_t<Integer>;
+    return (static_cast<UnsignedInteger>(x) << 1)
+        ^ static_cast<UnsignedInteger>(x >> (std::numeric_limits<Integer>::digits - 1));
 }
+
+/// Zigzag decode unsigned integer as signed.
+template <class UnsignedInteger> constexpr std::make_signed_t<UnsignedInteger> ZigzagDecode(UnsignedInteger x)
+{
+    using Integer = std::make_signed_t<UnsignedInteger>;
+    return (x >> 1) ^ -static_cast<Integer>(x & 1);
+}
+
+} // namespace Urho3D
 
 #ifdef _MSC_VER
 #pragma warning(pop)

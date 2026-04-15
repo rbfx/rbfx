@@ -49,6 +49,8 @@ public:
 
     /// Return whether the plugin can act as main entry point.
     virtual bool IsMain() const { return false; }
+    /// Return whether suspend/resume is supported by this plugin.
+    virtual bool IsSuspendSupported() const { return true; }
     /// Return default object category for the plugin.
     virtual ea::string GetDefaultCategory() const { return Category_User; }
 
@@ -117,6 +119,7 @@ public:
     /// Implement PluginApplication.
     /// @{
     bool IsMain() const final { return true; }
+    bool IsSuspendSupported() const override { return false; }
     /// @}
 };
 

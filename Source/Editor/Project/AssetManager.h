@@ -29,6 +29,7 @@
 #include <Urho3D/Utility/AssetPipeline.h>
 #include <Urho3D/Utility/AssetTransformerHierarchy.h>
 
+#include <EASTL/array.h>
 #include <EASTL/functional.h>
 #include <EASTL/map.h>
 #include <EASTL/optional.h>
@@ -39,6 +40,9 @@ namespace Urho3D
 
 class JSONFile;
 class Project;
+
+using AssetTransformerInputVector = ea::vector<AssetTransformerInput>;
+using AssetTransformerOutputVector = ea::vector<ea::optional<AssetTransformerOutput>>;
 
 /// Manages assets of the project.
 class AssetManager : public Object
@@ -51,10 +55,10 @@ public:
     /// Number of processed assets and total number of assets in the current queue.
     using ProgressInfo = ea::pair<unsigned, unsigned>;
 
-    using OnProcessAssetCompleted = ea::function<
-        void(const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message)>;
-    using OnProcessAssetQueued = ea::function<
-        void(const AssetTransformerInput& input, const OnProcessAssetCompleted& callback)>;
+    using OnProcessAssetCompleted = ea::function<void(const AssetTransformerInputVector& input,
+        const AssetTransformerOutputVector& output, const ea::string& message)>;
+    using OnProcessAssetQueued =
+        ea::function<void(const AssetTransformerInputVector& input, const OnProcessAssetCompleted& callback)>;
 
     explicit AssetManager(Context* context);
     ~AssetManager() override;
@@ -62,7 +66,7 @@ public:
     /// Override asset processing.
     void SetProcessCallback(const OnProcessAssetQueued& callback, unsigned maxConcurrency = 1);
     /// Process asset without affecting internal state of AssetManager.
-    void ProcessAsset(const AssetTransformerInput& input, const OnProcessAssetCompleted& callback) const;
+    void ProcessAssetBatch(const AssetTransformerInputVector& input, const OnProcessAssetCompleted& callback) const;
 
     /// Initialize asset manager.
     /// Should be called after the manager configuration is loaded from file *and* plugins are initialized.
@@ -73,7 +77,7 @@ public:
     /// Return current progress of asset processing:
     ProgressInfo GetProgress() const { return progress_; }
     /// Return whether asset manager is currently processing assets.
-    bool IsProcessing() const { return progress_ != ProgressInfo{}; }
+    bool IsProcessing() const { return !requestQueue_.empty() || numOngoingRequests_ != 0; }
 
     /// Serialize
     /// @{
@@ -136,6 +140,7 @@ private:
     AssetTransformerVector GetTransformers(const AssetPipelineDesc& pipeline) const;
     ea::string GetFileName(const ea::string& resourceName) const;
     bool IsAssetUpToDate(AssetDesc& assetDesc);
+    ea::optional<AssetTransformerOutput> ProcessAsset(const AssetTransformerInput& input) const;
     /// @}
 
     /// Cache manipulation.
@@ -144,6 +149,7 @@ private:
     void InvalidateTransformedAssetsInPath(const ea::string& resourcePath, const StringVector& transformers);
     void InvalidateApplicableAssetsInPath(const ea::string& resourcePath, const AssetTransformerVector& transformers);
     void InvalidateOutdatedAssetsInPath(const ea::string& resourcePath);
+    void CleanupAssetOutputs(const AssetDesc& assetDesc);
     void CleanupInvalidatedAssets();
     void CleanupCacheFolder();
     /// @}
@@ -158,11 +164,13 @@ private:
     void ScanAndQueueAssetProcessing();
 
     void ScanAssetsInPath(const ea::string& resourcePath, Stats& stats);
-    bool QueueAssetProcessing(const ea::string& resourceName, const ApplicationFlavor& flavor);
+    bool QueueAssetProcessing(AssetTransformerInputVector& queue, const ea::string& resourceName,
+        const ApplicationFlavor& flavor, bool isPostTransform);
     void ConsumeAssetQueue();
 
-    void CompleteAssetProcessing(
-        const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message);
+    bool CompleteAssetProcessing(const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output);
+    void CompleteAssetBatchProcessing(const AssetTransformerInputVector& input, const AssetTransformerOutputVector& output,
+        const ea::string& message);
 
     void OnReflectionRemoved(ObjectReflection* reflection);
 
@@ -181,12 +189,12 @@ private:
     bool scanAssets_{};
 
     AssetPipelineDescVector assetPipelines_;
-    SharedPtr<AssetTransformerHierarchy> transformerHierarchy_;
+    ea::array<SharedPtr<AssetTransformerHierarchy>, 2 /*isPostTransform*/> transformerHierarchy_;
     ea::unordered_map<ea::string, AssetDesc> assets_;
     AssetPipelineList assetPipelineFiles_;
     ea::unordered_set<ea::string> ignoredAssetUpdates_;
 
-    ea::vector<AssetTransformerInput> requestQueue_;
+    ea::vector<AssetTransformerInputVector> requestQueue_;
     unsigned numOngoingRequests_{};
 
     ProgressInfo progress_;

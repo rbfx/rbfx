@@ -491,7 +491,7 @@ void DebugRenderer::AddTriangleMesh(Node* node, const Color& color, bool depthTe
     }
 }
 
-void DebugRenderer::AddCircle(const Vector3& center, const Vector3& normal, float radius, const Color& color, int steps, bool depthTest)
+void DebugRenderer::AddCircle(const Vector3& center, const Vector3& normal, float radius, const Color& color, int steps, bool depthTest, bool drawNormal)
 {
     Quaternion orientation;
     orientation.FromRotationTo(Vector3::UP, normal.Normalized());
@@ -507,8 +507,11 @@ void DebugRenderer::AddCircle(const Vector3& center, const Vector3& normal, floa
         p = c;
     }
 
-    p = center + normal * (radius / 4.0f);
-    AddLine(center, p, uintColor, depthTest);
+    if (drawNormal)
+    {
+        p = center + normal * (radius / 4.0f);
+        AddLine(center, p, uintColor, depthTest);
+    }
 }
 
 void DebugRenderer::AddCross(const Vector3& center, float size, const Color& color, bool depthTest)
@@ -790,9 +793,8 @@ void DebugRenderer::InitializePipelineStates()
 
     for (bool lineAntiAlias : { false, true })
     {
-        const BlendMode blendMode = lineAntiAlias_ ? BLEND_ALPHA : BLEND_REPLACE;
-        depthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_LESSEQUAL, true, lineAntiAlias, "Lines with Depth Test");
-        noDepthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_ALWAYS, false, lineAntiAlias, "Lines without Depth Test");
+        depthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, BLEND_ALPHA, CMP_LESSEQUAL, true, lineAntiAlias, "Lines with Depth Test");
+        noDepthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, BLEND_ALPHA, CMP_ALWAYS, false, lineAntiAlias, "Lines without Depth Test");
     }
 
     depthTrianglesPipelineState_ = createPipelineState(TRIANGLE_LIST, BLEND_ALPHA, CMP_LESSEQUAL, false, false, "Triangles with Depth Test");

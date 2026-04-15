@@ -255,9 +255,9 @@ ResourceRef StaticSprite2D::GetCustomMaterialAttr() const
     return GetResourceRef(customMaterial_, Material::GetTypeStatic());
 }
 
-void StaticSprite2D::OnSceneSet(Scene* scene)
+void StaticSprite2D::OnSceneSet(Scene* previousScene, Scene* scene)
 {
-    Drawable2D::OnSceneSet(scene);
+    Drawable2D::OnSceneSet(previousScene, scene);
 
     UpdateMaterial();
 }

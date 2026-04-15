@@ -63,6 +63,7 @@ enum class NetworkCallbackMask
     UnreliableFeedback      = 1 << 6,
 
     Update                  = 1 << 7,
+    PostUpdate              = 1 << 8,
     /// @}
 };
 URHO3D_FLAGSET(NetworkCallbackMask, NetworkCallbackFlags);
@@ -129,6 +130,8 @@ public:
     virtual void InitializeStandalone() {};
     /// Process generic network update.
     virtual void Update(float replicaTimeStep, float inputTimeStep) {}
+    /// Process generic network post-update.
+    virtual void PostUpdate(float replicaTimeStep, float inputTimeStep) {}
 };
 
 }

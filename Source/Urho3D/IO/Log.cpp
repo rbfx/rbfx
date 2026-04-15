@@ -154,8 +154,9 @@ static Log* GetLog()
 unsigned FindLastNewlineInRange(const ea::string& str, unsigned position, unsigned count)
 {
     const char symbols[] = { '\n' };
-    return ea::find_last_of(str.begin() + position, str.begin() + position + count,
-        ea::begin(symbols), ea::end(symbols)) - str.begin();
+    const auto findLast = ea::find_last_of(str.begin() + position, str.begin() + position + count,
+                                           ea::begin(symbols), ea::end(symbols));
+    return static_cast<unsigned>(findLast - str.begin());
 }
 
 ea::vector<ea::string> SliceTextByNewline(const ea::string& str, unsigned maxChunkSize)

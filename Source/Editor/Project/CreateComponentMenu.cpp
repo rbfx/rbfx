@@ -24,6 +24,7 @@
 
 #include <Urho3D/SystemUI/SystemUI.h>
 
+#include <EASTL/map.h>
 #include <EASTL/sort.h>
 
 namespace Urho3D
@@ -32,68 +33,160 @@ namespace Urho3D
 namespace
 {
 
-using ObjectTypeVector = ea::vector<StringHash>;
-using SortedCategoriesVector = ea::vector<ea::pair<ea::string, const ObjectTypeVector*>>;
-using SortedTypesVector = ea::vector<const ObjectReflection*>;
+using TypeNameAndReflection = ea::pair<ea::string, WeakPtr<ObjectReflection>>;
 
-const SortedCategoriesVector& GetSortedCategories(Context* context, ea::string_view prefix)
+struct CategoryGroup
 {
-    const auto& typesByCategory = context->GetObjectCategories();
+    ea::vector<TypeNameAndReflection> types_;
+    ea::map<ea::string, CategoryGroup> children_;
+    ea::string ungroupedGroupName_;
 
-    static thread_local SortedCategoriesVector sortedCategories;
-    sortedCategories.clear();
-
-    ea::transform(typesByCategory.begin(), typesByCategory.end(), std::back_inserter(sortedCategories),
-        [](const auto& pair) { return ea::make_pair(pair.first, &pair.second); });
-
-    ea::erase_if(sortedCategories, [&](const auto& pair) { return !pair.first.starts_with(prefix); });
-    ea::erase_if(sortedCategories, [&](const auto& pair) { return pair.second->empty(); });
-
-    ea::sort(sortedCategories.begin(), sortedCategories.end());
-
-    return sortedCategories;
-}
-
-const SortedTypesVector& GetSortedTypes(Context* context, const ObjectTypeVector& types)
-{
-    static thread_local SortedTypesVector sortedTypes;
-    sortedTypes.clear();
-
-    ea::transform(types.begin(), types.end(), std::back_inserter(sortedTypes),
-        [context](const StringHash type) { return context->GetReflection(type); });
-
-    ea::erase(sortedTypes, nullptr);
-    ea::erase_if(sortedTypes, [](const ObjectReflection* reflection) { return !reflection->HasObjectFactory(); });
-
-    const auto compareNames = [](const ObjectReflection* lhs, const ObjectReflection* rhs)
-    { return lhs->GetTypeName() < rhs->GetTypeName(); };
-    ea::sort(sortedTypes.begin(), sortedTypes.end(), compareNames);
-
-    return sortedTypes;
-}
-}
-
-ea::optional<StringHash> RenderCreateComponentMenu(Context* context)
-{
-    static const ea::string prefix = "Component/";
-    const auto& sortedCategories = GetSortedCategories(context, prefix);
-
-    ea::optional<StringHash> result;
-    for (const auto& [categoryName, types] : sortedCategories)
+    CategoryGroup& GetGroup(ea::span<const ea::string> groups)
     {
-        const ea::string title = categoryName.substr(prefix.length());
-        if (ui::BeginMenu(title.c_str()))
+        if (groups.empty())
+            return *this;
+
+        return children_[groups.front()].GetGroup(groups.subspan(1));
+    }
+
+    bool IsEmpty() const { return types_.empty() && children_.empty(); }
+
+    void Finalize()
+    {
+        ea::sort(types_.begin(), types_.end());
+
+        for (auto& [_, child] : children_)
+            child.Finalize();
+
+        ea::erase_if(children_, [](const auto& item) { return item.second.IsEmpty(); });
+    }
+
+    ObjectReflection* Render() const
+    {
+        ObjectReflection* result = nullptr;
+
+        const auto renderTypes = [&]
         {
-            const auto& sortedTypes = GetSortedTypes(context, *types);
-            for (const ObjectReflection* reflection : sortedTypes)
+            for (const auto& [typeName, reflection] : types_)
             {
-                if (ui::MenuItem(reflection->GetTypeName().c_str()))
-                    result = reflection->GetTypeNameHash();
+                if (ui::MenuItem(typeName.c_str()))
+                    result = reflection;
             }
+        };
+
+        if (!ungroupedGroupName_.empty() && !types_.empty() && ui::BeginMenu(ungroupedGroupName_.c_str()))
+        {
+            renderTypes();
             ui::EndMenu();
         }
+
+        for (const auto& [groupName, group] : children_)
+        {
+            if (ui::BeginMenu(groupName.c_str()))
+            {
+                if (ObjectReflection* childResult = group.Render())
+                    result = childResult;
+                ui::EndMenu();
+            }
+        }
+
+        if (ungroupedGroupName_.empty())
+            renderTypes();
+
+        return result;
     }
+};
+
+void ExtractSpecialGroups(
+    ea::vector<CategoryGroup>& groups, ea::string_view prefix, ea::span<const ConstString> specialCategories)
+{
+    for (const ea::string& categoryName : specialCategories)
+    {
+        const ea::string groupName = categoryName.substr(prefix.size());
+
+        CategoryGroup& commonGroups = groups.front();
+        const auto iter = commonGroups.children_.find(groupName);
+        if (iter == commonGroups.children_.end())
+            continue;
+
+        auto specialGroup = ea::move(iter->second);
+        commonGroups.children_.erase(iter);
+
+        specialGroup.ungroupedGroupName_ = Format("[{}]", groupName);
+        groups.push_back(ea::move(specialGroup));
+    }
+}
+
+ea::vector<CategoryGroup> CreateCategoryGroups(
+    Context* context, ea::string_view prefix, ea::span<const ConstString> specialCategories)
+{
+    ea::vector<CategoryGroup> result;
+    CategoryGroup& commonGroups = result.emplace_back();
+
+    const auto& typesByCategory = context->GetObjectCategories();
+    for (const auto& [category, typeList] : typesByCategory)
+    {
+        if (!category.starts_with(prefix))
+            continue;
+
+        const auto groups = category.substr(prefix.size()).split('/');
+        CategoryGroup& group = commonGroups.GetGroup(groups);
+
+        for (const StringHash typeHash : typeList)
+        {
+            const WeakPtr<ObjectReflection> reflection{context->GetReflection(typeHash)};
+            if (reflection->HasObjectFactory())
+                group.types_.emplace_back(reflection->GetTypeName(), reflection);
+        }
+    }
+
+    commonGroups.Finalize();
+
+    ExtractSpecialGroups(result, prefix, specialCategories);
     return result;
 }
 
+const ea::vector<CategoryGroup>& GetOrCreateCategoryGroups(
+    Context* context, ea::string_view prefix, ea::span<const ConstString> specialCategories)
+{
+    static struct Cache
+    {
+        unsigned hash_{};
+        ea::vector<CategoryGroup> groups_;
+    } cache;
+
+    const auto& typesByCategory = context->GetObjectCategories();
+    const unsigned currentHash = ea::max(1u, MakeHash(typesByCategory));
+
+    if (currentHash != cache.hash_)
+    {
+        cache.hash_ = currentHash;
+        cache.groups_ = CreateCategoryGroups(context, prefix, specialCategories);
+    }
+
+    return cache.groups_;
 }
+
+} // namespace
+
+ObjectReflection* RenderCreateComponentMenu(Context* context)
+{
+    static const ea::string prefix = "Component/";
+    static const ConstString specialCategories[] = {Category_Plugin, Category_User};
+
+    const auto& groups = GetOrCreateCategoryGroups(context, prefix, specialCategories);
+
+    ObjectReflection* result = nullptr;
+    for (const CategoryGroup& group : groups)
+    {
+        if (&group != &groups.front())
+            ui::Separator();
+
+        if (ObjectReflection* groupResult = group.Render())
+            result = groupResult;
+    }
+
+    return result;
+}
+
+} // namespace Urho3D

@@ -47,8 +47,7 @@ namespace Urho3D
 namespace
 {
 
-const StringVector animationParametersNames =
-{
+const StringVector animationParametersNames = {
     "Animation Count",
     "   Animation",
     "   Is Looped",
@@ -69,21 +68,21 @@ const StringVector animationParametersNames =
 
 enum class AnimationParameterMask
 {
-    InstanceIndex       = 1 << 0,
-    Looped              = 1 << 1,
-    RemoveOnCompletion  = 1 << 2,
-    Layer               = 1 << 3,
-    Additive            = 1 << 4,
-    StartBone           = 1 << 5,
-    AutoFadeOutTime     = 1 << 6,
-    Time                = 1 << 7,
-    MinTime             = 1 << 8,
-    MaxTime             = 1 << 9,
-    Speed               = 1 << 10,
-    RemoveOnZeroWeight  = 1 << 11,
-    Weight              = 1 << 12,
-    TargetWeight        = 1 << 13,
-    TargetWeightDelay   = 1 << 14
+    InstanceIndex = 1 << 0,
+    Looped = 1 << 1,
+    RemoveOnCompletion = 1 << 2,
+    Layer = 1 << 3,
+    Additive = 1 << 4,
+    StartBone = 1 << 5,
+    AutoFadeOutTime = 1 << 6,
+    Time = 1 << 7,
+    MinTime = 1 << 8,
+    MaxTime = 1 << 9,
+    Speed = 1 << 10,
+    RemoveOnZeroWeight = 1 << 11,
+    Weight = 1 << 12,
+    TargetWeight = 1 << 13,
+    TargetWeightDelay = 1 << 14
 };
 URHO3D_FLAGSET(AnimationParameterMask, AnimationParameterFlags);
 
@@ -98,7 +97,12 @@ bool MatchesQuery(const AnimationParameters& params, Animation* animation, unsig
     return true;
 }
 
+bool IsFilteredOut(const AnimationParameters& params, ea::span<const unsigned> layers)
+{
+    return !layers.empty() && ea::find(layers.begin(), layers.end(), params.layer_) == layers.end();
 }
+
+} // namespace
 
 const AnimationParameters AnimationParameters::EMPTY {};
 
@@ -142,9 +146,9 @@ bool AnimationParameters::RemoveDelayed(float fadeTime)
     return changed;
 }
 
-AnimationParameters& AnimationParameters::Looped()
+AnimationParameters& AnimationParameters::Looped(bool value)
 {
-    looped_ = true;
+    looped_ = value;
     return *this;
 }
 
@@ -172,9 +176,9 @@ AnimationParameters& AnimationParameters::TimeRange(float minTime, float maxTime
     return *this;
 }
 
-AnimationParameters& AnimationParameters::Additive()
+AnimationParameters& AnimationParameters::Additive(bool value)
 {
-    blendMode_ = ABM_ADDITIVE;
+    blendMode_ = value ? ABM_ADDITIVE : ABM_LERP;
     return *this;
 }
 
@@ -197,15 +201,15 @@ AnimationParameters& AnimationParameters::AutoFadeOut(float fadeOut)
     return *this;
 }
 
-AnimationParameters& AnimationParameters::KeepOnCompletion()
+AnimationParameters& AnimationParameters::KeepOnCompletion(bool value)
 {
-    removeOnCompletion_ = false;
+    removeOnCompletion_ = !value;
     return *this;
 }
 
-AnimationParameters& AnimationParameters::KeepOnZeroWeight()
+AnimationParameters& AnimationParameters::KeepOnZeroWeight(bool value)
 {
-    removeOnZeroWeight_ = false;
+    removeOnZeroWeight_ = !value;
     return *this;
 }
 
@@ -553,7 +557,8 @@ void AnimationController::SendTriggerEvents()
     }
 }
 
-void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> newAnimations, float elapsedTime, float fadeTime)
+void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> newAnimations, float elapsedTime,
+    float fadeTime, ea::span<const unsigned> layers)
 {
     // Upload new parameters and correct them according to elapsed time, some states may be removed
     const unsigned numNewAnimations = newAnimations.size();
@@ -592,7 +597,10 @@ void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> 
     // Remove all merged states from the animations, and fade out unmerged animations
     ea::erase_if(animations_, [](const AnimationInstance& instance) { return instance.params_.merged_; });
     for (AnimationInstance& instance : animations_)
-        instance.params_.RemoveDelayed(fadeTime);
+    {
+        if (!IsFilteredOut(instance.params_, layers))
+            instance.params_.RemoveDelayed(fadeTime);
+    }
 
     // Append new animations
     for (const AnimationInstance& instance : tempAnimations_)
@@ -617,12 +625,12 @@ void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> 
 
 void AnimationController::AddAnimation(const AnimationParameters& params)
 {
-    const unsigned instanceIndex = ea::count_if(animations_.begin(), animations_.end(),
+    const auto instanceIndex = ea::count_if(animations_.begin(), animations_.end(),
         [&](const AnimationInstance& instance) { return instance.params_.GetAnimation() == params.GetAnimation(); });
 
     AnimationInstance& instance = animations_.emplace_back();
     instance.params_ = params;
-    instance.params_.instanceIndex_ = instanceIndex;
+    instance.params_.instanceIndex_ = static_cast<unsigned>(instanceIndex);
 
     instance.state_ = MakeShared<AnimationState>(this);
     if (auto* model = GetComponent<AnimatedModel>())
@@ -691,7 +699,7 @@ unsigned AnimationController::FindLastAnimation(Animation* animation, unsigned l
 {
     const auto iter = ea::find_if(animations_.rbegin(), animations_.rend(),
         [&](const AnimationInstance& value) { return MatchesQuery(value.params_, animation, layer); });
-    return iter != animations_.rend() ? (iter.base() - animations_.begin()) - 1 : M_MAX_UNSIGNED;
+    return iter != animations_.rend() ? static_cast<unsigned>((iter.base() - animations_.begin()) - 1) : M_MAX_UNSIGNED;
 }
 
 const AnimationParameters* AnimationController::GetLastAnimationParameters(Animation* animation, unsigned layer) const
@@ -732,7 +740,7 @@ unsigned AnimationController::PlayNewExclusive(const AnimationParameters& params
 
 unsigned AnimationController::PlayExisting(const AnimationParameters& params, float fadeInTime)
 {
-    const unsigned index = FindLastAnimation(params.GetAnimation());
+    const unsigned index = FindLastAnimation(params.GetAnimation(), params.layer_);
     if (index == M_MAX_UNSIGNED)
     {
         PlayNew(params, fadeInTime);
@@ -997,7 +1005,7 @@ void AnimationController::OnNodeSet(Node* previousNode, Node* currentNode)
     ConnectToAnimatedModel();
 }
 
-void AnimationController::OnSceneSet(Scene* scene)
+void AnimationController::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene && IsEnabledEffective())
         SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(AnimationController, HandleScenePostUpdate));

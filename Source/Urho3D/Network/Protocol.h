@@ -63,8 +63,10 @@ enum NetworkMessageId : uint16_t
     MSG_REMOVE_OBJECTS,
     /// Server->Client. ReplicationManager message. Create replicated NetworkObjects from snapshots.
     MSG_ADD_OBJECTS,
+    MSG_ADD_OBJECTS_INCOMPLETE,
     /// Server->Client. ReplicationManager message. Perform ordered and reliable update of NetworkObjects.
     MSG_UPDATE_OBJECTS_RELIABLE,
+    MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE,
     /// Server->Client. ReplicationManager message. Perform unordered and unreliable update of NetworkObjects.
     MSG_UPDATE_OBJECTS_UNRELIABLE,
     /// Client->Server. ReplicationManager message. Perform unordered and unreliable update of owned NetworkObjects from client to server.
@@ -77,7 +79,16 @@ enum NetworkMessageId : uint16_t
     MSG_MAX = 0xFFFF,
 };
 
-/// Package file fragment size.
-static const unsigned PACKAGE_FRAGMENT_SIZE = 1024;
+/// Conservative limit for the size of the packet transmitted over underlying transport.
+/// Real limit may be higher.
+/// @see AbstractConnection::GetMaxPacketSize
+static constexpr unsigned MaxNetworkPacketSize = 1024;
+/// Maximum possible size of network message payload. Transport limitations are not considered.
+/// Real limit may be lower.
+/// @see AbstractConnection::GetMaxMessageSize
+static constexpr unsigned MaxNetworkMessageSize = 0xffff;
 
-}
+/// Size of the message header (message id and size).
+static constexpr unsigned NetworkMessageHeaderSize = 4;
+
+} // namespace Urho3D

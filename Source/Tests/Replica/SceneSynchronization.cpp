@@ -37,6 +37,7 @@
 #include <Urho3D/Replica/ReplicationManager.h>
 #include <Urho3D/Replica/NetworkObject.h>
 #include <Urho3D/Replica/NetworkValue.h>
+#include <Urho3D/Replica/ReplicatedParent.h>
 #include <Urho3D/Replica/ReplicatedTransform.h>
 
 namespace
@@ -46,6 +47,7 @@ SharedPtr<PrefabResource> CreateComplexTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
     node->CreateComponent<ReplicatedTransform>();
+    node->CreateComponent<ReplicatedParent>();
 
     auto staticModel = node->CreateComponent<StaticModel>();
     staticModel->SetCastShadows(true);
@@ -63,6 +65,7 @@ SharedPtr<PrefabResource> CreateSimpleTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
     node->CreateComponent<ReplicatedTransform>();
+    node->CreateComponent<ReplicatedParent>();
 
     return Tests::ConvertNodeToPrefab(node);
 }
@@ -345,10 +348,10 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
         REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(0.2).margin(0.03));
 
-        REQUIRE(serverTransformA->SampleTemporalPosition(replicaTime).value_.Equals(clientNodeA->GetWorldPosition(), positionError));
+        REQUIRE(serverTransformA->SampleTemporalPosition(replicaTime).value_.Cast<Vector3>().Equals(clientNodeA->GetWorldPosition(), positionError));
         REQUIRE(serverTransformA->SampleTemporalRotation(replicaTime).value_.Equivalent(clientNodeA->GetWorldRotation(), M_EPSILON));
 
-        REQUIRE(serverTransformB->SampleTemporalPosition(replicaTime).value_.Equals(clientNodeB->GetWorldPosition(), positionError));
+        REQUIRE(serverTransformB->SampleTemporalPosition(replicaTime).value_.Cast<Vector3>().Equals(clientNodeB->GetWorldPosition(), positionError));
         REQUIRE(serverTransformB->SampleTemporalRotation(replicaTime).value_.Equivalent(clientNodeB->GetWorldRotation(), M_EPSILON));
     }
 
@@ -363,10 +366,10 @@ TEST_CASE("Position and rotation are synchronized between client and server")
 
         REQUIRE(delay / Tests::NetworkSimulator::FramesInSecond == Catch::Approx(0.25).margin(0.03));
 
-        REQUIRE(serverTransformA->SampleTemporalPosition(replicaTime).value_.Equals(clientNodeA->GetWorldPosition(), positionError));
+        REQUIRE(serverTransformA->SampleTemporalPosition(replicaTime).value_.Cast<Vector3>().Equals(clientNodeA->GetWorldPosition(), positionError));
         REQUIRE(serverTransformA->SampleTemporalRotation(replicaTime).value_.Equivalent(clientNodeA->GetWorldRotation(), M_EPSILON));
 
-        REQUIRE(serverTransformB->SampleTemporalPosition(replicaTime).value_.Equals(clientNodeB->GetWorldPosition(), 0.002f));
+        REQUIRE(serverTransformB->SampleTemporalPosition(replicaTime).value_.Cast<Vector3>().Equals(clientNodeB->GetWorldPosition(), 0.002f));
         REQUIRE(serverTransformB->SampleTemporalRotation(replicaTime).value_.Equivalent(clientNodeB->GetWorldRotation(), M_EPSILON));
     }
 }

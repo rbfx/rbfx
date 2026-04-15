@@ -1,0 +1,85 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+    <title>EAOSGlobal</title>
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAOSGlobal</h1>
+
+<h2>Introduction</h2>
+<p>OS globals are process-wide globals (singletons, actually) and are shared between an EXE and DLLs, though you can use them on platforms that don't support DLLs. The Windows OS does not directly support this concept of global object sharing, as the only way to accomplish this under Windows is to sequester the global object in its own DLL of which the EXE and all DLLs explicitly reference. OS Globals allow you to have the global object anywhere (including the EXE) and does so without requiring explicit linking. The OS global system works at the operating system level and has auto-discovery logic so that no pointers or init calls need to be made between modules for them to link their OS global systems together. The OS global system consists of EAOSGlobal and <a href="EAGlobal.html">EAGlobal</a>. The latter provides simpler functionality but has less overhead.</p>
+<p>A primary use of OS globals is in the creation of application singletons such as the main heap, messaging servers, asset managers, etc. <br>
+  <br>
+  Note that the implementation behind OS globals (EAOSGlobal.cpp) may seem a bit convoluted; this is because it needs to be thread-safe, cross-module, and independent of application-level memory allocators. For objects for which order of initialization is clearer and you don't need to reference singletons across DLLs, EASingleton is probably a better choice, as it is simpler and has lower overhead. Indeed, another way of looking at OS globals is to view them as process-wide singletons. </p>
+<p>The easiest way to use OS globals is via their auto pointers, which make OS globals just about trivial to use. We will cover the major components of EAOSGlobal below, starting with the auto pointers. </p>
+<p><strong>Caveats</strong></p>
+<p>OS globals have the potential for resulting in code that's duplicated within each DLL and thus increasing code memory usage. It might be useful to use an OS global to store a pointer to an interface rather  than an instance of an interface, and have just a single entity within the application provide the implementation. With this approach you still get the benefit of users of the global not having to know ahead of time where the implementation is as you otherwise need to do with standard DLL linking via &quot;dllexport.&quot;</p>
+<p>OS globals probably aren't needed in cases where you can simply use dllexport (and other platforms' equivalents).</p>
+<h2>AutoOSGlobalPtr</h2>
+<p> Holds a reference to an OS global of the specified type and Id. If the OS global does not exist, a new one is created in the shared heap. The Id parameter is an arbitrary guid and allows the user to have multiple OSGlobalPtrs of the same stored type T.<br>
+<br>
+OS global lookup is not very fast so the preferred usage of this class is to wrap it in an accessor. This also ensures that the OS global stays around while created.</p>
+<p>Example usage: </p>
+<pre class="code-example">AutoOSGlobalPtr&lt;Widget, 0x11111111&gt; gpWidget1A;  <span class="code-example-comment">// Declare a global pointer.</span><br>AutoOSGlobalPtr&lt;Widget, 0x11111111&gt; gpWidget1B;  <span class="code-example-comment">// Points to the same global Widget as gpWidget1A.</span><br>AutoOSGlobalPtr&lt;Widget, 0x22222222&gt; gpWidget2;   <span class="code-example-comment">// Points to a different Widget, as it has the 0x22222222 id.</span><br><br>void Foo()
+{<br>    assert(gpWidget1A == gpWidget1B);<br>    assert(gpWidget1A != gpWidget2);<br><br>    gpWidget1A-&gt;DoSomething();<br>    gpWidget2-&gt;DoSomething();<br>}</pre>
+<h2>AutoStaticOSGlobalPtr</h2>
+<p> Holds a reference to a OS global of the specified type and ID. If the OS global does not exist, a new one is created using static memory.<br>
+ The Id parameter is an arbitrary guid and allows the user to have  multiple OSGlobalPtrs of the same stored type T.<br>
+<br>
+The advantage of this class is that it uses static memory, so it does not contribute to heap usage and it always succeeds in allocating the object. The disadvantage is that if multiple DLLs are involved each will have its own static space reserved for the OS global.</p>
+<p>AutoStaticOSGlobalPtrs and AutoOSGlobalPtrs should not be mixed when referring to a OS global. You should reference an OSGlobal via either one or more AutoOSGlobalPtrs, one or more AutoStaticOSGlobalPtrs, but not both at the same time.</p>
+<p>Example usage (note that it is virtually identical to the AutoOSGlobalPtr example): </p>
+<pre class="code-example">AutoStaticOSGlobalPtr&lt;Widget, 0x11111111&gt; gpWidget1A;  <span class="code-example-comment">// Declare a global pointer.</span><br>AutoStaticOSGlobalPtr&lt;Widget, 0x11111111&gt; gpWidget1B;  <span class="code-example-comment">// Points to the same global Widget as gpWidget1A.</span><br>AutoStaticOSGlobalPtr&lt;Widget, 0x22222222&gt; gpWidget2;   <span class="code-example-comment">// Points to a different Widget, as it has the 0x22222222 id.</span><br><br>void Foo()
+{<br>    assert(gpWidget1A == gpWidget1B);<br>    assert(gpWidget1A != gpWidget2);<br><br>    gpWidget1A-&gt;DoSomething();<br>    gpWidget2-&gt;DoSomething();<br>}</pre>
+<h2>Low level functionality </h2>
+<p>The above auto pointer classes are really just wrappers around the low level OS global API. Most of the time you want to use the auto pointers. We provide a description of the lowel level API here for those who need to access OS globals in a custom way.</p>
+<p>The low level system is comprised of the following four entities: </p>
+<pre class="code-example">struct OSGlobalNode : public eastl::intrusive_list_node { };
+ 
+typedef OSGlobalNode* (*OSGlobalFactoryPtr)();
+ 
+OSGlobalNode* GetOSGlobal(uint32_t id, OSGlobalFactoryPtr pFactory);
+ 
+bool ReleaseOSGlobal(OSGlobalNode* pOSGlobalNode);
+</pre>
+<p>Example usage:</p>
+<pre class="code-example">struct Widget : public OSGlobalNode
+{
+    <span class="code-example-comment">// User data here.</span>
+};
+    
+Widget* WidgetFactory()
+{
+    return new Widget;
+}
+
+ 
+int main(int, char**)
+{
+    Widget* pWidget = GetOSGlobal(0x12345678, WidgetFactory);
+    
+    pWidget-&gt;DoSomething();
+    
+    if(ReleaseOSGlobal(pWidget))
+        delete pWidget;
+    
+    return 0;
+}</pre>
+<p>The above example looks like a basic  singleton pattern, and it is such a thing. The difference between this and your typical singleton system is that the OS global system solves the potentially tricky problems of cross-DLL access, thread safety, and memory allocation. </p>
+<p>For additional example usage,  see the source code to AutoOSGlobalPtr in EAOSGlobal.h.</p>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p></p>
+</body></html>
+
+
+

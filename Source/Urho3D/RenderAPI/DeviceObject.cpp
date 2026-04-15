@@ -14,8 +14,8 @@
 namespace Urho3D
 {
 
-DeviceObject::DeviceObject(Context* context)
-    : renderDevice_(context->GetSubsystem<RenderDevice>())
+DeviceObject::DeviceObject(Context* context, DeviceObjectFlags flags)
+    : renderDevice_(flags.IsNoneOf(DeviceObjectFlag::Headless) ? context->GetSubsystem<RenderDevice>() : nullptr)
 {
     if (renderDevice_)
         renderDevice_->AddDeviceObject(this);

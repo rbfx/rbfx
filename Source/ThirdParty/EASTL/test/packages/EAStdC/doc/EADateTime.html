@@ -1,0 +1,353 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+    
+<title>EADateTime</title>
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EADateTime</h1>
+
+<h2>Introduction</h2>
+<p>EADateTime provides a unified implementation of date, time, and calendar functionality. 
+  The DateTime class represents date and time in a single class. Unlike other 
+  date/time systems, this class doesn't have a strictly limited resolution, due 
+  to its use of 64 bits (instead of 32 bits) of storage for the date/time value. 
+</p>
+<p> EADateTime supports the modern Gregorian calendar correctly, including such 
+  concepts as leap years. You can, for example, use EADateTime to implement proper 
+  calendar functionality for your application.</p>
+<p>The C standard library provides some time and date functionality, but it is 
+  slow, has some limitations, is not very easy to use, and isn't supported by 
+  all C/C++ compilers. Writing a calendar application with the C time and date 
+  functions would be possible, but would be tedious and error-prone.</p>
+<p>EADateTime does not support the formatting of date and time strings for display 
+  to a users. Such functionality is outside the scope of this class, primarily 
+  due to the issue of multiple string encodings (e.g. ASCII and Unicode) and due 
+  to the existence of multiple locales (e.g. English and French) which use different 
+  formats for time and date strings. A separate module -- EALocale -- exists which 
+  implements string formatting of dates and times. You can use that module and 
+  EADateTime together to implement locale-savvy times, dates, and calendars.</p>
+<h2>Example usage </h2>
+<p>All examples presume a <font face="Courier New, Courier, mono" size="-1">#include 
+  &quot;Foundation/EADateTime.h&quot;</font> and assume the using of <font face="Courier New, Courier, mono" size="-1">namespace 
+  EA</font>.</p>
+<p>Basic usage of class DateTime:</p>
+<pre class="code-example">DateTime dt;   // Sets dt to the current date and time.
+ 
+uint32_t year = dt.GetParameter(kParameterYear);      // Get the current year.
+ 
+dt.SetParameter(kParameterMonth, kMonthAugust);       // Set month to August.
+dt.AddTime(kParameterDayOfYear, 77);                  // Add 77 days.</pre> 
+<p>Comparison of DateTime instances:</p>
+<pre class="code-example">DateTime dtD(2008, kMonthDecember, 25);   // Sets dt to Christmas 2008.
+DateTime dtH(2008, kMonthOctober, 31);    // Sets dt to Halloween 2008.
+ 
+if(dtH &lt; dtD)
+    printf(&quot;Halloween occurs before Christmas.&quot;);
+else
+    printf(&quot;Christmas occurs before Halloween.&quot;);</pre>
+<blockquote></blockquote>
+<p>How to save and restore a DateTime to and from disk:</p>
+<pre><span class="code-example">DateTime dt;
+
+uint64_t n = dt.GetSeconds();         // Get the absolute time in seconds. This alone fully represents a DateTime.
+
+WriteToDisk64(ToBigEndian(n));        // Hypthetical disk writing function and endian conversion function.
+
+n = FromBigEndian(ReadFromDisk64());  // Hypothetical disk reading function and endian conversion function.
+
+dt = DateTime(n);                     // Restore the saved value to a DateTime instance.</span></pre>
+<p>Usage of standalone EADateTime utility functions, which are independent of 
+  class DateTime: </p>
+<pre class="code-example">bool b = IsLeapYear(2015);
+ 
+uint32_t n = GetDaysInYear(1974);
+ 
+uint32_t d = GetDaysInMonth(kMonthMarch, 2007);
+ 
+int64_t nSeconds = GetDaylightSavingsBias();</pre>
+<h2></h2>
+Conversion of C time to DateTime:
+<pre class="code-example">#include &lt;time.h&gt;
+
+tm time;
+asctime(&amp;ascTime);         // Get C time.
+
+DateTime dt;
+TmToDateTime(time, dt);    // Convert to DateTime.</pre>
+<h2>Interface</h2>
+<p>The following is defined in EADateTime.h. The latest versions of these definitions 
+  can be found in the current version of EADateTime.h</p>
+<p>Enumerations</p>
+<pre class="code-example">enum Month
+{
+    kMonthUnknown        =  0,
+    kMonthJanuary        =  1,
+    kMonthFebruary       =  2,
+    kMonthMarch          =  3,
+    kMonthApril          =  4,
+    kMonthMay            =  5,
+    kMonthJune           =  6,
+    kMonthJuly           =  7,
+    kMonthAugust         =  8,
+    kMonthSeptember      =  9,
+    kMonthOctober        = 10,
+    kMonthNovember       = 11,
+    kMonthDecember       = 12
+};
+ 
+enum DayOfMonth
+{
+    kDayOfMonthUnknown   =  0,
+    kDayOfMonthMin       =  1,
+    kDayOfMonthMax       = 31   <font color="#999999">/// The actual max month is dependent on which month is being referred to.</font>
+};
+
+enum DayOfWeek
+{
+    kDayOfWeekUnknown    =  0,
+    kDayOfWeekSunday     =  1,  
+    kDayOfWeekMonday     =  2,
+    kDayOfWeekTuesday    =  3,
+    kDayOfWeekWednesday  =  4,
+    kDayOfWeekThursday   =  5,
+    kDayOfWeekFriday     =  6,
+    kDayOfWeekSaturday   =  7
+};
+
+<span class="code-example-comment">/// TimeFrame
+</span>enum TimeFrame
+{
+    kTimeFrameUnknown = 0,  <font color="#999999">/// Unspecified time frame.</font>
+    kTimeFrameUTC     = 1,  <font color="#999999">/// Universal Coordinated Time. This is the time based on the time zone at Greenwich, England.</font>
+    kTimeFrameLocal   = 2   <font color="#999999">/// Same time as current machine.</font>
+};
+
+<span class="code-example-comment">/// TimeZone
+/// Standard time zone definitions, with their values corresponding to the nmuber of hours they are
+/// off relative to UTC (Universal Coordinated Time, which is the time at Greenwich England). 
+/// Note, for example, that kTimeZonePacific is -8 hours relative to Greenwich, England.
+</span>enum TimeZone
+{
+    kTimeZoneEniwetok    = -12,
+    kTimeZoneSamoa       = -11,
+    kTimeZoneHawaii      = -10,
+    kTimeZoneAlaska      =  -9,
+    kTimeZonePacific     =  -8,
+    kTimeZoneMountain    =  -7,
+    kTimeZoneCentral     =  -6,
+    kTimeZoneEastern     =  -5,
+    kTimeZoneAltantic    =  -4,
+    kTimeZoneBrazilia    =  -3,
+    kTimeZoneMidAtlantic =  -2,
+    kTimeZoneAzores      =  -1,
+    kTimeZoneGreenwich   =   0,
+    kTimeZoneRome        =  +1,
+    kTimeZoneIsrael      =  +2,
+    kTimeZoneMoscow      =  +3,
+    kTimeZoneBaku        =  +4,
+    kTimeZoneNewDelhi    =  +5,
+    kTimeZoneDhakar      =  +6,
+    kTimeZoneBangkok     =  +7,
+    kTimeZoneHongKong    =  +8,
+    kTimeZoneTokyo       =  +9,
+    kTimeZoneSydney      = +10,
+    kTimeZoneMagadan     = +11,
+    kTimeZoneWellington  = +12
+};
+
+<span class="code-example-comment">/// Epoch
+/// The use of an epoch is to provide a timeframe with which to work.
+/// Most of the time you don't need to know about this.
+</span>enum Epoch
+{
+    kEpochUnknown         =  0,
+    kEpochJulian          =  1, <font color="#999999">/// Began at noon, January 1, 4712 BC.</font>
+    kEpochModifiedJulian  =  2, <font color="#999999">/// Began at midnight, November 17, 1858. Exactly 2,400,000.5 days after Julian epoch began.</font>
+    kEpochGregorian       =  3, <font color="#999999">/// Began at midnight, September 14, 1752.</font>
+    kEpoch1900            =  4, <font color="#999999">/// Began at midnight, January 1, 1900.</font>
+    kEpoch1950            =  5, <font color="#999999">/// Began at midnight, January 1, 1950.</font>
+    kEpoch1970            =  6, <font color="#999999">/// Began at midnight, January 1, 1970. Same epoch used by C runtime library and Unix OS.</font>
+    kEpoch2000            =  7  <font color="#999999">/// Began at midnight, January 1, 2000.</font>
+};
+
+enum Era
+{
+    kEraUnknown = 0,
+    kEraBC      = 1,
+    kEraAD      = 2
+};
+
+<span class="code-example-comment">/// Parameter
+/// Defines a date or time parameter.
+</span>enum Parameter
+{
+    kParameterUnknown     =  0,
+    kParameterYear        =  1, <font color="#999999">/// Refers to full year value, such as 1994, 2006, etc. but not a two digit value such as 94 or 04. The valid range is 0-INT_MAX.</font>
+    kParameterMonth       =  2, <font color="#999999">/// Refers to month of year, starting with 1 for January. The valid range is 1-12.</font>
+    kParameterWeekOfYear  =  3, <font color="#999999">/// Refers to the week of the year, starting with 1 for the week of January 1. The valid range is 1-52.</font>
+    kParameterWeekOfMonth =  4, <font color="#999999">/// Refers to the week of the month, starting with 1 for the first week. The valid range is 1-5.</font>
+    kParameterDayOfYear   =  5, <font color="#999999">/// Refers to a day of the year, starting with 1 for January 1st. The valid range is 1-366.</font>
+    kParameterDayOfMonth  =  6, <font color="#999999">/// Refers to the day of the month, starting with 1 for the first of the month. The valid range is 1-31.</font>
+    kParameterDayOfWeek   =  7, <font color="#999999">/// Refers to the day of the week, starting with 1 for Sunday. The valid range is 1-7.</font>
+    kParameterHour        =  8, <font color="#999999">/// Refers to the hour of a day in 24 hour format, starting with 0 for midnight. The valid range is 0-23.</font>
+    kParameterMinute      =  9, <font color="#999999">/// Refers to the minute of the hour, starting with 0 for the first minute. The valid range is 0-59.</font>
+    kParameterSecond      = 10, <font color="#999999">/// Refers to the second of the minute, starting with 0 for the first second. The valid range is 0-59.</font>
+};
+
+<span class="code-example-comment">/// Conversions
+/// Defines useful conversion multipliers between seconds, minutes, hours, and days.
+/// Conversions are not defined for some entities (e.g. days per year) because the 
+/// value changes based on the particular year.
+</span>enum Conversions
+{
+    kSecondsPerMinute =    60,
+    kSecondsPerHour   =  3600,
+    kSecondsPerDay    = 86400,
+    kMinutesPerHour   =    60,
+    kMinutesPerDay    =  1440,
+    kHoursPerDay      =    24,
+    kDaysPerWeek      =     7,
+    kWeeksPerYear     =    52,
+    kMonthsPerYear    =    12
+};
+  </pre>
+<p>DateTime</p>
+<pre class="code-example">class DateTime
+{
+public:
+    static const uint32_t kValueDefault = 0xffffffff;
+    static const uint32_t kValueIgnored = 0xffffffff;
+
+public:
+    DateTime(TimeFrame timeFrame = kTimeFrameLocal);
+
+    DateTime(int64_t nSeconds) : mnSeconds(nSeconds);
+
+    DateTime(const DateTime& dateTime) : mnSeconds(dateTime.mnSeconds);
+
+<span class="code-example-comment">    /// DateTime
+    /// Constructs a DateTime class object from some standard parameters.
+    /// To construct a DateTime class with a different set of parameter types,
+    /// you'll need to use the Set function or in odd cases do manual calculations. 
+</span>    DateTime(uint32_t nYear, uint32_t nMonth, uint32_t nDayOfMonth, 
+             uint32_t nHour = 0, uint32_t nMinute = 0, uint32_t nSecond = 0);
+
+<span class="code-example-comment">    /// operator=
+</span>    DateTime& operator=(const DateTime& dateTime);
+
+<span class="code-example-comment">    /// Compare
+    /// This function compares this object with another DateTime object and 
+    /// returns an integer result.The return value is the same as with the 
+    /// strcmp string comparison function. If this object is less than the 
+    /// argument dateTime, the return value is < 0. Comparison operators are 
+    /// defined outside this class, though they use the Compare function to do their work.
+</span>    int Compare(const DateTime& dateTime, bool bCompareDate = true, bool bCompareTime = true) const;
+
+<span class="code-example-comment">    /// GetParameter
+    /// Gets the given parameter. If you want to get the year, you would call Get(kParameterYear).
+</span>    uint32_t GetParameter(Parameter parameter) const;
+
+<span class="code-example-comment">    /// SetParameter
+    /// Sets the given parameter. If you want to set the year to 1999, you would 
+    /// call Set(kParameterYear, 1999).
+</span>    void SetParameter(Parameter parameter, uint32_t nValue);
+
+<span class="code-example-comment">    /// Set
+    /// Sets the time based on the current time. If the timeFrame is kTimeFrameUTC, 
+    /// the time is set to what the current UTC time is, which will be a fixed number 
+    /// of hours off of what the current local time is.
+</span>    void Set(TimeFrame timeFrame = kTimeFrameLocal);
+
+<span class="code-example-comment">    /// Set
+    /// Sets the time based on various inputs. If any input is kValueIgnored (uint32_t)-1, 
+    /// then the input is ignored and the current value is used. If any of the cyclic 
+    /// inputs is beyond its valid range, the modulo of the value is used and the division 
+    /// of the value is added to the next higher bracket. For example, if the input nMinute 
+    /// is 65, then the minute used is 5 and 1 is added to the current hour value.
+</span>    void Set(uint32_t nYear, uint32_t nMonth, uint32_t nDayOfMonth, uint32_t nHour, 
+             uint32_t nMinute, uint32_t nSecond);
+
+<span class="code-example-comment">    /// AddTime
+    /// Allows you to increment (or decrement) the given parameter by the given amount.
+</span>    void AddTime(Parameter parameter, int32_t nValue);
+
+<span class="code-example-comment">    /// IsDST
+    /// Returns true if the time is daylight savings time. This function assumes that DST is valid
+    /// for the given current locale; some locales within the United States don't observe DST.
+</span>    bool IsDST() const;
+
+<span class="code-example-comment">    /// GetSeconds
+    /// Returns the DateTime internal representation.
+</span>    int64_t GetSeconds() const;
+};</pre>
+<blockquote></blockquote>
+<p>Utility</p>
+<pre class="code-example"><span class="code-example-comment">/// IsLeapYear
+/// Returns true if the given year is a leap year.
+</span>bool IsLeapYear(uint32_t nYear);
+
+<span class="code-example-comment">/// GetDaysInYear
+/// Returns the number of days in the given year. The value will vary based on whether 
+/// the year is a leap year or not.
+</span>uint16_t GetDaysInYear(uint32_t nYear);
+
+<span class="code-example-comment">/// GetDaysInMonth
+/// Returns the number of days in the given month. The value will vary based on the 
+/// month and based on whether the year is a leap year. The input nMonth takes one
+/// of enum Month or an integer equivalent.
+</span>uint8_t GetDaysInMonth(uint32_t nMonth, uint32_t nYear);
+
+<span class="code-example-comment">/// GetDayOfYear
+/// The input nMonth takes one of enum Month or an integer equivalent.
+/// The input nDayOfMonth takes an integer consistent with enum DayOfMonth.
+</span>uint32_t GetDayOfYear(uint32_t nMonth, uint32_t nDayOfMonth, uint32_t nYear);
+
+<span class="code-example-comment">/// Convert4DigitTo2DigitYear
+/// Note that two-digit years bring a number of problems; they are best used for text
+/// display only and not for any internal processing.
+</span>inline int Convert4DigitTo2DigitYear(int nYear4);
+
+<span class="code-example-comment">/// Convert2DigitTo4DigitYear
+/// This code returns a year in the 1900s if the input year is > 30 but returns
+/// a year in the 2000s if the year is &lt;= 30. This is merely a guess and in fact there
+/// really is no good way to reliably convert a two digit year to a four digit year.
+</span>inline int Convert2DigitTo4DigitYear(int nYear2); 
+
+<span class="code-example-comment">/// GetCurrent
+/// Returns the current year, month, hour, etc.
+</span>uint32_t GetCurrent(Parameter parameter);
+
+<span class="code-example-comment">/// GetDaylightSavingsBias
+/// Returns the number of seconds that the current time is daylight savings adjusted from 
+/// the conventional time. Adding this value to the conventional time yields the time when
+/// adjusted for daylight savings.
+</span>int64_t GetDaylightSavingsBias();
+
+<span class="code-example-comment">/// GetTimeZoneBias
+/// Returns the number of seconds that the local time zone is off of UTC.
+/// Adding this value to the current UTC yields the current local time.
+</span>int64_t GetTimeZoneBias();
+
+<span class="code-example-comment">/// DateTimeToTm
+/// Converts a DateTime to a C tm struct.
+</span>void DateTimeToTm(const DateTime& dateTime, tm& time);
+
+<span class="code-example-comment">/// TmToDateTime
+/// Converts a C tm struct to a DateTime.
+</span>void TmToDateTime(const tm& time, DateTime& dateTime);</pre>
+<blockquote></blockquote>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p> </p>
+</body></html>
+
+
+

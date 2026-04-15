@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.6)
+cmake_minimum_required (VERSION 3.6...3.25)
 
 project(Diligent-Archiver CXX)
 
@@ -50,7 +50,7 @@ endif()
 if(METAL_SUPPORTED)
     set(MTL_SOURCE src/Archiver_Mtl.mm)
     list(APPEND SOURCE ${MTL_SOURCE})
-    
+
     set_property(SOURCE ${MTL_SOURCE} APPEND_STRING PROPERTY
         # Disable Metal API deprecation warnings such as
         #   'MTLArgumentType' is deprecated: first deprecated in macOS 13.0

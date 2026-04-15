@@ -4,6 +4,7 @@
         <None Include="$(MSBuildThisFileDirectory)/../content/Data/**">
             <Link>Data/%(RecursiveDir)%(FileName)%(Extension)</Link>
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <TargetPath>Data/%(RecursiveDir)%(FileName)%(Extension)</TargetPath>
         </None>
     </ItemGroup>
 </Project>

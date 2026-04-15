@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+    <metadata minClientVersion="3.0">
+        <id>rbfx.Urho3DNet.runtime.linux-x64</id>
+        <version>$version$</version>
+        <title>rbfx.Urho3DNet.runtime.linux-x64</title>
+        <authors>rbfx contributors</authors>
+        <copyright>© rbfx contributors. All rights reserved.</copyright>
+        <license type="expression">MIT</license>
+        <projectUrl>https://github.com/rbfx/rbfx/</projectUrl>
+        <description>rbfx game engine package for C#</description>
+        <tags>rbfx Urho3D gamedev csharp dotnet game engine</tags>
+        <dependencies>
+            <dependency id="rbfx.CoreData" version="$version$" />
+            <dependency id="rbfx.Urho3DNet" version="$version$" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="in/rebelfork-sdk-linux-gcc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/linux-x64/lib/net8.0/"/>
+        <file src="in/rebelfork-sdk-linux-gcc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/linux-x64/lib/net8.0/"/>
+        <file src="in/rebelfork-sdk-linux-gcc-x64-dll-latest/bin/RelWithDebInfo/libUrho3D.so" target="runtimes/linux-x64/native/" />
+    </files>
+</package>

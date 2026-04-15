@@ -1,0 +1,102 @@
+body {
+    nav: auto;
+}
+
+button {
+    focus: auto;
+    nav: auto;
+    tab-index: auto;
+}
+
+button[disabled] {
+    focus: none;
+
+    pointer-events: none;
+}
+
+/* Element that is disabled for keyboard focusing */
+.unfocused {
+    focus: none;
+}
+
+button.unfocused {
+    focus: auto;
+    tab-index: none;
+}
+
+/* Element that is invisible */
+.hidden {
+    focus: none;
+
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+}
+
+/* Element that covers entire screen */
+.fullscreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 100vw;
+    height: 100vh;
+
+    margin: 0;
+
+    overflow: hidden;
+}
+
+/* Layout helper: arrange children elements vertically */
+.arrange-vertically {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 100%;
+}
+
+/* Layout helper: arrange children elements horizontally */
+.arrange-horizontally {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 100%;
+}
+
+.arrange-vertically > .arrange-horizontally {
+    min-height: 0;
+}
+
+/* Layout helper: arrange children elements overlapping each other */
+.arrange-overlapping {
+    position: relative;
+}
+
+.arrange-overlapping > * {
+    position: absolute;
+}
+
+/* Simple default scroll bars */
+scrollbarvertical {
+    width: 12dp;
+    border: 0dp;
+}
+
+scrollbarvertical sliderarrowinc,
+scrollbarvertical sliderarrowdec {
+    /* Scrollbar arrows are hidden */
+    height: 0dp;
+}
+
+sliderbar
+{
+    width: 12dp;
+    background: #ffffff93;
+}
+
+sliderbar:hover
+{
+    background: #ffffffda;
+}

@@ -141,9 +141,15 @@ public:
             && indexBuffer_ != nullptr;
     }
 
+    /// Return whether the geometry uses headless buffers.
+    bool IsHeadless() const { return isHeadless_; }
+
 private:
     /// Recalculate hash. Shall be save to call from multiple threads as long as the object is not changing.
     unsigned RecalculatePipelineStateHash() const override;
+
+    /// Update "headless" status.
+    void UpdateHeadlessStatus();
 
     /// Vertex buffers.
     ea::vector<SharedPtr<VertexBuffer> > vertexBuffers_;
@@ -175,6 +181,8 @@ private:
     unsigned rawVertexSize_;
     /// Raw index data override size.
     unsigned rawIndexSize_;
+    /// Whether the geometry uses headless buffers.
+    bool isHeadless_{};
 };
 
 }

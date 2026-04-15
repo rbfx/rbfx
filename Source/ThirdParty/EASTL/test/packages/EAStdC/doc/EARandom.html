@@ -1,0 +1,374 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+    
+<title>EARandom</title>
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EARandom</h1>
+
+<h2>Introduction</h2>
+<p>EARandom provides pseudo-random number generation suitable for most kinds of 
+  professional game development. Functionality is divided into two modules:</p>
+<ul>
+  <li>Core random number generation (e.g. random integer, random float)</li>
+  <li>Variable distribution generation (e.g. Gaussian distribution, triangle distribution)</li>
+</ul>
+<p>EARandom provides two core generators which address a speed/randomness tradeoff:</p>
+<ul>
+  <li> RandomLinearCongruential (very fast, also known as RandomFast, but still good randomness)</li>
+  <li>RandomMersenneTwister (very random, also known as RandomQuality)</li>
+</ul>
+<p>EARandom provides a number of distribution generators, each of which uses the 
+  above core generators underneath:</p>
+<ul>
+  <li>RandomBool</li>
+  <li>Random2, Random4, Random8, ... Random256</li>
+  <li>RandomInt32UniformRange</li>
+  <li>RandomDoubleUniformRange</li>
+  <li>RandomUint32WeightedChoice</li>
+  <li>RandomUint32Gaussian</li>
+  <li>RandomUint32Triangle</li>
+</ul>
+<p><i>Note: EARandom is not certified nor suitable for use in certified gambling 
+  software. There are strict standards regarding such software which EARandom 
+  does not try to comply with. Similarly, EARandom is not suitable for use in security-related entropy collection (at least not by itself). EARandom's goal is to provide good random number 
+  generation with high efficiency.</i></p>
+<h2>Don't use the C rand() function!</h2>
+<p> The C library rand function does an OK job as a basic random number generator 
+  for testing and hobby purposes. However, the rand function is generally not 
+  suitable for professional game software. This is because the rand function:</p>
+<ul>
+  <li>Generates only numbers between 0 and RAND_MAX, which is usually 32767.</li>
+  <li>Doesn't generate random numbers within a prescribed range. Using the % operator 
+    to rectify this is slow (requires integer division) and produces a lopsided 
+    distribution unless the divisor is evenly divisible into RAND_MAX.</li>
+  <li>Generates rather poor random numbers. In particular, they tend to have obvious 
+    patterns in the low bits. In some cases this can result in users taking advantage 
+    of the number generator at the expense of other players or your game franchise 
+    itself.</li>
+  <li>Exists only as a single instance of a generator which is shared with the 
+    entire application. There is no way to make another instance.</li>
+  <li>Is slow. Generating a random number via rand() was measured as 70% slower 
+    than the EARandom generator on modern hardware.</li>
+  <li>Doesn't generate floating point numbers.</li>
+</ul>
+<h2>How random is EARandom?</h2>
+<p>Both RandomLinearCongruential (i.e. RandomFast) and RandomMersenneTwister (RandomQuality) provide randomness that is likely good enough for most convential game uses. Don't be fooled by the &quot;linear congruential&quot; name; it's not the bad generator that you might think based on what you've read about old C rand implementations. </p>
+<p>A good way to test randomness is with the DieHard randomness tests. See http://en.wikipedia.org/wiki/Diehard_tests for information about DieHard. We have a copy of the <a href="http://eaos.rws.ad.ea.com:8080/@md=d&cd=//EAOS/UTF/DL/UTFResearch/DieHard%20Random%20Number%20Tester/&c=2lr@//EAOS/UTF/DL/UTFResearch/DieHard%20Random%20Number%20Tester/bin/?ac=83">DieHard tester in EAOS</a> which is used to test EARandom and could test any other random number generator. EARandom produces DieHard scores which are pretty good. A number of home-grown random number generators have shown much worse results. </p>
+<h2>Common misuses</h2>
+<p>It is worth mentioning that it is surprisingly common for users of random number 
+  generators (including EARandom) to come to the belief that the generator is 
+  broken when in fact they are misusing the generator. Common misuses of generators 
+  include:</p>
+<ul>
+  <li>Seeding a generator with the same seed every time it's used.</li>
+  <li>Seeding two generators at the same time via the system clock and finding 
+    that they produce idential values.</li>
+  <li>Using 'RandomUint32Uniform() % 5000' instead of 'RandomUint32Uniform(5000)'.</li>
+  <li>Inventing flawed distribution generators.</li>
+  <li>Misusing the results of a generator but assuming the generator is yielding 
+    bad values.</li>
+  <li>Creating a random number generator for a single use right when it is needed. 
+    This is usually bad because the first generated value is no more random than 
+  the seed used to generate the number.</li>
+</ul>
+<h2>Example usage </h2>
+<p>EARandom is fairly straightforward to use. Just avoid the above common mistakes 
+  and things should work well.</p>
+<p>Mixed integer math expressions.</p>
+<pre class="code-example">EA::RandomFast rng(GetCPUTick());           <span class="code-example-comment">// Seed with a hypthetical CPU tick function.</span>
+
+uint32_t n = rng.RandomUint32Uniform();     <span class="code-example-comment">// Generate value in the range of [0, 0xffffffff] (all bit patterns).</span>
+uint32_t i = rng.RandomUint32Uniform(200);  <span class="code-example-comment">// Generate value in the range of [0, 200).</span>
+double   d = rng.RandomDoubleUniform();     <span class="code-example-comment">// Generate value in the range of [0, 1).</span>
+double   f = rng.RandomDoubleUniform(37);   <span class="code-example-comment">// Generate value in the range of [0, 37).</span></pre>
+How to use EARandom with STL (including EASTL).
+<pre class="code-example">#include &lt;algorithm&gt;
+#include &lt;vector&gt;
+
+std::vector    v;
+EA::RandomFast rng;
+
+std::random_shuffle(v.begin(), v.end(), rng);</pre>
+How to use basic random distributions. Note that these functions take a random number generator as an argument.
+<pre class="code-example">EA::RandomQuality rng;
+
+bool    b = EA::RandomBool(rng);
+int32_t n = EA::Random256(rng);
+double  d = EA::RandomDoubleGaussian(rng, 15.0, 30.0);</pre>
+<p>How to use RandomUint32WeightedChoice. This function is useful for generating 
+  a custom distribution.</p>
+<pre class="code-example">EA::RandomQuality rng;
+const float       weights[10] = { 1, 2, 3, 4, 5, 5, 4, 3, 2, 1 }; // Create a triangle distribution
+
+uint32_t i = EA::RandomUint32WeightedChoice(rng, 10, weights); </pre>
+<h2>Interface</h2>
+<h3>RandomLinearCongruential</h3>
+<p>This algorithm generates good enough pseudorandom numbers for most simulationuses. 
+  Its biggest weakness is that there are some patterns that occur in the lower 
+  bits. However, it is still far better than the C rand function. </p>
+<pre class="code-example">class RandomLinearCongruential
+{
+public:
+	typedef uint32_t result_type;
+ 
+
+<span class="code-example-comment">    /// RandomLinearCongruential
+    /// Constructs the random number generator with a given initial state (seed).
+    /// If the seed is 0xffffffff (MAX_UINT32), then the seed is generated automatically
+    /// by a semi-random internal mechanism such as reading the system clock. Note that 
+    /// seeding by this mechanism can yield unexpected poor results if you create multiple
+    /// instances of this class within a short period of time, as they will all get the 
+    /// same seed due to the system clock having not advanced.
+</span>    RandomLinearCongruential(uint32_t nSeed = 0xffffffff);
+
+<span class="code-example-comment">    /// RandomLinearCongruential
+    /// Copy constructor
+</span>    RandomLinearCongruential(const RandomLinearCongruential& randomLC);
+
+<span class="code-example-comment">    /// operator =
+</span>    RandomLinearCongruential& operator=(const RandomLinearCongruential& randomLC);
+
+<span class="code-example-comment">    /// GetSeed
+    /// Gets the state of the random number generator, which can be entirely 
+    /// defined by a single uint32_t. 
+</span>    uint32_t GetSeed() const;
+
+<span class="code-example-comment">    /// SetSeed
+    /// Sets the current state of the random number generator, which can be 
+    /// entirely defined by a single uint32_t.
+</span>    void SetSeed(uint32_t nSeed = 0xffffffff);
+
+<span class="code-example-comment">    /// operator ()
+    /// Generates a random uint32 with an optional limit. Acts the same as the 
+    /// RandomUint32Uniform(uint32_t nLimit) function. This function is useful for
+    /// some templated uses whereby you want the class to act as a function object.
+    /// If the input nLimit is 0, then the return value is from 0 to MAX_UINT32 inclusively.
+</span>    uint32_t operator()(uint32_t nLimit = 0);
+
+<span class="code-example-comment">    /// RandomUint32Uniform
+    /// Return value is from 0 to MAX_UINT32 inclusively, with uniform probability.
+    /// This is the most basic random integer generator for this class; it has no 
+    /// extra options but is also the fastest. Note that if you want a random
+    /// integer between 0 and some value, you should use RandomUint32Uniform(nLimit)
+    /// and not use RandomUint32Uniform() % nLimit. The former is both faster and 
+    /// more random; using % to achieve a truly random distribution fails unless
+    /// nLimit is evenly divisible into MAX_UINT32.
+</span>    uint32_t RandomUint32Uniform();
+
+<span class="code-example-comment">    /// RandomUint32Uniform (with limit)
+    /// Return value is from 0 to nLimit-1 inclusively, with uniform probability.
+</span>    uint32_t RandomUint32Uniform(uint32_t nLimit);
+
+<span class="code-example-comment">    /// RandomDoubleUniform
+    /// Output is in range of [0, 1) with uniform distribution.
+</span>    double RandomDoubleUniform();
+
+<span class="code-example-comment">    /// RandomDoubleUniform (with limit)
+    /// Output is in range of [0, limit) with uniform distribution.
+</span>    double RandomDoubleUniform(double limit);
+};
+</pre>
+<h3>RandomTaus</h3>
+<p> RandomTaus is slower than the other EARandom generators but has only 12 bytes of state data. RandomLinearCongruental has only 4 bytes of data but is not as random as RandomTaus. RandomMersenneTwister is more random than RandomTaus but has about 2500 bytes of state data. Thus RandomTaus is a tradeoff. This generator optimizes randomness and and to some degree size at the cost of speed.</p>
+<pre class="code-example">class RandomTaus
+{
+public:
+    typedef uint32_t result_type;
+
+
+    RandomTaus(uint32_t nSeed = 0xffffffff);
+    RandomTaus(const uint32_t* pSeedArray); <span class="code-example-comment">// Array of 3 uint32_t values.</span>
+ 
+    RandomTaus(const RandomTaus&amp; randomT);
+    RandomTaus&amp; operator=(const RandomTaus&amp; randomT);
+
+<span class="code-example-comment">    // Single uint32_t version, for compatibility.
+    // Use the seed array version for best behavior.
+    // Not guaranteed to return the uint32_t set by SetSeed(uint32_t).
+</span>    uint32_t GetSeed() const;
+    void SetSeed(uint32_t nSeed = 0xffffffff);
+
+    void GetSeed(uint32_t* pSeedArray) const; <span class="code-example-comment">// Array of 3 uint32_t values.</span>
+    void SetSeed(const uint32_t* pSeedArray); <span class="code-example-comment">// Array of 3 uint32_t values.</span>
+
+<span class="code-example-comment">    /// Output is in range of [0, nLimit) with uniform distribution.
+</span>    uint32_t operator()(uint32_t nLimit = 0);
+
+<span class="code-example-comment">    /// Output is in range of [0, UINT32_MAX] with uniform distribution.
+</span>    uint32_t RandomUint32Uniform();
+
+<span class="code-example-comment">    /// Output is in range of [0, nLimit) with uniform distribution.
+</span>    uint32_t RandomUint32Uniform(uint32_t nLimit);
+
+<span class="code-example-comment">    /// Output is in range of [0, 1) with uniform numeric (not bit) distribution.
+</span>    double RandomDoubleUniform();
+
+<span class="code-example-comment">    /// Output is in range of [0, limit) with uniform numeric (not bit) distribution.
+    /// limit is a value &gt; 0.
+</span>    double RandomDoubleUniform(double limit);<br><span class="code-example-comment"></span>};</pre>
+<h3>RandomMersenneTwister</h3>
+<p>This algorithm implements a random number generator via the Mersenne Twister 
+  algorithm. This algorithm is popular for its very high degree of randomness 
+  (period of 2^19937-1 with 623-dimensional equidistribution) while achieving 
+  good speed.</p>
+<pre class="code-example">class RandomMersenneTwister
+{
+public:
+    typedef uint32_t result_type;
+ 
+<span class="code-example-comment">    /// enum SeedArray
+    /// This enum is public because it allows the user to know how much 
+    /// data or space to provide for the GetSeed and SetSeed functions.
+</span>    enum SeedArray { kSeedArrayCount = 624 };
+
+    RandomMersenneTwister(uint32_t nSeed = 0xffffffff);
+    RandomMersenneTwister(const uint32_t seedArray[], unsigned nSeedArraySize);
+    RandomMersenneTwister(const RandomMersenneTwister& randomMT);
+
+    RandomMersenneTwister& operator=(const RandomMersenneTwister& randomMT);
+
+    void     GetSeed(uint32_t seedArray[], unsigned nSeedArraySize) const;
+    void     SetSeed(const uint32_t seedArray[], unsigned nSeedArraySize);
+    void     SetSeed(uint32_t nSeed = 0xffffffff);
+
+    uint32_t operator()(uint32_t nLimit = 0);
+
+    uint32_t RandomUint32Uniform();                                          
+    uint32_t RandomUint32Uniform(uint32_t nLimit);
+
+    double   RandomDoubleUniform();
+    double   RandomDoubleUniform(double limit);
+};</pre>
+<h3>Random distributions</h3>
+<p>Here is a list of the currently provided distribution functions.</p>
+<pre class="code-example"><span class="code-example-comment">/// RandomBool
+/// Returns true or false.
+</span>template &lt;typename Random&gt;
+bool RandomBool(Random& r);
+
+<span class="code-example-comment">/// Random2
+/// Returns a value between 0 and 1, inclusively.
+</span>template &lt;typename Random&gt;
+int32_t Random2(Random& r);
+
+<span class="code-example-comment">/// Random4
+/// Returns a value between 0 and 3, inclusively.
+</span>template &lt;typename Random&gt;
+int32_t Random4(Random& r);
+
+<span class="code-example-comment">/// Random8
+/// Returns a value between 0 and 7, inclusively.
+</span>template &lt;typename Random&gt;
+int32_t Random8(Random& r);
+
+<span class="code-example-comment">/// Random16
+/// Returns a value between 0 and 15, inclusively.
+</span>template &lt;typename Random&gt;
+int32_t Random16(Random& r);
+
+<span class="code-example-comment">/// Random32
+/// Returns a value between 0 and 31, inclusively.
+</span>template &lt;typename Random&gt;
+int32_t Random32(Random& r);
+
+<span class="code-example-comment">/// Random64
+/// Returns a value between 0 and 63, inclusively.
+</span>template &lt;typename Random&gt;
+int32_t Random64(Random& r);
+
+<span class="code-example-comment">/// Random128
+/// Returns a value between 0 and 127, inclusively.
+</span>template &lt;typename Random&gt;
+int32_t Random128(Random& r);
+
+<span class="code-example-comment">/// Random256
+/// Returns a value between 0 and 255, inclusively.
+</span>template &lt;typename Random&gt;
+int32_t Random256(Random& r);
+
+<span class="code-example-comment">/// RandomPowerOfTwo
+/// Returns a value between 0 and 2 ^ nPowerOfTwo - 1, inclusively. 
+/// This is a generalized form of the RandomN set of functions.
+</span>template &lt;typename Random&gt;
+int32_t RandomPowerOfTwo(Random& r, unsigned nPowerOfTwo);
+
+<span class="code-example-comment">/// RandomInt32UniformRange
+/// Return value is from nBegin to nEnd-1 inclusively, with uniform probability.
+</span>template &lt;typename Random&gt;
+int32_t RandomInt32UniformRange(Random& r, int32_t nBegin, int32_t nEnd);
+
+<span class="code-example-comment">/// RandomDoubleUniformRange
+/// Return value is in range of [nBegin, nEnd) with uniform probability.
+</span>template <class Random><class Random>&lt;typename Random&gt;
+double RandomDoubleUniformRange(Random& r, double begin, double end);
+
+<span class="code-example-comment">/// RandomUint32WeightedChoice
+/// Return value is from 0 to nLimit-1 inclusively, with probabilities proportional to weights.
+/// The input array weights must be of length <nlimit>. These values are used to 
+/// determine the probability of each choice. That is, weight[i] is proportional 
+/// to the probability that this function will return i. Negative values are ignored. 
+/// This function is useful in generating a custom distribution.
+</span>template &lt;typename Random&gt;
+uint32_t RandomUint32WeightedChoice(Random& r, uint32_t nLimit, float weights[]);
+
+<span class="code-example-comment">/// RandomUint32Gaussian
+/// Return value is in the range [0, nLimit) with Gaussian (a.k.a 'normal') distribution.
+</span>template &lt;typename Random&gt;
+uint32_t RandomUint32Gaussian(Random& r, int32_t nBegin, int32_t nEnd);
+
+<span class="code-example-comment">/// RandomDoubleGaussian
+/// Return value is in the range [0, nLimit) with Gaussian (a.k.a 'normal') distribution.
+</span>template &lt;typename Random&gt;
+double RandomDoubleGaussian(Random& r, double nBegin, double nEnd);
+
+<span class="code-example-comment">/// RandomUint32Triangle
+/// Return value is in the range [0, nLimit) with triangular distribution.
+</span>template &lt;typename Random&gt;
+uint32_t RandomUint32Triangle(Random& r, int32_t nBegin, int32_t nEnd);
+
+<span class="code-example-comment">/// RandomDoubleTriangle
+/// Return value is in the range [0, nLimit) with triangular distribution.
+</span>template &lt;typename Random&gt;
+double RandomDoubleTriangle(Random& r, double nBegin, double nEnd);
+
+</pre>
+<h3>Random fills and shuffles</h3>
+<p>How to fill a container or sequence with random uint32_t values:</p>
+<pre class="code-example">#include &lt;eastl/algorithm.h&gt;  <span class="code-example-comment">                           // or #include &lt;algorithm&gt; to use std STL.</span>
+ 
+EA::StdC::Random rand(someSeedValue);                    <span class="code-example-comment">// We can just use EA::StdC::Random directly because</span> <br>eastl::generate(myVector.begin(), myVector.end(), rand); <span class="code-example-comment">// it has an operator() that returns uint32_t.</span></pre>
+<p>How to randomize (shuffle) an existing container or sequence of uint32_t values:</p>
+<pre class="code-example">#include &lt;eastl/algorithm.h&gt;  <span class="code-example-comment">                           // or #include &lt;algorithm&gt; to use std STL.</span>
+ 
+EA::StdC::Random rand(someSeedValue);
+eastl::random_shuffle(myVector.begin(), myVector.end(), rand);</pre>
+<p>How to fill a container or sequence with random double:</p>
+<pre class="code-example">#include &lt;eastl/algorithm.h&gt;  <span class="code-example-comment">                           // or #include &lt;algorithm&gt; to use std STL.</span>
+ 
+struct GenerateDouble
+{ <br>    EA::StdC::Random mRand;                              <span class="code-example-comment">// We need to make a tiny class that simply has</span> <br>                                                         <span class="code-example-comment">// an operator() member function that returns double.</span>
+    GenerateDouble(uint32_t seed) : mRand(seed){} <br>
+    double operator(){ mRand.RandomDoubleUniform(); }
+};<br>
+GenerateDouble randDouble(someSeedValue);<br>eastl::generate(myVector.begin(), myVector.end(), randDouble);</pre>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p> </p>
+</body></html>
+
+
+

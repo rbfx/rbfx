@@ -111,6 +111,14 @@ public:
     /// Process connection dropped. Removes client connection for server, converts scene to standalone for client.
     void DropConnection(AbstractConnection* connection);
 
+    /// Attributes.
+    /// @{
+    bool IsFixedUpdateServer() const { return attributes_.isFixedUpdateServer_; }
+    void SetFixedUpdateServer(bool fixed) { attributes_.isFixedUpdateServer_ = fixed; }
+    bool IsAllowZeroUpdatesOnServer() const { return attributes_.allowZeroUpdatesOnServer_; }
+    void SetAllowZeroUpdatesOnServer(bool allow) { attributes_.allowZeroUpdatesOnServer_ = allow; }
+    /// @}
+
     /// Return current state specific to client or server.
     /// @{
     unsigned GetUpdateFrequency() const;
@@ -126,15 +134,25 @@ public:
     /// @}
 
 protected:
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     void OnComponentAdded(TrackedComponentBase* baseComponent) override;
+    void OnComponentRemoved(TrackedComponentBase* baseComponent) override;
 
 private:
+    void HandleSceneUpdate(StringHash eventType, float timeStep);
     void OnSceneUpdate(float timeStep);
+    void OnScenePostUpdate(float timeStep);
+
+    void InitializeObjectsStandalone();
     void Stop();
     bool ProcessMessageOnUninitializedClient(
         AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
     ea::string GetUninitializedClientDebugInfo() const;
+
+    struct StandaloneData
+    {
+        ea::unordered_set<NetworkId> recentlyAddedObjects_;
+    };
 
     struct ClientData
     {
@@ -148,9 +166,16 @@ private:
         SharedPtr<ClientReplica> replica_;
     };
 
+    struct Attributes
+    {
+        bool isFixedUpdateServer_{true};
+        bool allowZeroUpdatesOnServer_{};
+    } attributes_;
+
     ReplicationManagerMode mode_{};
     SharedPtr<ServerReplicator> server_;
     ea::optional<ClientData> client_;
+    StandaloneData standalone_;
 };
 
 }

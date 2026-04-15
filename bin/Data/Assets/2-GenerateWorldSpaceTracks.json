@@ -1,0 +1,14 @@
+{
+    "taskTemplates": [
+        {
+            "model": "Fox.glb.d/Models/fox1.mdl",
+            "sourceAnimation": "Fox.glb.d/Animations/*.ani",
+            "targetAnimation": "Fox.glb.d/Animations/{}.ani"
+        },
+        {
+            "model": "Fox.glb.d/Models/fox1.mdl",
+            "sourceAnimation": "Fox.glb.d/Animations/*.ani",
+            "targetAnimation": "Fox.glb.d/Animations/{}_IK_Only.ani"
+        }
+    ]
+}

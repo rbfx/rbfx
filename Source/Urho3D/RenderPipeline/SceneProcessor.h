@@ -81,12 +81,17 @@ public:
     void RenderShadowMaps();
     void RenderSceneBatches(ea::string_view debugName, Camera* camera,
         const PipelineBatchGroup<PipelineBatchByState>& batchGroup,
-        ea::span<const ShaderResourceDesc> globalResources = {}, ea::span<const ShaderParameterDesc> cameraParameters = {}, unsigned instanceMultiplier = 1u);
+        ea::span<const ShaderResourceDesc> globalResources = {},
+        ea::span<const ShaderParameterDesc> cameraParameters = {},
+        ea::span<const ShaderParameterDesc> frameParameters = {}, unsigned instanceMultiplier = 1u);
     void RenderSceneBatches(ea::string_view debugName, Camera* camera,
         const PipelineBatchGroup<PipelineBatchBackToFront>& batchGroup,
-        ea::span<const ShaderResourceDesc> globalResources = {}, ea::span<const ShaderParameterDesc> cameraParameters = {}, unsigned instanceMultipler = 1u);
+        ea::span<const ShaderResourceDesc> globalResources = {},
+        ea::span<const ShaderParameterDesc> cameraParameters = {},
+        ea::span<const ShaderParameterDesc> frameParameters = {}, unsigned instanceMultipler = 1u);
     void RenderLightVolumeBatches(ea::string_view debugName, Camera* camera,
-        ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier = 1u);
+        ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters,
+        ea::span<const ShaderParameterDesc> frameParameters = {}, unsigned instanceMultiplier = 1u);
     /// @}
 
     /// Getters
@@ -125,7 +130,8 @@ private:
 
     template <class T>
     void RenderBatchesInternal(ea::string_view debugName, Camera* camera, const PipelineBatchGroup<T>& batchGroup,
-        ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier = 1u);
+        ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters,
+        ea::span<const ShaderParameterDesc> frameParameters, unsigned instanceMultiplier);
 
 protected:
     Graphics* graphics_{};

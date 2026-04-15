@@ -48,6 +48,13 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+const StringVector worldOriginUpdateModeNames{"Move", "Ignore", "Recurse"};
+
+}
+
 Node::Node(Context* context) :
     Serializable(context),
     worldTransform_(Matrix3x4::IDENTITY),
@@ -79,6 +86,7 @@ void Node::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<Node>();
 
+    // clang-format off
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Tags", GetTags, SetTags, StringVector, Variant::emptyStringVector, AM_DEFAULT);
@@ -86,6 +94,8 @@ void Node::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3::ONE, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_DEFAULT);
+    URHO3D_ENUM_ATTRIBUTE("World Origin Update Mode", worldOriginUpdateMode_, worldOriginUpdateModeNames, WorldOriginUpdateMode::Move, AM_DEFAULT);
+    // clang-format on
 }
 
 void Node::SerializeInBlock(Archive& archive)
@@ -1545,7 +1555,7 @@ ea::pair<Serializable*, unsigned> Node::FindComponentAttribute(ea::string_view p
     if (iter == attributes->end())
         return {};
 
-    const unsigned attributeIndex = iter - attributes->begin();
+    const unsigned attributeIndex = static_cast<unsigned>(iter - attributes->begin());
     return { serializable, attributeIndex };
 }
 
@@ -1931,18 +1941,20 @@ void Node::AddComponent(Component* component, unsigned id)
     if (component->GetNode())
         URHO3D_LOGWARNING("Component " + component->GetTypeName() + " already belongs to a node!");
 
-    component->SetNode(this);
-
     // If zero ID specified, or the ID is already taken, let the scene assign
     if (scene_)
     {
         if (!id || scene_->GetComponent(id))
             id = scene_->GetFreeComponentID();
         component->SetID(id);
+        component->SetNode(this);
         scene_->ComponentAdded(component);
     }
     else
+    {
         component->SetID(id);
+        component->SetNode(this);
+    }
 
     component->OnMarkedDirty(this);
 

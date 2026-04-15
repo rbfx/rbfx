@@ -37,7 +37,7 @@ class URHO3D_API AssetTransformerHierarchy : public Object
     URHO3D_OBJECT(AssetTransformerHierarchy, Object);
 
 public:
-    explicit AssetTransformerHierarchy(Context* context);
+    AssetTransformerHierarchy(Context* context, bool isPostTransform);
 
     /// Clear all cached transformers and dependencies.
     void Clear();
@@ -95,6 +95,9 @@ private:
     DependencyGraphNodePtr GetOrCreateDependencyNode(const ea::string& name);
     bool DependsOn(const DependencyGraphNode& queryNode, const DependencyGraphNode& dependencyNode) const;
     unsigned GetTypeOrder(StringHash type) const;
+
+private:
+    const bool isPostTransform_;
 
     TreeNode root_;
 

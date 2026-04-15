@@ -32,7 +32,7 @@ x86_reg x86_map_sib_index(int r);
 // map seg_override to x86_reg
 x86_reg x86_map_segment(int r);
 
-// return name of regiser in friendly string
+// return name of register in friendly string
 const char *X86_reg_name(csh handle, unsigned int reg);
 
 // given internal insn id, return public instruction info
@@ -91,6 +91,6 @@ unsigned short X86_register_map(unsigned short id);
 
 unsigned int find_insn(unsigned int id);
 
-void X86_postprinter(csh handle, cs_insn *insn, char *mnem, MCInst *mci);
+void X86_postprinter(csh handle, cs_insn *insn, SStream *mnem, MCInst *mci);
 
 #endif

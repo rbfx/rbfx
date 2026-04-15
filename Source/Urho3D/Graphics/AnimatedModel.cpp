@@ -793,6 +793,8 @@ void AnimatedModel::CalculateLocalBoundingBox()
             else if (bone->collisionMask_ & BONECOLLISION_SPHERE)
                 boneBoundingBox_.Merge(Sphere(transform.Translation(), bone->radius_ * 0.5f));
         }
+        if (!boneBoundingBox_.Defined())
+            boneBoundingBox_.Merge(Vector3::ZERO);
     }
 
     boneBoundingBoxDirty_ = false;

@@ -29,7 +29,9 @@
 namespace Urho3D
 {
 
+class ObjectReflection;
+
 /// Helper function to render "create component menu".
-ea::optional<StringHash> RenderCreateComponentMenu(Context* context);
+ObjectReflection* RenderCreateComponentMenu(Context* context);
 
 }

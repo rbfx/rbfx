@@ -36,6 +36,17 @@ On Mobile and Web platforms extra steps may be needed.
 If you cannot figure it out, check how our GitHub Actions are configured.
 Chech documentation for more information.
 
+### Prebuilt Binaries
+
+There are [prebuilt binaries](https://github.com/rbfx/rbfx/releases/tag/latest)
+available for the latest successful build of `master` branch.
+
+* `rebelfork-sdk-*.zip` can be downloaded and used out of the box.
+* `rebelfork-bin-*.zip` contains only prebuilt binaries without any resources.
+  Download it only if you already have necessary resources and you know what you are doing.
+* It is recommended to run Release binaries (`bin/Release/` or `bin/RelWithDebInfo/`).
+  Debug binaries may require additional dependencies in order to run (e.g. Win10 SDK).
+
 
 ## Supported Platforms
 

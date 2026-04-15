@@ -25,7 +25,6 @@
 #include <stdint.h>
 
 #if URHO3D_PROFILING
-#include <TracyClient.cpp>
 #if _WIN32
 #   include <windows.h>
 #else

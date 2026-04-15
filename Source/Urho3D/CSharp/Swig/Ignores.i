@@ -16,7 +16,6 @@
 %ignore Urho3D::BatchStateCacheCallback::CreateBatchPipelineState;
 %ignore Urho3D::ClientReplicaClock::GetSetting;
 %ignore Urho3D::ClientSynchronizationState::GetSetting;
-%ignore Urho3D::CollisionGeometryDataCache::TryGetValue;
 %ignore Urho3D::Graphics::SetShaderConstantBuffers;
 %ignore Urho3D::IKSolverComponent::Solve;
 %ignore Urho3D::IObjectReflectionRegistry::Reflect;

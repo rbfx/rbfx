@@ -117,13 +117,13 @@ namespace eastl
 		template <typename Functor>
 		Functor* target() EA_NOEXCEPT
 		{
-			return Base::target();
+			return Base::template target<Functor>();
 		}
 
 		template <typename Functor>
 		const Functor* target() const EA_NOEXCEPT
 		{
-			return Base::target();
+			return Base::template target<Functor>();
 		}
 	#endif // EASTL_RTTI_ENABLED
 	};
@@ -157,6 +157,14 @@ namespace eastl
 	{
 		lhs.swap(rhs);
 	}
+
+#ifdef __cpp_deduction_guides
+	template<typename ReturnType, typename... Args>
+	function(ReturnType(*)(Args...)) -> function<ReturnType(Args...)>;
+
+	template<typename Callable>
+	function(Callable) -> function<internal::extract_signature_from_callable_t<decltype(&Callable::operator())>>;
+#endif
 
 } // namespace eastl
 

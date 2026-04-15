@@ -697,12 +697,26 @@ private:
 
     /// Draw ops
     /// @{
+    void LogHeadlessBuffersError(Drawable* drawable)
+    {
+        URHO3D_LOGERROR("Cannot render Geometry that uses headless buffers: {}",
+            drawable ? drawable->GetFullNameDebug() : "unknown Drawable");
+    }
+
     void CommitDrawCalls(unsigned numInstances, const SourceBatch& sourceBatch)
     {
         const bool hasIndexBuffer = current_.geometry_->GetIndexBuffer() != nullptr;
 
         if (dirty_.geometry_)
+        {
             SetBuffersFromGeometry(drawQueue_, current_.geometry_);
+
+            if (EASTL_UNLIKELY(current_.geometry_->IsHeadless()))
+            {
+                LogHeadlessBuffersError(current_.drawable_);
+                return;
+            }
+        }
 
         for (unsigned i = 0; i < numInstances; ++i)
         {
@@ -732,6 +746,13 @@ private:
     {
         assert(instancingGroup_.count_ > 0);
         Geometry* geometry = instancingGroup_.geometry_;
+
+        if (EASTL_UNLIKELY(geometry->IsHeadless()))
+        {
+            LogHeadlessBuffersError(instancingGroup_.firstDrawable_);
+            return;
+        }
+
         SetBuffersFromGeometry(drawQueue_, geometry, instancingBuffer_.GetVertexBuffer());
         drawQueue_.DrawIndexedInstanced(geometry->GetIndexStart(), geometry->GetIndexCount(),
             instancingGroup_.start_, instancingGroup_.count_ * instanceMultiplier_ /*multiply for stereo*/);
@@ -787,6 +808,7 @@ private:
                 instancingGroup_.count_ = numBatchInstances;
                 instancingGroup_.start_ = instanceIndex_;
                 instancingGroup_.geometry_ = current_.geometry_;
+                instancingGroup_.firstDrawable_ = current_.drawable_;
                 instanceIndex_ += numBatchInstances;
             }
             else
@@ -916,6 +938,7 @@ private:
     struct InstancingGroupState
     {
         Geometry* geometry_{};
+        Drawable* firstDrawable_{};
         unsigned start_{};
         unsigned count_{};
     } instancingGroup_;

@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -31,6 +31,14 @@ namespace embree
       template<typename BuildRecord>
       __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB* children, const size_t num) const
       {
+#if defined(DEBUG)
+        // check that empty children are only at the end of the child list
+        bool emptyChild = false;
+        for (size_t i=0; i<num; i++) {
+          emptyChild |= (children[i].ref == NodeRef::emptyNode);
+          assert(emptyChild == (children[i].ref == NodeRef::emptyNode));
+        }
+#endif
         AABBNodeMB_t* node = ref.getAABBNodeMB();
         
         LBBox3fa bounds = empty;
@@ -66,10 +74,10 @@ namespace embree
     
     /*! Clears the node. */
     __forceinline void clear()  {
-      lower_x = lower_y = lower_z = vfloat<N>(nan);
-      upper_x = upper_y = upper_z = vfloat<N>(nan);
-      lower_dx = lower_dy = lower_dz = vfloat<N>(nan); // initialize with NAN and update during refit
-      upper_dx = upper_dy = upper_dz = vfloat<N>(nan);
+      lower_x = lower_y = lower_z = vfloat<N>(pos_inf);
+      upper_x = upper_y = upper_z = vfloat<N>(neg_inf);
+      lower_dx = lower_dy = lower_dz = vfloat<N>(0.0f);
+      upper_dx = upper_dy = upper_dz = vfloat<N>(0.0f);
       BaseNode_t<NodeRef,N>::clear();
     }
     
@@ -118,11 +126,6 @@ namespace embree
     {
       setRef(i, child.ref);
       setBounds(i, child.lbounds, child.dt);
-    }
-    
-    /*! tests if the node has valid bounds */
-    __forceinline bool hasBounds() const {
-      return lower_dx.i[0] != cast_f2i(float(nan));
     }
     
     /*! Return bounding box for time 0 */

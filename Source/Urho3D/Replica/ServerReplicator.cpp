@@ -1,42 +1,26 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the <Urho3Dftware"), to dea>
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2020-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include <Urho3D/Precompiled.h>
+#include "Urho3D/Precompiled.h"
 
-#include <Urho3D/Core/Context.h>
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Core/Exception.h>
-#include <Urho3D/Core/Timer.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/Math/RandomEngine.h>
-#include <Urho3D/Network/Connection.h>
-#include <Urho3D/Network/Network.h>
-#include <Urho3D/Network/NetworkEvents.h>
-#include <Urho3D/Replica/NetworkObject.h>
-#include <Urho3D/Replica/NetworkSettingsConsts.h>
-#include <Urho3D/Replica/ReplicationManager.h>
-#include <Urho3D/Replica/ServerReplicator.h>
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Scene/SceneEvents.h>
+#include "Urho3D/Replica/ServerReplicator.h"
+
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Exception.h"
+#include "Urho3D/Core/Timer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Math/RandomEngine.h"
+#include "Urho3D/Network/Connection.h"
+#include "Urho3D/Network/MessageUtils.h"
+#include "Urho3D/Network/Network.h"
+#include "Urho3D/Network/NetworkEvents.h"
+#include "Urho3D/Replica/NetworkObject.h"
+#include "Urho3D/Replica/NetworkSettingsConsts.h"
+#include "Urho3D/Replica/ReplicationManager.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
 #include <EASTL/numeric.h>
 
@@ -236,7 +220,8 @@ void ClientSynchronizationState::SendMessages()
     if (!synchronizationMagic_)
     {
         const unsigned magic = MakeMagic();
-        connection_->SendSerializedMessage(MSG_CONFIGURE, MsgConfigure{magic, settings_}, PacketType::ReliableUnordered);
+        WriteSerializedMessage(
+            *connection_, MSG_CONFIGURE, MsgConfigure{magic, settings_}, PacketType::ReliableUnordered);
         synchronizationMagic_ = magic;
     }
 
@@ -250,7 +235,7 @@ void ClientSynchronizationState::SendMessages()
         UpdateInputBuffer();
 
         const MsgSceneClock msg{frame_, frameLocalTime_, inputDelay_ + inputBufferSize_};
-        connection_->SendSerializedMessage(MSG_SCENE_CLOCK, msg, PacketType::UnreliableUnordered);
+        WriteSerializedMessage(*connection_, MSG_SCENE_CLOCK, msg, PacketType::UnreliableUnordered);
     }
 }
 
@@ -297,8 +282,8 @@ bool ClientSynchronizationState::ProcessMessage(NetworkMessageId messageId, Memo
     {
     case MSG_SYNCHRONIZED:
     {
-        const auto& msg = ReadNetworkMessage<MsgSynchronized>(messageData);
-        connection_->OnMessageReceived(messageId, msg);
+        const auto msg = ReadSerializedMessage<MsgSynchronized>(messageData);
+        connection_->LogMessagePayload(messageId, msg);
 
         ProcessSynchronized(msg);
         return true;
@@ -344,8 +329,6 @@ bool ClientReplicationState::ProcessMessage(NetworkMessageId messageId, MemoryBu
     switch (messageId)
     {
     case MSG_OBJECTS_FEEDBACK_UNRELIABLE:
-        connection_->OnMessageReceived(messageId, messageData);
-
         ProcessObjectsFeedbackUnreliable(messageData);
         return true;
 
@@ -392,142 +375,149 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
 
 void ClientReplicationState::SendRemoveObjects()
 {
-    connection_->SendGeneratedMessage(MSG_REMOVE_OBJECTS, PacketType::ReliableOrdered,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
+    MultiMessageWriter writer{*connection_, MSG_REMOVE_OBJECTS, PacketType::ReliableOrdered};
+
+    VectorBuffer& msg = writer.GetBuffer();
+    ea::string* debugInfo = writer.GetDebugInfo();
+
+    msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+    writer.CompleteHeader();
+
+    for (NetworkId networkId : pendingRemovedObjects_)
     {
+        msg.WriteUInt(static_cast<unsigned>(networkId));
+
         if (debugInfo)
         {
-            for (NetworkId networkId : pendingRemovedObjects_)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkId));
-            }
+            if (!debugInfo->empty())
+                debugInfo->append(", ");
+            debugInfo->append(ToString(networkId));
         }
 
-        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
-        for (NetworkId networkId : pendingRemovedObjects_)
-            msg.WriteUInt(static_cast<unsigned>(networkId));
-
-        const bool sendMessage = !pendingRemovedObjects_.empty();
-        return sendMessage;
-    });
+        writer.CompletePayload();
+    }
 }
 
 void ClientReplicationState::SendAddObjects()
 {
-    connection_->SendGeneratedMessage(MSG_ADD_OBJECTS, PacketType::ReliableOrdered,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
+    LargeMessageWriter writer{*connection_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
+
+    VectorBuffer& msg = writer.GetBuffer();
+    ea::string* debugInfo = writer.GetDebugInfo();
+
+    msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+
+    bool sendMessage = false;
+    for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
     {
-        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+        if (!isSnapshot)
+            continue;
 
-        bool sendMessage = false;
-        for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
+        sendMessage = true;
+        msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+        msg.WriteStringHash(networkObject->GetType());
+        msg.WriteVLE(networkObject->GetOwnerConnectionId());
+
+        componentBuffer_.Clear();
+        networkObject->WriteSnapshot(GetCurrentFrame(), componentBuffer_);
+        msg.WriteBuffer(componentBuffer_.GetBuffer());
+
+        if (debugInfo)
         {
-            if (!isSnapshot)
-                continue;
-
-            sendMessage = true;
-            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-            msg.WriteStringHash(networkObject->GetType());
-            msg.WriteVLE(networkObject->GetOwnerConnectionId());
-
-            componentBuffer_.Clear();
-            networkObject->WriteSnapshot(GetCurrentFrame(), componentBuffer_);
-            msg.WriteBuffer(componentBuffer_.GetBuffer());
-
-            if (debugInfo)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkObject->GetNetworkId()));
-            }
+            if (!debugInfo->empty())
+                debugInfo->append(", ");
+            debugInfo->append(ToString(networkObject->GetNetworkId()));
         }
-        return sendMessage;
-    });
+    }
+
+    if (!sendMessage)
+        writer.Discard();
 }
 
 void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationState& sharedState)
 {
-    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_RELIABLE, PacketType::ReliableOrdered,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
+    LargeMessageWriter writer{*connection_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
+
+    VectorBuffer& msg = writer.GetBuffer();
+    ea::string* debugInfo = writer.GetDebugInfo();
+
+    msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+
+    bool sendMessage = false;
+    for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
     {
-        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+        const unsigned index = GetIndex(networkObject->GetNetworkId());
+        if (isSnapshot)
+            continue;
 
-        bool sendMessage = false;
-        for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
+        const auto updateSpan = sharedState.GetReliableUpdateByIndex(index);
+        if (!updateSpan)
+            continue;
+
+        sendMessage = true;
+        msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+        msg.WriteStringHash(networkObject->GetType());
+
+        msg.WriteVLE(updateSpan->size());
+        msg.Write(updateSpan->data(), updateSpan->size());
+
+        if (debugInfo)
         {
-            const unsigned index = GetIndex(networkObject->GetNetworkId());
-            if (isSnapshot)
-                continue;
-
-            const auto updateSpan = sharedState.GetReliableUpdateByIndex(index);
-            if (!updateSpan)
-                continue;
-
-            sendMessage = true;
-            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-            msg.WriteStringHash(networkObject->GetType());
-
-            msg.WriteVLE(updateSpan->size());
-            msg.Write(updateSpan->data(), updateSpan->size());
-
-            if (debugInfo)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkObject->GetNetworkId()));
-            }
+            if (!debugInfo->empty())
+                debugInfo->append(", ");
+            debugInfo->append(ToString(networkObject->GetNetworkId()));
         }
-        return sendMessage;
-    });
+    }
+
+    if (!sendMessage)
+        writer.Discard();
 }
 
 void ClientReplicationState::SendUpdateObjectsUnreliable(
     NetworkFrame currentFrame, const SharedReplicationState& sharedState)
 {
-    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, PacketType::UnreliableUnordered,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
+    MultiMessageWriter writer{*connection_, MSG_UPDATE_OBJECTS_UNRELIABLE, PacketType::UnreliableUnordered};
+
+    VectorBuffer& msg = writer.GetBuffer();
+    ea::string* debugInfo = writer.GetDebugInfo();
+
+    msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+    writer.CompleteHeader();
+
+    for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
     {
-        bool sendMessage = false;
+        // Skip redundant updates, both if update is empty or if snapshot was already sent
+        const unsigned index = GetIndex(networkObject->GetNetworkId());
+        if (isSnapshot)
+            continue;
 
-        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+        const auto updateSpan = sharedState.GetUnreliableUpdateByIndex(index);
+        if (!updateSpan)
+            continue;
 
-        for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
+        const NetworkObjectRelevance relevance = objectsRelevance_[index];
+        URHO3D_ASSERT(relevance != NetworkObjectRelevance::Irrelevant);
+        if (relevance == NetworkObjectRelevance::NoUpdates)
+            continue;
+
+        if (static_cast<long long>(currentFrame) % static_cast<unsigned>(relevance) != 0)
+            continue;
+
+        msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+        msg.WriteStringHash(networkObject->GetType());
+
+        msg.WriteVLE(updateSpan->size());
+        msg.Write(updateSpan->data(), updateSpan->size());
+
+        if (debugInfo)
         {
-            // Skip redundant updates, both if update is empty or if snapshot was already sent
-            const unsigned index = GetIndex(networkObject->GetNetworkId());
-            if (isSnapshot)
-                continue;
-
-            const auto updateSpan = sharedState.GetUnreliableUpdateByIndex(index);
-            if (!updateSpan)
-                continue;
-
-            const NetworkObjectRelevance relevance = objectsRelevance_[index];
-            URHO3D_ASSERT(relevance != NetworkObjectRelevance::Irrelevant);
-            if (relevance == NetworkObjectRelevance::NoUpdates)
-                continue;
-
-            if (static_cast<long long>(currentFrame) % static_cast<unsigned>(relevance) != 0)
-                continue;
-
-            sendMessage = true;
-            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-            msg.WriteStringHash(networkObject->GetType());
-
-            msg.WriteVLE(updateSpan->size());
-            msg.Write(updateSpan->data(), updateSpan->size());
-
-            if (debugInfo)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkObject->GetNetworkId()));
-            }
+            if (!debugInfo->empty())
+                debugInfo->append(", ");
+            debugInfo->append(ToString(networkObject->GetNetworkId()));
         }
-        return sendMessage;
-    });
+
+        writer.CompletePayload();
+    }
 }
 
 void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& sharedState)
@@ -609,11 +599,19 @@ ServerReplicator::ServerReplicator(Scene* scene)
     : Object(scene->GetContext())
     , network_(GetSubsystem<Network>())
     , scene_(scene)
-    , objectRegistry_(scene->GetComponent<ReplicationManager>())
+    , replicationManager_(scene->GetComponent<ReplicationManager>())
     , updateFrequency_(network_->GetUpdateFps())
-    , physicsSync_(scene_, updateFrequency_, true)
-    , sharedState_(MakeShared<SharedReplicationState>(objectRegistry_))
+    , sharedState_(MakeShared<SharedReplicationState>(replicationManager_))
 {
+    if (replicationManager_->IsFixedUpdateServer())
+    {
+        SceneUpdateSynchronizer::Params params;
+        params.isServer_ = true;
+        params.networkFrequency_ = updateFrequency_;
+        params.allowZeroUpdatesOnServer_ = replicationManager_->IsAllowZeroUpdatesOnServer();
+        updateSync_ = MakeShared<SceneUpdateSynchronizer>(scene_, params);
+    }
+
     SetDefaultNetworkSetting(settings_, NetworkSettings::InternalProtocolVersion);
     SetNetworkSetting(settings_, NetworkSettings::UpdateFrequency, updateFrequency_);
 
@@ -647,7 +645,8 @@ void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float over
     if (isUpdateNow)
     {
         ++currentFrame_;
-        physicsSync_.Synchronize(currentFrame_, overtime);
+        if (updateSync_)
+            updateSync_->Synchronize(currentFrame_, overtime);
 
         for (auto& [connection, clientState] : connections_)
             clientState->BeginNetworkFrame(currentFrame_, overtime);
@@ -659,7 +658,8 @@ void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float over
     }
     else
     {
-        physicsSync_.Update(timeStep);
+        if (updateSync_)
+            updateSync_->Update(timeStep);
     }
 }
 
@@ -689,7 +689,7 @@ void ServerReplicator::AddConnection(AbstractConnection* connection)
 
     connections_.erase(connection);
     const auto& [iter, insterted] =
-        connections_.emplace(connection, MakeShared<ClientReplicationState>(objectRegistry_, connection, settings_));
+        connections_.emplace(connection, MakeShared<ClientReplicationState>(replicationManager_, connection, settings_));
 
     URHO3D_LOGINFO("Connection {} is added", connection->ToString());
 }
@@ -714,7 +714,7 @@ bool ServerReplicator::ProcessMessage(
     return false;
 }
 
-void ServerReplicator::ProcessSceneUpdate()
+void ServerReplicator::ProcessSceneUpdate(StringHash eventType)
 {
     if (network_->IsUpdateNow())
     {
@@ -725,7 +725,7 @@ void ServerReplicator::ProcessSceneUpdate()
         eventData[P_SCENE] = scene_;
         eventData[P_TIMESTEP_REPLICA] = fixedTimeStep;
         eventData[P_TIMESTEP_INPUT] = fixedTimeStep;
-        scene_->SendEvent(E_SCENENETWORKUPDATE, eventData);
+        scene_->SendEvent(eventType, eventData);
     }
 }
 

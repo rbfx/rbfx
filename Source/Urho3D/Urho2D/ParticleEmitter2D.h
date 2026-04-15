@@ -89,6 +89,10 @@ public:
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
 
+    /// Called on world origin post-update.
+    void PostUpdateWorldOrigin(
+        const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta) override;
+
     /// Set particle effect.
     /// @property
     void SetEffect(ParticleEffect2D* effect);
@@ -132,7 +136,7 @@ public:
 
 private:
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Recalculate the world-space bounding box.
     void OnWorldBoundingBoxUpdate() override;
     /// Handle draw order changed.

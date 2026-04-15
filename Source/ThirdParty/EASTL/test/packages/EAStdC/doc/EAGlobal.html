@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">  
+    <title>EAGlobal</title>
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAGlobal</h1>
+
+<h2>Introduction</h2>
+<p>EAGlobal provides the GlobalPtr class. GlobalPtr acts as a reference to a pointer which is global throughout the process (includes the application and any loaded DLLs). The object pointed to must define a unique 32-bit kGlobalID if one is not given. The GlobalPtr class works in a way similar to a smart pointer, but note that it is not the same as your typical auto_ptr or anything else provided by C++ library vendors. The pointer is set to NULL on creation.<br>
+<br>
+ Global pointers may be used from multiple threads once initialized to point to an object, but are _not_ thread-safe when being set. If you have a situation where two threads may attempt to set a global pointer at the same time, you should use OS globals (See EAOSGlobal.h) instead to serialize the creators on the OS global lock and prevent race conditions.<br>
+<br>
+ A GlobalPtr is not the same thing as simply declaring a pointer at 
+ a globally accessible scope, especially on platforms with dynamic libraries such as Windows with its DLLs. A GlobalPtr allows multiple pieces of code to declare independent pointers to an object, even if the pieced of code are in independent DLLs.<br>
+<br>
+ The pointer assigned to a GlobalPointer need not be a pointer allocated
+dynamically on the heap. It can just as well be the address of some static or local variable.</p>
+<h2>Example usage </h2>
+<p>Here we provide some basic example usage.</p>
+<pre class="code-example">GlobalPtr&lt;int, 0x11111111&gt; pInteger;
+GlobalPtr&lt;int, 0x11111111&gt; pInteger2;
+
+assert(pInteger == NULL);
+
+pInteger = new int[2];
+pInteger[0] = 10;
+pInteger[1] = 20;
+assert(pInteger2 == pInteger);
+assert(pInteger2[0] == pInteger[0]);
+
+delete[] pInteger;
+pInteger = NULL;
+assert(pInteger2 == NULL);
+</pre>
+<h2>Interface</h2>
+<p>The GlobalPtr class works like a smart pointer, but note that it is not the same as your typical auto_ptr or anything else provided by C++ library vendors. </p>
+<pre class="code-example">template&lt;class t, uint32_t kGlobalId = T::kGlobalId&gt;
+class GlobalPtr
+{
+public:
+<span class="code-example-comment">    /// this_type
+    /// This is an alias for this class.
+</span>    typedef GlobalPtr&lt;T, kGlobalId&gt; this_type;
+
+<span class="code-example-comment">    /// GlobalPtr
+    ///
+    /// Default constructor. Sets member pointer to whatever the 
+    /// shared version is. If this is the first usage of the shared
+    /// version, the pointer will be set to NULL.
+    ///
+    /// Example usage:
+    ///    GlobalPtr&lt;SomeClass, 0x12345678&gt; pSomeClass;
+    ///
+</span>    GlobalPtr();
+
+<span class="code-example-comment">    /// GlobalPtr (copy constructor)
+    ///
+    /// Default constructor. Sets member pointer to whatever the 
+    /// shared version is. If this is the first usage of the shared
+    /// version, the pointer will be set to NULL.
+    ///
+    /// Example usage:
+    ///    GlobalPtr&lt;SomeClass, 0x12345678&gt; pSomeClass1;
+    ///    pSomeClass1 = new pSomeClass;
+    ///    GlobalPtr&lt;SomeClass, 0x12345678&gt; pSomeClass2(pSomeClass1);
+    ///    pSomeClass2-&gt;DoSomething();
+    ///
+</span>    explicit GlobalPtr(const this_type& globalPtr);
+
+<span class="code-example-comment">    /// operator =
+    ///
+    /// Example usage:
+    ///    GlobalPtr&lt;SomeClass, 0x12345678&gt; pSomeClass1;
+    ///    pSomeClass1 = new pSomeClass;
+    ///    GlobalPtr&lt;SomeClass, 0x12345678&gt; pSomeClass2(pSomeClass1);
+    ///    pSomeClass2->DoSomething();
+    ///
+</span>    this_type& operator=(const this_type& /*globalPtr*/);
+
+<span class="code-example-comment">    /// operator =
+    ///
+    /// Example usage:
+    ///    GlobalPtr&lt;SomeClass, 0x12345678&gt; pSomeClass1;
+    ///    pSomeClass1 = new pSomeClass;
+    ///    delete pSomeClass1;
+    ///    pSomeClass1 = new pSomeClass;
+    ///
+</span>    this_type& operator=(T* p);
+
+<span class="code-example-comment">    /// operator T*
+    ///
+    /// Example usage:
+    ///    GlobalPtrlt;SomeClass, 0x12345678&gt; pSomeClass;
+    ///    FunctionWhichUsesSomeClassPtr(pSomeClass);
+    ///
+</span>    operator T*() const;
+
+<span class="code-example-comment">    /// operator T*
+    ///
+    /// Example usage:
+    ///    GlobalPtr&lt;SomeClass, 0x12345678&gt; pSomeClass;
+    ///    CallFunctionWhichUsesSomeClassPtr(pSomeClass);
+    ///
+</span>    T& operator*() const;
+
+<span class="code-example-comment">    /// operator -&gt;
+    ///
+    /// Example usage:
+    ///    GlobalPtr&lt;SomeClass, 0x12345678&gt; pSomeClass;
+    ///    pSomeClass-&gt;DoSomething();
+    ///
+</span>    T* operator-&gt;() const;
+
+<span class="code-example-comment">    /// operator !
+    ///
+    /// Example usage:
+    ///    GlobalPtr&lt;SomeClass, 0x12345678&gt; pSomeClass;
+    ///    if(!pSomeClass)
+    ///        pSomeClass = new SomeClass;
+    ///
+</span>    bool operator!() const;
+
+<span class="code-example-comment">    /// get
+    ///
+    /// Returns the owned pointer.
+    ///
+    /// Example usage:
+    ///    GlobalPtr&lt;SomeClass, 0x12345678&gt; pSomeClass = new SomeClass;
+    ///    SomeClass* pSC = pSomeClass.get();
+    ///    pSC->DoSomething();
+    ///
+</span>    T* get() const;
+};</pre>
+<p></p>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p> </p>
+</body></html>
+
+
+

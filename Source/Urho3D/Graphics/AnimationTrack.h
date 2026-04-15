@@ -1,34 +1,17 @@
-//
 // Copyright (c) 2008-2020 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-
-/// \file
+// Copyright (c) 2020-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
-#include "../Container/FlagSet.h"
-#include "../Container/KeyFrameSet.h"
-#include "../Core/VariantCurve.h"
-#include "../Graphics/Skeleton.h"
-#include "../Math/Transform.h"
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Container/KeyFrameSet.h"
+#include "Urho3D/Core/VariantCurve.h"
+#include "Urho3D/Graphics/Skeleton.h"
+#include "Urho3D/Math/Transform.h"
+
+#include <EASTL/span.h>
 
 namespace Urho3D
 {
@@ -41,9 +24,9 @@ struct AnimationKeyFrame : public Transform
     float time_{};
 
     AnimationKeyFrame() = default;
-    AnimationKeyFrame(float time, const Vector3& position,
-        const Quaternion& rotation = Quaternion::IDENTITY, const Vector3& scale = Vector3::ONE)
-        : Transform{ position, rotation, scale }
+    AnimationKeyFrame(float time, const Vector3& position, const Quaternion& rotation = Quaternion::IDENTITY,
+        const Vector3& scale = Vector3::ONE)
+        : Transform{position, rotation, scale}
         , time_(time)
     {
     }
@@ -69,7 +52,13 @@ struct URHO3D_API AnimationTrack : public KeyFrameSet<AnimationKeyFrame>
     /// Sample value at given time.
     void Sample(float time, float duration, bool isLooped, unsigned& frameIndex, Transform& transform) const;
     /// Return whether the track is looped, i.e. the first and the last keyframes have the same value.
-    bool IsLooped(float positionThreshold = 0.001f, float rotationThreshold = 0.001f, float scaleThreshold = 0.001f) const;
+    bool IsLooped(
+        float positionThreshold = 0.001f, float rotationThreshold = 0.001f, float scaleThreshold = 0.001f) const;
+
+    /// Create track from separate position, rotation and scale tracks. Keyframe times are merged within epsilon.
+    void CreateMerged(AnimationChannelFlags channels, ea::span<const ea::pair<float, Vector3>> positionTrack,
+        ea::span<const ea::pair<float, Quaternion>> rotationTrack, ea::span<const ea::pair<float, Vector3>> scaleTrack,
+        float epsilon);
 };
 
 /// Generic variant animation keyframe.
@@ -85,4 +74,4 @@ struct URHO3D_API VariantAnimationTrack : public VariantCurve
     bool IsLooped() const;
 };
 
-}
+} // namespace Urho3D

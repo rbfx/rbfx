@@ -1,33 +1,14 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-
-/// \file
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Replica/NetworkTime.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Replica/NetworkId.h"
+#include "Urho3D/Replica/NetworkTime.h"
 #ifdef URHO3D_PHYSICS
-#include "../Physics/PhysicsWorld.h"
+    #include "Urho3D/Physics/PhysicsWorld.h"
 #endif
 
 #include <EASTL/optional.h>
@@ -38,13 +19,18 @@ namespace Urho3D
 class Scene;
 
 /// Helper class that synchronizes two fixed-timestep clocks.
-/// Leader clock should not tick faster than follower clock.
-/// Leader clock should be explicitly reset on each tick.
+/// Leader and follower ticks are considered synchronized
+/// if their beginnings logically correspond to the same moment in time.
+/// \note Leader clock should not tick faster than follower clock.
+/// \note Leader clock should be explicitly reset on each tick.
+/// \note Follower clock will never tick ahead of the leader clock.
 class URHO3D_API TickSynchronizer
 {
 public:
     TickSynchronizer(unsigned leaderFrequency, bool isServer);
+
     void SetFollowerFrequency(unsigned followerFrequency);
+    unsigned GetFollowerFrequency() const { return followerFrequency_; }
 
     /// Synchronize with tick of the leader clock.
     /// Overtime specifies how much time passed since leader clock tick.
@@ -53,8 +39,9 @@ public:
     /// Update follower clock within one tick of leader clock.
     void Update(float timeStep);
 
+    /// Return number of the follower clock ticks that are expected to happen during current engine update.
     unsigned GetPendingFollowerTicks() const { return numPendingFollowerTicks_; }
-    unsigned GetFollowerFrequency() const { return followerFrequency_; }
+    /// Return amount of time elapsed after latest follower tick.
     float GetFollowerAccumulatedTime() const { return timeAccumulator_; }
 
 private:
@@ -69,30 +56,41 @@ private:
     unsigned numPendingFollowerTicks_{};
 };
 
-/// Helper class that synchronizes PhysicsWorld clock with network clock.
-class URHO3D_API PhysicsTickSynchronizer
+/// Helper class that synchronizes Scene updates with network clock.
+class URHO3D_API SceneUpdateSynchronizer : public Object
 {
+    URHO3D_OBJECT(SceneUpdateSynchronizer, Object);
+
 public:
-    PhysicsTickSynchronizer(Scene* scene, unsigned networkFrequency, bool isServer);
-    ~PhysicsTickSynchronizer();
+    struct Params
+    {
+        bool isServer_{};
+        unsigned networkFrequency_{};
+        bool allowZeroUpdatesOnServer_{};
+    };
+
+    SceneUpdateSynchronizer(Scene* scene, const Params& params);
+    ~SceneUpdateSynchronizer();
 
     void Synchronize(NetworkFrame networkFrame, float overtime);
     void Update(float timeStep);
 
 protected:
+    void UpdateFollowerFrequency();
+    void UpdateSceneOnServer();
     void UpdatePhysics();
 
+    const Params params_;
+
+    WeakPtr<Scene> scene_;
 #ifdef URHO3D_PHYSICS
     WeakPtr<PhysicsWorld> physicsWorld_;
-    TickSynchronizer sync_;
-    SharedPtr<Object> eventListener_;
-
-    bool wasUpdateEnabled_{};
-    bool wasInterpolated_{};
-    bool interpolated_{};
-
-    ea::optional<SynchronizedPhysicsStep> synchronizedStep_;
 #endif
+
+    bool wasInterpolated_{};
+
+    TickSynchronizer sync_;
+    ea::optional<NetworkFrameSync> synchronizedNetworkFrame_;
 };
 
-}
+} // namespace Urho3D

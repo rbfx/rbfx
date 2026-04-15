@@ -1,0 +1,514 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>EAFixedPoint</title>
+<meta name="author" content="Paul Pedriana">
+<link type="text/css" rel="stylesheet" href="UTFDoc.css">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAFixedPoint</h1>
+<h2> <span style="font-weight: bold;">Introduction</span> </h2>
+<p>The EAFixedPoint module implements fixed point math via classic C macros and 
+  functions and via a more advanced implementation using C++ classes. The C++ 
+  classes constitute a fairly complete implementation of a fixed point C++ numerical 
+  data type that acts much like the built-in float and double data types. </p>
+<p>The following code freely mixes the SFixed16 (signed 16:16 fixed point) data 
+  type with other numerical data types:</p>
+<pre><span style="font-family: monospace;"><span class="code-example">SFixed16_16 a(1), b(2), c(3);<br>float       f(4.5f);<br>double      d(3.2);<br>int         i(6);
+<br>a = b * f;<br>a = (c / d) + b + f;<br>a = c / d * (b % i) + f / c;<br>a = i * -c / (b++);<br>a = sin(a) + pow(b, d) * sqrt(a);<br>a = log(a) / log(f);</span></span></pre>
+<p></p>
+<p>Fixed point math has a number of uses:</p>
+<ul>
+  <li>Improved precision over floating point math.</li>
+  <li>Improved speed over floating point math, particularly with respect to division.</li>
+  <li>Consistent behaviour across CPUs, especially during network play when two 
+    different machines must behave identically but FPU behaviour may differ.</li>
+</ul>
+<p>Information about fixed point can be found on the Internet by simply searching 
+  for &quot;fixed point&quot; with your favorite search site.</p>
+<h2>Fixed point vs. floating point </h2>
+<p>Fixed point</p>
+<blockquote> 
+  <p>+ Can be very fast. Fixed point 
+    math executes at the same speed as integer math. Fixed to int conversions 
+    are much faster float to int.<br>
+    + Executes concurrently with floating point math, due its use of integer math.<br>
+    &#150; Limited range. Fixed point16:16 numbers are between -32767 and +32767. 
+    The fractional part is accurate to 1 / 65536. <br>
+    &#150; Harder to code in high-level languages.</p>
+</blockquote>
+<p>Floating point</p>
+<blockquote> 
+  <p>+ Large range. The range for floating point numbers is typically in excess 
+    of 1e-100 to 1e+100 and have an accuracy of about 13 decimal places. <br>
+    + Executes concurrently with integer math.<br>
+    &#150; Can be slower. Generally 
+    fast for addition and multiplication but may be slower for division and float 
+    to int conversions. </p>
+</blockquote>
+<h2>Fixed point precision </h2>
+<p>The C++ fixed point classes provide varying precision via the use of template 
+  parameter constants. EAFixedPoint provides the following predefined C++ fixed 
+  point types</p>
+<table width="100%" border="1">
+  <tr> 
+    <td><b>Type</b></td>
+    <td><b>Signed</b></td>
+    <td><b>Integral type</b></td>
+    <td><b>Precision</b></td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed24_8</font></td>
+    <td>signed</td>
+    <td>32</td>
+    <td>24 bits of integer, 8 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed24_8</font></td>
+    <td>unsigned</td>
+    <td>32</td>
+    <td>24 bits of integer, 8 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed22_10</font></td>
+    <td>signed</td>
+    <td>32</td>
+    <td>22 bits of integer, 10 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed22_10</font></td>
+    <td>unsigned</td>
+    <td>32</td>
+    <td>22 bits of integer, 10 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed20_12</font></td>
+    <td>signed</td>
+    <td>32</td>
+    <td>20 bits of integer, 12 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed20_12</font></td>
+    <td>unsigned</td>
+    <td>32</td>
+    <td>20 bits of integer, 12 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed18_14</font></td>
+    <td>signed</td>
+    <td>32</td>
+    <td>18 bits of integer, 14 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed18_14</font></td>
+    <td>unsigned</td>
+    <td>32</td>
+    <td>18 bits of integer, 14 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed16_16</font></td>
+    <td>signed</td>
+    <td>32</td>
+    <td>16 bits of integer, 16 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed16_16</font></td>
+    <td>unsigned</td>
+    <td>32</td>
+    <td>16 bits of integer, 16 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed14_18</font></td>
+    <td>signed</td>
+    <td>32</td>
+    <td>14 bits of integer, 18 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed14_18</font></td>
+    <td>unsigned</td>
+    <td>32</td>
+    <td>14 bits of integer, 18 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed12_20</font></td>
+    <td>signed</td>
+    <td>32</td>
+    <td>12 bits of integer, 20 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed12_20</font></td>
+    <td>unsigned</td>
+    <td>32</td>
+    <td>12 bits of integer, 20 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed10_22</font></td>
+    <td>signed</td>
+    <td>32</td>
+    <td>10 bits of integer, 22 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed10_22</font></td>
+    <td>unsigned</td>
+    <td>32</td>
+    <td>10 bits of integer, 22 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed8_24</font></td>
+    <td>signed</td>
+    <td>32</td>
+    <td>8 bits of integer, 24 bits of fraction</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed8_24</font></td>
+    <td>unsigned</td>
+    <td>32</td>
+    <td>8 bits of integer, 24 bits of fraction</td>
+  </tr>
+  <tr>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed48_16</font></td>
+    <td>signed</td>
+    <td>64</td>
+    <td>48 bits of integer, 16 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed48_16</font></td>
+    <td>unsigned</td>
+    <td>64</td>
+    <td>48 bits of integer, 16 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed44_20</font></td>
+    <td>signed</td>
+    <td>64</td>
+    <td>44 bits of integer, 20 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed44_20</font></td>
+    <td>unsigned</td>
+    <td>64</td>
+    <td>44 bits of integer, 20 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed40_24</font></td>
+    <td>signed</td>
+    <td>64</td>
+    <td>40 bits of integer, 24 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed40_24</font></td>
+    <td>unsigned</td>
+    <td>64</td>
+    <td>40 bits of integer, 24 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed36_28</font></td>
+    <td>signed</td>
+    <td>64</td>
+    <td>36 bits of integer, 28 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed36_28</font></td>
+    <td>unsigned</td>
+    <td>64</td>
+    <td>36 bits of integer, 28 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed32_32</font></td>
+    <td>signed</td>
+    <td>64</td>
+    <td>32 bits of integer, 32 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed32_32</font></td>
+    <td>unsigned</td>
+    <td>64</td>
+    <td>32 bits of integer, 32 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed28_36</font></td>
+    <td>signed</td>
+    <td>64</td>
+    <td>28 bits of integer, 36 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed28_36</font></td>
+    <td>unsigned</td>
+    <td>64</td>
+    <td>28 bits of integer, 36 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed24_40</font></td>
+    <td>signed</td>
+    <td>64</td>
+    <td>24 bits of integer, 40 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed24_40</font></td>
+    <td>unsigned</td>
+    <td>64</td>
+    <td>24 bits of integer, 40 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed20_44</font></td>
+    <td>signed</td>
+    <td>64</td>
+    <td>20 bits of integer, 44 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed20_44</font></td>
+    <td>unsigned</td>
+    <td>64</td>
+    <td>20 bits of integer, 44 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">SFixed16_48</font></td>
+    <td>signed</td>
+    <td>64</td>
+    <td>16 bits of integer, 48 bits of fraction.</td>
+  </tr>
+  <tr> 
+    <td><font face="Courier New, Courier, mono" size="-1">UFixed16_48</font></td>
+    <td>unsigned</td>
+    <td>64</td>
+    <td>16 bits of integer, 48 bits of fraction.</td>
+  </tr>
+</table>
+<h2>Example usage </h2>
+<p>To a large degree, you can use fixed point types the same way you would use 
+  floating point types. </p>
+<p>Mixed integer math expressions (same as shown earlier above):</p>
+<pre class="code-example">SFixed16_16 a(1), b(2), c(3);<br>float       f(4.5f);<br>double      d(3.2);<br>int         i(6);
+<br>a = b * f;<br>a = (c / d) + b + f;<br>a = c / d * (b % i) + f / c;<br>a = i * -c / (b++);<br>a = sin(a) + pow(b, d) * sqrt(a);<br>a = log(a) / log(f);</pre>
+<p>printf:</p>
+<pre class="code-example">SFixed24_8 f = 23.5f;<br><br>printf(&quot;%f&quot;, f.AsFloat());</pre>
+<p>Logical expresions:</p>
+<pre class="code-example">SFixed16_16 a = 20.4;
+SFixed16_16 b = 130.6;
+SFixed16_16 c = 223.3;
+
+if((a &lt; b) || (b &gt;= c) || (a &lt; 23.5))
+    a *= 25;</pre>
+<h2>Limitations </h2>
+<p>The primary differences between our fixed point type and a hypothetical built-in 
+  version are:</p>
+<ul>
+  <li>EAFixedPoint doesn't implement cast operators. Instead, provides explicit 
+    converters such as AsInt, AsFloat, etc. This is by design, as such casting 
+    operators result in ambiguous conversions and would need built-in compiler 
+    knowledge to resolve the situation.</li>
+  <li>Standard library functions such as sprintf have no support for such fixed 
+    point types. However, most of the time it is sufficient to convert to floating 
+    point and use the built-in floating point formatting functions.</li>
+  <li>There is no explicit support for mixing expressions between two different 
+    fixed point types, such as SFixed16_16 with SFixed24_8. You can use these 
+    together via conversion between built-in types. </li>
+</ul>
+<h2>Interface </h2>
+<p>C interface:</p>
+<pre class="code-example">typedef int32_t EAFixed16;
+ 
+#define    EAMAX_FIXED16        0x7fffffff
+#define    EAMIN_FIXED16        0x80000000
+
+#define    EAFixed16ToInt(a)    ((int32_t)(a) >> 16)
+#define    EAIntToFixed16(a)    ((EAFixed16)((a) << 16))
+#define    EAFixed16ToDouble(a) (((double)a) / 65536.0)
+#define    EADoubleToFixed16(a) ((EAFixed16)((a) * 65536.0))
+#define    EAFixed16ToFloat(a)  (((float)a) / 65536.f)
+#define    EAFloatToFixed16(a)  ((EAFixed16)((a) * 65536.f))
+#define    EAFixed16Negate(a)   (-a)
+
+EAFixed16  EAFixed16Mul         (EAFixed16 a, EAFixed16 b);
+EAFixed16  EAFixed16Div         (EAFixed16 a, EAFixed16 b);
+EAFixed16  EAFixed16DivSafe     (EAFixed16 a, EAFixed16 b);
+EAFixed16  EAFixed16MulDiv      (EAFixed16 a, EAFixed16 b, EAFixed16 c);
+EAFixed16  EAFixed16MulDivSafe  (EAFixed16 a, EAFixed16 b, EAFixed16 c);
+EAFixed16  EAFixed16Mod         (EAFixed16 a, EAFixed16 b);
+EAFixed16  EAFixed16ModSafe     (EAFixed16 a, EAFixed16 b);
+EAFixed16  EAFixed16Abs         (EAFixed16 a);
+</pre>
+<p>C++ interface, by example of SFixed16_16. Note that nearly all the functions 
+  below are implemented as simple inlines:</p>
+<pre class="code-example">struct SFixed16_16
+{
+    SFixed16_16();
+    SFixed16_16(const SFixed16_16&amp; value);
+    SFixed16_16(const int&amp; value);
+    SFixed16_16(const unsigned int&amp; value);
+    SFixed16_16(const long&amp; value);
+    SFixed16_16(const unsigned long&amp; value);
+    SFixed16_16(const float&amp; value);
+    SFixed16_16(const double&amp; value);
+
+    void    FromFixed(const int&amp; value);
+    int32_t AsFixed();
+
+    int           AsInt() const;
+    unsigned int  AsUnsignedInt() const;
+    long          AsLong() const;
+    unsigned long AsUnsignedLong()const;
+    float         AsFloat() const;
+    double        AsDouble() const;
+
+    SFixed16_16&amp; operator=(const SFixed16_16&amp; value);
+    SFixed16_16&amp; operator=(const int&amp; value);
+    SFixed16_16&amp; operator=(const unsigned int&amp; value);
+    SFixed16_16&amp; operator=(const long&amp; value);
+    SFixed16_16&amp; operator=(const unsigned long&amp; value);
+    SFixed16_16&amp; operator=(const float&amp; value);
+    SFixed16_16&amp; operator=(const double&amp; value);
+
+    bool operator&lt; (const SFixed16_16&amp; value) const;
+    bool operator&gt; (const SFixed16_16&amp; value) const;
+    bool operator&gt;=(const SFixed16_16&amp; value) const;
+    bool operator&lt;=(const SFixed16_16&amp; value) const;
+    bool operator==(const SFixed16_16&amp; value) const;
+    bool operator!=(const SFixed16_16&amp; value) const;
+     
+    bool operator&lt; (const int&amp; value) const;
+    bool operator&gt; (const int&amp; value) const;
+    bool operator&gt;=(const int&amp; value) const;
+    bool operator&lt;=(const int&amp; value) const;
+    bool operator==(const int&amp; value) const;
+    bool operator!=(const int&amp; value) const;
+     
+    bool operator&lt; (const unsigned int&amp; value) const;
+    bool operator&gt; (const unsigned int&amp; value) const; 
+    bool operator&gt;=(const unsigned int&amp; value) const;
+    bool operator&lt;=(const unsigned int&amp; value) const;
+    bool operator==(const unsigned int&amp; value) const;
+    bool operator!=(const unsigned int&amp; value) const;
+     
+    bool operator&lt; (const long&amp; value) const;
+    bool operator&gt; (const long&amp; value) const;
+    bool operator&gt;=(const long&amp; value) const;
+    bool operator&lt;=(const long&amp; value) const;
+    bool operator==(const long&amp; value) const;
+    bool operator!=(const long&amp; value) const;
+     
+    bool operator&lt; (const unsigned long&amp; value) const;
+    bool operator&gt; (const unsigned long&amp; value) const;
+    bool operator&gt;=(const unsigned long&amp; value) const;
+    bool operator&lt;=(const unsigned long&amp; value) const;
+    bool operator==(const unsigned long&amp; value) const;
+    bool operator!=(const unsigned long&amp; value) const;
+
+    bool operator&lt; (const float&amp; value) const;
+    bool operator&gt; (const float&amp; value) const;
+    bool operator&gt;=(const float&amp; value) const;
+    bool operator&lt;=(const float&amp; value) const;
+    bool operator==(const float&amp; value) const;
+    bool operator!=(const float&amp; value) const;
+     
+    bool operator&lt; (const double&amp; value) const;
+    bool operator&gt; (const double&amp; value) const;
+    bool operator&gt;=(const double&amp; value) const;
+    bool operator&lt;=(const double&amp; value) const;
+    bool operator==(const double&amp; value) const;
+    bool operator!=(const double&amp; value) const;
+    bool operator! () const;
+     
+    SFixed16_16 operator~() const;
+    SFixed16_16 operator-() const;
+    SFixed16_16 operator+() const;
+
+    SFixed16_16&amp; operator+=(const SFixed16_16&amp; value);
+    SFixed16_16&amp; operator+=(const int&amp; value);
+    SFixed16_16&amp; operator+=(const unsigned int&amp; value);
+    SFixed16_16&amp; operator+=(const long &amp; value);
+    SFixed16_16&amp; operator+=(const unsigned long&amp; value);
+    SFixed16_16&amp; operator+=(const float&amp; value);
+    SFixed16_16&amp; operator+=(const double&amp; value);
+
+    SFixed16_16&amp; operator-=(const SFixed16_16&amp; value);
+    SFixed16_16&amp; operator-=(const int&amp; value);
+    SFixed16_16&amp; operator-=(const unsigned int&amp; value);
+    SFixed16_16&amp; operator-=(const long&amp; value);
+    SFixed16_16&amp; operator-=(const unsigned long&amp; value);
+    SFixed16_16&amp; operator-=(const float&amp; value);
+    SFixed16_16&amp; operator-=(const double&amp; value);
+
+    SFixed16_16&amp; operator*=(const SFixed16_16&amp; value);
+    SFixed16_16&amp; operator*=(const int&amp; value)
+    SFixed16_16&amp; operator*=(const unsigned int&amp; value)
+    SFixed16_16&amp; operator*=(const long&amp; value)
+    SFixed16_16&amp; operator*=(const unsigned long&amp; value);
+    SFixed16_16&amp; operator*=(const float&amp; value);
+    SFixed16_16&amp; operator*=(const double&amp; value);
+
+    SFixed16_16&amp; operator/=(const SFixed16_16&amp; value);
+    SFixed16_16&amp; operator/=(const int&amp; value);
+    SFixed16_16&amp; operator/=(const unsigned int&amp; value);
+    SFixed16_16&amp; operator/=(const long&amp; value);
+    SFixed16_16&amp; operator/=(const unsigned long&amp; value);
+    SFixed16_16&amp; operator/=(const float&amp; value);
+    SFixed16_16&amp; operator/=(const double&amp; value);
+
+    SFixed16_16&amp; operator%=(const SFixed16_16&amp; value);
+    SFixed16_16&amp; operator%=(const int&amp; value);
+    SFixed16_16&amp; operator%=(const unsigned int&amp; value);
+    SFixed16_16&amp; operator%=(const long&amp; value);
+    SFixed16_16&amp; operator%=(const unsigned long&amp; value);
+    SFixed16_16&amp; operator%=(const float&amp; value);
+    SFixed16_16&amp; operator%=(const double&amp; value);
+
+    SFixed16_16&amp; operator|=(const SFixed16_16&amp; value);
+    SFixed16_16&amp; operator|=(const int&amp; value);
+
+    SFixed16_16&amp; operator&amp;=(const SFixed16_16&amp; value);
+    SFixed16_16&amp; operator&amp;=(const int&amp; value);
+
+    SFixed16_16&amp; operator^=(const SFixed16_16&amp; value);
+    SFixed16_16&amp; operator^=(const int&amp; value);
+
+    SFixed16_16 operator&lt;&lt;(int numBits) const;
+    SFixed16_16 operator&gt;&gt;(int numBits) const;
+
+    SFixed16_16&amp; operator&lt;&lt;=(int numBits);
+    SFixed16_16&amp; operator&gt;&gt;=(int numBits);
+
+    SFixed16_16&amp; operator++();
+    SFixed16_16&amp; operator--();
+    SFixed16_16  operator++(int);
+    SFixed16_16  operator--(int);
+
+    SFixed16_16  Abs();
+    SFixed16_16  DivSafe(const SFixed16_16&amp; denominator);
+    SFixed16_16&amp; DivSafeAssign(const SFixed16_16&amp; denominator);
+}<font color="#000099">;</font>
+  </pre>
+<hr>
+<p><br>
+  <br>
+  <br>
+  <span style="font-family: monospace;">&nbsp;&nbsp; </span><br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+</p>
+</body></html>

@@ -52,9 +52,7 @@ endforeach()
 include(CMakeDependentOption)
 
 # Set MULTI_CONFIG_PROJECT if applicable
-if (MSVC OR "${CMAKE_GENERATOR}" STREQUAL "Xcode")
-    set (MULTI_CONFIG_PROJECT ON)
-endif ()
+get_property(MULTI_CONFIG_PROJECT GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 # Set platform and compiler variables
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -99,25 +97,16 @@ elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
 endif ()
 
 # Determine build arch
-string(TOLOWER "${CMAKE_GENERATOR_PLATFORM}" CMAKE_GENERATOR_PLATFORM)
-set(URHO3D_PLATFORM "${CMAKE_GENERATOR_PLATFORM}")
+# Extract architecture from RBFX_PLATFORM_TAG (format: platform-arch-runtime)
+if (RBFX_PLATFORM_TAG)
+    string(REPLACE "-" ";" TAG_PARTS "${RBFX_PLATFORM_TAG}")
+    list(GET TAG_PARTS 1 URHO3D_PLATFORM)
+endif ()
+
 if (CMAKE_SIZEOF_VOID_P MATCHES 8)
     set(URHO3D_64BIT ON)
 else ()
     set(URHO3D_64BIT OFF)
-endif ()
-
-# TODO: Arm support.
-# NOTE: URHO3D_PLATFORM is only used in .csproj
-if (NOT URHO3D_PLATFORM)
-    if (URHO3D_64BIT)
-        set (URHO3D_PLATFORM x64)
-    else ()
-        set (URHO3D_PLATFORM x86)
-    endif ()
-endif ()
-if (URHO3D_PLATFORM STREQUAL "win32")
-    set (URHO3D_PLATFORM x86)
 endif ()
 
 # Build properties
@@ -130,7 +119,7 @@ else ()
     set (URHO3D_PCH OFF)
 endif ()
 
-if (UWP)
+if (UWP OR (APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
     set (URHO3D_SSE OFF)
 else ()
     set (URHO3D_SSE           SSE2 CACHE STRING "Enable SSE instructions")
@@ -207,19 +196,19 @@ cmake_dependent_option(URHO3D_OCULUS_QUEST       "Enable experimental native bui
 cmake_dependent_option(URHO3D_XR                 "Enable OpenXR support"                                 ${URHO3D_ENABLE_ALL} "WIN32 OR URHO3D_OCULUS_QUEST;NOT MINGW;NOT UWP" OFF)
 
 # Features
-cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS;NOT MINGW"   OFF)
+cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "(BUILD_SHARED_LIBS OR IOS);NOT MINGW"   OFF)
 # Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 # At the moment only netstandard2.1 supported
 set(URHO3D_NETFX netstandard2.1 CACHE STRING "TargetFramework value for .NET libraries")
 set_property(CACHE URHO3D_NETFX PROPERTY STRINGS netstandard2.1)
 set(URHO3D_NETFX_RUNTIME_VERSION OFF CACHE STRING "Version of runtime to use.")
 option                (URHO3D_DEBUG_ASSERT       "Enable Urho3D assert macros"                           ${URHO3D_ENABLE_ALL}                                    )
-cmake_dependent_option(URHO3D_FILEWATCHER        "Watch filesystem for resource changes"                 ${URHO3D_ENABLE_ALL} "URHO3D_THREADING;NOT UWP"      OFF)
+cmake_dependent_option(URHO3D_FILEWATCHER        "Watch filesystem for resource changes"                 ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN;NOT UWP"        OFF)
 option                (URHO3D_HASH_DEBUG         "Enable StringHash name debugging"                      ${URHO3D_ENABLE_ALL}                                    )
 option                (URHO3D_MONOLITHIC_HEADER  "Create Urho3DAll.h which includes all engine headers." OFF                                                     )
 cmake_dependent_option(URHO3D_MINIDUMPS          "Enable writing minidumps on crash"                     ${URHO3D_ENABLE_ALL} "MSVC;NOT UWP"                  OFF)
 cmake_dependent_option(URHO3D_PLUGINS            "Enable plugins"                                        ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN;NOT UWP"               OFF)
-cmake_dependent_option(URHO3D_THREADING          "Enable multithreading"                                 ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN"                       OFF)
+option                (URHO3D_THREADING          "Enable multithreading"                                 ${URHO3D_ENABLE_ALL}                                    )
 option                (URHO3D_WEBP               "WebP support enabled"                                  ${URHO3D_ENABLE_ALL}                                    )
 cmake_dependent_option(URHO3D_TESTING            "Enable unit tests"                                     OFF                  "NOT EMSCRIPTEN;NOT MOBILE;NOT UWP"    OFF)
 option                (URHO3D_PACKAGING          "Enable *.pak file creation"                            OFF                                                     )
@@ -236,7 +225,6 @@ cmake_dependent_option(URHO3D_GRAPHICS_NO_VULKAN "Disable Vulkan backend in rend
 
 # Misc
 rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "Sample.103_GamePlugin;Sample.113_InputLogger" URHO3D_SAMPLES "")
-option               (URHO3D_PARALLEL_BUILD     "MSVC-only: enable parallel builds. A bool or a number of processors to use." ON)
 
 option(URHO3D_PLAYER                            "Build player application"                              ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_EDITOR            "Build editor application"                              ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
@@ -246,6 +234,7 @@ option(URHO3D_SAMPLES                           "Build samples"                 
 cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
 option(URHO3D_NO_EDITOR_PLAYER_EXE              "Do not build editor or player executables."            OFF)
 option(URHO3D_COPY_DATA_DIRS                    "Copy data dirs instead of sym link."                   OFF)
+OPTION(URHO3D_PRISTINE_FULL_BUILDS              "Do not use CCache when Urho3DThirdParty is not found." OFF)
 
 if (WIN32)
     option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                     OFF)

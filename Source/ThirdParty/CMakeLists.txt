@@ -27,6 +27,14 @@ else ()
     ucm_add_flags("-w")
 endif ()
 
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME ThirdParty)
+
+# CI builds should not use ccache for dependencies, as dependencies are
+# reused from older SDK uploads.
+if (ENV{CI})
+    set(ENV{CCACHE_DISABLE} 1)
+endif ()
+
 if (UWP)
     add_definitions (-DUWP=1)
 endif ()
@@ -42,10 +50,7 @@ add_subdirectory(fmt)
 add_subdirectory(spdlog)
 add_subdirectory(SDL)
 add_subdirectory(ETCPACK)
-
-if (NOT WEB)
-    add_subdirectory(enkiTS)
-endif ()
+add_subdirectory(enkiTS)
 
 add_subdirectory(tinygltf)
 if (URHO3D_TESTING)
@@ -83,7 +88,11 @@ if (URHO3D_GLOW AND DESKTOP)
     set (EMBREE_GEOMETRY_SUBDIVISION OFF CACHE BOOL "" FORCE)
     set (EMBREE_GEOMETRY_USER OFF CACHE BOOL "" FORCE)
     set (EMBREE_API_NAMESPACE "embree3" CACHE STRING "" FORCE)
+    set (EMBREE_CMAKEEXPORT_DIR "${CMAKE_INSTALL_LIBDIR}")
     add_subdirectory(embree)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/embree/include/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        COMPONENT ThirdParty)
 endif ()
 
 if (URHO3D_SHADER_TRANSLATOR)
@@ -102,6 +111,15 @@ if (URHO3D_SHADER_TRANSLATOR)
     unset (LLVM_USE_CRT_RELWITHDEBINFO CACHE)
     add_subdirectory(glslang)
     install_third_party_libs (glslang OGLCompiler OSDependent MachineIndependent GenericCodeGen glslang-default-resource-limits)
+    # Install glslang headers
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/glslang/glslang
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        COMPONENT ThirdParty
+        FILES_MATCHING PATTERN "*.h")
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/glslang/SPIRV
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        COMPONENT ThirdParty
+        FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
 
     set (SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
     set (SPIRV_CROSS_ENABLE_MSL ON CACHE BOOL "" FORCE)
@@ -116,7 +134,15 @@ if (URHO3D_SHADER_TRANSLATOR)
     set (SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
     set (SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
     add_subdirectory(SPIRV-Cross)
+
     install_third_party_libs (SPIRV spirv-cross-core spirv-cross-glsl spirv-cross-msl spirv-cross-hlsl)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/include/spirv_cross
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    # Install SPIRV-Cross headers from root directory
+    file(GLOB SPIRV_CROSS_HEADERS
+        "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/*.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/*.h")
+    install (FILES ${SPIRV_CROSS_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/spirv_cross COMPONENT ThirdParty)
 
     if (URHO3D_SHADER_OPTIMIZER)
         add_subdirectory(SPIRV-Headers)
@@ -131,6 +157,10 @@ if (URHO3D_SHADER_TRANSLATOR)
         set (SPIRV_GENERATOR_CACHE "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Tools-artifacts" CACHE STRING "" FORCE)
         add_subdirectory(SPIRV-Tools)
         install_third_party_libs (SPIRV-Tools-static SPIRV-Tools-opt)
+        # Install SPIRV-Tools headers
+        install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Tools/include/spirv-tools
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            COMPONENT ThirdParty)
     endif ()
 endif ()
 
@@ -144,11 +174,18 @@ if (URHO3D_NETWORK)
     set(NO_EXAMPLES ON)
     set(NO_TESTS ON)
     set(CMAKE_PROJECT_VERSION 1.0.0)
+    set(sctp_werror OFF)
     if (WEB)
         add_subdirectory(libdatachannel-wasm)
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libdatachannel-wasm/wasm/include/
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            COMPONENT ThirdParty)
     else ()
         add_subdirectory(openssl)
         add_subdirectory(libdatachannel)
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libdatachannel/include/
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            COMPONENT ThirdParty)
     endif ()
     if (NOT WEB)
         add_subdirectory(Civetweb)
@@ -186,41 +223,68 @@ if (NOT UWP)
 endif ()
 
 if (URHO3D_PROFILING)
-    set (CAPSTONE_BUILD_STATIC_RUNTIME ${URHO3D_STATIC_RUNTIME})
-    set (CAPSTONE_BUILD_STATIC ON)
-    set (CAPSTONE_BUILD_SHARED OFF)
-    set (CAPSTONE_BUILD_TESTS OFF)
-    set (CAPSTONE_BUILD_CSTOOL OFF)
-    set (CAPSTONE_INSTALL OFF)
-    set (CAPSTONE_ARCHITECTURE_DEFAULT OFF)
-    set (CAPSTONE_X86_SUPPORT ON)
-    set (CAPSTONE_ARM_SUPPORT ON)
-    set (CAPSTONE_ARM64_SUPPORT ON)
-    set (CAPSTONE_X86_ATT_DISABLE ON)
-    add_subdirectory (capstone)
-    install_third_party_libs (capstone)
-endif ()
-
-if (URHO3D_PROFILING)
     set (TRACY_ON_DEMAND ON)
+    set (TRACY_DELAYED_INIT ON)
+    set (TRACY_MANUAL_LIFETIME ON)
+    set (TRACY_STATIC ON)
     add_subdirectory(tracy)
 
     if (DESKTOP)
+        # Add Tracy dependencies
+
+        # Configure zstd as static library (using simplified single-file amalgamation)
+        add_subdirectory(zstd)
+        install_third_party_libs(zstd)
+
+        # Configure capstone as static library
+        set(BUILD_SHARED_LIBS_SAVED ${BUILD_SHARED_LIBS})
+        set(BUILD_SHARED_LIBS OFF)
+        set(CAPSTONE_BUILD_STATIC ON CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_LEGACY_TESTS OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_CSTOOL OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_CSTEST OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_ARCHITECTURE_DEFAULT OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_INSTALL OFF CACHE BOOL "" FORCE)
+        # Architecture options - match Tracy's configuration
+        set(CAPSTONE_X86_ATT_DISABLE ON CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_MACOS_THIN ON CACHE BOOL "" FORCE)
+        add_subdirectory(capstone)
+        set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_SAVED})
+        # Create alias for compatibility with Tracy
+        add_library(TracyCapstone INTERFACE)
+        target_include_directories(TracyCapstone INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/capstone/include/capstone)
+        target_link_libraries(TracyCapstone INTERFACE capstone)
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/capstone/include/capstone/
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/capstone
+            FILES_MATCHING PATTERN "*.h"
+        )
+        install_third_party_libs(capstone)
+
+        # ppqsort (header-only library)
+        add_subdirectory(ppqsort)
+        install_third_party_libs(ppqsort)
+
         add_library(TracyImGui ALIAS ImGui)
-        if (TARGET nfd)
-            add_library(TracyNfd ALIAS nfd)
+        # NOTE: nfd::nfd alias might already exist
+        if (TARGET nfd AND NOT TARGET nfd::nfd)
+            add_library(nfd::nfd ALIAS nfd)
         endif ()
         add_library(TracyGlfw3 ALIAS SDL2-static)
         add_library(TracyFreetype ALIAS FreeType)
-        add_library(TracyCapstone ALIAS capstone)
 
         set(LEGACY ON)
         set(NO_ISA_EXTENSIONS ON)
         set(NO_PARALLEL_STL ON)
-        set(NO_FILESELECTOR ON)
+        set(NO_FILESELECTOR OFF)
         add_subdirectory(tracy/profiler)
 
-        install (TARGETS tracy-profiler RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
+        install (TARGETS TracyClient
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif ()
 else ()
     add_library(TracyClient INTERFACE)
@@ -229,10 +293,10 @@ endif ()
 
 # Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
 install_third_party_libs(TracyClient)
-target_include_directories(TracyClient SYSTEM INTERFACE $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/tracy>)
+target_include_directories(TracyClient SYSTEM INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/tracy>)
 
 foreach (dir common client tracy libbacktrace)
-    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tracy/public/${dir} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tracy/public/${dir} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy/
         PATTERN ".+\\.h(pp)?$"
         PATTERN "TracyClient\\.cpp" EXCLUDE
         PATTERN ".+/tracy/Tracy(OpenCL|Vulkan).hpp" EXCLUDE)
@@ -290,6 +354,16 @@ set (DILIGENT_ALL_TARGETS
 install_third_party_libs (${DILIGENT_ALL_TARGETS})
 install_third_party_libs (volk_headers)
 
+# Install Vulkan headers from Diligent/ThirdParty
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/ThirdParty/Vulkan-Headers/include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT ThirdParty)
+
+# Install Volk header
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/ThirdParty/volk/volk.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/volk/
+    COMPONENT ThirdParty)
+
 # Patch: Disable Diligent debug asserts in debug build unless requested.
 if (NOT URHO3D_DEBUG_GRAPHICS)
     get_target_property(DILIGENT_COMPILE_DEFS Diligent-PublicBuildSettings INTERFACE_COMPILE_DEFINITIONS)
@@ -310,7 +384,7 @@ endforeach ()
 file(GLOB_RECURSE DILIGENT_INCLUDE_DIRS LIST_DIRECTORIES true RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/Diligent "Diligent/**")
 list(FILTER DILIGENT_INCLUDE_DIRS INCLUDE REGEX ".+/interface$")
 foreach(DIR ${DILIGENT_INCLUDE_DIRS})
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/${DIR} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/Diligent/${DIR}/..)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/${DIR} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Diligent/${DIR}/..)
 endforeach()
 
 # Setup OpenXR after Diligent to use platform defines
@@ -330,7 +404,7 @@ if (URHO3D_XR)
     add_subdirectory(OpenXRSDK EXCLUDE_FROM_ALL)
     install_third_party_libs(openxr_loader)
 
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/OpenXRSDK/include/openxr DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR})
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/OpenXRSDK/include/openxr DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
     target_include_directories(openxr_loader INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/OpenXRSDK/include>)
 endif ()
 
@@ -340,3 +414,41 @@ add_subdirectory(swig)
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)
 
 set_property_recursive(. POSITION_INDEPENDENT_CODE ON)
+
+# Export configuration for ThirdParty component
+include(CMakePackageConfigHelpers)
+
+# Generate the config file from the template
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/CMake/Urho3DThirdPartyConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DThirdParty/CMake
+)
+
+# Generate the version file with platform compatibility checking
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Urho3DThirdPartyConfigVersion.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfigVersion.cmake
+    @ONLY
+)
+
+# Install the generated config files
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DThirdParty/CMake
+    COMPONENT ThirdParty
+)
+# Install PlatformTag.cmake module needed by Urho3DThirdPartyConfigVersion.cmake
+install(FILES
+    "${rbfx_SOURCE_DIR}/CMake/Modules/PlatformTag.cmake"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DThirdParty/CMake/Modules/
+    COMPONENT ThirdParty
+)
+
+# Install the export file
+install(EXPORT Urho3DThirdParty
+    FILE Urho3DThirdParty.cmake
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DThirdParty/CMake
+    COMPONENT ThirdParty
+)

@@ -187,8 +187,8 @@ PackedSceneData PackedSceneData::FromScene(Scene* scene)
         BinaryOutputArchive archive{scene->GetContext(), result.sceneData_};
 
         ArchiveBlock block = archive.OpenUnorderedBlock("scene");
-        scene->SerializeInBlock(
-            archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames, PrefabLoadFlag::None);
+        scene->SerializeInBlock(archive, true /* serialize temporary */,
+            PrefabSaveFlag::CompactAttributeNames | PrefabSaveFlag::SaveDefaultValues, PrefabLoadFlag::None);
     });
 
     return result;

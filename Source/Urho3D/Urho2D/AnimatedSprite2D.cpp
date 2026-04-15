@@ -206,9 +206,9 @@ ResourceRef AnimatedSprite2D::GetAnimationSetAttr() const
     return GetResourceRef(animationSet_, AnimationSet2D::GetTypeStatic());
 }
 
-void AnimatedSprite2D::OnSceneSet(Scene* scene)
+void AnimatedSprite2D::OnSceneSet(Scene* previousScene, Scene* scene)
 {
-    StaticSprite2D::OnSceneSet(scene);
+    StaticSprite2D::OnSceneSet(previousScene, scene);
 
     if (scene)
     {

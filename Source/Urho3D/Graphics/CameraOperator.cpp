@@ -226,7 +226,7 @@ void CameraOperator::OnSetEnabled()
         MoveCamera();
 }
 
-void CameraOperator::OnSceneSet(Scene* scene)
+void CameraOperator::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     UnsubscribeFromEvent(E_SCENEDRAWABLEUPDATEFINISHED);
     if (scene)

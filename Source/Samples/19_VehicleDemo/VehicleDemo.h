@@ -59,8 +59,6 @@ private:
     void CreateInstructions();
     /// Subscribe to necessary events.
     void SubscribeToEvents();
-    /// Handle application update. Set controls to vehicle.
-    void Update(float timeStep) override;
     /// Handle application post-update. Update camera position after vehicle has moved.
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 

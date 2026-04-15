@@ -1,60 +1,63 @@
-//
 // Copyright (c) 2008-2022 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2022-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/Profiler.h"
-#include "../Core/WorkQueue.h"
-#include "../IO/File.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../IO/MemoryBuffer.h"
-#include "../IO/PackageFile.h"
-#include "../IO/VirtualFileSystem.h"
-#include "../Network/ClockSynchronizer.h"
-#include "../Network/Connection.h"
-#include "../Network/Network.h"
-#include "../Network/NetworkEvents.h"
-#include "../Network/Protocol.h"
-#include "../Network/Transport/NetworkConnection.h"
-#include "../Replica/ReplicationManager.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include "Urho3D/Network/Connection.h"
 
-#ifdef SendMessage
-#undef SendMessage
-#endif
-
-#include "../DebugNew.h"
-#include "Connection.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/IO/PackageFile.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+#include "Urho3D/Network/ClockSynchronizer.h"
+#include "Urho3D/Network/Connection.h"
+#include "Urho3D/Network/MessageUtils.h"
+#include "Urho3D/Network/Network.h"
+#include "Urho3D/Network/NetworkEvents.h"
+#include "Urho3D/Network/Protocol.h"
+#include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Replica/ReplicationManager.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
 #include <cstdio>
+
+#include "Urho3D/DebugNew.h"
+
+#ifdef SendMessage
+    #undef SendMessage
+#endif
 
 namespace Urho3D
 {
 
+namespace
+{
+
 static const int STATS_INTERVAL_MSEC = 2000;
+
+/// Size of package file fragment header.
+static constexpr unsigned PackageFragmentHeaderSize = 8;
+/// Package file fragment size.
+static constexpr unsigned PACKAGE_FRAGMENT_SIZE =
+    MaxNetworkPacketSize - PackageFragmentHeaderSize - NetworkMessageHeaderSize;
+
+unsigned CalculateMaxPacketSize(unsigned requestedLimit, unsigned transportLimit)
+{
+    const unsigned effectiveRequestedLimit = requestedLimit != 0 ? requestedLimit : M_MAX_UNSIGNED;
+    const unsigned effectiveTransportLimit = transportLimit != 0 ? transportLimit : MaxNetworkPacketSize;
+    return ea::min(effectiveTransportLimit, effectiveRequestedLimit);
+}
+
+} // namespace
 
 PackageDownload::PackageDownload() :
     totalFragments_(0),
@@ -78,7 +81,7 @@ Connection::Connection(Context* context, NetworkConnection* connection)
         connection->onMessage_ = [this](ea::string_view msg)
         {
             MutexLock lock(packetQueueLock_);
-            incomingPackets_.emplace_back(VectorBuffer(msg.data(), msg.size()));
+            incomingPackets_.emplace_back(VectorBuffer(msg.data(), static_cast<unsigned>(msg.size())));
         };
     }
 }
@@ -95,6 +98,10 @@ void Connection::Initialize()
     auto network = GetSubsystem<Network>();
     clock_ = ea::make_unique<ClockSynchronizer>(network->GetPingIntervalMs(), network->GetMaxPingIntervalMs(),
         network->GetClockBufferSize(), network->GetPingBufferSize());
+
+    // Re-set the limit to apply transport limitations.
+    const unsigned requestedMaxPacketSize = GetMaxPacketSize();
+    SetMaxPacketSize(requestedMaxPacketSize);
 }
 
 void Connection::RegisterObject(Context* context)
@@ -102,15 +109,21 @@ void Connection::RegisterObject(Context* context)
     context->AddFactoryReflection<Connection>();
 }
 
+void Connection::SetMaxPacketSize(unsigned limit)
+{
+    const unsigned transportLimit = transportConnection_->GetMaxMessageSize();
+    BaseClassName::SetMaxPacketSize(CalculateMaxPacketSize(limit, transportLimit));
+}
+
 void Connection::SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType)
 {
-    URHO3D_ASSERT(messageId <= MSG_MAX);
-    URHO3D_ASSERT(numBytes <= packedMessageLimit_);
+    URHO3D_ASSERT(numBytes <= GetMaxMessageSize());
     URHO3D_ASSERT((data == nullptr && numBytes == 0) || (data != nullptr && numBytes > 0));
 
     VectorBuffer& buffer = outgoingBuffer_[packetType];
 
-    if (buffer.GetSize() + numBytes >= packedMessageLimit_)
+    // Flush buffer if it overflows on this message.
+    if (buffer.GetSize() + NetworkMessageHeaderSize + numBytes > GetMaxPacketSize())
         SendBuffer(packetType);
 
     buffer.WriteUShort(messageId);
@@ -202,7 +215,9 @@ void Connection::SendRemoteEvents()
     {
         statsTimer_.Reset();
         char statsBuffer[256];
-        sprintf(statsBuffer, "PING %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s", GetPing() / 1000.0f,
+        snprintf(statsBuffer,
+                 sizeof(statsBuffer), "PING %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s",
+                 GetPing() / 1000.0f,
             GetPacketsInPerSec(),
             GetPacketsOutPerSec(),
             (float)GetBytesInPerSec(),
@@ -283,14 +298,7 @@ void Connection::SendAllBuffers()
     {
         auto& buffer = outgoingBuffer_[PacketType::UnreliableUnordered];
         while (const auto clockMessage = clock_->PollMessage())
-        {
-            SendGeneratedMessage(MSG_CLOCK_SYNC, PacketType::UnreliableUnordered,
-                [&](VectorBuffer& msg, ea::string* debugInfo)
-            {
-                clockMessage->Save(msg);
-                return true;
-            });
-        }
+            WriteSerializedMessage(*this, MSG_CLOCK_SYNC, *clockMessage, PacketType::UnreliableUnordered);
     }
 
     SendBuffer(PacketType::ReliableOrdered);
@@ -301,11 +309,10 @@ void Connection::SendAllBuffers()
 
 bool Connection::ProcessMessage(MemoryBuffer& buffer)
 {
-    int msgID;
     packetCounterIncoming_.AddSample(1);
     bytesCounterIncoming_.AddSample(buffer.GetSize());
 
-    if (buffer.GetSize() < sizeof(msgID))
+    if (buffer.GetSize() < NetworkMessageHeaderSize)
     {
         URHO3D_LOGERROR("Invalid network message size {}: too small.", buffer.GetSize());
         return false;
@@ -313,15 +320,17 @@ bool Connection::ProcessMessage(MemoryBuffer& buffer)
 
     while (!buffer.IsEof())
     {
-        msgID = buffer.ReadUShort();
+        const auto msgID = static_cast<NetworkMessageId>(buffer.ReadUShort());
         unsigned int packetSize = buffer.ReadUShort();
         MemoryBuffer msg(buffer.GetData() + buffer.GetPosition(), packetSize);
         buffer.Seek(buffer.GetPosition() + packetSize);
 
-        Log::GetLogger().Write(GetMessageLogLevel((NetworkMessageId)msgID), "{}: Message #{} ({} bytes) received",
-            ToString(),
-            static_cast<unsigned>(msgID),
-            packetSize);
+        const LogLevel logLevel = GetMessageLogLevel(msgID);
+        if (logLevel != LOG_NONE)
+        {
+            Log::GetLogger().Write(
+                logLevel, "{}: Message #{} ({} bytes) received", ToString(), msgID, packetSize);
+        }
 
         switch (msgID)
         {
@@ -387,6 +396,9 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
         URHO3D_LOGERROR("Can not handle LoadScene message without an assigned scene");
         return;
     }
+
+    // We need to reload the scene
+    sceneLoaded_ = false;
 
     // Store the scene file name we need to eventually load
     sceneFileName_ = msg.ReadString();
@@ -767,11 +779,6 @@ void Connection::SendPackageToClient(PackageFile* package)
     msg_.WriteUInt(package->GetTotalSize());
     msg_.WriteUInt(package->GetChecksum());
     SendMessage(MSG_PACKAGEINFO, msg_);
-}
-
-void Connection::SetPacketSizeLimit(int limit)
-{
-    packedMessageLimit_ = limit;
 }
 
 void Connection::HandleAsyncLoadFinished()

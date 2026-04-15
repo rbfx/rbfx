@@ -34,7 +34,7 @@ namespace Urho3DNet.Tests
         /// <summary>
         /// Current test output.
         /// </summary>
-        public ITestOutputHelper? TestOutput { get; set; }
+        public ITestOutputHelper TestOutput { get; set; }
 
         /// <summary>
         /// Handle log messages.

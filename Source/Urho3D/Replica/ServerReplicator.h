@@ -46,6 +46,7 @@ class AbstractConnection;
 class Network;
 class NetworkObject;
 class NetworkObjectRegistry;
+class ReplicationManager;
 class Scene;
 struct NetworkSetting;
 
@@ -214,7 +215,7 @@ public:
     void AddConnection(AbstractConnection* connection);
     void RemoveConnection(AbstractConnection* connection);
     bool ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
-    void ProcessSceneUpdate();
+    void ProcessSceneUpdate(StringHash eventType);
     void ReportInputLoss(AbstractConnection* connection, float percentLoss);
 
     void SetCurrentFrame(NetworkFrame frame);
@@ -239,14 +240,14 @@ private:
 
     const WeakPtr<Network> network_;
     const WeakPtr<Scene> scene_;
-    const WeakPtr<NetworkObjectRegistry> objectRegistry_;
+    const WeakPtr<ReplicationManager> replicationManager_;
 
     VariantMap settings_;
 
     const unsigned updateFrequency_{};
     NetworkFrame currentFrame_{};
 
-    PhysicsTickSynchronizer physicsSync_;
+    SharedPtr<SceneUpdateSynchronizer> updateSync_;
 
     SharedPtr<SharedReplicationState> sharedState_;
     ea::unordered_map<AbstractConnection*, SharedPtr<ClientReplicationState>> connections_;

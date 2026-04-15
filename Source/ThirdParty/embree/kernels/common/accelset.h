@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -14,21 +14,14 @@ namespace embree
   struct IntersectFunctionNArguments;
   struct OccludedFunctionNArguments;
   
-  typedef void (*ReportIntersectionFunc) (IntersectFunctionNArguments* args, const RTCFilterFunctionNArguments* filter_args);
-  typedef void (*ReportOcclusionFunc) (OccludedFunctionNArguments* args, const RTCFilterFunctionNArguments* filter_args);
-  
   struct IntersectFunctionNArguments : public RTCIntersectFunctionNArguments
   {
-    IntersectContext* internal_context;
     Geometry* geometry;
-    ReportIntersectionFunc report;
   };
 
   struct OccludedFunctionNArguments : public RTCOccludedFunctionNArguments
   {
-    IntersectContext* internal_context;
     Geometry* geometry;
-    ReportOcclusionFunc report;
   };
 
   /*! Base class for set of acceleration structures. */
@@ -68,7 +61,7 @@ namespace embree
       __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
       {
         for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
-          if (!isvalid(bounds(i,itime))) return false;
+          if (!isvalid_non_empty(bounds(i,itime))) return false;
         
         return true;
       }
@@ -109,7 +102,7 @@ namespace embree
       {
         const BBox3fa b = bounds(i);
         if (bbox) *bbox = b;
-        return isvalid(b);
+        return isvalid_non_empty(b);
       }
 
       /*! calculates the build bounds of the i'th item at the itime'th time segment, if it's valid */
@@ -117,7 +110,7 @@ namespace embree
       {
         const LBBox3fa bounds = linearBounds(i,itime);
         bbox = bounds.bounds0; // use bounding box of first timestep to build BVH
-        return isvalid(bounds);
+        return isvalid_non_empty(bounds);
       }
 
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
@@ -145,7 +138,7 @@ namespace embree
   public:
 
       /*! Intersects a single ray with the scene. */
-      __forceinline void intersect (RayHit& ray, unsigned int geomID, unsigned int primID, IntersectContext* context, ReportIntersectionFunc report) 
+      __forceinline void intersect (RayHit& ray, unsigned int geomID, unsigned int primID, IntersectContext* context) 
       {
         assert(primID < size());
         assert(intersectorN.intersect);
@@ -159,15 +152,13 @@ namespace embree
         args.N = 1;
         args.geomID = geomID;
         args.primID = primID;
-        args.internal_context = context;
         args.geometry = this;
-        args.report = report;
         
         intersectorN.intersect(&args);
       }
 
       /*! Tests if single ray is occluded by the scene. */
-      __forceinline void occluded (Ray& ray, unsigned int geomID, unsigned int primID, IntersectContext* context, ReportOcclusionFunc report)
+      __forceinline void occluded (Ray& ray, unsigned int geomID, unsigned int primID, IntersectContext* context)
       {
         assert(primID < size());
         assert(intersectorN.occluded);
@@ -181,16 +172,14 @@ namespace embree
         args.N = 1;
         args.geomID = geomID;
         args.primID = primID;
-        args.internal_context = context;
         args.geometry = this;
-        args.report = report;
         
         intersectorN.occluded(&args);
       }
    
       /*! Intersects a packet of K rays with the scene. */
       template<int K>
-        __forceinline void intersect (const vbool<K>& valid, RayHitK<K>& ray, unsigned int geomID, unsigned int primID, IntersectContext* context, ReportIntersectionFunc report) 
+        __forceinline void intersect (const vbool<K>& valid, RayHitK<K>& ray, unsigned int geomID, unsigned int primID, IntersectContext* context) 
       {
         assert(primID < size());
         assert(intersectorN.intersect);
@@ -204,16 +193,14 @@ namespace embree
         args.N = K;
         args.geomID = geomID;
         args.primID = primID;
-        args.internal_context = context;
         args.geometry = this;
-        args.report = report;
          
         intersectorN.intersect(&args);
       }
 
       /*! Tests if a packet of K rays is occluded by the scene. */
       template<int K>
-        __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, unsigned int geomID, unsigned int primID, IntersectContext* context, ReportOcclusionFunc report)
+        __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, unsigned int geomID, unsigned int primID, IntersectContext* context)
       {
         assert(primID < size());
         assert(intersectorN.occluded);
@@ -227,9 +214,7 @@ namespace embree
         args.N = K;
         args.geomID = geomID;
         args.primID = primID;
-        args.internal_context = context;
         args.geometry = this;
-        args.report = report;
         
         intersectorN.occluded(&args);
       }

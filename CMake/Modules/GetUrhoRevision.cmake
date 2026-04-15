@@ -23,14 +23,15 @@
 # Get Urho3D library revision number
 
 # Use the same commit-ish used by CI server to describe the repository
-if (DEFINED ENV{TRAVIS_COMMIT})
-    set (ARG $ENV{TRAVIS_COMMIT})
-elseif (DEFINED ENV{APPVEYOR})
-    set (ARG $ENV{APPVEYOR_REPO_COMMIT})
+if (DEFINED ENV{GITHUB_SHA})
+    # GitHub Actions environment
+    set (ARG $ENV{GITHUB_SHA})
 else ()
     set (ARG --dirty)
 endif ()
-execute_process (COMMAND git describe ${ARG} RESULT_VARIABLE GIT_EXIT_CODE OUTPUT_VARIABLE LIB_REVISION ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# Get git describe output, excluding nuget/* tags
+execute_process (COMMAND git describe ${ARG} --exclude=nuget/* RESULT_VARIABLE GIT_EXIT_CODE OUTPUT_VARIABLE LIB_REVISION ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
 if (NOT GIT_EXIT_CODE EQUAL 0)
     # No GIT command line tool or not a GIT repository
     set (LIB_REVISION Unversioned)
@@ -46,10 +47,13 @@ else ()
         if (PRE_ID)
             set (VERSION ${VERSION}-${CMAKE_MATCH_1})
         endif ()
-        string (REGEX MATCH "${VERSION}-([^-]+)" PATCH ${LIB_REVISION})     # Subsequent commits count after a release tag is treated as patch number
-        if (PATCH)
-            set (VERSION ${VERSION}.${CMAKE_MATCH_1})
+        string (REGEX MATCH "${VERSION}-([^-]+)-g[0-9a-f]+" DEV_INFO ${LIB_REVISION})     # Check if we have commits after tag (development version)
+        if (DEV_INFO)
+            # Extract number of commits since tag
+            string (REGEX MATCH "${VERSION}-([^-]+)" PATCH ${LIB_REVISION})
+            set (VERSION ${VERSION}.${CMAKE_MATCH_1}-dev)
         else ()
+            # Exact tag match, no development suffix
             set (VERSION ${VERSION}.0)
         endif ()
     else ()

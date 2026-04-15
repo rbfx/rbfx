@@ -83,7 +83,7 @@ public:
         const auto capacity = GetCapacity();
         const auto behind = lastFrame_ - frame;
         if (behind >= 0 && behind < capacity)
-            return (lastIndex_ + capacity - behind) % capacity;
+            return (lastIndex_ + capacity - static_cast<unsigned>(behind)) % capacity;
         return ea::nullopt;
     }
 
@@ -104,11 +104,11 @@ public:
         return ea::nullopt;
     }
 
-    bool AllocateFrame(NetworkFrame frame)
+    template <class T> bool AllocateFrame(NetworkFrame frame, const T& compressCallback)
     {
         URHO3D_ASSERT(!hasFrameByIndex_.empty());
 
-        // Initialize first frame if not intialized
+        // Initialize first frame if not initialized
         if (!initialized_)
         {
             initialized_ = true;
@@ -122,14 +122,37 @@ public:
         // Roll ring buffer forward if frame is greater
         if (frame > lastFrame_)
         {
+            const unsigned capacity = GetCapacity();
             const int offset = static_cast<int>(frame - lastFrame_);
+
+            // Compress old frames
+            bool hasCompressedData = false;
+            for (unsigned i = 0; i <= ea::min(capacity - 1, static_cast<unsigned>(offset)); ++i)
+            {
+                const unsigned index = (lastIndex_ + i + 1) % capacity;
+                if (hasFrameByIndex_[index])
+                {
+                    compressCallback(index, false);
+                    hasCompressedData = true;
+                }
+            }
+
+            // Roll ring buffer
             lastFrame_ = frame;
-            lastIndex_ = (lastIndex_ + offset) % GetCapacity();
+            lastIndex_ = (lastIndex_ + offset) % capacity;
 
             // Reset skipped frames
             const NetworkFrame firstSkippedFrame = ea::max(lastFrame_ - offset + 1, GetFirstFrame());
             for (NetworkFrame skippedFrame = firstSkippedFrame; skippedFrame != lastFrame_; ++skippedFrame)
                 hasFrameByIndex_[FrameToIndexUnchecked(skippedFrame)] = false;
+
+            // Store compressed frame
+            if (hasCompressedData)
+            {
+                const unsigned index = (lastIndex_ + 1) % capacity;
+                hasFrameByIndex_[index] = true;
+                compressCallback(index, true);
+            }
 
             hasFrameByIndex_[lastIndex_] = true;
             return true;
@@ -455,7 +478,16 @@ public:
     /// Set value for given frame if possible.
     void Set(NetworkFrame frame, const InternalType& value)
     {
-        if (AllocateFrame(frame))
+        InternalType compressedValue = {};
+        const auto callback = [&](unsigned index, bool restore)
+        {
+            if (!restore)
+                compressedValue = values_[index];
+            else
+                values_[index] = compressedValue;
+        };
+
+        if (AllocateFrame(frame, callback))
         {
             const unsigned index = FrameToIndexUnchecked(frame);
             values_[index] = value;
@@ -549,6 +581,13 @@ public:
         snapThreshold_ = snapThreshold;
     }
 
+    /// Reset previous value to different value.
+    /// Useful for smooth fade-in when sampler was disabled for a while and value was updated externally.
+    void UpdatePreviousValue(const NetworkTime& time, const ReturnType& value)
+    {
+        previousValue_ = TimeAndValue{time, value};
+    }
+
     /// Update sampler state for new time and return current value.
     ea::optional<ReturnType> UpdateAndSample(
         const NetworkValueType& value, const NetworkTime& time, float timeStep)
@@ -610,7 +649,7 @@ private:
         }
     }
 
-    ReturnType CalculateValueFromCache(const NetworkValueType& value, const NetworkTime& time)
+    ReturnType CalculateValueFromCache(const NetworkValueType& value, const NetworkTime& time) const
     {
         if (interpolationCache_ && interpolationCache_->baseFrame_ == time.Frame())
         {
@@ -667,6 +706,7 @@ public:
         size_ = ea::max(1u, size);
         values_.clear();
         values_.resize(size_ * capacity);
+        compressedValues_.resize(size_);
     }
 
     /// Return dynamic size of the vector.
@@ -675,7 +715,17 @@ public:
     /// Set value and return uninitialized buffer to be filled.
     ea::span<T> SetUninitialized(NetworkFrame frame)
     {
-        if (AllocateFrame(frame))
+        const auto callback = [&](unsigned index, bool restore)
+        {
+            T* tempData = compressedValues_.data();
+            T* valuesData = &values_[index * size_];
+            if (!restore)
+                ea::copy(valuesData, valuesData + size_, tempData);
+            else
+                ea::copy(tempData, tempData + size_, valuesData);
+        };
+
+        if (AllocateFrame(frame, callback))
         {
             const unsigned index = FrameToIndexUnchecked(frame);
             return {&values_[index * size_], size_};
@@ -730,6 +780,7 @@ private:
 
     unsigned size_{};
     ea::vector<T> values_;
+    ea::vector<T> compressedValues_;
 };
 
 }

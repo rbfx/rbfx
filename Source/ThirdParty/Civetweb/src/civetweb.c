@@ -23,6 +23,10 @@
 
 // Modified by cosmy1, Yao Wei Tjong & Lasse Oorni for Urho3D
 
+#if defined(__ANDROID__) || defined(ANDROID)
+// rbfx fix
+#define fseeko fseek
+#endif
 
 #if defined(__GNUC__) || defined(__MINGW32__)
 #define GCC_VERSION                                                            \
@@ -4841,7 +4845,7 @@ content_len = strlen(reply);
 
 
 // Urho3D: Prefer own implementation of clock_gettime() to prevent dependency on pthread library which is not needed otherwise
-#ifdef __MINGW32__
+#if defined(__MINGW32__) && !defined(_POSIX_TIMERS)
 int clock_gettime(clockid_t clk_id, struct timespec *tp)
 {
 	FILETIME ft;

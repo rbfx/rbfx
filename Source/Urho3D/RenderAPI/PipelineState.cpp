@@ -119,8 +119,8 @@ void InitializeImmutableSampler(Diligent::ImmutableSamplerDesc& destSampler, con
     destSampler.Desc.AddressW = addressMode[sourceSampler.addressMode_[TextureCoordinate::W]];
     destSampler.Desc.MaxAnisotropy = anisotropy;
     destSampler.Desc.ComparisonFunc = Diligent::COMPARISON_FUNC_LESS_EQUAL;
-    destSampler.Desc.MinLOD = -M_INFINITY;
-    destSampler.Desc.MaxLOD = M_INFINITY;
+    destSampler.Desc.MinLOD = sourceSampler.minLod_;
+    destSampler.Desc.MaxLOD = sourceSampler.maxLod_;
 }
 
 void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& result, const ImmutableSamplersDesc& desc,
@@ -167,7 +167,7 @@ void FillLayoutElementIndices(ea::span<Diligent::LayoutElement> result,
         const auto iter = ea::find(vertexElements.rbegin(), vertexElements.rend(), attribute, &IsSameSematics);
         if (iter != vertexElements.rend())
         {
-            const unsigned elementIndex = vertexElements.rend() - iter - 1;
+            const unsigned elementIndex = static_cast<unsigned>(vertexElements.rend() - iter - 1);
             result[elementIndex].InputIndex = attribute.inputIndex_;
         }
         else
@@ -182,7 +182,7 @@ unsigned RemoveUnusedElements(ea::span<Diligent::LayoutElement> result)
 {
     const auto isUnused = [](const Diligent::LayoutElement& element) { return element.InputIndex == M_MAX_UNSIGNED; };
     const auto iter = ea::remove_if(result.begin(), result.end(), isUnused);
-    return iter - result.begin();
+    return static_cast<unsigned>(iter - result.begin());
 }
 
 void InitializeLayoutElements(ea::vector<Diligent::LayoutElement>& result,
@@ -844,7 +844,7 @@ void PipelineStateCache::UpdateCachedData()
 
         if (blob)
         {
-            cachedData_.resize(blob->GetSize());
+            cachedData_.resize(static_cast<unsigned>(blob->GetSize()));
             memcpy(cachedData_.data(), blob->GetDataPtr(), blob->GetSize());
         }
     }

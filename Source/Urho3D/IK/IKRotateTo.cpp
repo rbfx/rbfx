@@ -68,7 +68,7 @@ bool IKRotateTo::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKRotateTo::UpdateChainLengths(const Transform& inverseFrameOfReference)
+void IKRotateTo::UpdateChainLengths(const Transform& inverseLocalFrameOfReference)
 {
     chain_.UpdateLength();
 }

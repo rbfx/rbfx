@@ -46,7 +46,7 @@ template <class T>
 auto CastVectorTo(const WeakSerializableVector& objects)
 {
     ea::span<const WeakPtr<Serializable>> objectsSpan{objects};
-    return TransformedSpan<const WeakPtr<Serializable>, T, WeakToRawStaticCaster<T>>(objectsSpan);
+    return TransformedSpan<const WeakPtr<Serializable>, const T, WeakToRawStaticCaster<const T>>(objectsSpan);
 }
 
 NodeInspectorWidget::NodeVector GetSortedTopmostNodes(const WeakSerializableVector& objects)
@@ -145,7 +145,7 @@ void NodeComponentInspector::OnProjectRequest(RefCounted* senderTab, ProjectRequ
 NodeComponentInspector::NodeVector NodeComponentInspector::CollectNodes() const
 {
     const auto sceneIter = ea::find_if(nodes_.begin(), nodes_.end(),
-        [](const Node* node) { return node->GetType() == Scene::GetTypeStatic(); });
+        [](const Node* node) { return node && node->GetType() == Scene::GetTypeStatic(); });
 
     // If scene is selected, inspect only it
     if (sceneIter != nodes_.end())
@@ -351,7 +351,7 @@ void NodeComponentInspector::RenderAddComponent()
     {
         if (const auto componentType = RenderCreateComponentMenu(context_))
         {
-            AddComponentToNodes(*componentType);
+            AddComponentToNodes(componentType->GetTypeNameHash());
             ui::CloseCurrentPopup();
         }
         ui::EndPopup();

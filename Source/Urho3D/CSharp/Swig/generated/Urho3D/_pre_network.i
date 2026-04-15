@@ -1,5 +1,3 @@
-%constant unsigned int PackageFragmentSize = Urho3D::PACKAGE_FRAGMENT_SIZE;
-%ignore Urho3D::PACKAGE_FRAGMENT_SIZE;
 %csconstvalue("0") Urho3D::HTTP_INITIALIZING;
 %csattribute(Urho3D::FilteredUint, %arg(unsigned int), MinValue, GetMinValue);
 %csattribute(Urho3D::FilteredUint, %arg(unsigned int), AverageValue, GetAverageValue);

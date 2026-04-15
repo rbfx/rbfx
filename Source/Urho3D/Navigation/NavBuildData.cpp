@@ -27,10 +27,22 @@
 #include "../Navigation/NavBuildData.h"
 
 #include <DetourTileCache/DetourTileCacheBuilder.h>
+#include <Detour/DetourAlloc.h>
 #include <Recast/Recast.h>
 
 namespace Urho3D
 {
+
+void DetourDeleter::operator()(void* p) const noexcept
+{
+    dtFree(p);
+}
+
+void DetourAllocation::Release()
+{
+    data_.release();
+    dataSize_ = 0;
+}
 
 NavBuildData::NavBuildData() :
     ctx_(new rcContext(true)),
@@ -67,22 +79,13 @@ SimpleNavBuildData::~SimpleNavBuildData()
     polyMeshDetail_ = nullptr;
 }
 
-DynamicNavBuildData::DynamicNavBuildData(dtTileCacheAlloc* allocator) :
-    NavBuildData(),
-    contourSet_(nullptr),
-    polyMesh_(nullptr),
-    heightFieldLayers_(nullptr),
-    alloc_(allocator)
+DynamicNavBuildData::DynamicNavBuildData(const ea::shared_ptr<dtTileCacheCompressor>& compressor)
+    : compressor_(compressor)
 {
-    assert(allocator);
 }
 
 DynamicNavBuildData::~DynamicNavBuildData()
 {
-    dtFreeTileCacheContourSet(alloc_, contourSet_);
-    contourSet_ = nullptr;
-    dtFreeTileCachePolyMesh(alloc_, polyMesh_);
-    polyMesh_ = nullptr;
     rcFreeHeightfieldLayerSet(heightFieldLayers_);
     heightFieldLayers_ = nullptr;
 }

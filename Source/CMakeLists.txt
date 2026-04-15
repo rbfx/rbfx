@@ -20,18 +20,24 @@
 # THE SOFTWARE.
 #
 
-if (MSVC)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    # Enable parallel builds
-    if (URHO3D_PARALLEL_BUILD GREATER_EQUAL 2)
-        ucm_add_flags(/MP${URHO3D_PARALLEL_BUILD})
-    elseif (URHO3D_PARALLEL_BUILD)
-        cmake_host_system_information(RESULT URHO3D_PARALLEL_BUILD QUERY NUMBER_OF_PHYSICAL_CORES)
-        ucm_add_flags(/MP${URHO3D_PARALLEL_BUILD})
-    endif ()
+# Enable parallel builds in Visual Studio
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/MP>)
+
+# Silence annoying warnings
+add_compile_definitions($<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+# Silence C++23 deprecated literal operator warnings
+if (CMAKE_CXX_STANDARD GREATER_EQUAL 23 AND (CLANG OR GCC))
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-literal-operator>)
+endif()
+
+# Package is found in the main CMakeLists.txt
+if (Urho3DThirdParty_FOUND)
+    message(STATUS "Using external ThirdParty: ${Urho3DThirdParty_INCLUDE_DIRS}")
+else ()
+    message(STATUS "External ThirdParty not found, building from source")
+    add_subdirectory (ThirdParty)
 endif ()
 
-add_subdirectory (ThirdParty)
 add_subdirectory (Urho3D)
 add_subdirectory (Tools)
 add_subdirectory (Samples)
@@ -45,25 +51,43 @@ if (URHO3D_EDITOR)
     add_subdirectory (Editor)
 endif ()
 
-# Generate a helper script for consuming built tools during crosscompiling.
-if (NOT DEFINED URHO3D_SDK)
-    set(SWIG_EXECUTABLE OFF)
-    set(PACKAGE_TOOL OFF)
-    if (TARGET swig)
-        set (SWIG_EXECUTABLE ${DEST_BIN_DIR_CONFIG}/$<TARGET_FILE_NAME:swig>)
-    endif ()
-    if (TARGET PackageTool)
-        set (PACKAGE_TOOL ${DEST_BIN_DIR_CONFIG}/$<TARGET_FILE_NAME:PackageTool>)
-    endif ()
-    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/share/CMake)
-    configure_file("${rbfx_SOURCE_DIR}/CMake/SDKTools.cmake.in" "${CMAKE_BINARY_DIR}/share/CMake/SDKTools.cmake.in" @ONLY)
-    file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/share/CMake/SDKTools-$<CONFIG>.cmake" INPUT "${CMAKE_BINARY_DIR}/share/CMake/SDKTools.cmake.in")
-    file(COPY "${rbfx_SOURCE_DIR}/CMake/SDKTools.cmake" DESTINATION "${CMAKE_BINARY_DIR}/share/CMake/")
-    foreach (config ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
-        install(FILES ${CMAKE_BINARY_DIR}/share/CMake/SDKTools-${config}.cmake DESTINATION ${DEST_SHARE_DIR}/CMake OPTIONAL)
-    endforeach ()
-    install(FILES ${CMAKE_BINARY_DIR}/share/CMake/SDKTools.cmake DESTINATION ${DEST_SHARE_DIR}/CMake)
-    unset(config)
+# Generate CMake config files for tools export
+if (DESKTOP)
+    # Install the tools export file
+    install(EXPORT Urho3DTools
+        FILE Urho3DTools.cmake
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake
+        COMPONENT Tools
+    )
+
+    # Configure and install the tools config file
+    # Generate version file to ensure host tools compatibility when cross-compiling.
+    include(CMakePackageConfigHelpers)
+    configure_package_config_file(
+        ${rbfx_SOURCE_DIR}/CMake/Urho3DToolsConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfig.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake/
+    )
+
+    # Generate the version file for Urho3DTools with host platform compatibility checking
+    configure_file(
+        ${rbfx_SOURCE_DIR}/CMake/Urho3DToolsConfigVersion.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfigVersion.cmake
+        @ONLY
+    )
+
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake/
+        COMPONENT Tools
+    )
+    # Install PlatformTag.cmake module needed by Urho3DToolsConfigVersion.cmake
+    install(FILES
+        ${rbfx_SOURCE_DIR}/CMake/Modules/PlatformTag.cmake
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake/Modules/
+        COMPONENT Tools
+    )
 endif ()
 
 if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
@@ -72,8 +96,9 @@ if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
 
     if (LINUX)
         # On linux instance of dotnet may hang indefinitely which prevents CMake from detecting build completion and hangs the build.
+        # 2025-11: Issue persists on CI (dotnet 8.0), even though builds seem to succeed locally.
         set (DOTNET_LINUX_MSBUILD_WORKAROUND COMMAND ${rbfx_SOURCE_DIR}/script/.kill_dangling_dotnet.sh ${DOTNET})
-    elseif (MACOS)
+    elseif ("${CMAKE_GENERATOR}" MATCHES "^Xcode")
         # On MacOS Xcode pollutes environment which causes MSBuild to compile all managed targets into Urho3DNet assembly and compilation fails because file contents is not what next build step expects.
         set (DOTNET_MACOS_MSBUILD_WORKAROUND env -u TARGET_NAME -u TARGETNAME)
     endif ()
@@ -82,8 +107,8 @@ if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
             -restore -noLogo -interactive:false -nr:false -p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
             -consoleLoggerParameters:ErrorsOnly -p:Platform=${URHO3D_PLATFORM} -p:Configuration=${URHO3D_CONFIG}
             ${DOTNET_LINUX_MSBUILD_WORKAROUND}
-        DEPENDS Urho3D)
-    foreach (TARGET libEditorWrapper libPlayer)
+        DEPENDS Urho3D COMMAND_EXPAND_LISTS)
+    foreach (TARGET libEditorWrapper libPlayer TestsLib)
         if (TARGET ${TARGET})
             add_dependencies(BuildManagedTargets ${TARGET})
         endif ()
@@ -91,19 +116,27 @@ if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
 endif ()
 install(FILES
     ${rbfx_SOURCE_DIR}/script/rbfx.natvis
-    ${rbfx_SOURCE_DIR}/script/rbfx.vscode.unix.natvis
-    DESTINATION ${DEST_SHARE_DIR})
+    DESTINATION ${CMAKE_INSTALL_DATADIR})
 
 # This is a normal install that users are supposed to use.
-install (EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake FILE Urho3D.cmake)
+install (EXPORT Urho3D DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake FILE Urho3D.cmake)
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
     ${rbfx_SOURCE_DIR}/CMake/Urho3DConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfig.cmake
-    INSTALL_DESTINATION ${DEST_SHARE_DIR}/CMake/
+    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/
 )
+
+# Generate the version file for Urho3D with platform compatibility checking
+configure_file(
+    ${rbfx_SOURCE_DIR}/CMake/Urho3DConfigVersion.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfigVersion.cmake
+    @ONLY
+)
+
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfig.cmake
-    DESTINATION ${DEST_SHARE_DIR}/CMake/
+    ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/
 )

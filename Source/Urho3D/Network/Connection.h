@@ -113,6 +113,7 @@ public:
 
     /// Implement AbstractConnection
     /// @{
+    void SetMaxPacketSize(unsigned limit) override;
     void SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType = PacketType::ReliableOrdered) override;
     ea::string ToString() const override;
     bool IsClockSynchronized() const override;
@@ -213,9 +214,6 @@ public:
     /// Trigger client connection to download a package file from the server. Can be used to download additional resource packages when client is already joined in a scene. The package must have been added as a requirement to the scene the client is joined in, or else the eventual download will fail.
     void SendPackageToClient(PackageFile* package);
 
-    /// Buffered packet size limit, when reached, packet is sent out immediately
-    void SetPacketSizeLimit(int limit);
-
     /// Identity map.
     VariantMap identity_;
 
@@ -264,8 +262,6 @@ private:
     Timer statsTimer_;
     /// Outgoing packet buffer which can contain multiple messages.
     ea::unordered_map<int, VectorBuffer> outgoingBuffer_;
-    /// Outgoing packet size limit.
-    int packedMessageLimit_ = 1024;
     /// Queued remote events.
     ea::vector<RemoteEvent> remoteEvents_;
     /// @}

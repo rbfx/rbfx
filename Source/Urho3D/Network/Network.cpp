@@ -40,9 +40,11 @@
 #include "../Network/Transport/DataChannel/DataChannelServer.h"
 #include "../Replica/BehaviorNetworkObject.h"
 #include "../Replica/FilteredByDistance.h"
+#include "../Replica/FilteredByOwner.h"
 #include "../Replica/NetworkObject.h"
 #include "../Replica/PredictedKinematicController.h"
 #include "../Replica/ReplicatedAnimation.h"
+#include "../Replica/ReplicatedParent.h"
 #include "../Replica/ReplicatedTransform.h"
 #include "../Replica/ReplicationManager.h"
 #include "../Replica/StaticNetworkObject.h"
@@ -278,7 +280,7 @@ void Network::BroadcastMessage(NetworkMessageId msgID, const unsigned char* data
     }
 
     for (auto& pair : clientConnections_)
-        pair.second->SendMessage(msgID, data, numBytes, packetType);
+        pair.second->SendMessage(msgID, ConstByteSpan{data, numBytes}, packetType);
 }
 
 void Network::BroadcastRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData)
@@ -569,9 +571,11 @@ void RegisterNetworkLibrary(Context* context)
 
     NetworkBehavior::RegisterObject(context);
     ReplicatedAnimation::RegisterObject(context);
+    ReplicatedParent::RegisterObject(context);
     ReplicatedTransform::RegisterObject(context);
     TrackedAnimatedModel::RegisterObject(context);
     FilteredByDistance::RegisterObject(context);
+    FilteredByOwner::RegisterObject(context);
 #ifdef URHO3D_PHYSICS
     PredictedKinematicController::RegisterObject(context);
 #endif

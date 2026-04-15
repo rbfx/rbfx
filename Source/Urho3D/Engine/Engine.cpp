@@ -98,10 +98,7 @@
 #include "../Particles/ParticleGraphSystem.h"
 #endif
 #include "../Plugins/PluginManager.h"
-#include "../Utility/AnimationVelocityExtractor.h"
-#include "../Utility/AssetPipeline.h"
-#include "../Utility/AssetTransformer.h"
-#include "../Utility/SceneViewerApplication.h"
+#include "../Utility/UtilityLibrary.h"
 #ifdef URHO3D_ACTIONS
 #include "../Actions/ActionManager.h"
 #endif
@@ -151,6 +148,10 @@ EMSCRIPTEN_BINDINGS(Module)
 {
     emscripten::function("JSCanvasSize", &OnCanvasResize);
 }
+
+// TODO: Remove after SDL is updated
+// https://github.com/libsdl-org/SDL/commit/b42cb1c6f2e4af13288615624c0bb65a57289f0b
+EM_JS_DEPS(engine, "$autoResumeAudioContext,$dynCall,$stringToUTF8,$UTF8ToString")
 #endif
 
 namespace Urho3D
@@ -308,16 +309,19 @@ Engine::Engine(Context* context) :
     RegisterVRLibrary(context_);
 #endif
 
-    SceneViewerApplication::RegisterObject();
-    context_->AddFactoryReflection<AssetPipeline>();
-    context_->AddFactoryReflection<AssetTransformer>();
-    AnimationVelocityExtractor::RegisterObject(context_);
+    RegisterUtilityLibrary(context_);
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Engine, HandleEndFrame));
 }
 
-Engine::~Engine() = default;
+Engine::~Engine()
+{
+#ifdef URHO3D_PROFILING
+    if (GetParameter(EP_PROFILE).GetBool())
+        tracy::ShutdownProfiler();
+#endif
+}
 
 bool Engine::Initialize(const StringVariantMap& applicationParameters, const StringVariantMap& commandLineParameters)
 {
@@ -328,6 +332,11 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
 
     engineParameters_->DefineVariables(applicationParameters);
     engineParameters_->UpdatePriorityVariables(commandLineParameters);
+
+#ifdef URHO3D_PROFILING
+    if (GetParameter(EP_PROFILE).GetBool())
+        tracy::StartupProfiler();
+#endif
 
     auto* fileSystem = GetSubsystem<FileSystem>();
 
@@ -1210,6 +1219,8 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addFlag("--discard-shader-cache", EP_DISCARD_SHADER_CACHE, true, "Discard all cached shader bytecode and logged shader sources");
     addFlag("--no-save-shader-cache", EP_SAVE_SHADER_CACHE, false, "Disable saving shader bytecode to cache directory");
     addFlag("--xr", EP_XR, true, "Launch the engine in XR mode");
+    addFlag("--profile", EP_PROFILE, true, "Enable profiling");
+    addFlag("--no-profile", EP_PROFILE, false, "Disable profiling");
 
     addFlag("--d3d11", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D11), "Use Direct3D11 rendering backend");
     addFlag("--d3d12", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D12), "Use Direct3D12 rendering backend");
@@ -1290,7 +1301,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_ORIENTATIONS, "LandscapeLeft LandscapeRight");
     engineParameters_->DefineVariable(EP_PACKAGE_CACHE_DIR, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_PLUGINS, EMPTY_STRING);
-    engineParameters_->DefineVariable(EP_RENAME_PLUGINS, false);
+    engineParameters_->DefineVariable(EP_RELOAD_PLUGINS, false);
     engineParameters_->DefineVariable(EP_REFRESH_RATE, 0).Overridable();
     engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING).CommandLinePriority();
     engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "CoreData;Cache;Data").CommandLinePriority();
@@ -1326,7 +1337,8 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
     engineParameters_->DefineVariable(EP_PSO_CACHE, "conf://psocache.bin");
     engineParameters_->DefineVariable(EP_RENDER_BACKEND).SetOptional<int>();
-    engineParameters_->DefineVariable(EP_XR, defaultXR);
+    engineParameters_->DefineVariable(EP_XR, defaultXR).CommandLinePriority();
+    engineParameters_->DefineVariable(EP_PROFILE, false).CommandLinePriority();
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)

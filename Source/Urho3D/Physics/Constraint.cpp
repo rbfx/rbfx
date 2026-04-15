@@ -406,7 +406,7 @@ void Constraint::OnNodeSet(Node* previousNode, Node* currentNode)
     }
 }
 
-void Constraint::OnSceneSet(Scene* scene)
+void Constraint::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene)
     {

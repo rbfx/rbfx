@@ -1,34 +1,82 @@
-//
 // Copyright (c) 2008-2020 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2020-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/AnimationTrack.h"
-#include "../IO/ArchiveSerialization.h"
+#include "Urho3D/Graphics/AnimationTrack.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
+
+namespace
+{
+
+template <class T> void AppendKeys(ea::vector<float>& keys, ea::span<const T> keyFrames)
+{
+    for (const auto& keyFrame : keyFrames)
+        keys.push_back(GetKeyFrameTime(keyFrame));
+}
+
+void EraseEquivalentKeys(ea::vector<float>& keys, float epsilon)
+{
+    unsigned lastValidIndex = 0;
+    for (unsigned i = 1; i < keys.size(); ++i)
+    {
+        if (keys[i] - keys[lastValidIndex] < epsilon)
+            keys[i] = -M_LARGE_VALUE;
+        else
+            lastValidIndex = i;
+    }
+
+    ea::erase_if(keys, [](float time) { return time < 0.0f; });
+}
+
+Vector3 LerpValue(const Vector3& lhs, const Vector3& rhs, float factor)
+{
+    return Lerp(lhs, rhs, factor);
+}
+
+Quaternion LerpValue(const Quaternion& lhs, const Quaternion& rhs, float factor)
+{
+    return lhs.Slerp(rhs, factor);
+}
+
+template <class T>
+ea::vector<T> RemapKeyFrameValues(const ea::vector<float>& destKeys, ea::span<const ea::pair<float, T>> sourceKeyFrames)
+{
+    if (sourceKeyFrames.empty())
+        return ea::vector<T>(destKeys.size());
+
+    ea::vector<T> result(destKeys.size());
+    for (unsigned i = 0; i < destKeys.size(); ++i)
+    {
+        const float destKey = destKeys[i];
+        const auto compareTime = [](const auto& keyFrame, float time) { return keyFrame.first < time; };
+        const auto iter = ea::lower_bound(sourceKeyFrames.begin(), sourceKeyFrames.end(), destKey, compareTime);
+        const unsigned secondIndex =
+            ea::min<unsigned>(sourceKeyFrames.size() - 1, static_cast<unsigned>(iter - sourceKeyFrames.begin()));
+        const unsigned firstIndex = iter == sourceKeyFrames.end() ? secondIndex : ea::max(1u, secondIndex) - 1;
+        const auto& firstFrame = sourceKeyFrames[firstIndex];
+        const auto& secondFrame = sourceKeyFrames[secondIndex];
+
+        if (firstIndex == secondIndex)
+            result[i] = firstFrame.second;
+        else
+        {
+            const float factor = InverseLerp(firstFrame.first, secondFrame.first, destKey);
+            result[i] = LerpValue(firstFrame.second, secondFrame.second, factor);
+        }
+    }
+    return result;
+}
+
+} // namespace
 
 void AnimationTrack::Sample(float time, float duration, bool isLooped, unsigned& frameIndex, Transform& value) const
 {
@@ -67,14 +115,64 @@ bool AnimationTrack::IsLooped(float positionThreshold, float rotationThreshold, 
     const Transform& firstTransform = keyFrames_.front();
     const Transform& lastTransform = keyFrames_.back();
 
-    if (channelMask_.Test(CHANNEL_POSITION) && !firstTransform.position_.Equals(lastTransform.position_, positionThreshold))
+    if (channelMask_.Test(CHANNEL_POSITION)
+        && !firstTransform.position_.Equals(lastTransform.position_, positionThreshold))
         return false;
-    if (channelMask_.Test(CHANNEL_ROTATION) && !firstTransform.rotation_.Equals(lastTransform.rotation_, rotationThreshold))
+    if (channelMask_.Test(CHANNEL_ROTATION)
+        && !firstTransform.rotation_.Equals(lastTransform.rotation_, rotationThreshold))
         return false;
     if (channelMask_.Test(CHANNEL_SCALE) && !firstTransform.scale_.Equals(lastTransform.scale_, scaleThreshold))
         return false;
 
     return true;
+}
+
+void AnimationTrack::CreateMerged(AnimationChannelFlags channels,
+    ea::span<const ea::pair<float, Vector3>> positionTrack, ea::span<const ea::pair<float, Quaternion>> rotationTrack,
+    ea::span<const ea::pair<float, Vector3>> scaleTrack, float epsilon)
+{
+    channelMask_ = channels;
+    keyFrames_.clear();
+
+    const bool hasPositions = channels.IsAnyOf(CHANNEL_POSITION);
+    const bool hasRotations = channels.IsAnyOf(CHANNEL_ROTATION);
+    const bool hasScales = channels.IsAnyOf(CHANNEL_SCALE);
+
+    ea::vector<float> keys;
+    if (hasPositions)
+        AppendKeys(keys, positionTrack);
+    if (hasRotations)
+        AppendKeys(keys, rotationTrack);
+    if (hasScales)
+        AppendKeys(keys, scaleTrack);
+    ea::sort(keys.begin(), keys.end());
+    EraseEquivalentKeys(keys, epsilon);
+
+    const unsigned numKeyFrames = keys.size();
+    keyFrames_.resize(numKeyFrames);
+    for (unsigned i = 0; i < numKeyFrames; ++i)
+        keyFrames_[i].time_ = keys[i];
+
+    if (hasPositions)
+    {
+        const auto remappedPositions = RemapKeyFrameValues(keys, positionTrack);
+        for (unsigned i = 0; i < numKeyFrames; ++i)
+            keyFrames_[i].position_ = remappedPositions[i];
+    }
+
+    if (hasRotations)
+    {
+        const auto remappedRotations = RemapKeyFrameValues(keys, rotationTrack);
+        for (unsigned i = 0; i < numKeyFrames; ++i)
+            keyFrames_[i].rotation_ = remappedRotations[i];
+    }
+
+    if (hasScales)
+    {
+        const auto remappedScales = RemapKeyFrameValues(keys, scaleTrack);
+        for (unsigned i = 0; i < numKeyFrames; ++i)
+            keyFrames_[i].scale_ = remappedScales[i];
+    }
 }
 
 bool VariantAnimationTrack::IsLooped() const
@@ -88,4 +186,4 @@ bool VariantAnimationTrack::IsLooped() const
     return firstValue == lastValue;
 }
 
-}
+} // namespace Urho3D

@@ -230,6 +230,11 @@ public:
     virtual void UpdateBatchesDelayed(const FrameInfo& frame) { }
     /// Prepare geometry for rendering.
     virtual void UpdateGeometry(const FrameInfo& frame) { }
+    /// Called on world origin update.
+    virtual void UpdateWorldOrigin(const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta) {}
+    /// Called on world origin post-update.
+    virtual void PostUpdateWorldOrigin(
+        const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta) {}
 
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.
     virtual UpdateGeometryType GetUpdateGeometryType() { return UPDATE_NONE; }
@@ -410,7 +415,7 @@ protected:
     /// Handle node being assigned.
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Handle node transform being dirtied.
     void OnMarkedDirty(Node* node) override;
     /// Recalculate the world-space bounding box.

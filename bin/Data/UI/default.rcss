@@ -335,7 +335,17 @@ sliderbar:active
     decorator: gradient(vertical #357e57 #3b785a);
 }
 
-progressbar
+scrollbarhorizontal > sliderbar
+{
+    width: auto;
+}
+
+scrollbarvertical > sliderbar
+{
+    height: auto;
+}
+
+progress
 {
     display: block;
     border: 1dp #45614a;
@@ -344,17 +354,17 @@ progressbar
     decorator: gradient(vertical #3c5c4a #25413a);
 }
 
-progressbar.progress-horizontal
+progress.horizontal
 {
     height: 20dp;
 }
 
-progressbar.progress-vertical
+progress.vertical
 {
     width: 20dp;
 }
 
-progressbar fill
+progress fill
 {
     border: 2dp #225b4b;
     background-color: #3b785a;

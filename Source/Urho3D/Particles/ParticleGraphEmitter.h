@@ -112,7 +112,7 @@ public:
 
 protected:
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
 
 private:
     /// Handle scene post-update event.

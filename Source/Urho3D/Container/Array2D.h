@@ -72,14 +72,14 @@ public:
     /// Convert 2D array index to linear array index.
     unsigned IndexToOffset(const IntVector2& index) const
     {
-        assert(Contains(index));
+        URHO3D_ASSERT(Contains(index));
         return static_cast<unsigned>(index.y_ * width_ + index.x_);
     }
 
     /// Convert linear array index to 2D array index.
     IntVector2 OffsetToIndex(unsigned index) const
     {
-        assert(index < GetCapacity());
+        URHO3D_ASSERT(index < GetCapacity());
         return { static_cast<int>(index % width_), static_cast<int>(index / width_) };
     }
 

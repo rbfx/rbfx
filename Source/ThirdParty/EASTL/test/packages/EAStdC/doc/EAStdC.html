@@ -1,0 +1,81 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<Title>EAStdC</title>
+<link type="text/css" rel="stylesheet" href="UTFDoc.css">
+<meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAStdC</h1>
+<p>EAStdC is a package which implements a number of basic library facilities that are similar to those in the standard C library. This does not mean that its functionality is identical to the C standard library. It is an evolution and convergence of the rwstdc and UTFFoundation packages. </p>
+<p>The fundamental design characteristics of EAStdC are:</p>
+<ul>
+  <li>The package has minimal dependencies: EABase and EAAssert.</li>
+  <li>It consists of simple standalone functions and classes.</li>
+  <li>Memory is not allocated by any of the functions or classes, excepts possibly under pathological conditions.</li>
+  <li>There is no thread-safety. All thread safety must be coordinated at a higher level by the user. </li>
+  <li>It does not implement localization functionality. Localization functionality is left to specialized libraries for that purpose.</li>
+  <li>With few exceptions, both char8_t and char16_t string functionality are supported equivalently.</li>
+</ul>
+<h3> Should you use EAStdC functions that overlap with Standard C library functions?</h3>
+<p>A primary purpose of EAStdC is to provide a portable implementation of basic utility functions, many of which correspond the standard C library functions. Specifically: </p>
+<ul>
+  <li> Provide a standardizes portable header file to #include. </li>
+  <ul>
+    <li> e.g. C libraries don&rsquo;t use the same name for headers, such as malloc.h, sys/types.h, memory.h, etc. </li>
+  </ul>
+  <li> Provide standardized function names. </li>
+  <ul>
+    <li> e.g. EAStdC has Vsnprintf, as opposed to VC++ having _vsnprintf but GCC having vsnprintf. </li>
+  </ul>
+  <li> Provide standardized function implementations. </li>
+  <ul>
+    <li> e.g. Sprintf/Scanf work the same in EAStdC, unlike most C libraries. </li>
+  </ul>
+  <li> Provide faster versions. </li>
+  <ul>
+    <li> e.g. Faster strlen, memcpy, special fast memcpy versions. EAStdC sprintf is much faster than stdc. </li>
+  </ul>
+  <li> Provide versions that don&rsquo;t exist in compiler-provided libraries. </li>
+  <ul>
+    <li> e.g. EAStdC has vsnprintf, whereas some C libraries don&rsquo;t. </li>
+  </ul>
+  <li> Lower memory requirements. </li>
+  <ul>
+    <li> Some stdc functions tend to bring in a lot of object code, often because of their locale requirements. </li>
+  </ul>
+  <li> Provides consistent standardized encoding. </li>
+  <ul>
+    <li> EAStdC uses UTF8 for char8_t and UCS2 for char16_t, whereas C libraries aren&rsquo;t consistent. wchar_t could be 8, 16, or 32 bit (we&rsquo;ve seen each of these). </li>
+  </ul>
+  <li> Provide auxiliary or &ldquo;better&rdquo; versions of functions. </li>
+  <ul>
+    <li> e.g. EAStdC&rsquo;s Random, DateTime. </li>
+  </ul>
+  <li> EAStdC has additional functionality that doesn&rsquo;t directly match something from the Standard C library. </li>
+  <ul>
+    <li> e.g. Stopwatch, Hash, FixedPoint. </li>
+  </ul>
+</ul>
+<p> Primary downsides to EAStdC: </p>
+<ul>
+  <li> It doesn&rsquo;t have localization support. You can&rsquo;t call setlocale() with it and have it change how it interprets &ldquo;.&rdquo; And &ldquo;,&rdquo; in numbers. You need to use the EALocale or EAText package for that, though EALocale and EAText do a better job than stdc does. </li>
+  <li> EAStdC might have bugs that haven&rsquo;t been eradicated, while most stdc implementations are pretty good. </li>
+  <li> Stdc has better documentation, though the EAStdC functions that are stdc equivalents usually have the same specification. </li>
+</ul>
+<p> In the case of overlap between stdc and EAStdC, I think the policy of what to use depends on your team conventions and your project requirements. Some notes: </p>
+<ul>
+  <li> If you want to guarantee portability then you&rsquo;re better off using EAStdC. </li>
+  <li> Some functions (e.g. strlen and memcpy) are basic enough that the stdc versions are usually fine. </li>
+  <ul>
+    <li> Except EAStdC&rsquo;s Strlen is faster than most stdc versions, and a surprising number of memcpy implementations for uncommon platforms are slow. </li>
+  </ul>
+  <li> If you think your code will need to build outside our codebase then maybe you should try to stick with stdc. </li>
+</ul>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+</body>
+</html>

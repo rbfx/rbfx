@@ -20,13 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Math/Matrix3x4.h"
+#include "Urho3D/Math/Matrix3x4.h"
+
+#include "Urho3D/Container/Str.h"
 
 #include <cstdio>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -44,16 +46,18 @@ void Matrix3x4::Decompose(Vector3& translation, Quaternion& rotation, Vector3& s
     translation.y_ = m13_;
     translation.z_ = m23_;
 
-    scale.x_ = sqrtf(m00_ * m00_ + m10_ * m10_ + m20_ * m20_);
-    scale.y_ = sqrtf(m01_ * m01_ + m11_ * m11_ + m21_ * m21_);
-    scale.z_ = sqrtf(m02_ * m02_ + m12_ * m12_ + m22_ * m22_);
+    // Avoid noise in scale
+    scale.x_ = SnapTo(sqrtf(m00_ * m00_ + m10_ * m10_ + m20_ * m20_), 1.0f, M_EPSILON);
+    scale.y_ = SnapTo(sqrtf(m01_ * m01_ + m11_ * m11_ + m21_ * m21_), 1.0f, M_EPSILON);
+    scale.z_ = SnapTo(sqrtf(m02_ * m02_ + m12_ * m12_ + m22_ * m22_), 1.0f, M_EPSILON);
 
     // Always mirror X axis to disambiguate decomposition
-    if (Determinant() < 0.0f)
+    const Matrix3 rotationScaleMatrix = ToMatrix3();
+    if (rotationScaleMatrix.Determinant() < 0.0f)
         scale.x_ = -scale.x_;
 
     Vector3 invScale(1.0f / scale.x_, 1.0f / scale.y_, 1.0f / scale.z_);
-    rotation = Quaternion(ToMatrix3().Scaled(invScale));
+    rotation = Quaternion(rotationScaleMatrix.Scaled(invScale));
 }
 
 float Matrix3x4::Determinant() const
@@ -90,7 +94,7 @@ Matrix3x4 Matrix3x4::Inverse() const
 ea::string Matrix3x4::ToString() const
 {
     char tempBuffer[MATRIX_CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%g %g %g %g %g %g %g %g %g %g %g %g", m00_, m01_, m02_, m03_, m10_, m11_, m12_, m13_, m20_, m21_, m22_,
+    snprintf(tempBuffer, MATRIX_CONVERSION_BUFFER_LENGTH, "%g %g %g %g %g %g %g %g %g %g %g %g", m00_, m01_, m02_, m03_, m10_, m11_, m12_, m13_, m20_, m21_, m22_,
         m23_);
     return ea::string(tempBuffer);
 }

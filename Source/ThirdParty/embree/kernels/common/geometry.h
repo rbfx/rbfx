@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -91,7 +91,7 @@ namespace embree
 
     size_t numFilterFunctions;       //!< number of geometries with filter functions enabled
     size_t numTriangles;             //!< number of enabled triangles
-    size_t numMBTriangles;           //!< number of enabled motion blured triangles
+    size_t numMBTriangles;           //!< number of enabled motion blurred triangles
     size_t numQuads;                 //!< number of enabled quads
     size_t numMBQuads;               //!< number of enabled motion blurred quads
     size_t numBezierCurves;          //!< number of enabled curves
@@ -99,7 +99,7 @@ namespace embree
     size_t numLineSegments;          //!< number of enabled line segments
     size_t numMBLineSegments;        //!< number of enabled line motion blurred segments
     size_t numSubdivPatches;         //!< number of enabled subdivision patches
-    size_t numMBSubdivPatches;       //!< number of enabled motion blured subdivision patches
+    size_t numMBSubdivPatches;       //!< number of enabled motion blurred subdivision patches
     size_t numUserGeometries;        //!< number of enabled user geometries
     size_t numMBUserGeometries;      //!< number of enabled motion blurred user geometries
     size_t numInstancesCheap;        //!< number of enabled cheap instances
@@ -124,6 +124,7 @@ namespace embree
       GTY_FLAT_LINEAR_CURVE = 0,
       GTY_ROUND_LINEAR_CURVE = 1,
       GTY_ORIENTED_LINEAR_CURVE = 2,
+      GTY_CONE_LINEAR_CURVE = 3,
       
       GTY_FLAT_BEZIER_CURVE = 4,
       GTY_ROUND_BEZIER_CURVE = 5,
@@ -179,6 +180,7 @@ namespace embree
     {
       MTY_FLAT_LINEAR_CURVE = 1ul << GTY_FLAT_LINEAR_CURVE,
       MTY_ROUND_LINEAR_CURVE = 1ul << GTY_ROUND_LINEAR_CURVE,
+      MTY_CONE_LINEAR_CURVE = 1ul << GTY_CONE_LINEAR_CURVE,
       MTY_ORIENTED_LINEAR_CURVE = 1ul << GTY_ORIENTED_LINEAR_CURVE,
       
       MTY_FLAT_BEZIER_CURVE = 1ul << GTY_FLAT_BEZIER_CURVE,
@@ -197,7 +199,7 @@ namespace embree
       MTY_ROUND_CATMULL_ROM_CURVE = 1ul << GTY_ROUND_CATMULL_ROM_CURVE,
       MTY_ORIENTED_CATMULL_ROM_CURVE = 1ul << GTY_ORIENTED_CATMULL_ROM_CURVE,
 
-      MTY_CURVE2 = MTY_FLAT_LINEAR_CURVE | MTY_ROUND_LINEAR_CURVE | MTY_ORIENTED_LINEAR_CURVE,
+      MTY_CURVE2 = MTY_FLAT_LINEAR_CURVE | MTY_ROUND_LINEAR_CURVE | MTY_CONE_LINEAR_CURVE | MTY_ORIENTED_LINEAR_CURVE,
       
       MTY_CURVE4 = MTY_FLAT_BEZIER_CURVE | MTY_ROUND_BEZIER_CURVE | MTY_ORIENTED_BEZIER_CURVE |
                    MTY_FLAT_BSPLINE_CURVE | MTY_ROUND_BSPLINE_CURVE | MTY_ORIENTED_BSPLINE_CURVE |
@@ -299,7 +301,7 @@ namespace embree
 
     template<int N>
       __forceinline vint<N> timeSegment(const vfloat<N>& time, vfloat<N>& ftime) const {
-      return getTimeSegment(time,vfloat<N>(time_range.lower),vfloat<N>(time_range.upper),vfloat<N>(fnumTimeSegments),ftime);
+      return getTimeSegment<N>(time,vfloat<N>(time_range.lower),vfloat<N>(time_range.upper),vfloat<N>(fnumTimeSegments),ftime);
     }
     
     /* calculate overlapping time segment range */

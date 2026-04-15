@@ -96,7 +96,7 @@ void TrackedComponentRegistryBase::RemoveTrackedComponent(TrackedComponentBase* 
     component->SetIndexInArray(M_MAX_UNSIGNED);
 }
 
-void TrackedComponentRegistryBase::OnSceneSet(Scene* scene)
+void TrackedComponentRegistryBase::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene)
     {

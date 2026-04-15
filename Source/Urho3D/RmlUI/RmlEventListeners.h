@@ -58,22 +58,6 @@ private:
     const EventListenerVector listeners_;
 };
 
-class URHO3D_API NavigateEventListener : public Rml::EventListener, public NonCopyable
-{
-public:
-    static Rml::EventListener* CreateInstancer(ea::string_view value, Rml::Element* element);
-    explicit NavigateEventListener(const ea::string& group);
-
-    /// Implement Rml::EventListener
-    /// @{
-    void ProcessEvent(Rml::Event& event) override;
-    void OnDetach(Rml::Element* element) override;
-    /// @}
-
-private:
-    const ea::string group_;
-};
-
 class URHO3D_API SoundEventListener : public Rml::EventListener, public NonCopyable
 {
 public:

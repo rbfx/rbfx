@@ -1,48 +1,32 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2020-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Exception.h"
-#include "../IO/Log.h"
-#include "../Network/Connection.h"
-#include "../Network/Network.h"
-#include "../Network/NetworkEvents.h"
-#include "../Replica/NetworkObject.h"
-#include "../Replica/ReplicationManager.h"
-#include "../Replica/NetworkSettingsConsts.h"
-#include "../Replica/ClientReplica.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include "Urho3D/Replica/ClientReplica.h"
+
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Exception.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Network/Connection.h"
+#include "Urho3D/Network/MessageUtils.h"
+#include "Urho3D/Network/Network.h"
+#include "Urho3D/Network/NetworkEvents.h"
+#include "Urho3D/Replica/NetworkObject.h"
+#include "Urho3D/Replica/NetworkSettingsConsts.h"
+#include "Urho3D/Replica/ReplicationManager.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
 #include <EASTL/numeric.h>
 
 namespace Urho3D
 {
 
-ClientReplicaClock::ClientReplicaClock(Scene* scene, AbstractConnection* connection,
-    const MsgSceneClock& initialClock, const VariantMap& serverSettings)
+ClientReplicaClock::ClientReplicaClock(
+    Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock, const VariantMap& serverSettings)
     : Object(scene->GetContext())
     , scene_(scene)
     , connection_(connection)
@@ -52,7 +36,7 @@ ClientReplicaClock::ClientReplicaClock(Scene* scene, AbstractConnection* connect
     , inputDelay_(initialClock.inputDelay_)
     , replicaTime_(InitializeSoftTime())
     , inputTime_(InitializeSoftTime())
-    , physicsSync_(scene_, updateFrequency_, false)
+    , updateSync_(MakeShared<SceneUpdateSynchronizer>(scene_, SceneUpdateSynchronizer::Params{false, updateFrequency_}))
 {
     UpdateServerTime(initialClock, false);
     replicaTime_.Reset(ToReplicaTime(serverTime_));
@@ -80,9 +64,9 @@ void ClientReplicaClock::UpdateClientClocks(float timeStep, const ea::vector<Msg
 
     isNewInputFrame_ = previousInputTime.Frame() != inputTime_.GetTime().Frame();
     if (isNewInputFrame_)
-        physicsSync_.Synchronize(inputTime_.GetTime().Frame(), inputTime_.GetTime().Fraction() / updateFrequency_);
+        updateSync_->Synchronize(inputTime_.GetTime().Frame(), inputTime_.GetTime().Fraction() / updateFrequency_);
     else
-        physicsSync_.Update(inputTimeStep_);
+        updateSync_->Update(inputTimeStep_);
 }
 
 const Variant& ClientReplicaClock::GetSetting(const NetworkSetting& setting) const
@@ -158,8 +142,8 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
     {
     case MSG_SCENE_CLOCK:
     {
-        const auto msg = ReadNetworkMessage<MsgSceneClock>(messageData);
-        connection_->OnMessageReceived(messageId, msg);
+        const auto msg = ReadSerializedMessage<MsgSceneClock>(messageData);
+        connection_->LogMessagePayload(messageId, msg);
 
         ProcessSceneClock(msg);
         return true;
@@ -167,32 +151,32 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
 
     case MSG_REMOVE_OBJECTS:
     {
-        connection_->OnMessageReceived(messageId, messageData);
-
         ProcessRemoveObjects(messageData);
         return true;
     }
 
     case MSG_ADD_OBJECTS:
+    case MSG_ADD_OBJECTS_INCOMPLETE:
     {
-        connection_->OnMessageReceived(messageId, messageData);
+        LargeMessageReader reader{*connection_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
+        reader.OnMessage(messageId, messageData, //
+            [this](MemoryBuffer& fullMessageData) { ProcessAddObjects(fullMessageData); });
 
-        ProcessAddObjects(messageData);
         return true;
     }
 
     case MSG_UPDATE_OBJECTS_RELIABLE:
+    case MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE:
     {
-        connection_->OnMessageReceived(messageId, messageData);
+        LargeMessageReader reader{*connection_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
+        reader.OnMessage(messageId, messageData,
+            [this](MemoryBuffer& fullMessageData) { ProcessUpdateObjectsReliable(fullMessageData); });
 
-        ProcessUpdateObjectsReliable(messageData);
         return true;
     }
 
     case MSG_UPDATE_OBJECTS_UNRELIABLE:
     {
-        connection_->OnMessageReceived(messageId, messageData);
-
         ProcessUpdateObjectsUnreliable(messageData);
         return true;
     }
@@ -202,7 +186,7 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
     }
 }
 
-void ClientReplica::ProcessSceneUpdate()
+void ClientReplica::ProcessSceneUpdate(StringHash eventType)
 {
     VariantMap& eventData = scene_->GetEventDataMap();
 
@@ -210,7 +194,7 @@ void ClientReplica::ProcessSceneUpdate()
     eventData[P_SCENE] = scene_;
     eventData[P_TIMESTEP_REPLICA] = GetReplicaTimeStep();
     eventData[P_TIMESTEP_INPUT] = GetInputTimeStep();
-    scene_->SendEvent(E_SCENENETWORKUPDATE, eventData);
+    scene_->SendEvent(eventType, eventData);
 }
 
 void ClientReplica::ProcessSceneClock(const MsgSceneClock& msg)
@@ -412,35 +396,36 @@ void ClientReplica::OnNetworkUpdate()
 
 void ClientReplica::SendObjectsFeedbackUnreliable(NetworkFrame feedbackFrame)
 {
-    connection_->SendGeneratedMessage(MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
+    MultiMessageWriter writer{*connection_, MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered};
+
+    VectorBuffer& msg = writer.GetBuffer();
+    ea::string* debugInfo = writer.GetDebugInfo();
+
+    msg.WriteInt64(static_cast<long long>(feedbackFrame));
+    writer.CompleteHeader();
+
+    for (NetworkObject* networkObject : ownedObjects_)
     {
-        msg.WriteInt64(static_cast<long long>(feedbackFrame));
+        if (!networkObject)
+            continue;
 
-        bool sendMessage = false;
-        for (NetworkObject* networkObject : ownedObjects_)
+        if (!networkObject->PrepareUnreliableFeedback(feedbackFrame))
+            continue;
+
+        componentBuffer_.Clear();
+        networkObject->WriteUnreliableFeedback(feedbackFrame, componentBuffer_);
+        msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+        msg.WriteBuffer(componentBuffer_.GetBuffer());
+
+        if (debugInfo)
         {
-            if (!networkObject)
-                continue;
-
-            componentBuffer_.Clear();
-            if (networkObject->PrepareUnreliableFeedback(feedbackFrame))
-            {
-                networkObject->WriteUnreliableFeedback(feedbackFrame, componentBuffer_);
-                sendMessage = true;
-                msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-                msg.WriteBuffer(componentBuffer_.GetBuffer());
-            }
-
-            if (debugInfo)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkObject->GetNetworkId()));
-            }
+            if (!debugInfo->empty())
+                debugInfo->append(", ");
+            debugInfo->append(ToString(networkObject->GetNetworkId()));
         }
-        return sendMessage;
-    });
+
+        writer.CompletePayload();
+    }
 }
 
 }

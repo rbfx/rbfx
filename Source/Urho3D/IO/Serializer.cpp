@@ -31,8 +31,6 @@
 namespace Urho3D
 {
 
-static const float q = 32767.0f;
-
 Serializer::~Serializer() = default;
 
 const ea::string& Serializer::GetName() const
@@ -125,15 +123,42 @@ bool Serializer::WriteVector3(const Vector3& value)
     return Write(value.Data(), sizeof value) == sizeof value;
 }
 
-bool Serializer::WritePackedVector3(const Vector3& value, float maxAbsCoord)
+bool Serializer::WritePackedVector3(const DoubleVector3& value, VectorBinaryEncoding encoding, float param)
 {
-    short coords[3];
-    float v = 32767.0f / maxAbsCoord;
+    switch (encoding)
+    {
+    case VectorBinaryEncoding::Float:
+    {
+        const auto data = value.Cast<Vector3>();
+        return Write(data.Data(), sizeof(Vector3)) == sizeof(Vector3);
+    }
 
-    coords[0] = (short)Round(Clamp(value.x_, -maxAbsCoord, maxAbsCoord) * v);
-    coords[1] = (short)Round(Clamp(value.y_, -maxAbsCoord, maxAbsCoord) * v);
-    coords[2] = (short)Round(Clamp(value.z_, -maxAbsCoord, maxAbsCoord) * v);
-    return Write(&coords[0], sizeof coords) == sizeof coords;
+    case VectorBinaryEncoding::Double:
+    {
+        return Write(value.Data(), sizeof(DoubleVector3)) == sizeof(DoubleVector3);
+    }
+
+    case VectorBinaryEncoding::Int32:
+    {
+        const DoubleVector3 normalizedValue =
+            VectorClamp(value / static_cast<double>(param), -DoubleVector3::ONE, DoubleVector3::ONE);
+        const auto intValue =
+            (normalizedValue * static_cast<double>(M_MAX_INT) + DoubleVector3::ONE * 0.5).Cast<IntVector3>();
+        return Write(intValue.Data(), sizeof(IntVector3)) == sizeof(IntVector3);
+    }
+
+    case VectorBinaryEncoding::Int16:
+    {
+        using ShortVector3 = BaseIntegerVector3<short>;
+        const DoubleVector3 normalizedValue =
+            VectorClamp(value / static_cast<double>(param), -DoubleVector3::ONE, DoubleVector3::ONE);
+        const auto intValue =
+            (normalizedValue * static_cast<double>(M_MAX_SHORT) + DoubleVector3::ONE * 0.5).Cast<ShortVector3>();
+        return Write(intValue.Data(), sizeof(ShortVector3)) == sizeof(ShortVector3);
+    }
+
+    default: return false;
+    }
 }
 
 bool Serializer::WriteVector4(const Vector4& value)
@@ -146,16 +171,27 @@ bool Serializer::WriteQuaternion(const Quaternion& value)
     return Write(value.Data(), sizeof value) == sizeof value;
 }
 
-bool Serializer::WritePackedQuaternion(const Quaternion& value)
+bool Serializer::WritePackedQuaternion(const Quaternion& value, VectorBinaryEncoding encoding)
 {
-    short coords[4];
-    Quaternion norm = value.Normalized();
+    switch (encoding)
+    {
+    case VectorBinaryEncoding::Double: // Not implemented
+    case VectorBinaryEncoding::Int32: // Not implemented
+    case VectorBinaryEncoding::Float: return WriteQuaternion(value);
 
-    coords[0] = (short)Round(Clamp(norm.w_, -1.0f, 1.0f) * q);
-    coords[1] = (short)Round(Clamp(norm.x_, -1.0f, 1.0f) * q);
-    coords[2] = (short)Round(Clamp(norm.y_, -1.0f, 1.0f) * q);
-    coords[3] = (short)Round(Clamp(norm.z_, -1.0f, 1.0f) * q);
-    return Write(&coords[0], sizeof coords) == sizeof coords;
+    case VectorBinaryEncoding::Int16:
+    {
+        const Quaternion norm = value.Normalized();
+
+        short coords[4];
+        coords[0] = (short)Round(Clamp(norm.w_, -1.0f, 1.0f) * static_cast<float>(M_MAX_SHORT));
+        coords[1] = (short)Round(Clamp(norm.x_, -1.0f, 1.0f) * static_cast<float>(M_MAX_SHORT));
+        coords[2] = (short)Round(Clamp(norm.y_, -1.0f, 1.0f) * static_cast<float>(M_MAX_SHORT));
+        coords[3] = (short)Round(Clamp(norm.z_, -1.0f, 1.0f) * static_cast<float>(M_MAX_SHORT));
+        return Write(&coords[0], sizeof(coords)) == sizeof(coords);
+    }
+    default: return false;
+    }
 }
 
 bool Serializer::WriteMatrix3(const Matrix3& value)
@@ -283,8 +319,14 @@ bool Serializer::WriteVariantData(const Variant& value)
     case VAR_VECTOR2:
         return WriteVector2(value.GetVector2());
 
+    case VAR_DOUBLEVECTOR2:
+        return Write(value.GetDoubleVector2().Data(), sizeof(DoubleVector2)) == sizeof(DoubleVector2);
+
     case VAR_VECTOR3:
         return WriteVector3(value.GetVector3());
+
+    case VAR_DOUBLEVECTOR3:
+        return Write(value.GetDoubleVector3().Data(), sizeof(DoubleVector3)) == sizeof(DoubleVector3);
 
     case VAR_VECTOR4:
         return WriteVector4(value.GetVector4());
@@ -409,7 +451,7 @@ bool Serializer::WriteStringVariantMap(const StringVariantMap& value)
 bool Serializer::WriteVLE(unsigned value)
 {
     unsigned char data[MaxVariableLengthBytes<unsigned>];
-    const unsigned numBytes = EncodeVariableLength(value, data);
+    const unsigned numBytes = EncodeVariableLength(value, ea::span(data));
     return Write(data, numBytes) == numBytes;
 }
 

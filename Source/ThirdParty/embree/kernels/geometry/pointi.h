@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -57,58 +57,33 @@ namespace embree
     }
 
     /* Returns a mask that tells which line segments are valid */
-    __forceinline vbool<M> valid() const
-    {
-      //return primIDs != vuint<M>(-1);
+    __forceinline vbool<M> valid() const {
       return vint<M>(step) < vint<M>(numPrimitives);
-    }
-
-    /* Returns a mask that tells which line segments are valid */
-    template<int Mx>
-    __forceinline vbool<Mx> valid() const
-    {
-      //return vuint<Mx>(primIDs) != vuint<Mx>(-1);
-      return vint<Mx>(step) < vint<Mx>(numPrimitives);
     }
 
     /* Returns if the specified line segment is valid */
     __forceinline bool valid(const size_t i) const
     {
       assert(i < M);
-      //return primIDs[i] != -1;
       return i < numPrimitives;
     }
 
     /* Returns the number of stored line segments */
-    __forceinline size_t size() const
-    {
-      //return bsf(~movemask(valid()));
+    __forceinline size_t size() const {
       return numPrimitives;
     }
 
-    /* Returns the geometry IDs */
-    // template<class T>
-    // static __forceinline T unmask(T &index) { return index & 0x3fffffff; }
-
-    __forceinline unsigned int geomID(unsigned int i = 0) const
-    {
+    __forceinline unsigned int geomID(unsigned int i = 0) const {
       return sharedGeomID;
     }
-    //__forceinline       vuint<M> geomID()       { return unmask(geomIDs); }
-    //__forceinline const vuint<M> geomID() const { return unmask(geomIDs); }
-    //__forceinline unsigned int geomID(const size_t i) const { assert(i<M); return unmask(geomIDs[i]); }
 
-    /* Returns the primitive IDs */
-    __forceinline vuint<M>& primID()
-    {
+    __forceinline vuint<M>& primID() {
       return primIDs;
     }
-    __forceinline const vuint<M>& primID() const
-    {
+    __forceinline const vuint<M>& primID() const {
       return primIDs;
     }
-    __forceinline unsigned int primID(const size_t i) const
-    {
+    __forceinline unsigned int primID(const size_t i) const {
       assert(i < M);
       return primIDs[i];
     }
@@ -117,8 +92,8 @@ namespace embree
     __forceinline void gather(Vec4vf<M>& p0, const Points* geom) const;
     __forceinline void gather(Vec4vf<M>& p0, Vec3vf<M>& n0, const Points* geom) const;
 
-    __forceinline void gatheri(Vec4vf<M>& p0, const Points* geom, const vint<M>& itime) const;
-    __forceinline void gatheri(Vec4vf<M>& p0, Vec3vf<M>& n0, const Points* geom, const vint<M>& itime) const;
+    __forceinline void gatheri(Vec4vf<M>& p0, const Points* geom, const int itime) const;
+    __forceinline void gatheri(Vec4vf<M>& p0, Vec3vf<M>& n0, const Points* geom, const int itime) const;
 
     __forceinline void gather(Vec4vf<M>& p0, const Points* geom, float time) const;
     __forceinline void gather(Vec4vf<M>& p0, Vec3vf<M>& n0, const Points* geom, float time) const;
@@ -235,9 +210,9 @@ namespace embree
     };
 
     /*! output operator */
-    friend __forceinline embree_ostream operator<<(embree_ostream cout, const PointMi& line)
+    friend __forceinline embree_ostream operator<<(embree_ostream cout, const PointMi& point)
     {
-      return cout << "Line" << M << "i {" << line.v0 << ", " << line.geomID() << ", " << line.primID() << "}";
+      return cout << "Point" << M << "i {" << point.geomID() << ", " << point.primID() << "}";
     }
 
    public:
@@ -275,55 +250,53 @@ namespace embree
   }
 
   template<>
-  __forceinline void PointMi<4>::gatheri(Vec4vf4& p0, const Points* geom, const vint4& itime) const
+  __forceinline void PointMi<4>::gatheri(Vec4vf4& p0, const Points* geom, const int itime) const
   {
-    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(primID(0), itime[0]));
-    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(primID(1), itime[1]));
-    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(primID(2), itime[2]));
-    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(primID(3), itime[3]));
+    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(primID(0), itime));
+    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(primID(1), itime));
+    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(primID(2), itime));
+    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(primID(3), itime));
     transpose(a0, a1, a2, a3, p0.x, p0.y, p0.z, p0.w);
   }
 
   template<>
-  __forceinline void PointMi<4>::gatheri(Vec4vf4& p0, Vec3vf4& n0, const Points* geom, const vint4& itime) const
+  __forceinline void PointMi<4>::gatheri(Vec4vf4& p0, Vec3vf4& n0, const Points* geom, const int itime) const
   {
-    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(primID(0), itime[0]));
-    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(primID(1), itime[1]));
-    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(primID(2), itime[2]));
-    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(primID(3), itime[3]));
+    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(primID(0), itime));
+    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(primID(1), itime));
+    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(primID(2), itime));
+    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(primID(3), itime));
     transpose(a0, a1, a2, a3, p0.x, p0.y, p0.z, p0.w);
-    const vfloat4 b0 = vfloat4(geom->normal(primID(0), itime[0]));
-    const vfloat4 b1 = vfloat4(geom->normal(primID(1), itime[1]));
-    const vfloat4 b2 = vfloat4(geom->normal(primID(2), itime[2]));
-    const vfloat4 b3 = vfloat4(geom->normal(primID(3), itime[3]));
+    const vfloat4 b0 = vfloat4(geom->normal(primID(0), itime));
+    const vfloat4 b1 = vfloat4(geom->normal(primID(1), itime));
+    const vfloat4 b2 = vfloat4(geom->normal(primID(2), itime));
+    const vfloat4 b3 = vfloat4(geom->normal(primID(3), itime));
     transpose(b0, b1, b2, b3, n0.x, n0.y, n0.z);
   }
 
   template<>
   __forceinline void PointMi<4>::gather(Vec4vf4& p0, const Points* geom, float time) const
   {
-    const vfloat4 numTimeSegments(geom->fnumTimeSegments);
-    vfloat4 ftime;
-    const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
+    float ftime;
+    const int itime = geom->timeSegment(time, ftime);
 
     Vec4vf4 a0; gatheri(a0, geom, itime);
     Vec4vf4 b0; gatheri(b0, geom, itime + 1);
-    p0 = lerp(a0, b0, ftime);
+    p0 = lerp(a0, b0, vfloat4(ftime));
   }
 
   template<>
   __forceinline void PointMi<4>::gather(Vec4vf4& p0, Vec3vf4& n0, const Points* geom, float time) const
   {
-    const vfloat4 numTimeSegments(geom->fnumTimeSegments);
-    vfloat4 ftime;
-    const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
+    float ftime;
+    const int itime = geom->timeSegment(time, ftime);
 
     Vec4vf4 a0, b0;
     Vec3vf4 norm0, norm1;
     gatheri(a0, norm0, geom, itime);
     gatheri(b0, norm1, geom, itime + 1);
-    p0 = lerp(a0, b0, ftime);
-    n0 = lerp(norm0, norm1, ftime);
+    p0 = lerp(a0, b0, vfloat4(ftime));
+    n0 = lerp(norm0, norm1, vfloat4(ftime));
   }
 
 #if defined(__AVX__)
@@ -366,69 +339,67 @@ namespace embree
   }
 
   template<>
-  __forceinline void PointMi<8>::gatheri(Vec4vf8& p0, const Points* geom, const vint8& itime) const
+  __forceinline void PointMi<8>::gatheri(Vec4vf8& p0, const Points* geom, const int itime) const
   {
-    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(primID(0), itime[0]));
-    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(primID(1), itime[1]));
-    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(primID(2), itime[2]));
-    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(primID(3), itime[3]));
-    const vfloat4 a4 = vfloat4::loadu(geom->vertexPtr(primID(4), itime[4]));
-    const vfloat4 a5 = vfloat4::loadu(geom->vertexPtr(primID(5), itime[5]));
-    const vfloat4 a6 = vfloat4::loadu(geom->vertexPtr(primID(6), itime[6]));
-    const vfloat4 a7 = vfloat4::loadu(geom->vertexPtr(primID(7), itime[7]));
+    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(primID(0), itime));
+    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(primID(1), itime));
+    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(primID(2), itime));
+    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(primID(3), itime));
+    const vfloat4 a4 = vfloat4::loadu(geom->vertexPtr(primID(4), itime));
+    const vfloat4 a5 = vfloat4::loadu(geom->vertexPtr(primID(5), itime));
+    const vfloat4 a6 = vfloat4::loadu(geom->vertexPtr(primID(6), itime));
+    const vfloat4 a7 = vfloat4::loadu(geom->vertexPtr(primID(7), itime));
     transpose(a0, a1, a2, a3, a4, a5, a6, a7, p0.x, p0.y, p0.z, p0.w);
   }
 
   template<>
-  __forceinline void PointMi<8>::gatheri(Vec4vf8& p0, Vec3vf8& n0, const Points* geom, const vint8& itime) const
+  __forceinline void PointMi<8>::gatheri(Vec4vf8& p0, Vec3vf8& n0, const Points* geom, const int itime) const
   {
-    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(primID(0), itime[0]));
-    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(primID(1), itime[1]));
-    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(primID(2), itime[2]));
-    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(primID(3), itime[3]));
-    const vfloat4 a4 = vfloat4::loadu(geom->vertexPtr(primID(4), itime[4]));
-    const vfloat4 a5 = vfloat4::loadu(geom->vertexPtr(primID(5), itime[5]));
-    const vfloat4 a6 = vfloat4::loadu(geom->vertexPtr(primID(6), itime[6]));
-    const vfloat4 a7 = vfloat4::loadu(geom->vertexPtr(primID(7), itime[7]));
+    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(primID(0), itime));
+    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(primID(1), itime));
+    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(primID(2), itime));
+    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(primID(3), itime));
+    const vfloat4 a4 = vfloat4::loadu(geom->vertexPtr(primID(4), itime));
+    const vfloat4 a5 = vfloat4::loadu(geom->vertexPtr(primID(5), itime));
+    const vfloat4 a6 = vfloat4::loadu(geom->vertexPtr(primID(6), itime));
+    const vfloat4 a7 = vfloat4::loadu(geom->vertexPtr(primID(7), itime));
     transpose(a0, a1, a2, a3, a4, a5, a6, a7, p0.x, p0.y, p0.z, p0.w);
-    const vfloat4 b0 = vfloat4(geom->normal(primID(0), itime[0]));
-    const vfloat4 b1 = vfloat4(geom->normal(primID(1), itime[1]));
-    const vfloat4 b2 = vfloat4(geom->normal(primID(2), itime[2]));
-    const vfloat4 b3 = vfloat4(geom->normal(primID(3), itime[3]));
-    const vfloat4 b4 = vfloat4(geom->normal(primID(4), itime[4]));
-    const vfloat4 b5 = vfloat4(geom->normal(primID(5), itime[5]));
-    const vfloat4 b6 = vfloat4(geom->normal(primID(6), itime[6]));
-    const vfloat4 b7 = vfloat4(geom->normal(primID(7), itime[7]));
+    const vfloat4 b0 = vfloat4(geom->normal(primID(0), itime));
+    const vfloat4 b1 = vfloat4(geom->normal(primID(1), itime));
+    const vfloat4 b2 = vfloat4(geom->normal(primID(2), itime));
+    const vfloat4 b3 = vfloat4(geom->normal(primID(3), itime));
+    const vfloat4 b4 = vfloat4(geom->normal(primID(4), itime));
+    const vfloat4 b5 = vfloat4(geom->normal(primID(5), itime));
+    const vfloat4 b6 = vfloat4(geom->normal(primID(6), itime));
+    const vfloat4 b7 = vfloat4(geom->normal(primID(7), itime));
     transpose(b0, b1, b2, b3, b4, b5, b6, b7, n0.x, n0.y, n0.z);
   }
 
   template<>
   __forceinline void PointMi<8>::gather(Vec4vf8& p0, const Points* geom, float time) const
   {
-    const vfloat8 numTimeSegments(geom->fnumTimeSegments);
-    vfloat8 ftime;
-    const vint8 itime = getTimeSegment(vfloat8(time), numTimeSegments, ftime);
+    float ftime;
+    const int itime = geom->timeSegment(time, ftime);
 
     Vec4vf8 a0;
     gatheri(a0, geom, itime);
     Vec4vf8 b0;
     gatheri(b0, geom, itime + 1);
-    p0 = lerp(a0, b0, ftime);
+    p0 = lerp(a0, b0, vfloat8(ftime));
   }
 
   template<>
   __forceinline void PointMi<8>::gather(Vec4vf8& p0, Vec3vf8& n0, const Points* geom, float time) const
   {
-    const vfloat8 numTimeSegments(geom->fnumTimeSegments);
-    vfloat8 ftime;
-    const vint8 itime = getTimeSegment(vfloat8(time), numTimeSegments, ftime);
+    float ftime;
+    const int itime = geom->timeSegment(time, ftime);
 
     Vec4vf8 a0, b0;
     Vec3vf8 norm0, norm1;
     gatheri(a0, norm0, geom, itime);
     gatheri(b0, norm1, geom, itime + 1);
-    p0 = lerp(a0, b0, ftime);
-    n0 = lerp(norm0, norm1, ftime);
+    p0 = lerp(a0, b0, vfloat8(ftime));
+    n0 = lerp(norm0, norm1, vfloat8(ftime));
   }
 #endif
 
@@ -437,4 +408,5 @@ namespace embree
 
   typedef PointMi<4> Point4i;
   typedef PointMi<8> Point8i;
+  
 }  // namespace embree

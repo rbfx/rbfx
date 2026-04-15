@@ -56,7 +56,7 @@ unsigned DecompressData(void* dest, const void* src, unsigned destSize)
         return (unsigned)LZ4_decompress_fast((const char*)src, (char*)dest, destSize);
 }
 
-bool CompressStream(Serializer& dest, Deserializer& src)
+bool CompressStream(Serializer& dest, Deserializer& src, unsigned compressionLevel)
 {
     unsigned srcSize = src.GetSize() - src.GetPosition();
     // Prepend the source and dest. data size in the stream so that we know to buffer & uncompress the right amount
@@ -74,7 +74,7 @@ bool CompressStream(Serializer& dest, Deserializer& src)
     if (src.Read(srcBuffer.get(), srcSize) != srcSize)
         return false;
 
-    auto destSize = (unsigned)LZ4_compress_HC((const char*)srcBuffer.get(), (char*)destBuffer.get(), srcSize, LZ4_compressBound(srcSize), 0);
+    auto destSize = (unsigned)LZ4_compress_HC((const char*)srcBuffer.get(), (char*)destBuffer.get(), srcSize, LZ4_compressBound(srcSize), compressionLevel);
     bool success = true;
     success &= dest.WriteUInt(srcSize);
     success &= dest.WriteUInt(destSize);

@@ -50,6 +50,9 @@
 
 #if defined(EA_PLATFORM_MICROSOFT) && !defined(EA_PLATFORM_MINGW)
 	// Nothing to do
+#elif defined(EA_PLATFORM_SONY)
+	#include <Dinkum/threads/xtimec.h>
+	#include <kernel.h>
 #elif defined(EA_PLATFORM_APPLE)
 	#include <mach/mach_time.h>
 #elif defined(EA_PLATFORM_POSIX) || defined(EA_PLATFORM_MINGW) || defined(EA_PLATFORM_ANDROID) 
@@ -586,8 +589,21 @@ namespace chrono
 			EA_RESTORE_VC_WARNING()
 			return uint64_t(frequency * (double)queryCounter());
 		#elif defined EA_PLATFORM_SONY
-			static_assert(false, "Implementing GetTicks() requires first party support");
-			return 0;
+			auto queryFrequency = []
+			{
+				// nanoseconds/seconds / ticks/seconds
+				return double(1000000000.0L / (long double)sceKernelGetProcessTimeCounterFrequency());  // nanoseconds per tick
+			};
+
+			auto queryCounter = []
+			{
+				return sceKernelGetProcessTimeCounter();
+			};
+
+			EA_DISABLE_VC_WARNING(4640)  // warning C4640: construction of local static object is not thread-safe (VS2013)
+			static auto frequency = queryFrequency(); // cache cpu frequency on first call
+			EA_RESTORE_VC_WARNING()
+			return uint64_t(frequency * (double)queryCounter());
 		#elif defined(EA_PLATFORM_APPLE)
 			auto queryTimeInfo = []
 			{
@@ -702,7 +718,12 @@ namespace chrono
 	// chrono_literals  
 	///////////////////////////////////////////////////////////////////////////////
 	#if EASTL_USER_LITERALS_ENABLED && EASTL_INLINE_NAMESPACES_ENABLED
-		EA_DISABLE_VC_WARNING(4455) // disable warning C4455: literal suffix identifiers that do not start with an underscore are reserved
+		// Disabling the Clang/GCC/MSVC warning about using user
+		// defined literals without a leading '_' as they are reserved
+		// for standard libary usage.
+		EA_DISABLE_VC_WARNING(4455)
+		EA_DISABLE_CLANG_WARNING(-Wuser-defined-literals)
+		EA_DISABLE_GCC_WARNING(-Wliteral-suffix)
 		inline namespace literals
 		{
 			inline namespace chrono_literals
@@ -735,7 +756,9 @@ namespace chrono
 
 			} // namespace chrono_literals
 		}// namespace literals
-		EA_RESTORE_VC_WARNING() // warning: 4455
+		EA_RESTORE_GCC_WARNING()	// -Wliteral-suffix
+		EA_RESTORE_CLANG_WARNING()	// -Wuser-defined-literals
+		EA_RESTORE_VC_WARNING()		// warning: 4455
 	#endif
 
 } // namespace eastl

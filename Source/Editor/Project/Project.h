@@ -259,6 +259,7 @@ private:
 
     void InitializeHotkeys();
     void EnsureDirectoryInitialized();
+    void UpdateDefaultAssetPipeline();
     void InitializeDefaultProject();
     void InitializeResourceCache();
     void ResetLayout();
@@ -292,6 +293,7 @@ private:
     const ea::string previewPngPath_;
 
     ea::string dataPath_;
+    ea::string defaultAssetPipeline_;
 
     const ResourceCacheGuard oldCacheState_;
     /// @}

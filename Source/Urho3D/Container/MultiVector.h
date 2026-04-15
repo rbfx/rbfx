@@ -43,9 +43,15 @@ public:
 
     /// Iterator base.
     template <class OuterIterator, class InnerIterator>
-    class BaseIterator : public ea::iterator<EASTL_ITC_NS::forward_iterator_tag, T>
+    class BaseIterator
     {
     public:
+        using iterator_category = EASTL_ITC_NS::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = ptrdiff_t;
+        using pointer = T*;
+        using reference = T&;
+
         /// Construct default.
         BaseIterator() = default;
 

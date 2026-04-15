@@ -38,6 +38,7 @@ namespace Urho3D
 IKSolver::IKSolver(Context* context)
     : LogicComponent(context)
 {
+    SetUpdateEventMask(USE_POSTUPDATE | USE_WORLDORIGINUPDATE);
 }
 
 IKSolver::~IKSolver()
@@ -53,6 +54,7 @@ void IKSolver::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Solve when Paused", bool, solveWhenPaused_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Solve from Original", bool, solveFromOriginal_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Continuous Rotation", bool, settings_.continuousRotations_, false, AM_DEFAULT);
 }
 
@@ -85,6 +87,14 @@ void IKSolver::PostUpdate(float timeStep)
         Solve(timeStep);
 }
 
+void IKSolver::UpdateWorldOrigin(const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta)
+{
+    for (auto& [_, ikNode] : solverNodes_)
+        ikNode.previousPosition_ -= delta.ToVector3();
+    for (IKSolverComponent* solver : solvers_)
+        solver->UpdateWorldOrigin(oldOrigin, newOrigin, delta);
+}
+
 void IKSolver::Solve(float timeStep)
 {
     if (IsChainTreeExpired())
@@ -101,7 +111,12 @@ void IKSolver::Solve(float timeStep)
         return;
 
     SendIKEvent(true);
-    UpdateOriginalTransforms();
+
+    if (solveFromOriginal_)
+        UpdateOriginalTransforms();
+    else
+        SetOriginalTransforms();
+
     for (IKSolverComponent* solver : solvers_)
     {
         URHO3D_ASSERT(solver);
@@ -161,9 +176,12 @@ void IKSolver::RebuildSolvers()
 
 void IKSolver::SetOriginalTransforms()
 {
-    const Matrix3x4 inverseWorldTransform = node_->GetWorldTransform().Inverse();
+    const Matrix3x4 worldTransform = node_->GetWorldTransform();
     for (auto& [node, solverNode] : solverNodes_)
-        solverNode.SetOriginalTransform(node->GetWorldPosition(), node->GetWorldRotation(), inverseWorldTransform);
+    {
+        const Matrix3x4 localTransform = IKSolverComponent::GetParentTransform(node, node_);
+        solverNode.SetOriginalTransform(localTransform.Translation(), localTransform.Rotation(), worldTransform);
+    }
 }
 
 void IKSolver::UpdateOriginalTransforms()

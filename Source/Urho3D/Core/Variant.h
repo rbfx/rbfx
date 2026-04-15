@@ -32,10 +32,12 @@
 
 #include "../Container/Ptr.h"
 #include "../Container/ByteVector.h"
+#include "../Container/Str.h"
 #include "../Core/Assert.h"
 #include "../Core/Exception.h"
 #include "../Core/TypeTrait.h"
 #include "../Math/Color.h"
+#include "../Math/MathDefs.h"
 #include "../Math/Matrix3.h"
 #include "../Math/Matrix3x4.h"
 #include "../Math/Rect.h"
@@ -60,6 +62,8 @@ enum VariantType : unsigned char
     VAR_VECTOR2,
     VAR_VECTOR3,
     VAR_VECTOR4,
+    VAR_DOUBLEVECTOR2,
+    VAR_DOUBLEVECTOR3,
     VAR_QUATERNION,
     VAR_COLOR,
     VAR_STRING,
@@ -448,6 +452,8 @@ union VariantValue
     Vector2 vector2_;
     Vector3 vector3_;
     Vector4 vector4_;
+    DoubleVector2 doubleVector2_;
+    DoubleVector3* doubleVector3_;
     Rect rect_;
     IntVector2 intVector2_;
     IntVector3 intVector3_;
@@ -546,6 +552,18 @@ public:
 
     /// Construct from a Vector3.
     Variant(const Vector3& value)       // NOLINT(google-explicit-constructor)
+    {
+        *this = value;
+    }
+
+    /// Construct from a DoubleVector2.
+    Variant(const DoubleVector2& value)       // NOLINT(google-explicit-constructor)
+    {
+        *this = value;
+    }
+
+    /// Construct from a DoubleVector3.
+    Variant(const DoubleVector3& value)       // NOLINT(google-explicit-constructor)
     {
         *this = value;
     }
@@ -825,6 +843,22 @@ public:
         return *this;
     }
 
+    /// Assign from a DoubleVector2.
+    Variant& operator =(const DoubleVector2& rhs)
+    {
+        SetType(VAR_DOUBLEVECTOR2);
+        value_.doubleVector2_ = rhs;
+        return *this;
+    }
+
+    /// Assign from a DoubleVector3.
+    Variant& operator =(const DoubleVector3& rhs)
+    {
+        SetType(VAR_DOUBLEVECTOR3);
+        *value_.doubleVector3_ = rhs;
+        return *this;
+    }
+
     /// Assign from a Vector4.
     Variant& operator =(const Vector4& rhs)
     {
@@ -1035,6 +1069,16 @@ public:
         return type_ == VAR_VECTOR3 ? value_.vector3_ == rhs : false;
     }
 
+    bool operator ==(const DoubleVector2& rhs) const
+    {
+        return type_ == VAR_DOUBLEVECTOR2 ? value_.doubleVector2_ == rhs : false;
+    }
+
+    bool operator ==(const DoubleVector3& rhs) const
+    {
+        return type_ == VAR_DOUBLEVECTOR3 ? *value_.doubleVector3_ == rhs : false;
+    }
+
     /// Test for equality with a Vector4. To return true, both the type and value must match.
     bool operator ==(const Vector4& rhs) const
     {
@@ -1200,6 +1244,12 @@ public:
     /// Test for inequality with a Vector3.
     bool operator !=(const Vector3& rhs) const { return !(*this == rhs); }
 
+    /// Test for inequality with a DoubleVector2.
+    bool operator !=(const DoubleVector2& rhs) const { return !(*this == rhs); }
+
+    /// Test for inequality with a DoubleVector3.
+    bool operator !=(const DoubleVector3& rhs) const { return !(*this == rhs); }
+
     /// Test for inequality with an Vector4.
     bool operator !=(const Vector4& rhs) const { return !(*this == rhs); }
 
@@ -1302,7 +1352,7 @@ public:
             new (value_.storage_) CustomVariantValueImpl<ea::unique_ptr<T>>(ea::make_unique<T>(ea::move(value)));
     }
 
-    /// Return int or zero on type mismatch. Floats and doubles are converted.
+    /// Return int or zero on type mismatch. Floats, doubles, and bools are converted.
     int GetInt() const
     {
         if (type_ == VAR_INT)
@@ -1313,11 +1363,13 @@ public:
             return static_cast<int>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<int>(value_.double_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1 : 0;
         else
             return 0;
     }
 
-    /// Return 64 bit int or zero on type mismatch. Floats and doubles are converted.
+    /// Return 64 bit int or zero on type mismatch. Floats, doubles, and bools are converted.
     long long GetInt64() const
     {
         if (type_ == VAR_INT64)
@@ -1328,11 +1380,13 @@ public:
             return static_cast<long long>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<long long>(value_.double_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1 : 0;
         else
             return 0;
     }
 
-    /// Return unsigned 64 bit int or zero on type mismatch. Floats and doubles are converted.
+    /// Return unsigned 64 bit int or zero on type mismatch. Floats, doubles, and bools are converted.
     unsigned long long GetUInt64() const
     {
         if (type_ == VAR_INT64)
@@ -1343,11 +1397,13 @@ public:
             return static_cast<unsigned long long>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<unsigned long long>(value_.double_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1 : 0;
         else
             return 0;
     }
 
-    /// Return unsigned int or zero on type mismatch. Floats and doubles are converted.
+    /// Return unsigned int or zero on type mismatch. Floats, doubles, and bools are converted.
     unsigned GetUInt() const
     {
         if (type_ == VAR_INT)
@@ -1358,6 +1414,8 @@ public:
             return static_cast<unsigned>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<unsigned>(value_.double_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1 : 0;
         else
             return 0;
     }
@@ -1381,7 +1439,7 @@ public:
         }
     }
 
-    /// Return float or zero on type mismatch. Ints and doubles are converted.
+    /// Return float or zero on type mismatch. Ints, doubles, and bools are converted.
     float GetFloat() const
     {
         if (type_ == VAR_FLOAT)
@@ -1392,11 +1450,13 @@ public:
             return static_cast<float>(value_.int_);
         else if (type_ == VAR_INT64)
             return static_cast<float>(value_.int64_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1.0f : 0.0f;
         else
             return 0.0f;
     }
 
-    /// Return double or zero on type mismatch. Ints and floats are converted.
+    /// Return double or zero on type mismatch. Ints, floats, and bools are converted.
     double GetDouble() const
     {
         if (type_ == VAR_DOUBLE)
@@ -1407,6 +1467,8 @@ public:
             return static_cast<double>(value_.int_);
         else if (type_ == VAR_INT64)
             return static_cast<double>(value_.int64_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1.0 : 0.0;
         else
             return 0.0;
     }
@@ -1416,6 +1478,12 @@ public:
 
     /// Return Vector3 or zero on type mismatch.
     const Vector3& GetVector3() const { return type_ == VAR_VECTOR3 ? value_.vector3_ : Vector3::ZERO; }
+
+    /// Return DoubleVector2 or zero on type mismatch.
+    const DoubleVector2& GetDoubleVector2() const { return type_ == VAR_DOUBLEVECTOR2 ? value_.doubleVector2_ : DoubleVector2::ZERO; }
+
+    /// Return DoubleVector3 or zero on type mismatch.
+    const DoubleVector3& GetDoubleVector3() const { return type_ == VAR_DOUBLEVECTOR3 ? *value_.doubleVector3_ : DoubleVector3::ZERO; }
 
     /// Return Vector4 or zero on type mismatch.
     const Vector4& GetVector4() const { return type_ == VAR_VECTOR4 ? value_.vector4_ : Vector4::ZERO; }
@@ -1719,6 +1787,10 @@ template <> inline VariantType GetVariantType<Vector3>() { return VAR_VECTOR3; }
 
 template <> inline VariantType GetVariantType<Vector4>() { return VAR_VECTOR4; }
 
+template <> inline VariantType GetVariantType<DoubleVector2>() { return VAR_DOUBLEVECTOR2; }
+
+template <> inline VariantType GetVariantType<DoubleVector3>() { return VAR_DOUBLEVECTOR3; }
+
 template <> inline VariantType GetVariantType<Quaternion>() { return VAR_QUATERNION; }
 
 template <> inline VariantType GetVariantType<Color>() { return VAR_COLOR; }
@@ -1821,6 +1893,10 @@ template <> URHO3D_API VariantMap Variant::Get<VariantMap>(int) const;
 template <> URHO3D_API Vector2 Variant::Get<Vector2>(int) const;
 
 template <> URHO3D_API Vector3 Variant::Get<Vector3>(int) const;
+
+template <> URHO3D_API DoubleVector2 Variant::Get<DoubleVector2>(int) const;
+
+template <> URHO3D_API DoubleVector3 Variant::Get<DoubleVector3>(int) const;
 
 template <> URHO3D_API Vector4 Variant::Get<Vector4>(int) const;
 

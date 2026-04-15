@@ -129,7 +129,7 @@ bool LANDiscoveryManager::Start(unsigned short port, LANDiscoveryModeFlags mode)
 #else
             socklen_t addrLen = sizeof(addr);
 #endif
-            int result = recvfrom(socket_, (char*)buffer_.GetData(), buffer_.GetSize(), 0, (sockaddr*)&addr, &addrLen);
+            auto result = recvfrom(socket_, (char*)buffer_.GetData(), buffer_.GetSize(), 0, (sockaddr*)&addr, &addrLen);
             if (result > 0)
             {
                 using namespace NetworkHostDiscovered;
@@ -192,7 +192,7 @@ bool LANDiscoveryManager::Start(unsigned short port, LANDiscoveryModeFlags mode)
                 if (!address)
                     continue;
                 addr.sin_addr.s_addr = htonl(address);
-                int result = sendto(socket_, (char*)buffer_.GetData(), buffer_.GetSize(), MSG_NOSIGNAL, (sockaddr*)&addr, sizeof(addr));
+                auto result = sendto(socket_, (char*)buffer_.GetData(), buffer_.GetSize(), MSG_NOSIGNAL, (sockaddr*)&addr, sizeof(addr));
                 if (result < 0)
                 {
                     Log::GetLogger("LANDiscovery").Error("Failed to broadcast: result = {}, error = {}", result, GetLastNetworkError());

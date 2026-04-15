@@ -1,33 +1,18 @@
-//
-// Copyright (c) 2017-2022 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include <rtc/websocket.hpp>
-#include <rtc/peerconnection.hpp>
-#include <rtc/description.hpp>
+#include "Urho3D/Network/Transport/DataChannel/DataChannelConnection.h"
+
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Timer.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Network/Transport/DataChannel/DataChannelServer.h"
+
 #include <rtc/candidate.hpp>
-#include <Urho3D/Core/Context.h>
-#include <Urho3D/Core/Timer.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
+#include <rtc/description.hpp>
+#include <rtc/peerconnection.hpp>
+#include <rtc/websocket.hpp>
 
 namespace Urho3D
 {
@@ -69,7 +54,7 @@ void DataChannelConnection::Disconnect()
 {
     if (peer_)
     {
-        AddRef();    // Ensure this object is alive until all callbacks are done executing.
+        selfHolder_ = this; // Ensure this object is alive until all callbacks are done executing.
         state_ = State::Disconnecting;
 #ifndef URHO3D_PLATFORM_WEB
         peer_->resetCallbacks();
@@ -87,12 +72,13 @@ void DataChannelConnection::SendMessage(ea::string_view data, PacketTypeFlags ty
         return;
     }
 
-    if (data.size() > maxDataSize_)
+    if (data.size() > GetMaxMessageSize())
     {
         URHO3D_LOGERROR("DataChannel tried to send {} bytes of data, which is more than max allowed {} bytes of data per message.",
-            data.size(), maxDataSize_);
+            data.size(), GetMaxMessageSize());
         return;
     }
+
     if (auto* dc = dataChannels_[type].get())
     {
         if (dc->isOpen())
@@ -106,6 +92,18 @@ void DataChannelConnection::SendMessage(ea::string_view data, PacketTypeFlags ty
         URHO3D_LOGERROR("DataChannel {} is not connected!", (int)type);
         Disconnect();
     }
+}
+
+unsigned DataChannelConnection::GetMaxMessageSize() const
+{
+    if (state_ != State::Connected || !dataChannels_[0])
+        return 0;
+
+#if URHO3D_PLATFORM_WEB
+    return MaxNetworkPacketSize;
+#else
+    return static_cast<unsigned>(dataChannels_[0]->maxMessageSize());
+#endif
 }
 
 void DataChannelConnection::OnDataChannelConnected(int index)
@@ -128,6 +126,9 @@ void DataChannelConnection::OnDataChannelConnected(int index)
 
     if (onConnected_)
         onConnected_();
+
+    if (server_)
+        server_->onConnected_(this);
 
     // Signaling server connection is no longer needed.
     websocket_->close();
@@ -171,7 +172,7 @@ void DataChannelConnection::OnDataChannelDisconnected(int index)
     }
     peer_ = nullptr;
     server_ = nullptr;
-    ReleaseRef();
+    selfHolder_ = nullptr;
 }
 
 void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std::shared_ptr<rtc::WebSocket> websocket)
@@ -204,10 +205,10 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
     if (server != nullptr)
     {
         using namespace std::chrono_literals;
-        dataChannels_[PacketType::UnreliableUnordered] = peer_->createDataChannel("uu", {{rtc::Reliability::Type::Rexmit, false, 0}});
-        dataChannels_[PacketType::Reliable] = peer_->createDataChannel("ru", {{rtc::Reliability::Type::Reliable, false}});
-        dataChannels_[PacketType::Ordered] = peer_->createDataChannel("uo", {{rtc::Reliability::Type::Rexmit, true, 0}});
-        dataChannels_[PacketType::ReliableOrdered] = peer_->createDataChannel("ro", {{rtc::Reliability::Type::Reliable, true}});
+        dataChannels_[PacketType::UnreliableUnordered] = peer_->createDataChannel("uu", {{rtc::Reliability::Type::Rexmit, true, 0}});
+        dataChannels_[PacketType::Reliable] = peer_->createDataChannel("ru", {{rtc::Reliability::Type::Reliable, true}});
+        dataChannels_[PacketType::Ordered] = peer_->createDataChannel("uo", {{rtc::Reliability::Type::Rexmit, false, 0}});
+        dataChannels_[PacketType::ReliableOrdered] = peer_->createDataChannel("ro", {{rtc::Reliability::Type::Reliable, false}});
         for (int i = 0; i < URHO3D_ARRAYSIZE(dataChannels_); i++)
         {
             auto& dc = dataChannels_[i];
@@ -244,7 +245,7 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
     websocket->onOpen([this]() { websocketWasOpened_ = true; });
     websocket->onMessage([this](rtc::binary data)
     {
-        MemoryBuffer msg(data.data(), data.size());
+        MemoryBuffer msg(data.data(), static_cast<unsigned>(data.size()));
         ea::string type = msg.ReadString();
         if (type == "offer" || type == "answer")
         {

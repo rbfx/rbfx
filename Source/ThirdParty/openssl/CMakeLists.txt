@@ -30,7 +30,7 @@
 #   ./config
 
 project(openssl)
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.0...3.25)
 
 include(CheckTypeSize)
 check_type_size("long" LONG_INT)
@@ -59,9 +59,7 @@ add_subdirectory(crypto)
 add_subdirectory(ssl)
 file(COPY e_os.h DESTINATION ${PROJECT_BINARY_DIR}/include/)
 
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
-install (DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.h)
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS ssl crypto EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+install_third_party_libs(ssl crypto)

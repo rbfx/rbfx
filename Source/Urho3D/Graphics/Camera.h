@@ -206,15 +206,18 @@ public:
     const Frustum& GetFrustum() const;
     /// Return projection matrix. It's in D3D convention with depth range 0 - 1.
     /// @property
-    Matrix4 GetProjection(bool ignoreFlip = false) const;
+    const Matrix4& GetProjection(bool ignoreFlip = false) const;
+    /// Return inverse projection matrix.
+    const Matrix4& GetInverseProjection(bool ignoreFlip = false) const;
     /// Return projection matrix converted to API-specific format for use as a shader parameter.
     /// @property
     Matrix4 GetGPUProjection(bool ignoreFlip = false) const;
     /// Return effective view-projection matrix with optionally applied depth bias.
     Matrix4 GetEffectiveGPUViewProjection(float constantDepthBias) const;
     /// Return view matrix.
-    /// @property
     const Matrix3x4& GetView() const;
+    /// Return inverted view matrix.
+    const Matrix3x4& GetInverseView() const;
     /// Return view-projection matrix.
     const Matrix4& GetViewProj() const;
     /// Return inverted view-projection matrix.
@@ -320,39 +323,58 @@ protected:
     void OnMarkedDirty(Node* node) override;
 
 private:
+    /// Recalculate view matrix.
+    void UpdateView() const;
     /// Recalculate projection matrix.
     void UpdateProjection() const;
     /// Recalculate view-projection matrices.
     void UpdateViewProjectionMatrices() const;
 
+    /// Helper class to store both value and inverse.
+    /// TODO: Move to math.
+    template <class T>
+    struct CachedInverse
+    {
+        CachedInverse() = default;
+
+        CachedInverse(const T& value)
+            : value_{value}
+            , inverse_{value.Inverse()}
+        {
+        }
+
+        CachedInverse(const T& value, const T& inverse)
+            : value_{value}
+            , inverse_{inverse}
+        {
+        }
+
+        T value_{};
+        T inverse_{};
+    };
+
     /// Cached projection data.
     struct CachedProjection
     {
-        /// Cached projection matrix.
-        Matrix4 projection_;
+        /// Cached projection matrix (normal and flipped).
+        ea::array<CachedInverse<Matrix4>, 2> projection_{};
         /// Cached actual near clip distance.
         float projNearClip_{};
         /// Cached actual far clip distance.
         float projFarClip_{};
         /// Use custom projection matrix flag. Used internally.
         bool customProjection_{};
-    };
 
-    /// Cached view-projection matrix.
-    struct CachedViewProj
-    {
-        /// Cached view-projection matrix.
-        Matrix4 viewProj_;
-        /// Cached inverse view-projection matrix.
-        Matrix4 inverseViewProj_;
+        CachedProjection() = default;
+        CachedProjection(const Matrix4& projection, float nearClip, float farClip, bool customProjection);
     };
 
     /// Cached view matrix.
-    mutable ThreadSafeCache<Matrix3x4> cachedView_;
+    mutable ThreadSafeCache<CachedInverse<Matrix3x4>> cachedView_;
     /// Cached projection data.
     mutable ThreadSafeCache<CachedProjection> cachedProjection_;
     /// Cached view-projection matrices.
-    mutable ThreadSafeCache<CachedViewProj> cachedViewProj_;
+    mutable ThreadSafeCache<CachedInverse<Matrix4>> cachedViewProj_;
     /// Cached world space frustum.
     mutable ThreadSafeCache<Frustum> cachedFrustum_;
     /// Orthographic mode flag.

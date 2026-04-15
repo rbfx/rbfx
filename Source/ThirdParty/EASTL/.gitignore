@@ -1,14 +1,50 @@
-/doc/
+tags
+cscope.out
+**/*.swp
+**/*.swo
+.swp
+*.swp
+.swo
+.TMP
+-.d
+eastl_build_out
+build_bench
+bench.bat
+build.bat
+.p4config
 
-/test/CMakeLists.txt
-/test/source/
+## CMake generated files
+CMakeCache.txt
+cmake_install.cmake
 
-/test/packages/EAMain/
-/test/packages/EATest/
-/test/packages/EAThread/
+## Patch files
+*.patch
 
-/test/packages/*/.gitmodules
-/test/packages/*/.travis.yml
-/test/packages/*/CMakeLists.txt
-/test/packages/*/doc/
-/test/packages/*/test/
+## For Visual Studio Generated projects
+*.sln
+**/*.vcxproj
+**/*.vcxproj.filters
+*.VC.opendb
+*.sdf
+**/*.suo
+**/*.user
+.vs/*
+**/Debug/*
+CMakeFiles/*
+EASTL.dir/**
+RelWithDebInfo/*
+Release/*
+Win32/*
+x64/*
+MinSizeRel/*
+build*/*
+Testing/*
+%ALLUSERSPROFILE%/*
+
+# Buck
+/buck-out/
+/.buckd/
+/buckaroo/
+.buckconfig.local
+BUCKAROO_DEPS
+.vscode/settings.json

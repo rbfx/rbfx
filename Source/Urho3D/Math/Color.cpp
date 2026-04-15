@@ -20,14 +20,16 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Math/Color.h"
+#include "Urho3D/Math/Color.h"
 
-#include <cstdio>
+#include "Urho3D/Container/Str.h"
+
 #include <cassert>
+#include <cstdio>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -252,7 +254,7 @@ Color Color::Lerp(const Color& rhs, float t) const
 ea::string Color::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%g %g %g %g", r_, g_, b_, a_);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%g %g %g %g", r_, g_, b_, a_);
     return ea::string(tempBuffer);
 }
 

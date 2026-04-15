@@ -421,9 +421,9 @@ void RibbonTrail::SetMaterial(Material* material)
     batches_[0].material_ = material;
 }
 
-void RibbonTrail::OnSceneSet(Scene* scene)
+void RibbonTrail::OnSceneSet(Scene* previousScene, Scene* scene)
 {
-    Drawable::OnSceneSet(scene);
+    Drawable::OnSceneSet(previousScene, scene);
 
     if (scene && IsEnabledEffective())
         SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(RibbonTrail, HandleScenePostUpdate));
@@ -442,7 +442,27 @@ void RibbonTrail::OnWorldBoundingBoxUpdate()
         worldBox.Merge(BoundingBox(p - scale, p + scale));
     }
 
+    // Avoid degenerate bounding boxes.
+    if (points_.empty())
+        worldBox.Merge(node_->GetWorldPosition());
+
     worldBoundingBox_ = worldBox;
+}
+
+void RibbonTrail::PostUpdateWorldOrigin(
+    const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta)
+{
+    const Vector3 offset = delta.ToVector3();
+    for (TrailPoint& point : points_)
+    {
+        point.position_ -= offset;
+        point.parentPos_ -= offset;
+    }
+    previousPosition_ -= offset;
+    previousOffset_ -= offset;
+    endTail_.position_ -= offset;
+    endTail_.parentPos_ -= offset;
+    forceUpdate_ = true;
 }
 
 void RibbonTrail::UpdateBufferSize()

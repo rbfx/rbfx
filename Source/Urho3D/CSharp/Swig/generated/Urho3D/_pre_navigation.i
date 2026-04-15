@@ -3,7 +3,6 @@
 %csconstvalue("0") Urho3D::NAVIGATIONQUALITY_LOW;
 %csconstvalue("1") Urho3D::NAVIGATIONQUALITY_MEDIUM;
 %csconstvalue("2") Urho3D::NAVIGATIONQUALITY_HIGH;
-%csconstvalue("0") Urho3D::NAVIGATIONPUSHINESS_LOW;
 %csconstvalue("0") Urho3D::NAVMESH_PARTITION_WATERSHED;
 %csconstvalue("0") Urho3D::NAVPATHFLAG_NONE;
 %csconstvalue("1") Urho3D::NAVPATHFLAG_START;
@@ -17,7 +16,7 @@
 %csattribute(Urho3D::CrowdManager, %arg(unsigned int), NumObstacleAvoidanceTypes, GetNumObstacleAvoidanceTypes);
 %csattribute(Urho3D::CrowdManager, %arg(Urho3D::VariantVector), ObstacleAvoidanceTypesAttr, GetObstacleAvoidanceTypesAttr, SetObstacleAvoidanceTypesAttr);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::CrowdAgentVelocityCallback), VelocityCallback, GetVelocityCallback, SetVelocityCallback);
-%csattribute(Urho3D::CrowdAgent, %arg(Urho3D::CrowdAgentHeightCallback), HeightCallback, GetHeightCallback, SetHeightCallback);
+%csattribute(Urho3D::CrowdAgent, %arg(Urho3D::CrowdAgentPositionCallback), PositionCallback, GetPositionCallback, SetPositionCallback);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::Vector3), Position, GetPosition);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::Vector3), DesiredVelocity, GetDesiredVelocity);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::Vector3), ActualVelocity, GetActualVelocity);
@@ -35,7 +34,6 @@
 %csattribute(Urho3D::CrowdAgent, %arg(unsigned int), QueryFilterType, GetQueryFilterType, SetQueryFilterType);
 %csattribute(Urho3D::CrowdAgent, %arg(unsigned int), ObstacleAvoidanceType, GetObstacleAvoidanceType, SetObstacleAvoidanceType);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::NavigationQuality), NavigationQuality, GetNavigationQuality, SetNavigationQuality);
-%csattribute(Urho3D::CrowdAgent, %arg(Urho3D::NavigationPushiness), NavigationPushiness, GetNavigationPushiness, SetNavigationPushiness);
 %csattribute(Urho3D::CrowdAgent, %arg(bool), IsInCrowd, IsInCrowd);
 %csattribute(Urho3D::NavigationMesh, %arg(ea::vector<IntVector2>), AllTileIndices, GetAllTileIndices);
 %csattribute(Urho3D::NavigationMesh, %arg(ea::string), MeshName, GetMeshName, SetMeshName);
@@ -87,16 +85,6 @@ public static partial class E
         public static implicit operator StringHash(NavigationMeshRebuiltEvent e) { return e._event; }
     }
     public static NavigationMeshRebuiltEvent NavigationMeshRebuilt = new NavigationMeshRebuiltEvent();
-    public class NavigationAreaRebuiltEvent {
-        private StringHash _event = new StringHash("NavigationAreaRebuilt");
-        public StringHash Node = new StringHash("Node");
-        public StringHash Mesh = new StringHash("Mesh");
-        public StringHash BoundsMin = new StringHash("BoundsMin");
-        public StringHash BoundsMax = new StringHash("BoundsMax");
-        public NavigationAreaRebuiltEvent() { }
-        public static implicit operator StringHash(NavigationAreaRebuiltEvent e) { return e._event; }
-    }
-    public static NavigationAreaRebuiltEvent NavigationAreaRebuilt = new NavigationAreaRebuiltEvent();
     public class NavigationTileAddedEvent {
         private StringHash _event = new StringHash("NavigationTileAdded");
         public StringHash Node = new StringHash("Node");

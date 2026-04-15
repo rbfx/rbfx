@@ -60,6 +60,11 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Offset internal tile cache data (dtCompressedTile) by tile offset and Y.
+    void OffsetCacheTile(ByteSpan tileData, const IntVector2& tileOffset, int offsetY);
+    /// Offset serialized tile data.
+    virtual void OffsetTileData(ByteSpan tileData, const IntVector3& delta);
+
     /// Return tile data.
     ea::vector<unsigned char> GetTileData(const IntVector2& tileIndex) const override;
     /// Return whether the Obstacle is touching the given tile.
@@ -103,34 +108,49 @@ public:
     bool GetDrawObstacles() const { return drawObstacles_; }
 
 protected:
-    struct TileCacheData;
+    struct ObstacleUpdate
+    {
+        WeakPtr<Obstacle> obstacle_;
+        unsigned oldObstacleId_{};
+        bool removed_{};
+        bool sendEvents_{};
+    };
 
     /// Override NavigationMesh.
     /// @{
     bool AllocateMesh(unsigned maxTiles) override;
     bool RebuildMesh() override;
-    unsigned BuildTilesFromGeometry(
-        ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to) override;
+
+    TileBuilderFunction GetTileBuilder() const override;
+    NavBuildDataPtr CreateTileBuildData(
+        const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& tileIndex) const override;
+    bool ReplaceTileData(NavBuildData& build) override;
+    void OffsetTilesGeometry(const IntVector2& tileOffset, int offsetY) override;
     /// @}
 
     /// Subscribe to events when assigned to a scene.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Trigger the tile cache to make updates to the nav mesh if necessary.
     void HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData);
 
-    /// Used by Obstacle class to add itself to the tile cache, if 'silent' an event will not be raised.
-    void AddObstacle(Obstacle* obstacle, bool silent = false);
+    /// Return queued update related to the Obstacle (existing or new).
+    ObstacleUpdate& GetObstacleUpdate(Obstacle* obstacle);
+    /// Used by Obstacle class to add itself to the tile cache.
+    void AddObstacle(Obstacle* obstacle);
     /// Used by Obstacle class to update itself.
     void ObstacleChanged(Obstacle* obstacle);
-    /// Used by Obstacle class to remove itself from the tile cache, if 'silent' an event will not be raised.
-    void RemoveObstacle(Obstacle* obstacle, bool silent = false);
+    /// Used by Obstacle class to remove itself from the tile cache.
+    void RemoveObstacle(Obstacle* obstacle);
+    /// Process Obstacle update. Tile cache should have sufficient space.
+    void ProcessObstacleUpdate(ObstacleUpdate& update);
 
-    /// Build one tile of the navigation mesh. Return true if successful.
-    int BuildTile(ea::vector<NavigationGeometryInfo>& geometryList, int x, int z, TileCacheData* tiles);
     /// Off-mesh connections to be rebuilt in the mesh processor.
     ea::vector<OffMeshConnection*> CollectOffMeshConnections(const BoundingBox& bounds);
     /// Release the navigation mesh, query, and tile cache.
     void ReleaseNavigationMesh() override;
+
+    /// Build dynamic navigation mesh tile.
+    static bool BuildDynamicTileData(DynamicNavBuildData& build);
 
 private:
     /// Write tiles data.
@@ -148,7 +168,7 @@ private:
     /// Used by dtTileCache to allocate blocks of memory.
     ea::unique_ptr<dtTileCacheAlloc> allocator_;
     /// Used by dtTileCache to compress the original tiles to use when reconstructing for changes.
-    ea::unique_ptr<dtTileCacheCompressor> compressor_;
+    ea::shared_ptr<dtTileCacheCompressor> compressor_;
     /// Mesh processor used by Detour, in this case a 'pass-through' processor.
     ea::unique_ptr<dtTileCacheMeshProcess> meshProcessor_;
     /// Maximum number of obstacle objects allowed.
@@ -159,6 +179,8 @@ private:
     bool drawObstacles_{};
     /// Queue of tiles to be built.
     ea::vector<IntVector2> tileQueue_;
+    /// Queue of obstacle updates.
+    ea::vector<ObstacleUpdate> obstacleQueue_;
 };
 
 }

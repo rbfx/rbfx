@@ -49,6 +49,8 @@ public:
     static void RegisterObject(Context* context);
     /// Visualize the component as debug geometry.
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+    /// Handle scene set for event subscription.
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
 
     /// Reset light probes.
     void ResetLightProbes();
@@ -70,10 +72,17 @@ public:
     /// Return reference on file with baked data.
     ResourceRef GetFileRef() const;
 
+    /// Set offset.
+    void SetOffset(const Vector3& offset) { offset_ = offset; }
+    /// Return offset.
+    const Vector3& GetOffset() const { return offset_; }
+
     /// Serialize GI data. May throw ArchiveException.
     void SerializeData(Archive& archive);
 
 private:
+    /// Handle world origin post-update.
+    void HandleWorldOriginPostUpdate(VariantMap& eventData);
     /// Reload GI data.
     void ReloadData();
 
@@ -82,6 +91,9 @@ private:
 
     /// Reference on file with GI data.
     ResourceRef fileRef_{ BinaryFile::GetTypeStatic() };
+
+    /// Offset.
+    Vector3 offset_;
 
     /// Light probes mesh.
     TetrahedralMesh lightProbesMesh_;

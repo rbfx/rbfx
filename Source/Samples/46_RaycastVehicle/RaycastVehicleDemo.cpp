@@ -90,7 +90,7 @@ void RaycastVehicleDemo::CreateScene()
     scene_->CreateComponent<PhysicsWorld>();
     // Create camera and define viewport. We will be doing load / save, so it's convenient to create the camera outside the scene,
     // so that it won't be destroyed and recreated, and we don't have to redefine the viewport on load
-    cameraNode_ = new Node(context_);
+    cameraNode_ = scene_->CreateChild("Camera");
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(500.0f);
     SetViewport(0, new Viewport(context_, scene_, camera));
@@ -167,7 +167,6 @@ void RaycastVehicleDemo::CreateInstructions()
     auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys to drive, F to brake, mouse/touch to rotate camera\n"
-        "F5 to save scene, F7 to load\n"
         "Space to toggle physics debug geometry");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     // The text has multiple rows. Center them in relation to each other
@@ -202,27 +201,6 @@ void RaycastVehicleDemo::Update(float timeStep)
         // Get movement controls and assign them to the vehicle component. If UI has a focused element, clear controls
         if (!ui->GetFocusElement())
         {
-            // Check for loading / saving the scene
-            if (input->GetKeyPress(KEY_F5))
-            {
-                File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/RaycastVehicleDemo.xml",
-                              FILE_WRITE);
-                scene_->SaveXML(saveFile);
-            }
-            if (input->GetKeyPress(KEY_F7))
-            {
-                File loadFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/RaycastVehicleDemo.xml",
-                              FILE_READ);
-                scene_->LoadXML(loadFile);
-                // After loading we have to reacquire the weak pointer to the Vehicle component, as it has been recreated
-                // Simply find the vehicle's scene node by name as there's only one of them
-                Node* vehicleNode = scene_->GetChild("Vehicle", true);
-                if (vehicleNode)
-                {
-                    vehicle_ = vehicleNode->GetComponent<Vehicle2>();
-                }
-            }
-
             // Toggle debug geometry with space
             if (input->GetKeyPress(KEY_SPACE))
                 drawDebug_ = !drawDebug_;

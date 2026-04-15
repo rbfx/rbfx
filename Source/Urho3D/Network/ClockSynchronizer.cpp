@@ -117,6 +117,11 @@ void ClockSynchronizerMessage::Save(Serializer& dest) const
     dest.WriteUInt(remoteSent_);
 }
 
+ea::string ClockSynchronizerMessage::ToString() const
+{
+    return Format("{{magic={}, phase={}, ...}}", magic_, phase_);
+}
+
 ClockSynchronizer::ClockSynchronizer(unsigned pingIntervalMs, unsigned maxPingMs, unsigned clockBufferSize,
     unsigned pingBufferSize, ea::function<unsigned()> getTimestamp)
     : getTimestamp_(getTimestamp)

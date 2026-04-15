@@ -39,6 +39,13 @@ const StringVector replicatedRotationModeNames = {
     //"Y"
 };
 
+const StringVector vectorEncodingNames = {
+    "Float",
+    "Double",
+    "Int32",
+    "Int16",
+};
+
 }
 
 ReplicatedTransform::ReplicatedTransform(Context* context)
@@ -68,16 +75,26 @@ void ReplicatedTransform::RegisterObject(Context* context)
     URHO3D_ENUM_ATTRIBUTE("Synchronize Rotation", synchronizeRotation_, replicatedRotationModeNames, DefaultSynchronizeRotation, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Extrapolate Position", bool, extrapolatePosition_, DefaultExtrapolatePosition, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Extrapolate Rotation", bool, extrapolateRotation_, DefaultExtrapolateRotation, AM_DEFAULT);
+
+    URHO3D_ENUM_ATTRIBUTE("Position Encoding", positionEncoding_, vectorEncodingNames, DefaultPositionEncoding, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Position Encoding Parameter", float, positionEncodingParameter_, DefaultPositionEncodingParameter, AM_DEFAULT);
+    URHO3D_ENUM_ATTRIBUTE("Rotation Encoding", rotationEncoding_, vectorEncodingNames, DefaultRotationEncoding, AM_DEFAULT);
+    URHO3D_ENUM_ATTRIBUTE("Velocity Encoding", velocityEncoding_, vectorEncodingNames, DefaultVelocityEncoding, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Velocity Encoding Parameter", float, velocityEncodingParameter_, DefaultVelocityEncodingParameter, AM_DEFAULT);
+    URHO3D_ENUM_ATTRIBUTE("Angular Velocity Encoding", angularVelocityEncoding_, vectorEncodingNames, DefaultAngularVelocityEncoding, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Angular Velocity Encoding Parameter", float, angularVelocityEncodingParameter_, DefaultAngularVelocityEncodingParameter, AM_DEFAULT);
 }
 
 void ReplicatedTransform::InitializeOnServer()
 {
     InitializeCommon();
 
-    server_.previousPosition_ = node_->GetWorldPosition();
+    server_.previousPosition_ = GetScene()->ToAbsoluteWorldPosition(node_->GetWorldPosition());
     server_.previousRotation_ = node_->GetWorldRotation();
     server_.latestSentPosition_ = server_.previousPosition_;
     server_.latestSentRotation_ = server_.previousRotation_;
+
+    includePreviousFrame_ = numUploadAttempts_ != 0;
 
     SubscribeToEvent(E_ENDSERVERNETWORKFRAME,
         [this](VariantMap& eventData)
@@ -95,6 +112,7 @@ void ReplicatedTransform::WriteSnapshot(NetworkFrame frame, Serializer& dest)
     flags[1] = synchronizeRotation_ != ReplicatedRotationMode::None;
     flags[2] = extrapolatePosition_;
     flags[3] = extrapolateRotation_;
+    flags[4] = includePreviousFrame_;
     dest.WriteVLE(flags.to_uint32());
 }
 
@@ -107,6 +125,7 @@ void ReplicatedTransform::InitializeFromSnapshot(NetworkFrame frame, Deserialize
     synchronizeRotation_ = flags[1] ? ReplicatedRotationMode::XYZ : ReplicatedRotationMode::None;
     extrapolatePosition_ = flags[2];
     extrapolateRotation_ = flags[3];
+    includePreviousFrame_ = flags[4];
 
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
     const unsigned updateFrequency = replicationManager->GetUpdateFrequency();
@@ -114,6 +133,9 @@ void ReplicatedTransform::InitializeFromSnapshot(NetworkFrame frame, Deserialize
     const unsigned extrapolationInFrames = CeilToInt(extrapolationInSeconds * updateFrequency);
     client_.positionSampler_.Setup(extrapolatePosition_ ? extrapolationInFrames : 0, smoothingConstant_, snapThreshold_);
     client_.rotationSampler_.Setup(extrapolateRotation_ ? extrapolationInFrames : 0, smoothingConstant_, M_LARGE_VALUE);
+
+    positionTrace_.Set(frame, {GetScene()->ToAbsoluteWorldPosition(node_->GetWorldPosition()), DoubleVector3::ZERO});
+    rotationTrace_.Set(frame, {node_->GetWorldRotation(), Vector3::ZERO});
 }
 
 void ReplicatedTransform::UpdateTransformOnServer()
@@ -135,7 +157,7 @@ void ReplicatedTransform::OnServerFrameEnd(NetworkFrame frame)
     server_.previousPosition_ = server_.position_;
     server_.previousRotation_ = server_.rotation_;
 
-    server_.position_ = node_->GetWorldPosition();
+    server_.position_ = GetScene()->ToAbsoluteWorldPosition(node_->GetWorldPosition());
     server_.rotation_ = node_->GetWorldRotation();
 
     if (server_.movedDuringFrame_)
@@ -145,7 +167,7 @@ void ReplicatedTransform::OnServerFrameEnd(NetworkFrame frame)
     }
     else
     {
-        server_.velocity_ = Vector3::ZERO;
+        server_.velocity_ = DoubleVector3::ZERO;
         server_.angularVelocity_ = Vector3::ZERO;
     }
 
@@ -176,17 +198,31 @@ void ReplicatedTransform::InterpolateState(float replicaTimeStep, float inputTim
     if (!replicateOwner_ && GetNetworkObject()->IsOwnedByThisClient())
         return;
 
-    if (!positionTrackOnly_ && synchronizePosition_)
+    const bool maintainPosition = !positionTrackOnly_ && synchronizePosition_;
+    const bool maintainRotation = !rotationTrackOnly_ && synchronizeRotation_ != ReplicatedRotationMode::None;
+
+    if (maintainPosition)
     {
+        Scene* scene = GetScene();
+        if (client_.previousPositionInvalid_)
+        {
+            const Vector3 previousPosition = node_->GetWorldPosition();
+            client_.positionSampler_.UpdatePreviousValue(replicaTime, scene->ToAbsoluteWorldPosition(previousPosition));
+        }
         if (auto newPosition = client_.positionSampler_.UpdateAndSample(positionTrace_, replicaTime, replicaTimeStep))
-            node_->SetWorldPosition(*newPosition);
+            node_->SetWorldPosition(scene->ToRelativeWorldPosition(*newPosition));
     }
 
-    if (!rotationTrackOnly_ && synchronizeRotation_ != ReplicatedRotationMode::None)
+    if (maintainRotation)
     {
+        if (client_.previousRotationInvalid_)
+            client_.rotationSampler_.UpdatePreviousValue(replicaTime, node_->GetWorldRotation());
         if (auto newRotation = client_.rotationSampler_.UpdateAndSample(rotationTrace_, replicaTime, replicaTimeStep))
             node_->SetWorldRotation(*newRotation);
     }
+
+    client_.previousPositionInvalid_ = !maintainPosition;
+    client_.previousRotationInvalid_ = !maintainRotation;
 }
 
 bool ReplicatedTransform::PrepareUnreliableDelta(NetworkFrame frame)
@@ -194,38 +230,60 @@ bool ReplicatedTransform::PrepareUnreliableDelta(NetworkFrame frame)
     return server_.pendingUploadAttempts_ > 0 || numUploadAttempts_ == 0;
 }
 
-void ReplicatedTransform::WriteUnreliableDelta(NetworkFrame frame, Serializer& dest)
+void ReplicatedTransform::WriteUnreliableDeltaForFrame(NetworkFrame frame, Serializer& dest)
 {
     if (synchronizePosition_)
     {
-        dest.WriteVector3(server_.position_);
-        dest.WriteVector3(server_.velocity_);
+        const PositionAndVelocity defaultPositionData{server_.position_, server_.velocity_};
+        const auto positionData = positionTrace_.GetRaw(frame).value_or(defaultPositionData);
+
+        dest.WritePackedVector3(positionData.value_, positionEncoding_, positionEncodingParameter_);
+        dest.WritePackedVector3(positionData.derivative_, velocityEncoding_, velocityEncodingParameter_);
     }
 
     if (synchronizeRotation_ == ReplicatedRotationMode::XYZ)
     {
-        dest.WriteQuaternion(server_.rotation_);
-        dest.WriteVector3(server_.angularVelocity_);
+        const RotationAndVelocity defaultRotationData{server_.rotation_, server_.angularVelocity_};
+        const auto rotationData = rotationTrace_.GetRaw(frame).value_or(defaultRotationData);
+
+        dest.WritePackedQuaternion(rotationData.value_, rotationEncoding_);
+        dest.WritePackedVector3(rotationData.derivative_.Cast<DoubleVector3>(), angularVelocityEncoding_,
+            angularVelocityEncodingParameter_);
     }
 }
 
-void ReplicatedTransform::ReadUnreliableDelta(NetworkFrame frame, Deserializer& src)
+void ReplicatedTransform::ReadUnreliableDeltaForFrame(NetworkFrame frame, Deserializer& src)
 {
     if (synchronizePosition_)
     {
-        const Vector3 position = src.ReadVector3();
-        const Vector3 velocity = src.ReadVector3();
+        const DoubleVector3 position = src.ReadPackedVector3(positionEncoding_, positionEncodingParameter_);
+        const DoubleVector3 velocity = src.ReadPackedVector3(velocityEncoding_, velocityEncodingParameter_);
 
         positionTrace_.Set(frame, {position, velocity});
     }
 
     if (synchronizeRotation_ == ReplicatedRotationMode::XYZ)
     {
-        const Quaternion rotation = src.ReadQuaternion();
-        const Vector3 angularVelocity = src.ReadVector3();
+        const Quaternion rotation = src.ReadPackedQuaternion(rotationEncoding_);
+        const Vector3 angularVelocity =
+            src.ReadPackedVector3(angularVelocityEncoding_, angularVelocityEncodingParameter_).Cast<Vector3>();
 
         rotationTrace_.Set(frame, {rotation, angularVelocity});
     }
+}
+
+void ReplicatedTransform::WriteUnreliableDelta(NetworkFrame frame, Serializer& dest)
+{
+    WriteUnreliableDeltaForFrame(frame, dest);
+    if (includePreviousFrame_)
+        WriteUnreliableDeltaForFrame(frame - 1, dest);
+}
+
+void ReplicatedTransform::ReadUnreliableDelta(NetworkFrame frame, Deserializer& src)
+{
+    ReadUnreliableDeltaForFrame(frame, src);
+    if (includePreviousFrame_)
+        ReadUnreliableDeltaForFrame(frame - 1, src);
 }
 
 PositionAndVelocity ReplicatedTransform::SampleTemporalPosition(const NetworkTime& time) const

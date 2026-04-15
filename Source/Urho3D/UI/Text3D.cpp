@@ -788,7 +788,7 @@ void Text3D::CalculateFixedScreenSize(const FrameInfo& frame)
 
     if (fixedScreenSize_)
     {
-        Vector4 projPos = frame.camera_->GetViewProj() * worldPosition.ToVector4(1.0f);
+        Vector4 projPos = frame.camera_->GetProjection() * (frame.camera_->GetView() * worldPosition).ToVector4(1.0f);
 
         float textScaling = 2.0f / TEXT_SCALING / frame.viewSize_.y_;
         float halfViewWorldSize = frame.camera_->GetHalfViewSize();
@@ -800,7 +800,7 @@ void Text3D::CalculateFixedScreenSize(const FrameInfo& frame)
             // Convert XY from [-1, 1] to [0, 1], snap to pixels, convert back
             projPos.x_ = (SnapRound(projPos.x_ / projPos.w_ * 0.5f + 0.5f, 1.0f / frame.viewSize_.x_) * 2.0f - 1.0f) * projPos.w_;
             projPos.y_ = (SnapRound(projPos.y_ / projPos.w_ * 0.5f + 0.5f, 1.0f / frame.viewSize_.y_) * 2.0f - 1.0f) * projPos.w_;
-            worldPosition = (frame.camera_->GetInverseViewProj() * projPos).ToVector3();
+            worldPosition = frame.camera_->GetInverseView() * (frame.camera_->GetInverseProjection() * projPos);
         }
     }
 

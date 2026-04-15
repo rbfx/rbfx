@@ -549,7 +549,7 @@ bool ChangeNodeSubtreeAction::MergeWith(const EditorAction& other)
     if (!otherAction)
         return false;
 
-    if (scene_ != otherAction->scene_)
+    if (scene_ != otherAction->scene_ || newData_.GetId() != otherAction->newData_.GetId())
         return false;
 
     newData_ = otherAction->newData_;

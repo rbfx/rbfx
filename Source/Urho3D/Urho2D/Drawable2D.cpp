@@ -102,9 +102,9 @@ const ea::vector<SourceBatch2D>& Drawable2D::GetSourceBatches()
     return sourceBatches_;
 }
 
-void Drawable2D::OnSceneSet(Scene* scene)
+void Drawable2D::OnSceneSet(Scene* previousScene, Scene* scene)
 {
-    // Do not call Drawable::OnSceneSet(node), as 2D drawable components should not be added to the octree
+    // Do not call Drawable::OnSceneSet, as 2D drawable components should not be added to the octree
     // but are instead rendered through Renderer2D
     if (scene)
     {

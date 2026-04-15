@@ -56,8 +56,8 @@ URHO3D_GLOBAL_CONSTANT(ConstString EP_ORGANIZATION_NAME{"OrganizationName"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_ORIENTATIONS{"Orientations"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_PACKAGE_CACHE_DIR{"PackageCacheDir"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_PLUGINS{"Plugins"});
-URHO3D_GLOBAL_CONSTANT(ConstString EP_RENAME_PLUGINS{"RenamePlugins"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_REFRESH_RATE{"RefreshRate"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_RELOAD_PLUGINS{"ReloadPlugins"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_RESOURCE_PACKAGES{"ResourcePackages"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_RESOURCE_PATHS{"ResourcePaths"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_RESOURCE_PREFIX_PATHS{"ResourcePrefixPaths"});
@@ -94,10 +94,12 @@ URHO3D_GLOBAL_CONSTANT(ConstString EP_PSO_CACHE{"PsoCacheDir"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_RENDER_BACKEND{"RenderBackend"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_RENDER_ADAPTER_ID{"RenderAdapterId"});
 URHO3D_GLOBAL_CONSTANT(ConstString EP_XR{"XR"});
+URHO3D_GLOBAL_CONSTANT(ConstString EP_PROFILE{"Profile"});
 /// @}
 
 /// Global parameters for user code which go as Engine parameters as convenience.
 /// @{
+URHO3D_GLOBAL_CONSTANT(ConstString Param_IsRunningInEditor{"IsRunningInEditor"});
 URHO3D_GLOBAL_CONSTANT(ConstString Param_SceneName{"SceneName"});
 URHO3D_GLOBAL_CONSTANT(ConstString Param_ScenePosition{"ScenePosition"});
 URHO3D_GLOBAL_CONSTANT(ConstString Param_SceneRotation{"SceneRotation"});

@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -26,7 +26,7 @@ namespace embree
     const Index threadCount = (Index) TaskScheduler::threadCount();
     taskCount = min(taskCount,threadCount,maxTasks);
 
-    /* parallel invokation of all tasks */
+    /* parallel invocation of all tasks */
     dynamic_large_stack_array(Value,values,taskCount,8192); // consumes at most 8192 bytes on the stack
     parallel_for(taskCount, [&](const Index taskIndex) {
         const Index k0 = first+(taskIndex+0)*(last-first)/taskCount;
@@ -53,12 +53,22 @@ namespace embree
     return parallel_reduce_internal(taskCount,first,last,minStepSize,identity,func,reduction);
 
 #elif defined(TASKING_TBB)
+  #if TBB_INTERFACE_VERSION >= 12002
+    tbb::task_group_context context;
+    const Value v = tbb::parallel_reduce(tbb::blocked_range<Index>(first,last,minStepSize),identity,
+      [&](const tbb::blocked_range<Index>& r, const Value& start) { return reduction(start,func(range<Index>(r.begin(),r.end()))); },
+      reduction,context);
+    if (context.is_group_execution_cancelled())
+      throw std::runtime_error("task cancelled");
+    return v;
+  #else
     const Value v = tbb::parallel_reduce(tbb::blocked_range<Index>(first,last,minStepSize),identity,
       [&](const tbb::blocked_range<Index>& r, const Value& start) { return reduction(start,func(range<Index>(r.begin(),r.end()))); },
       reduction);
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
     return v;
+  #endif
 #else // TASKING_PPL
     struct AlignedValue
     {

@@ -32,8 +32,8 @@ using namespace Urho3D;
 struct ServerRaycastInfo
 {
     WeakPtr<Connection> clientConnection_;
-    Vector3 origin_;
-    Vector3 target_;
+    DoubleVector3 origin_;
+    DoubleVector3 target_;
     NetworkTime replicaTime_;
     NetworkTime inputTime_;
 };

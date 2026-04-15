@@ -67,7 +67,7 @@ bool IKStickTargets::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKStickTargets::UpdateChainLengths(const Transform& inverseFrameOfReference)
+void IKStickTargets::UpdateChainLengths(const Transform& inverseLocalFrameOfReference)
 {
 }
 
@@ -81,6 +81,16 @@ void IKStickTargets::SolveInternal(const Transform& frameOfReference, const IKSe
     ApplyActivation();
     UpdateRecovery();
     CommitWorldTransforms();
+}
+
+void IKStickTargets::UpdateWorldOriginInternal(const Vector3& delta)
+{
+    for (TargetInfo& targetInfo : targets_)
+    {
+        targetInfo.desiredWorldTransform_.position_ -= delta;
+        if (targetInfo.overrideWorldTransform_)
+            targetInfo.overrideWorldTransform_->position_ -= delta;
+    }
 }
 
 void IKStickTargets::CollectDesiredWorldTransforms()

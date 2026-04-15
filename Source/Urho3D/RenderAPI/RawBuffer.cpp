@@ -16,15 +16,15 @@
 namespace Urho3D
 {
 
-RawBuffer::RawBuffer(Context* context)
+RawBuffer::RawBuffer(Context* context, DeviceObjectFlags flags)
     : Object(context)
-    , DeviceObject(context)
+    , DeviceObject(context, flags)
 {
 }
 
-RawBuffer::RawBuffer(Context* context, const RawBufferParams& params, const void* data)
+RawBuffer::RawBuffer(Context* context, const RawBufferParams& params, const void* data, DeviceObjectFlags flags)
     : Object(context)
-    , DeviceObject(context)
+    , DeviceObject(context, flags)
 {
     Create(params, data);
 }
@@ -270,6 +270,12 @@ void RawBuffer::UpdateRange(const void* data, unsigned offset, unsigned size)
 void* RawBuffer::Map()
 {
     URHO3D_ASSERT(!IsLocked());
+
+    if (params_.size_ == 0)
+    {
+        URHO3D_LOGWARNING("RawBuffer::Map is called for empty buffer '{}'", debugName_);
+        return nullptr;
+    }
 
     // If shadowed, return shadow data and upload it on unlock
     if (params_.flags_.Test(BufferFlag::Shadowed))

@@ -62,14 +62,6 @@ enum NavigationQuality
     NAVIGATIONQUALITY_HIGH = 2
 };
 
-enum NavigationPushiness
-{
-    NAVIGATIONPUSHINESS_LOW = 0,
-    NAVIGATIONPUSHINESS_MEDIUM,
-    NAVIGATIONPUSHINESS_HIGH,
-    NAVIGATIONPUSHINESS_NONE
-};
-
 /// Crowd agent component, requires a CrowdManager component in the scene. When not set explicitly, agent's radius and height are defaulted to navigation mesh's agent radius and height, respectively.
 class URHO3D_API CrowdAgent : public Component
 {
@@ -77,6 +69,12 @@ class URHO3D_API CrowdAgent : public Component
 
     friend class CrowdManager;
     friend void CrowdAgentUpdateCallback(bool positionUpdate, dtCrowdAgent* ag, float* pos, float dt);
+
+public:
+    static constexpr float DefaultCollisionQueryRange = 5.0f;
+    static constexpr float DefaultSeparationWeight = 2.0f;
+    static constexpr unsigned DefaultCollisionLayer = 0;
+    static constexpr unsigned DefaultCollisionMask = 0xffffffff;
 
 public:
     /// Construct.
@@ -101,9 +99,9 @@ public:
     /// Return current velocity callback.
     const CrowdAgentVelocityCallback& GetVelocityCallback() const { return velocityCallback_; }
     /// Set height callback.
-    void SetHeightCallback(const CrowdAgentHeightCallback& callback) { heightCallback_ = callback; }
+    void SetPositionCallback(const CrowdAgentPositionCallback& callback) { positionCallback_ = callback; }
     /// Return current height callback.
-    const CrowdAgentHeightCallback& GetHeightCallback() const { return heightCallback_; }
+    const CrowdAgentPositionCallback& GetPositionCallback() const { return positionCallback_; }
 
     /// Submit a new target position request for this agent.
     /// @property
@@ -139,9 +137,10 @@ public:
     /// Set the agent's navigation quality.
     /// @property
     void SetNavigationQuality(NavigationQuality val);
-    /// Set the agent's navigation pushiness.
-    /// @property
-    void SetNavigationPushiness(NavigationPushiness val);
+    void SetCollisionQueryRange(float range);
+    void SetSeparationWeight(float weight);
+    void SetCollisionLayer(unsigned layer);
+    void SetCollisionMask(unsigned mask);
 
     /// Return the agent's position.
     /// @property
@@ -207,9 +206,13 @@ public:
     /// @property
     NavigationQuality GetNavigationQuality() const { return navQuality_; }
 
-    /// Get the agent's navigation pushiness.
-    /// @property
-    NavigationPushiness GetNavigationPushiness() const { return navPushiness_; }
+    float GetCollisionQueryRange() const { return collisionQueryRange_; }
+
+    float GetSeparationWeight() const { return separationWeight_; }
+
+    unsigned GetCollisionLayer() const { return collisionLayer_; }
+
+    unsigned GetCollisionMask() const { return collisionMask_; }
 
     /// Return true when the agent has a target.
     /// @property{get_requestedTarget}
@@ -222,6 +225,9 @@ public:
     /// @property
     bool IsInCrowd() const;
 
+    /// Update world origin.
+    void UpdateWorldOrigin(const Vector3& delta);
+
 protected:
     /// Handle crowd agent pre-update.
     virtual void OnCrowdVelocityUpdate(dtCrowdAgent* ag, float* pos, float dt);
@@ -230,7 +236,7 @@ protected:
     /// Handle node being assigned.
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle node being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// \todo Handle node transform being dirtied.
     void OnMarkedDirty(Node* node) override;
     /// Get internal Detour crowd agent.
@@ -252,17 +258,20 @@ private:
     /// Velocity callback.
     CrowdAgentVelocityCallback velocityCallback_;
     /// Height callback.
-    CrowdAgentHeightCallback heightCallback_;
+    CrowdAgentPositionCallback positionCallback_;
     /// Crowd manager reference to this agent.
     int agentCrowdId_;
     /// Requested target position.
     Vector3 targetPosition_;
     /// Requested target velocity.
     Vector3 targetVelocity_;
+    /// Actual velocity.
+    Vector3 actualVelocity_;
     /// Requested target type.
     CrowdAgentRequestedTarget requestedTargetType_;
     /// Flag indicating the node's position should be updated by Detour crowd manager.
     bool updateNodePosition_;
+
     /// Agent's max acceleration.
     float maxAccel_;
     /// Agent's max Velocity.
@@ -277,8 +286,11 @@ private:
     unsigned obstacleAvoidanceType_;
     /// Agent's navigation quality. The higher the setting, the higher the CPU usage during crowd simulation.
     NavigationQuality navQuality_;
-    /// Agent's navigation pushiness. The higher the setting, the stronger the agent pushes its colliding neighbours around.
-    NavigationPushiness navPushiness_;
+    float collisionQueryRange_{DefaultCollisionQueryRange};
+    float separationWeight_{DefaultSeparationWeight};
+    unsigned collisionLayer_{DefaultCollisionLayer};
+    unsigned collisionMask_{DefaultCollisionMask};
+
     /// Agent's previous position used to check for position changes.
     Vector3 previousPosition_;
     /// Agent's previous target state used to check for state changes.

@@ -41,6 +41,7 @@
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Scene/Node.h"
 #include "../Scene/Scene.h"
+#include "../Scene/SceneEvents.h"
 #include "../Urho2D/Drawable2D.h"
 #include "../Urho2D/Renderer2D.h"
 
@@ -275,6 +276,23 @@ bool Renderer2D::CheckVisibility(Drawable2D* drawable) const
     return frustum_.IsInsideFast(box) != OUTSIDE;
 }
 
+void Renderer2D::OnSceneSet(Scene* previousScene, Scene* scene)
+{
+    BaseClassName::OnSceneSet(previousScene, scene);
+
+    if (previousScene)
+    {
+        UnsubscribeFromEvent(E_WORLDORIGINUPDATE);
+        UnsubscribeFromEvent(E_WORLDORIGINPOSTUPDATE);
+    }
+
+    if (scene)
+    {
+        SubscribeToEvent(scene, E_WORLDORIGINUPDATE, &Renderer2D::HandleWorldOriginUpdate);
+        SubscribeToEvent(scene, E_WORLDORIGINPOSTUPDATE, &Renderer2D::HandleWorldOriginPostUpdate);
+    }
+}
+
 void Renderer2D::OnWorldBoundingBoxUpdate()
 {
     // Set a large dummy bounding box to ensure the renderer is rendered
@@ -352,6 +370,36 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
         batches_[i].distance_ = viewBatchInfo.distances_[i];
         batches_[i].material_ = viewBatchInfo.materials_[i];
         batches_[i].geometry_ = viewBatchInfo.geometries_[i];
+    }
+}
+
+void Renderer2D::HandleWorldOriginUpdate(StringHash eventType, VariantMap& eventData)
+{
+    using namespace WorldOriginUpdate;
+
+    const IntVector3 oldOrigin = eventData[P_OLDORIGIN].GetIntVector3();
+    const IntVector3 newOrigin = eventData[P_NEWORIGIN].GetIntVector3();
+    const IntVector3 delta = eventData[P_DELTA].GetIntVector3();
+
+    for (Drawable* drawable : drawables_)
+    {
+        if (drawable)
+            drawable->UpdateWorldOrigin(oldOrigin, newOrigin, delta);
+    }
+}
+
+void Renderer2D::HandleWorldOriginPostUpdate(StringHash eventType, VariantMap& eventData)
+{
+    using namespace WorldOriginPostUpdate;
+
+    const IntVector3 oldOrigin = eventData[P_OLDORIGIN].GetIntVector3();
+    const IntVector3 newOrigin = eventData[P_NEWORIGIN].GetIntVector3();
+    const IntVector3 delta = eventData[P_DELTA].GetIntVector3();
+
+    for (Drawable* drawable : drawables_)
+    {
+        if (drawable)
+            drawable->PostUpdateWorldOrigin(oldOrigin, newOrigin, delta);
     }
 }
 

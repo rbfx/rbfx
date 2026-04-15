@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+    
+<title>EAMemory</title>
+<link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+    <style type="text/css">
+<!--
+.style1 {font-size: smaller}
+-->
+    </style>
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAMemory</h1>
+
+<p>EAMemory provides functions related to copying and filling memory. </p>
+<p>Note the presence of &quot;C&quot; functions below such as MemcpyC. These refer to memory functions that operate only on cacheable memory, but are faster than otherwise. Cacheable memory is standard system RAM used by applications and is the memory you work with 98% of the time. However, on some hardware systems (e.g. gaming console machines) there is uncacheable memory, such as memory that is mapped to video addresses. This memory is typically called write-through or write-combined memory and is useful for writing data in one direction from system RAM to video memory. The &quot;C&quot; functions do not work on this kind of memory and you can instead use the regular functions such as Memcpy for uncacheable memory. The C here has nothing to do with the C vs. C++ language.</p>
+<table border="1">
+  <tr>
+    <td colspan="2" valign="top" scope="col"><h3>Memcpy</h3></td>
+  </tr>
+  <tr>
+    <td width="527" valign="top"><span class="style1">char8_t* Memcpy (void* pDest, const void* pSource, size_t n)</span></td>
+    <td rowspan="5" valign="top"><p>Copies nByteCount bytes from pSource to pDestination. The source and destination memory ranges must not overlap. Returns pDestination. There are no restrictions in the way of size, alignment, or memory type, though the source memory must be readable and the destination memory must be writable. </p>
+    <p>The MemcpyS  function copies memory from source to destination without filling the cache with the memory. This is useful for when you want to write memory that will not be read by the processor used to write it, such as when the CPU writes to memory used by the GPU. </p>
+    <p>The Memcpy128 function is useful for higher performance memory copies when the requirements can be met. The address pointed to by pDestination must be aligned on a 128-byte boundary, and uint8Count must be a multiple of 128.</p></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">char8_t* MemcpyC (void* pDest, const void* pSource, size_t n)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">char8_t* MemcpyS (void* pDest, const void* pSource, size_t n)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">char8_t* Memcpy128 (void* pDest, const void* pSource, size_t n)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">char8_t* Memcpy128C (void* pDest, const void* pSource, size_t n)</span></td>
+  </tr>
+  <tr>
+    <td colspan="2" valign="top"><h3>Memmove</h3></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">char8_t* Memmove (void* pDest, const void* pSource, size_t n)</span></td>
+    <td rowspan="2" valign="top">Copies nByteCount bytes from pSource to pDestination. The source and destination memory ranges may overlap. Returns pDestination. There are no restrictions in the way of size, alignment, or memory type, though the source memory must be readable and the destination memory must be writable. </td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">char8_t* MemmoveC (void* pDest, const void* pSource, size_t n)</span></td>
+  </tr>
+  <tr>
+    <td colspan="2" valign="top"><h3>Memset</h3></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">uint8_t* Memset8 (void* pDest, uint8_t c, size_t uint8Count)</span></td>
+    <td rowspan="10" valign="top"><p> The standard memset function replicates a given 8 bit value into a memory block. However, we might want to replicate a 16 bit, 32 bit, or 64 bit value into a block. That's what these functions do. The MemsetN function is a  generic version which can copy unusual sizes such as 24 bits (e.g. RGB fills). The count values for each of these is the count of uint16_t, count of uint32_t, count of pointers, etc.<br>
+  <br>
+  Memset8 is the same as the memset function. We provide additional variations of memset which set uint16_t values, uint32_t value, etc. instead of uint8_t values like Memset8. MemsetN writes a generic type of any size. In each case pDestination must point to enough memory to hold full values. Thus pDestination for Memset32 must have a capacity for at least (uint32Count * sizeof(uint32_t)) bytes. The destination is required to be aligned to its type. Thus the destination of Memset32 must be 32 bit aligned. There are no restrictions about the type of memory pDestination refers to except that it be writable.</p>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">uint8_t* Memset8C (void* pDest, uint8_t c, size_t uint8Count)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">uint8_t* Memset8_128 (void* pDest, uint8_t c, size_t uint8Count)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">uint8_t* Memset8_128C (void* pDest, uint8_t c, size_t uint8Count)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">uint16_t* Memset16 (void* pDest, uint16_t c, size_t uint16Count)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">uint32_t* Memset32 (void* pDest, uint32_t c, size_t uint32Count)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">uint64_t* Memset64 (void* pDest, uint64_t c, size_t uint64Count)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">void* MemsetN (void* pDest, const void* pSource, size_t sourceBytes, size_t nCount)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">void Memclear (void* pDest, size_t n)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">void MemclearC (void* pDest, size_t n)</span></td>
+  </tr>
+  <tr>
+    <td colspan="2" valign="top"><h3>Memfill</h3></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">void Memfill16 (void* pDest, uint16_t c, size_t byteCount)</span></td>
+    <td rowspan="5" valign="top">Memfill is the same as memset except that the count parameter is a count of bytes and not (for example) a count of uint32_t values. Memfill supports byte counts that aren't an even multiple the value size. Thus a call to Memfill32(p, 0x00112233, 3) is valid and does what you would expect. MemFill8 is not defined because it is the same thing as Memset8. MemfillSpecific fills (and potentially repeats) any source pattern into any destination space. There are no restrictions about the type of memory pDest refers to except that it be writable.</td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">void Memfill24 (void* pDest, uint32_t c, size_t byteCount)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">void Memfill32 (void* pDest, uint32_t c, size_t byteCount)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">void Memfill64 (void* pDest, uint64_t c, size_t byteCount)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">void MemfillSpecific(void* pDest, const void* pSource, size_t destByteCount, size_t sourceByteCount)</span></td>
+  </tr>
+  <tr>
+    <td colspan="2" valign="top"><h3>Memcheck</h3></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">uint8_t* Memcheck8 (void* pDest, uint8_t c, size_t byteCount)</span></td>
+    <td rowspan="4" valign="top">This family of functions is like Memfill except it verifies that the memory is filled as per the value and byte count. Returns a pointer to the first mis-matching byte if there's a mismatch. Returns NULL if  there are no mismatches. There are no restrictions about the type of memory pDest refers to except that it be readable.</td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">uint16_t* Memcheck16 (void* pDest, uint16_t c, size_t byteCount)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">uint32_t* Memcheck32 (void* pDest, uint32_t c, size_t byteCount)</span></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">uint64_t* Memcheck64 (void* pDest, uint64_t c, size_t byteCount)</span></td>
+  </tr>
+  <tr>
+    <td colspan="2" valign="top"><h3>Misc</h3></td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">const void* Memchr(const void* p, char8_t c, size_t n)</span></td>
+    <td valign="top">This is the same as memchr and wmemchr. Searches the first n characters (not necessarily bytes) of the memory block pointed to by pString for character c. Returns a pointer to the character or NULL if not found. There are no restrictions about the type of memory p refers to except that it be readable.</td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">int Memcmp(const void* p1, const void* p2, size_t n)</span></td>
+    <td valign="top">Same as memcmp and wmemcmp. Compares the first n bytes of two memory blocks pointed by p1 and p2.  The comparison is a bytewise compare and thus for strings it is case-sensitive.  For a case-insensitive string comparison, use the Stricmp function. Bytes are treated as uint8_t for comparison purposes. Returns 0 if the memory is equal, &lt; 0 if p1 &lt; p2, and &gt; 0 if p1 &gt; p2. There are no restrictions about the type of memory p1 and p2 refer to except that they be readable.</td>
+  </tr>
+  <tr>
+    <td valign="top"><span class="style1">void* EAAlloca(size_t n)</span></td>
+    <td valign="top"><p>EAAlloca is a portable declaration for the alloca function. </p>
+    <p>The alloca function allocates space in the stack frame of the caller, and returns a pointer to the allocated block. This temporary space is automatically freed when the function from which alloca is called returns.</p></td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+</body></html>
+
+
+

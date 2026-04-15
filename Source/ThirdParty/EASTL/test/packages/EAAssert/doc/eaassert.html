@@ -1,0 +1,217 @@
+<html>
+    <title>EA Assert</title>
+    <body>
+        <font face="tahoma">
+            <h1>EA Assert</h1>
+            <hr>
+            A simple lightweight package. Use...
+            <font color="#0000FF"><pre>
+                #include "EAAssert/eaassert.h"
+            </pre></font>
+            And get the following macros...
+            <ul>
+                <li>
+                    <code><font color="#FF00EE">EA_ASSERT(expr)</font></code> where <code><font color="#000099">
+                            expr</font></code> is an expression that evaluates to a boolean. For 
+                    example... <font color="#000099">
+                        <pre>   EA_ASSERT(3 != 5);</pre>
+                    </font>
+                <li>
+                    <code><font color="#FF00EE">EA_ASSERT_MSG(expr, msg)</font></code> where <code><font color="#000099">
+                            msg</font></code> is an string (i.e., a <code><font color="#000099">char*</font></code>). 
+                    For example... <font color="#000099">
+                        <pre>   EA_ASSERT_MSG(3 != 5, "mathematics is flawed");</pre>
+                    </font>
+                <li>
+                    <code><font color="#FF00EE">EA_ASSERT_FORMATTED(expr, fmt)</font></code> where <code>
+                        <font color="#000099">fmt</font></code> is a parentheses wrapped tuple of 
+                    which the first parameter is a string (i.e., a <code><font color="#000099">char*</font></code>) 
+                    and the rest are <code><font color="#000099">printf</font></code> style 
+                    parameters. For example... <font color="#000099">
+                        <pre>   EA_ASSERT_FORMATTED(3 != 5, ("The answer is: %d", 42));</pre>
+                    </font>
+                <li>
+                    <code><font color="#FF00EE">EA_FAIL()</font></code> similar to <code><font color="#000099">
+                            EA_ASSERT(false)</font></code>
+                but avoids warning of constant conditional expression.
+                <li>
+                    <code><font color="#FF00EE">EA_FAIL_MSG(msg)</font></code> similar to <code><font color="#000099">
+                            EA_ASSERT_MSG(false, msg);</font></code>
+                <li>
+                    <code><font color="#FF00EE">EA_FAIL_FORMATTED(fmt)</font></code> similar to <code><font color="#000099">
+                            EA_ASSERT_FORMATTED(false, fmt);</font></code></li>
+            </ul>
+            For compatibility reasons (with existing EATrace practice), there are synonyms for <font color="#FF00EE">EA_ASSERT_MSG</font>, defined as <font color="#FF00EE">EA_ASSERT_MESSAGE</font> and <font color="#FF00EE">EA_ASSERT_M</font>.
+            <hr>
+            <h2>Enabling and Disabling</h2>
+            Whether or not <code><font color="#000099">EA_ASSERT</font></code> is enabled hinges on the following logic...
+            <font color="#000099">
+                    <pre>
+        #ifdef EA_DEBUG
+            #define EA_ASSERT_ENABLED
+        #endif
+
+        #ifndef EA_ASSERT
+	        #if EA_ASSERT_ENABLED
+		        #define EA_ASSERT(expr) ...definition of EA_ASSERT...
+    	    #else
+    		    #define EA_ASSERT(expr) ((void)0)
+    	    #endif
+        #endif
+                </pre>
+                </font>
+            <hr />
+            <h2>Design Considerations</h2>
+            Below are some thoughts that went into the creation of this package...
+            <ul>
+                <li>Aim to be lightweight and simple.</li>
+                <li>Become the single most used ubiquitous assert technology, along EA Base lines.</li>
+                <li>Have minimal dependencies; e.g. EA Base only.</li>
+                <li>Ability for users to override functionality.</li>
+                <li>Ability for users to redirect assertions to their application's given system.</li>
+                <li>Ability for users to extend the system.</li>
+                <li>Enable users to rebuild other technology but have it use their assert system.</li>
+                <li>Make it easy to supply your own assert-failure callback function, but...
+                    <ul>
+                        <li>...don't enforce a link-time definition (i.e., provide a default)</li>
+                        <li>...don't require a global #define.</li>
+                    </ul>
+                    The result is that we require a CPP file (and resulting library) where we can declare and store a function pointer that points to the current assert handler.</li>
+            </ul>
+            <hr />
+            <h2>Integration</h2>
+            <p>To use <code><font color="#000099">EA_ASSERT</font></code> in your own code you just include the header and use it.</p>
+            <p>To overwrite the default handler for assert failure, you need to implement the following function <font color="#000099">
+                    <pre>
+        bool EAAssertFailure(
+        
+            const char* expr,       <font color=#009900>// Stringized version of the assert expression.</font>
+            const char* filename,   <font color=#009900>// Name of the file in which the assert occured.</font>
+            int line,               <font color=#009900>// Line number on which the assert occured.</font>
+            const char* function,   <font color=#009900>// Name of the function the assert occured in.</font>
+            const char* msg,        <font color=#009900>// Optional descriptive message.</font>
+            va_list args            <font color=#009900>// Variable argument list (printf style) in case msg contains formatters.</font>
+            
+        );	
+    </pre>
+                </font>The return value of this function should be <code><font color="#000099">true</font></code>
+                if you want the failed assert to break into the debugger and <code><font color="#000099">
+                        false</font></code>
+            if you want to continue running past the assert.
+            <p>To enable the use of this function, use:<font color="#000099">
+                    <pre>
+        EA::Assert::SetFailureCallback(&yourCallback);
+        </pre>
+                </font>
+            </p>
+            <P>The simplest possible implementation of this function (which happens to be the default) just returns <code><font color="#000099">true</font></code> immediately, always triggering a debug break.</P>
+            <p>
+                For reference, here's an example implementation of <code><font color="#000099">EAAssertFailure</font></code>
+                that you can copy paste into your own code. <font color="#000099">
+                    <pre>
+        bool EAAssertFailure(const char* expr, const char* filename, int line, const char* function, const char* msg, va_list args)
+        {
+            const int size = 1024;
+            char output[size + 1] = {};
+            char fmtMsg[size + 1] = {};
+            
+            _vsnprintf(fmtMsg, size, msg, args);
+            _snprintf(output, size, "%s(%d) : assert failed: '%s' in function: %s\n, message: %s", filename, line, expr, function, fmtMsg);    
+            
+            printf(output);
+            
+            return true;
+        }
+	</pre>
+                </font>
+            <P></P>
+            <h3>If You already Have Your Own Asserts</h3>
+            If you already have your own asserts and would like other technology to use 
+            yours, you can easily forward <code><font color="#000099">EA_ASSERT</font></code>
+            to your own implementation. The trick is in the <code><font color="#000099">#EA_ASSERT_HAVE_OWN_HEADER</font></code>
+            macro. Define this to the name of your own header file that has equivalents of 
+            the macros defined above (make sure you provide all of them). For example, you 
+            could put the following in a file called "game/my_own_awesome_assert.h"... <font color="#000099">
+                <pre>
+        #define EA_ASSERT(expr) MY_OWN_AWESOME_ASSERT(expr)
+        #define EA_ASSERT_MSG(expr, msg) MY_OWN_AWESOME_ASSERT(expr)
+        #define EA_ASSERT_FORMATTED(expr, fmt) MY_OWN_AWESOME_ASSERT(expr)
+        #define EA_FAIL() MY_OWN_AWESOME_ASSERT(false)
+        #define EA_FAIL_MSG(msg) MY_OWN_AWESOME_ASSERT(false)
+        #define EA_FAIL_FORMATTED(fmt) MY_OWN_AWESOME_ASSERT(false)
+	</pre>
+            </font>Next, define <code><font color="#000099">#EA_ASSERT_HAVE_OWN_HEADER</font></code>
+            to <code><font color="#000099">"game/my_own_awesome_assert.h"</font></code> (including 
+            the quotes) when you build <code><font color="#000099">EA_ASSERT</font></code> using 
+            technology and it will automatically use your assert instead.
+            <hr>
+            <h2>Frequently Asked Questions</h2>
+            <ul>
+                <li>
+                    <b>Why don't you supply <code><font color="#000099">EA_WARNING</font></code> macros?</b><p>Because 
+                        few people can use warnings properly. This often results in games spewing so 
+                        much output to the console that nobody cares anymore. If the problem is serious 
+                        enough, just assert. If it's not serious enough, put a bright pink texture on 
+                        it in the game.</p>
+                <li>
+                    <b>But I really need <code><font color="#000099">EA_WARNING</font></code>, can't 
+                        you add it?</b><p>The truth is, the original author of this package didn't need 
+                        them. Warning support would increase the complexity of this package of 
+                        proportion (now you need warning levels, etc.) If you need warnings, write your 
+                        own.</p>
+                <li>
+                    <b>I already have my own definitions of the <code><font color="#000099">EA_ASSERT</font></code>
+                        macro and others, now what?</b><p>Use the <code><font color="#000099">EA_ASSERT_HAVE_OWN_HEADER</font></code>
+                        feature described above. Now any library that uses <code><font color="#000099">EA_ASSERT</font></code>
+                        automatically leverages your assert.</p>
+                <li>
+                    <b>I need multilevel asserts, only enabling some when I really need to. Can you add 
+                        it?</b><p>This often occurs when you have asserts in a tight inner loop that 
+                        you only want enabled every now and then when you do very strict integrity 
+                        checking. Unfortunately it would complicate this library too much. We don't 
+                        feel enough technologies have a need for this. Fortunately you can implement 
+                        this yourself fairly easily by doing... <font color="#000099">
+                            <pre>
+            #if MY_TECH_DEBUG_LEVEL == 1
+                #define MY_TECH_ASSERT(expr)          EA_ASSERT(expr)
+                #define MY_TECH_HARDCORE_ASSERT(expr) ((void)0)
+            #else if MY_TECH_DEBUG_LEVEL == 1
+                #define MY_TECH_ASSERT(expr)          EA_ASSERT(expr)
+                #define MY_TECH_HARDCORE_ASSERT(expr) EA_ASSERT(expr)
+            #endif
+        </pre>
+                        </font>That way you can still leverage <code><font color="#000099">EA_ASSERT</font></code>
+                    but have more fine grained control over assert subsets in your technology.
+                    <P></P>
+                <li>
+                    <b>Why aren't your asserts ignorable?</b><p>Because it would make things more 
+                        complicated than I'd like. Furthermore, ignorable asserts often flawed. People 
+                        end up using them to signal user errors that should be handled differently 
+                        (proper fallback mechanisms, bright pink textures, etc.). What happens is that 
+                        everybody starts ignoring asserts when they happen rather than fixing them or 
+                        reporting them. You get away with this for a while, until one day shit hits the 
+                        fan. Asserts are for programmer error, exceptions and other mechanisms are for 
+                        user error.</p>
+                    <p>That said if you desperately need ignorable asserts, all is not lost. Either use 
+                        the <code><font color="#000099">#EA_ASSERT_HAVE_OWN_HEADER</font></code> feature, 
+                        or simply catch the filename and line-number in the handler function. Stick 
+                        them as a pair into a set. Whenever you find them in the set, return false from 
+                        the assert handler to ignore the assert.</p>
+                <li>
+                    <b>Why isn't platform X supported?</b><p>I don't know. Let me know what its 
+                        break-into-debugger statement is and I'll gladly add it.</p>
+                <li>
+                    <b>Why don't you have feature X?</b><p>Probably because I didn't need it. 
+                        Alternatively, because it would make this package more complicated than I'd 
+                        like. Perhaps feature X is best implemented in your own technology? Of course, 
+                        you can always try sending us an email. Maybe we'll add feature X.</p>
+                </li>
+            </ul>
+            <hr />
+            <h2>Acknowledgements</h2>
+            
+            Input for this package came from Paul Pedriana, Ian Davids, James Fairweather, Max Burke, Bob Summerwill and others.
+        </font>
+        
+    </body>
+</html>

@@ -21,6 +21,7 @@
 #include "Foundation/InspectorTab/ModelInspector.h"
 #include "Foundation/InspectorTab/NodeComponentInspector.h"
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
+#include "Foundation/InspectorTab/PrefabInspector.h"
 #include "Foundation/InspectorTab/RenderPathInspector.h"
 #include "Foundation/InspectorTab/SerializableResourceInspector.h"
 #include "Foundation/InspectorTab/SoundInspector.h"
@@ -35,6 +36,7 @@
 #include "Foundation/SceneViewTab/CreatePrefabFromNode.h"
 #include "Foundation/SceneViewTab/EditorCamera.h"
 #include "Foundation/SceneViewTab/SceneDebugInfo.h"
+#include "Foundation/SceneViewTab/SceneDragAndDropAnimation.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropMaterial.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropPrefab.h"
 #include "Foundation/SceneViewTab/SceneHierarchy.h"
@@ -67,6 +69,7 @@
 #include <Urho3D/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
+
 #include <nfd.h>
 
 #ifdef WIN32
@@ -109,6 +112,7 @@ EditorApplication::EditorApplication(Context* context)
     editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropPrefab", &Foundation_SceneDragAndDropPrefab);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropMaterial", &Foundation_SceneDragAndDropMaterial);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropAnimation", &Foundation_SceneDragAndDropAnimation);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DebugInfo", &Foundation_SceneDebugInfo);
     editorPluginManager_->AddPlugin("Foundation.SceneView.Screenshot", &Foundation_SceneScreenshot);
 
@@ -118,6 +122,7 @@ EditorApplication::EditorApplication(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Inspector.Texture2D", &Foundation_Texture2DInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.TextureCube", &Foundation_TextureCubeInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Model", &Foundation_ModelInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.Prefab", &Foundation_PrefabInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Material", &Foundation_MaterialInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.NodeComponent", &Foundation_NodeComponentInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.PlaceholderResource", &Foundation_PlaceholderResourceInspector);
@@ -161,13 +166,6 @@ void EditorApplication::Setup()
     }
 #endif
 
-    resourcePrefixPath_ = fs->FindResourcePrefixPath();
-    if (resourcePrefixPath_.empty())
-    {
-        ErrorDialog("Cannot launch Editor", "Prefix path is not found, unable to continue. Prefix path must contain CoreData and EditorData.");
-        engine_->Exit();
-    }
-
     log->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
@@ -192,18 +190,31 @@ void EditorApplication::Setup()
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
     engineParameters_[EP_AUTOLOAD_PATHS] = "";
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = resourcePrefixPath_;
     engineParameters_[EP_RESOURCE_ROOT_FILE] = "";
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
-    engineParameters_[EP_RENAME_PLUGINS] = true;
+    engineParameters_[EP_RELOAD_PLUGINS] = true;
+    engineParameters_[EP_PROFILE] = true;
+
+    // Use detected prefix path as default. Could be overriden with command line.
+    if (const ea::string prefixPath = fs->FindResourcePrefixPath(); !prefixPath.empty())
+        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = prefixPath;
 
     // TODO: Consider scaling fonts based on DPI. ImGuiConfigFlags_DpiEnableScaleFonts seems to create issues on Retina.
     unsigned imguiFlags = 0;
-    if (GetPlatform() == PlatformId::Windows)
-        imguiFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
+    imguiFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
 #if URHO3D_SYSTEMUI_VIEWPORTS
     imguiFlags |= ImGuiConfigFlags_ViewportsEnable;
+#endif
+
+#ifdef __linux__
+    if(const char* xdg_session_type = getenv("XDG_SESSION_TYPE"))
+    {
+        const bool is_wayland = strcmp(xdg_session_type, "wayland") == 0;
+        if (is_wayland)
+            imguiFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+
+    }
 #endif
 
     engineParameters_[EP_SYSTEMUI_FLAGS] = imguiFlags;
@@ -343,9 +354,9 @@ void EditorApplication::Render()
 
     const bool hasToolbar = project_ != nullptr;
     const float toolbarButtonHeight = Widgets::GetSmallButtonSize();
-    const float toolbarWindowPadding = ea::max(3.0f, (g.Style.WindowMinSize.y - toolbarButtonHeight) / 2);
+    const float toolbarWindowPadding = g.Style.ItemSpacing.y;
     const float toolbarHeight = hasToolbar
-        ? Widgets::GetSmallButtonSize() + 2 * (toolbarWindowPadding + 0)//g.Style.FramePadding.y)
+        ? toolbarButtonHeight + (2 * toolbarWindowPadding)
         : 0.0f;
     const float toolbarEffectiveHeight = toolbarHeight + 1;
 
@@ -356,11 +367,11 @@ void EditorApplication::Render()
     ui::SetNextWindowSize(viewport->Size - ImVec2(0, toolbarEffectiveHeight));
     ui::SetNextWindowViewport(viewport->ID);
     ui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    flags |= ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove;
     flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
     ui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ui::Begin("DockSpace", nullptr, flags);
-    ui::PopStyleVar();
+    ui::PopStyleVar();  // TODO: Technically illegal, should go after End().
 
     RenderMenuBar();
     RenderAboutDialog();
@@ -421,7 +432,7 @@ void EditorApplication::Render()
 
     const float menuBarHeight = ui::GetCurrentWindow()->MenuBarHeight;
 
-    ui::End();
+    ui::End();  // DockSpace
     ui::PopStyleVar();
 
     // TODO(editor): Refactor this function
@@ -431,18 +442,18 @@ void EditorApplication::Render()
         ui::SetNextWindowSize(ImVec2(viewport->Size.x, toolbarHeight));
         ui::SetNextWindowViewport(viewport->ID);
 
-        const ImGuiWindowFlags toolbarWindowFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar
-            | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar
-            | ImGuiWindowFlags_NoSavedSettings;
+        const ImGuiWindowFlags toolbarWindowFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoDecoration
+            | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
         ui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
         ui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(toolbarWindowPadding, toolbarWindowPadding));
+        ui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
         ui::Begin("Toolbar", nullptr, toolbarWindowFlags);
 
         if (project_)
             project_->RenderToolbar();
 
         ui::End();
-        ui::PopStyleVar(2);
+        ui::PopStyleVar(3);
     }
 
     // Dialog for a warning when application is being closed with unsaved resources.
@@ -874,7 +885,7 @@ void EditorApplication::OpenProfilerApplication()
 #ifdef _WIN32
     profilerPath += ".exe";
 #endif
-    fileSystem->SystemOpen(profilerPath);
+    fileSystem->SystemSpawn(profilerPath, {});
 #else
     URHO3D_LOGERROR("Profiling is not enabled in this build.");
 #endif

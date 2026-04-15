@@ -20,13 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Math/Rect.h"
+#include "Urho3D/Math/Rect.h"
+
+#include "Urho3D/Container/Str.h"
 
 #include <cstdio>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -74,14 +76,14 @@ void IntRect::Merge(const IntRect& rect)
 ea::string Rect::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%g %g %g %g", min_.x_, min_.y_, max_.x_, max_.y_);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%g %g %g %g", min_.x_, min_.y_, max_.x_, max_.y_);
     return ea::string(tempBuffer);
 }
 
 ea::string IntRect::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%d %d %d %d", left_, top_, right_, bottom_);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%d %d %d %d", left_, top_, right_, bottom_);
     return ea::string(tempBuffer);
 }
 

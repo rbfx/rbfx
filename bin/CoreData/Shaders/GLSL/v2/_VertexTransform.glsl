@@ -225,9 +225,9 @@ mat4 GetModelMatrix()
     {
         mat4 modelMatrix = GetModelMatrix();
         #if URHO3D_XR
-            half3 up = normalize(cCameraPos[gl_InstanceID & 1] - iPos.xyz);
+            half3 up = normalize(cCameraPos[gl_InstanceID & 1].xyz - iPos.xyz);
         #else
-            half3 up = normalize(cCameraPos - iPos.xyz);
+            half3 up = normalize(cCameraPos.xyz - iPos.xyz);
         #endif
         half3 right = normalize(cross(iTangent.xyz, up));
 

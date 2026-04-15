@@ -46,7 +46,10 @@ typedef struct cs_riscv_op {
 		int64_t imm;		// immediate value for IMM operand
 		riscv_op_mem mem;	// base/disp value for MEM operand
 	};
+	uint8_t access; ///< How is this operand accessed? (READ, WRITE or READ|WRITE)
 } cs_riscv_op;
+
+#define NUM_RISCV_OPS 8
 
 // Instruction structure
 typedef struct cs_riscv {
@@ -55,7 +58,7 @@ typedef struct cs_riscv {
 	// Number of operands of this instruction, 
 	// or 0 when instruction has no operand.
 	uint8_t op_count;
-	cs_riscv_op operands[8]; // operands for this instruction.
+	cs_riscv_op operands[NUM_RISCV_OPS]; // operands for this instruction.
 } cs_riscv;
 
 //> RISCV registers

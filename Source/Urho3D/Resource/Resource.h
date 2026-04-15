@@ -167,6 +167,8 @@ public:
     /// Force override of SerializeInBlock.
     void SerializeInBlock(Archive& archive) override = 0;
 
+    /// Set preferred save format.
+    void SetSaveFormatHint(InternalResourceFormat format);
     /// Save resource in specified internal format.
     bool Save(Serializer& dest, InternalResourceFormat format) const;
     /// Save file with specified internal format.
@@ -192,6 +194,7 @@ protected:
 
 private:
     ea::optional<InternalResourceFormat> loadFormat_;
+    ea::optional<InternalResourceFormat> saveFormat_;
 };
 
 /// Base class for resources that support arbitrary metadata stored. Metadata serialization shall be implemented in derived classes.
@@ -218,6 +221,8 @@ public:
     /// Return whether the resource has metadata.
     /// @property
     bool HasMetadata() const;
+    /// Copy metadata from another resource.
+    void CopyMetadata(const ResourceWithMetadata& source);
 
 protected:
     /// Load metadata from <metadata> children of XML element.
@@ -226,8 +231,6 @@ protected:
     void LoadMetadataFromJSON(const JSONArray& array);
     /// Save as <metadata> children of XML element.
     void SaveMetadataToXML(XMLElement& destination) const;
-    /// Copy metadata from another resource.
-    void CopyMetadata(const ResourceWithMetadata& source);
 
 private:
     /// Animation metadata variables.

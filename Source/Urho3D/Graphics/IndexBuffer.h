@@ -46,7 +46,7 @@ class URHO3D_API IndexBuffer : public RawBuffer, public PipelineStateTracker
     URHO3D_OBJECT(IndexBuffer, RawBuffer);
 
 public:
-    explicit IndexBuffer(Context* context);
+    explicit IndexBuffer(Context* context, DeviceObjectFlags flags = DeviceObjectFlag::None);
 
     /// Enable shadowing in CPU memory. Shadowing is forced on if the graphics subsystem does not exist.
     /// @property
@@ -79,7 +79,8 @@ public:
     static void UnpackIndexData(const void* source, bool largeIndices, unsigned start, unsigned count, unsigned dest[]);
 
     /// Pack index data from unsigned int array into index buffer.
-    static void PackIndexData(const unsigned source[], void* dest, bool largeIndices, unsigned start, unsigned count);
+    static void PackIndexData(
+        const unsigned source[], void* dest, bool largeIndices, unsigned start, unsigned count, unsigned offset = 0);
 
     /// Return type of index buffer. Null is allowed.
     static IndexBufferType GetIndexBufferType(IndexBuffer* indexBuffer)

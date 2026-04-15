@@ -43,8 +43,8 @@ class NavigationMesh;
 /// Callback used to adjust crowd agent velocity.
 using CrowdAgentVelocityCallback =
     ea::function<void(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed)>;
-/// Callback used to evaluate crowd agent Y position.
-using CrowdAgentHeightCallback = ea::function<float(CrowdAgent* agent, float timeStep, const Vector3& position)>;
+/// Callback used to evaluate crowd agent position.
+using CrowdAgentPositionCallback = ea::function<void(CrowdAgent* agent, float timeStep, Vector3& position)>;
 
 /// Parameter structure for obstacle avoidance params (copied from DetourObstacleAvoidance.h in order to hide Detour header from Urho3D library users).
 /// @pod
@@ -88,7 +88,7 @@ public:
     /// Set velocity callback.
     void SetVelocityCallback(const CrowdAgentVelocityCallback& callback) { velocityCallback_ = callback; }
     /// Set height callback.
-    void SetHeightCallback(const CrowdAgentHeightCallback& callback) { heightCallback_ = callback; }
+    void SetPositionCallback(const CrowdAgentPositionCallback& callback) { positionCallback_ = callback; }
     /// Update agent velocity using velocity callback.
     void UpdateAgentVelocity(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed) const;
     /// Update agent Y position using height callback.
@@ -186,7 +186,7 @@ protected:
 
 protected:
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Update the crowd simulation.
     void Update(float delta);
     /// Get the detour crowd agent.
@@ -202,6 +202,8 @@ protected:
 private:
     /// Handle the scene subsystem update event.
     void HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle world origin post update.
+    void HandleWorldOriginPostUpdate(VariantMap& eventData);
     /// Handle navigation mesh changed event. It can be navmesh being rebuilt or being removed from its node.
     void HandleNavMeshChanged(StringHash eventType, VariantMap& eventData);
     /// Handle component added in the scene to check for late addition of the navmesh.
@@ -211,8 +213,8 @@ private:
     dtCrowd* crowd_{};
     /// Velocity callback.
     CrowdAgentVelocityCallback velocityCallback_;
-    /// Height callback.
-    CrowdAgentHeightCallback heightCallback_;
+    /// Position callback.
+    CrowdAgentPositionCallback positionCallback_;
     /// NavigationMesh for which the crowd was created.
     WeakPtr<NavigationMesh> navigationMesh_;
     /// The NavigationMesh component Id for pending crowd creation.

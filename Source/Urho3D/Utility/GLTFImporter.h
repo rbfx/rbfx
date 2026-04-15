@@ -1,26 +1,6 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-
-/// \file
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
@@ -42,7 +22,7 @@ namespace Urho3D
 class Animation;
 class ModelView;
 
-struct GLTFImporterSettings
+struct URHO3D_API GLTFImporterSettings
 {
     ea::string assetName_{"Asset"};
 
@@ -82,6 +62,8 @@ struct GLTFImporterSettings
 
         bool highRenderQuality_{true};
     } preview_;
+
+    void SerializeInBlock(Archive& archive);
 };
 
 class URHO3D_API GLTFImporterCallback
@@ -89,9 +71,10 @@ class URHO3D_API GLTFImporterCallback
 public:
     virtual void OnModelLoaded(ModelView& modelView) {};
     virtual void OnAnimationLoaded(Animation& animation) {};
-};
 
-URHO3D_API void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value);
+    /// Creates skin and empty mesh for given nodes (searched globally by name), if not present.
+    virtual ea::vector<ea::string> GetArtificialSkinNodes() { return {}; }
+};
 
 /// Utility class to load GLTF file and save it as Urho resources.
 /// Temporarily loads resources into resource cache, removes them from the cache on destruction.
@@ -108,7 +91,7 @@ public:
 
     /// Load primary GLTF file into memory without any processing.
     bool LoadFile(const ea::string& fileName);
-    bool LoadFileBinary(ByteSpan data);
+    bool LoadFileBinary(ConstByteSpan data);
     /// Load and merge secondary GLTF file.
     /// Merge functionality is limited, unsupported content of secondary file is ignored.
     bool MergeFile(const ea::string& fileName, const ea::string& assetName);

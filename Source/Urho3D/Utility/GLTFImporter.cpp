@@ -1,73 +1,55 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Container/Functors.h"
-#include "../Core/Context.h"
-#include "../Core/Exception.h"
-#include "../Core/StringUtils.h"
-#include "../Graphics/AnimatedModel.h"
-#include "../Graphics/Animation.h"
-#include "../Graphics/AnimationController.h"
-#include "../Graphics/AnimationTrack.h"
-#include "../Graphics/Light.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Model.h"
-#include "../Graphics/ModelView.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/Technique.h"
-#include "../Graphics/Texture.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/TextureCube.h"
-#include "../Graphics/Skybox.h"
-#include "../Graphics/StaticModel.h"
-#include "../Graphics/Zone.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../RenderPipeline/RenderPipeline.h"
-#include "../Resource/BinaryFile.h"
-#include "../Resource/Image.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/XMLFile.h"
-#include "../Scene/PrefabResource.h"
-#include "../Scene/Scene.h"
-#include "../Utility/GLTFImporter.h"
+#include "Urho3D/Utility/GLTFImporter.h"
 
-#include <tiny_gltf.h>
+#include "Urho3D/Container/Functors.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Exception.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Graphics/Animation.h"
+#include "Urho3D/Graphics/AnimationController.h"
+#include "Urho3D/Graphics/AnimationTrack.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/ModelView.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/Skybox.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/Technique.h"
+#include "Urho3D/Graphics/Texture.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Graphics/TextureCube.h"
+#include "Urho3D/Graphics/Zone.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderPipeline/RenderPipeline.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/Resource/BinaryFile.h"
+#include "Urho3D/Resource/Image.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Scene/PrefabResource.h"
+#include "Urho3D/Scene/Scene.h"
 
 #include <EASTL/algorithm.h>
 #include <EASTL/numeric.h>
 #include <EASTL/optional.h>
-#include <EASTL/unordered_set.h>
 #include <EASTL/unordered_map.h>
+#include <EASTL/unordered_set.h>
 
 #include <cctype>
 #include <exception>
 #include <regex>
+#include <tiny_gltf.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -215,7 +197,7 @@ SourceToDestinationMap MapNodesByNames(const tg::Model& sourceModel, const tg::M
 
 unsigned CountMergeableResources(const tg::Model& inputModel)
 {
-    return inputModel.animations.size();
+    return static_cast<unsigned>(inputModel.animations.size());
 }
 
 void MergeModels(tg::Model& outputModel, tg::Model&& inputModel, ea::optional<ea::string> overrideName)
@@ -242,7 +224,7 @@ void MergeModels(tg::Model& outputModel, tg::Model&& inputModel, ea::optional<ea
     outputModel.bufferViews.insert(outputModel.bufferViews.end(),
         ea::make_move_iterator(inputModel.bufferViews.begin()), ea::make_move_iterator(inputModel.bufferViews.end()));
 
-    for (unsigned i = startBufferViewIndex; i < outputModel.bufferViews.size(); ++i)
+    for (std::vector<tinygltf::BufferView>::size_type i = startBufferViewIndex; i < outputModel.bufferViews.size(); ++i)
     {
         tg::BufferView& bufferView = outputModel.bufferViews[i];
         bufferView.buffer += startBufferIndex;
@@ -253,7 +235,7 @@ void MergeModels(tg::Model& outputModel, tg::Model&& inputModel, ea::optional<ea
     outputModel.accessors.insert(outputModel.accessors.end(), ea::make_move_iterator(inputModel.accessors.begin()),
         ea::make_move_iterator(inputModel.accessors.end()));
 
-    for (unsigned i = startAccessorIndex; i < outputModel.accessors.size(); ++i)
+    for (std::vector<tinygltf::Accessor>::size_type i = startAccessorIndex; i < outputModel.accessors.size(); ++i)
     {
         tg::Accessor& accessor = outputModel.accessors[i];
         accessor.bufferView += startBufferViewIndex;
@@ -265,7 +247,7 @@ void MergeModels(tg::Model& outputModel, tg::Model&& inputModel, ea::optional<ea
         ea::make_move_iterator(inputModel.animations.end()));
 
     ea::unordered_set<ea::string> ignoredNodes;
-    for (unsigned i = startAnimationIndex; i < outputModel.animations.size(); ++i)
+    for (std::vector<tinygltf::Animation>::size_type i = startAnimationIndex; i < outputModel.animations.size(); ++i)
     {
         tg::Animation& animation = outputModel.animations[i];
         for (tg::AnimationChannel& channel : animation.channels)
@@ -521,12 +503,12 @@ public:
         ea::vector<T> result;
         if (accessor.bufferView >= 0)
         {
-            result = ReadBufferView<T>(accessor.bufferView, accessor.byteOffset,
-                accessor.componentType, accessor.type, accessor.count, accessor.normalized);
+            result = ReadBufferView<T>(accessor.bufferView, static_cast<int>(accessor.byteOffset),
+                accessor.componentType, accessor.type, static_cast<unsigned>(accessor.count), accessor.normalized);
         }
         else
         {
-            result.resize(accessor.count * numComponents);
+            result.resize(static_cast<unsigned>(accessor.count * numComponents));
         }
 
         // Read sparse buffer data
@@ -718,14 +700,9 @@ struct GLTFBoneTrack
 {
     AnimationChannelFlags channelMask_;
 
-    ea::vector<float> positionKeys_;
-    ea::vector<Vector3> positionValues_;
-
-    ea::vector<float> rotationKeys_;
-    ea::vector<Quaternion> rotationValues_;
-
-    ea::vector<float> scaleKeys_;
-    ea::vector<Vector3> scaleValues_;
+    KeyFrameSet<ea::pair<float, Vector3>> positions_;
+    KeyFrameSet<ea::pair<float, Quaternion>> rotations_;
+    KeyFrameSet<ea::pair<float, Vector3>> scales_;
 };
 
 /// Represents attribute track.
@@ -935,20 +912,19 @@ public:
 private:
     void ProcessMeshMorphs()
     {
-        const unsigned numMeshes = model_.meshes.size();
+        const unsigned numMeshes = static_cast<unsigned>(model_.meshes.size());
         numMorphsInMesh_.resize(numMeshes);
         for (unsigned meshIndex = 0; meshIndex < numMeshes; ++meshIndex)
         {
             const tg::Mesh& mesh = model_.meshes[meshIndex];
-            if (mesh.primitives.empty())
-                throw RuntimeException("Mesh #{} has no primitives", meshIndex);
-            numMorphsInMesh_[meshIndex] = mesh.primitives[0].targets.size();
+            numMorphsInMesh_[meshIndex] =
+                mesh.primitives.empty() ? 0 : static_cast<unsigned>(mesh.primitives[0].targets.size());
         }
     }
 
     void InitializeParents()
     {
-        const unsigned numNodes = model_.nodes.size();
+        const unsigned numNodes = static_cast<unsigned>(model_.nodes.size());
         nodeToParent_.resize(numNodes);
         for (unsigned nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex)
         {
@@ -970,7 +946,7 @@ private:
 
     void InitializeTrees()
     {
-        const unsigned numNodes = model_.nodes.size();
+        const unsigned numNodes = static_cast<unsigned>(model_.nodes.size());
         nodeByIndex_.resize(numNodes);
         for (unsigned nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex)
         {
@@ -1041,7 +1017,12 @@ private:
             if (!sourceNode.rotation.empty())
                 node.rotation_ = ReadQuaternion(sourceNode.rotation);
             if (!sourceNode.scale.empty())
+            {
                 node.scale_ = ReadVector3(sourceNode.scale);
+                node.scale_.x_ = SnapTo(node.scale_.x_, 1.0f, M_EPSILON);
+                node.scale_.y_ = SnapTo(node.scale_.y_, 1.0f, M_EPSILON);
+                node.scale_.z_ = SnapTo(node.scale_.z_, 1.0f, M_EPSILON);
+            }
         }
 
         for (const GLTFNodePtr& child : node.children_)
@@ -1118,7 +1099,7 @@ private:
 
     void PreProcessSkins()
     {
-        const unsigned numSkins = model_.skins.size();
+        const unsigned numSkins = static_cast<unsigned>(model_.skins.size());
         skinToRootNode_.resize(numSkins);
         for (unsigned skinIndex = 0; skinIndex < numSkins; ++skinIndex)
         {
@@ -1189,7 +1170,7 @@ private:
 
     void InitializeSkeletons()
     {
-        const unsigned numSkins = model_.skins.size();
+        const unsigned numSkins = static_cast<unsigned>(model_.skins.size());
         ea::vector<unsigned> skinToGroup(numSkins);
         ea::iota(skinToGroup.begin(), skinToGroup.end(), 0);
 
@@ -1350,7 +1331,7 @@ private:
 
     void InitializeSkins()
     {
-        const unsigned numSkins = model_.skins.size();
+        const unsigned numSkins = static_cast<unsigned>(model_.skins.size());
         skins_.resize(numSkins);
         for (unsigned skinIndex = 0; skinIndex < numSkins; ++skinIndex)
         {
@@ -1541,7 +1522,7 @@ private:
 
     void ImportAnimations()
     {
-        const unsigned numAnimations = model_.animations.size();
+        const unsigned numAnimations = static_cast<unsigned>(model_.animations.size());
         animations_.resize(numAnimations);
         for (unsigned animationIndex = 0; animationIndex < numAnimations; ++animationIndex)
         {
@@ -1595,16 +1576,16 @@ private:
 
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
                     {
-                        const auto morphWeightInTangents = ReadVericalSlice(weightsValues, morphIndex * 3, numMorphs * 3);
-                        const auto morphWeightValues = ReadVericalSlice(weightsValues, morphIndex * 3 + 1, numMorphs * 3);
-                        const auto morphWeightOutTangents = ReadVericalSlice(weightsValues, morphIndex * 3 + 2, numMorphs * 3);
+                        const auto morphWeightInTangents = ReadVerticalSlice(weightsValues, morphIndex * 3, numMorphs * 3);
+                        const auto morphWeightValues = ReadVerticalSlice(weightsValues, morphIndex * 3 + 1, numMorphs * 3);
+                        const auto morphWeightOutTangents = ReadVerticalSlice(weightsValues, morphIndex * 3 + 2, numMorphs * 3);
                         ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
                         ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.inTangents_));
                         ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.outTangents_));
                     }
                     else
                     {
-                        const auto morphWeightValues = ReadVericalSlice(weightsValues, morphIndex, numMorphs);
+                        const auto morphWeightValues = ReadVerticalSlice(weightsValues, morphIndex, numMorphs);
                         ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
                     }
                 }
@@ -1623,38 +1604,44 @@ private:
 
                 if (newChannel == CHANNEL_POSITION)
                 {
-                    track.positionKeys_ = channelKeys;
-                    track.positionValues_ = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
-                    ApplyInlineTransformToPosition(track.positionValues_);
-
+                    auto positionValues = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
-                        track.positionValues_ = ReadVericalSlice(track.positionValues_, 1, 3);
+                        positionValues = ReadVerticalSlice(positionValues, 1, 3);
+                    ApplyInlineTransformToPosition(positionValues);
 
-                    if (track.positionValues_.size() != channelKeys.size())
+                    if (positionValues.size() != channelKeys.size())
                         throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
+
+                    track.positions_.RemoveAllKeyFrames();
+                    for (unsigned i = 0; i < positionValues.size(); ++i)
+                        track.positions_.AddKeyFrame({channelKeys[i], positionValues[i]});
                 }
                 else if (newChannel == CHANNEL_ROTATION)
                 {
-                    track.rotationKeys_ = channelKeys;
-                    track.rotationValues_ = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
-                    ApplyInlineTransformToRotation(track.rotationValues_);
-
+                    auto rotationValues = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
-                        track.rotationValues_ = ReadVericalSlice(track.rotationValues_, 1, 3);
+                        rotationValues = ReadVerticalSlice(rotationValues, 1, 3);
+                    ApplyInlineTransformToRotation(rotationValues);
 
-                    if (track.rotationValues_.size() != channelKeys.size())
+                    if (rotationValues.size() != channelKeys.size())
                         throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
+
+                    track.rotations_.RemoveAllKeyFrames();
+                    for (unsigned i = 0; i < rotationValues.size(); ++i)
+                        track.rotations_.AddKeyFrame({channelKeys[i], rotationValues[i]});
                 }
                 else if (newChannel == CHANNEL_SCALE)
                 {
-                    track.scaleKeys_ = channelKeys;
-                    track.scaleValues_ = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
-
+                    auto scaleValues = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
-                        track.scaleValues_ = ReadVericalSlice(track.scaleValues_, 1, 3);
+                        scaleValues = ReadVerticalSlice(scaleValues, 1, 3);
 
-                    if (track.scaleValues_.size() != channelKeys.size())
+                    if (scaleValues.size() != channelKeys.size())
                         throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
+
+                    track.scales_.RemoveAllKeyFrames();
+                    for (unsigned i = 0; i < scaleValues.size(); ++i)
+                        track.scales_.AddKeyFrame({channelKeys[i], scaleValues[i]});
                 }
             }
             else
@@ -1690,9 +1677,9 @@ private:
 
                 if (interpolation == KeyFrameInterpolation::TangentSpline)
                 {
-                    track.inTangents_ = ReadVericalSlice(track.values_, 0, 3);
-                    track.outTangents_ = ReadVericalSlice(track.values_, 2, 3);
-                    track.values_ = ReadVericalSlice(track.values_, 1, 3);
+                    track.inTangents_ = ReadVerticalSlice(track.values_, 0, 3);
+                    track.outTangents_ = ReadVerticalSlice(track.values_, 2, 3);
+                    track.values_ = ReadVerticalSlice(track.values_, 1, 3);
                 }
 
                 if (track.values_.size() != channelKeys.size())
@@ -1871,7 +1858,7 @@ private:
     }
 
     template <class T>
-    static ea::vector<T> ReadVericalSlice(const ea::vector<T>& source, unsigned index, unsigned count)
+    static ea::vector<T> ReadVerticalSlice(const ea::vector<T>& source, unsigned index, unsigned count)
     {
         if (source.size() % count != 0 || index >= count)
             throw RuntimeException("Invalid array slice specified");
@@ -1931,7 +1918,7 @@ public:
         : base_(base)
         , model_(base_.GetModel())
     {
-        const unsigned numTextures = model_.textures.size();
+        const unsigned numTextures = static_cast<unsigned>(model_.textures.size());
         texturesAsIs_.resize(numTextures);
         for (unsigned i = 0; i < numTextures; ++i)
             texturesAsIs_[i] = ImportTexture(i, model_.textures[i]);
@@ -2165,7 +2152,7 @@ private:
         }
 
         ByteVector imageBytes;
-        imageBytes.resize(sourceImage.image.size());
+        imageBytes.resize(static_cast<unsigned>(sourceImage.image.size()));
         ea::copy(sourceImage.image.begin(), sourceImage.image.end(), imageBytes.begin());
         image->SetData(imageBytes);
         return image;
@@ -2425,7 +2412,7 @@ private:
 
     void InitializeMaterials()
     {
-        materials_.resize(model_.materials.size());
+        materials_.resize(static_cast<unsigned>(model_.materials.size()));
         for (unsigned i = 0; i < model_.materials.size(); ++i)
         {
             const tg::Material& sourceMaterial = model_.materials[i];
@@ -2781,7 +2768,7 @@ private:
                 if (numOtherGeometries > finalGeometries.size())
                     finalGeometries.resize(numOtherGeometries);
 
-                for (size_t geometryIndex = 0; geometryIndex < numOtherGeometries; ++geometryIndex)
+                for (unsigned geometryIndex = 0; geometryIndex < numOtherGeometries; ++geometryIndex)
                 {
                     const auto& otherGeometryView = otherGeometries[geometryIndex];
                     auto& geometryView = finalGeometries[geometryIndex];
@@ -2873,13 +2860,13 @@ private:
         auto modelView = MakeShared<ModelView>(base_.GetContext());
         modelView->SetBones(bones);
 
-        const unsigned numMorphWeights = sourceMesh.weights.size();
+        const unsigned numMorphWeights = static_cast<unsigned>(sourceMesh.weights.size());
         for (unsigned morphIndex = 0; morphIndex < numMorphWeights; ++morphIndex)
             modelView->SetMorph(morphIndex, { "", static_cast<float>(sourceMesh.weights[morphIndex]) });
 
         auto& geometries = modelView->GetGeometries();
 
-        const unsigned numGeometries = sourceMesh.primitives.size();
+        const unsigned numGeometries = static_cast<unsigned>(sourceMesh.primitives.size());
         geometries.resize(numGeometries);
         for (unsigned geometryIndex = 0; geometryIndex < numGeometries; ++geometryIndex)
         {
@@ -2893,7 +2880,7 @@ private:
             if (primitive.attributes.empty())
                 throw RuntimeException("No attributes in primitive #{} in mesh '{}'.", geometryIndex, sourceMesh.name.c_str());
 
-            const unsigned numVertices = model_.accessors[primitive.attributes.begin()->second].count;
+            const unsigned numVertices = static_cast<unsigned>(model_.accessors[primitive.attributes.begin()->second].count);
             geometryLODView.vertices_.resize(numVertices);
             for (const auto& attribute : primitive.attributes)
             {
@@ -3158,7 +3145,7 @@ private:
 
     void ImportAnimations()
     {
-        const unsigned numAnimations = base_.GetModel().animations.size();
+        const unsigned numAnimations = static_cast<unsigned>(base_.GetModel().animations.size());
         for (unsigned animationIndex = 0; animationIndex < numAnimations; ++animationIndex)
         {
             const GLTFAnimation& sourceAnimation = hierarchyAnalyzer_.GetAnimation(animationIndex);
@@ -3203,34 +3190,16 @@ private:
             const bool hasRotations = boneTrack.channelMask_.Test(CHANNEL_ROTATION);
             const bool hasScales = boneTrack.channelMask_.Test(CHANNEL_SCALE);
 
-            AnimationTrack* track = animation->CreateTrack(boneName);
-            track->channelMask_ = boneTrack.channelMask_;
-
-            const float epsilon = base_.GetSettings().keyFrameTimeError_;
-            const auto keyTimes = MergeTimes({ &boneTrack.positionKeys_, &boneTrack.rotationKeys_, &boneTrack.scaleKeys_ }, epsilon);
-            const auto keyPositions = RemapAnimationVector(keyTimes, boneTrack.positionKeys_, boneTrack.positionValues_);
-            const auto keyRotations = RemapAnimationVector(keyTimes, boneTrack.rotationKeys_, boneTrack.rotationValues_);
-            const auto keyScales = RemapAnimationVector(keyTimes, boneTrack.scaleKeys_, boneTrack.scaleValues_);
-
-            if (!keyPositions && hasPositions)
+            if (boneTrack.positions_.IsEmpty() && hasPositions)
                 throw RuntimeException("Position array is empty for animation '{}'", animationName);
-            if (!keyRotations && hasRotations)
+            if (boneTrack.rotations_.IsEmpty() && hasRotations)
                 throw RuntimeException("Rotation array is empty for animation '{}'", animationName);
-            if (!keyScales && hasScales)
+            if (boneTrack.scales_.IsEmpty() && hasScales)
                 throw RuntimeException("Scale array is empty for animation '{}'", animationName);
 
-            for (unsigned i = 0; i < keyTimes.size(); ++i)
-            {
-                AnimationKeyFrame keyFrame;
-                keyFrame.time_ = keyTimes[i];
-                if (hasPositions)
-                    keyFrame.position_ = (*keyPositions)[i];
-                if (hasRotations)
-                    keyFrame.rotation_ = (*keyRotations)[i];
-                if (hasScales)
-                    keyFrame.scale_ = (*keyScales)[i];
-                track->AddKeyFrame(keyFrame);
-            }
+            AnimationTrack* track = animation->CreateTrack(boneName);
+            track->CreateMerged(boneTrack.channelMask_, boneTrack.positions_.keyFrames_,
+                boneTrack.rotations_.keyFrames_, boneTrack.scales_.keyFrames_, base_.GetSettings().keyFrameTimeError_);
         }
 
         for (const auto& [attributePath, attributeTrack] : sourceGroup.attributeTracksByPath_)
@@ -3346,55 +3315,6 @@ private:
         return namePrefix + groupSuffix;
     }
 
-    static ea::vector<float> MergeTimes(std::initializer_list<const ea::vector<float>*> vectors, float epsilon)
-    {
-        ea::vector<float> result;
-        for (const auto* input : vectors)
-            result.append(*input);
-        ea::sort(result.begin(), result.end());
-
-        unsigned lastValidIndex = 0;
-        for (unsigned i = 1; i < result.size(); ++i)
-        {
-            if (result[i] - result[lastValidIndex] < epsilon)
-                result[i] = -M_LARGE_VALUE;
-            else
-                lastValidIndex = i;
-        }
-
-        ea::erase_if(result, [](float time) { return time < 0.0f; });
-        return result;
-    }
-
-    template <class T>
-    static ea::optional<ea::vector<T>> RemapAnimationVector(const ea::vector<float>& destKeys,
-        const ea::vector<float>& sourceKeys, const ea::vector<T>& sourceValues)
-    {
-        if (sourceKeys.empty())
-            return ea::nullopt;
-
-        if (sourceKeys.size() != sourceValues.size())
-            throw RuntimeException("Mismathcing keys and values in animation track");
-
-        ea::vector<T> result(destKeys.size());
-        for (unsigned i = 0; i < destKeys.size(); ++i)
-        {
-            const float destKey = destKeys[i];
-            const auto iter = ea::lower_bound(sourceKeys.begin(), sourceKeys.end(), destKey);
-            const unsigned secondIndex = ea::min<unsigned>(sourceKeys.size() - 1, iter - sourceKeys.begin());
-            const unsigned firstIndex = iter == sourceKeys.end() ? secondIndex : ea::max(1u, secondIndex) - 1;
-
-            if (firstIndex == secondIndex)
-                result[i] = sourceValues[firstIndex];
-            else
-            {
-                const float factor = InverseLerp(sourceKeys[firstIndex], sourceKeys[secondIndex], destKey);
-                result[i] = LerpValue(sourceValues[firstIndex], sourceValues[secondIndex], factor);
-            }
-        }
-        return result;
-    }
-
     template <class T>
     static ea::optional<float> GetTrackLength(const T& track)
     {
@@ -3418,9 +3338,6 @@ private:
         }
         return length;
     }
-
-    static Vector3 LerpValue(const Vector3& lhs, const Vector3& rhs, float factor) { return Lerp(lhs, rhs, factor); }
-    static Quaternion LerpValue(const Quaternion& lhs, const Quaternion& rhs, float factor) { return lhs.Slerp(rhs, factor); }
 
     GLTFImporterBase& base_;
     const GLTFHierarchyAnalyzer& hierarchyAnalyzer_;
@@ -3463,7 +3380,7 @@ private:
 
     void ImportScenes()
     {
-        const unsigned numScenes = model_.scenes.size();
+        const unsigned numScenes = static_cast<unsigned>(model_.scenes.size());
         scenes_.resize(numScenes);
         for (unsigned sceneIndex = 0; sceneIndex < numScenes; ++sceneIndex)
         {
@@ -3566,6 +3483,7 @@ private:
                 auto animatedModel = node->CreateComponent<AnimatedModel>();
                 InitializeComponentModelAndMaterials(*animatedModel, *skinnedMeshNode.mesh_, *skinnedMeshNode.skin_);
                 InitializeDefaultMorphWeights(*animatedModel, skinnedMeshNode);
+                TweakEmptyAnimatedModel(*animatedModel);
             }
 
             if (animationImporter_.HasAnimations())
@@ -3607,6 +3525,7 @@ private:
                     auto animatedModel = node->CreateComponent<AnimatedModel>();
                     InitializeComponentModelAndMaterials(*animatedModel, *sourceNode.mesh_, -1);
                     InitializeDefaultMorphWeights(*animatedModel, sourceNode);
+                    TweakEmptyAnimatedModel(*animatedModel);
                 }
                 else
                 {
@@ -3717,6 +3636,15 @@ private:
             animatedModel.SetMorphWeight(morphIndex, sourceNode.morphWeights_[morphIndex]);
     }
 
+    void TweakEmptyAnimatedModel(AnimatedModel& animatedModel)
+    {
+        if (animatedModel.GetNumGeometries() == 0)
+        {
+            animatedModel.SetUpdateInvisible(true);
+            animatedModel.SetAnimationLodBias(0.0f);
+        }
+    }
+
     static void RegisterNode(ImportedScene& importedScene, Node& node, const GLTFNode& sourceNode)
     {
         importedScene.indexToNode_[sourceNode.index_] = &node;
@@ -3781,7 +3709,7 @@ tg::Model LoadGLTF(const ea::string& fileName)
     return model;
 }
 
-tg::Model LoadGLTFBinary(ByteSpan data)
+tg::Model LoadGLTFBinary(ConstByteSpan data)
 {
     tg::TinyGLTF loader;
     loader.SetImageLoader(&GLTFTextureImporter::LoadImageData, nullptr);
@@ -3795,7 +3723,46 @@ tg::Model LoadGLTFBinary(ByteSpan data)
     return model;
 }
 
+void EnumerateChildrenRecursive(ea::vector<int>& nodes, const tg::Model& model, int nodeIndex)
+{
+    const auto& children = model.nodes[nodeIndex].children;
+    nodes.insert(nodes.end(), children.begin(), children.end());
+    for (int childIndex : children)
+        EnumerateChildrenRecursive(nodes, model, childIndex);
 }
+
+void PreprocessModel(tg::Model& model, const GLTFImporterSettings& settings, GLTFImporterCallback* callback)
+{
+    const auto artificialSkinNodeNames = callback->GetArtificialSkinNodes();
+    if (!artificialSkinNodeNames.empty() && model.skins.empty())
+    {
+        ea::optional<int> emptyMeshIndex;
+        for (int i = 0; i < static_cast<int>(model.nodes.size()); ++i)
+        {
+            tg::Node& node = model.nodes[i];
+            if (node.skin >= 0 || !artificialSkinNodeNames.contains(node.name.c_str()))
+                continue;
+
+            if (!emptyMeshIndex)
+            {
+                emptyMeshIndex = static_cast<int>(model.meshes.size());
+                model.meshes.emplace_back();
+            }
+
+            const int skinIndex = static_cast<int>(model.skins.size());
+            tg::Skin& skin = model.skins.emplace_back();
+            node.skin = skinIndex;
+            node.mesh = *emptyMeshIndex;
+
+            ea::vector<int> nodes;
+            EnumerateChildrenRecursive(nodes, model, i);
+            skin.skeleton = i;
+            skin.joints.assign(nodes.begin(), nodes.end());
+        }
+    }
+}
+
+} // namespace
 
 class GLTFImporter::Impl
 {
@@ -3843,37 +3810,35 @@ private:
     GLTFSceneImporter sceneImporter_;
 };
 
-void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
+void GLTFImporterSettings::SerializeInBlock(Archive& archive)
 {
-    auto block = archive.OpenUnorderedBlock(name);
+    SerializeOptionalValue(archive, "assetName", assetName_);
 
-    SerializeValue(archive, "assetName", value.assetName_);
+    SerializeOptionalValue(archive, "mirrorX", mirrorX_);
+    SerializeOptionalValue(archive, "scale", scale_);
+    SerializeOptionalValue(archive, "rotation", rotation_);
 
-    SerializeValue(archive, "mirrorX", value.mirrorX_);
-    SerializeValue(archive, "scale", value.scale_);
-    SerializeValue(archive, "rotation", value.rotation_);
+    SerializeOptionalValue(archive, "fadeTransparency", fadeTransparency_);
 
-    SerializeValue(archive, "pbrTransparency", value.fadeTransparency_);
+    SerializeOptionalValue(archive, "cleanupBoneNames", cleanupBoneNames_);
+    SerializeOptionalValue(archive, "cleanupRootNodes", cleanupRootNodes_);
+    SerializeOptionalValue(archive, "combineLODs", combineLODs_);
+    SerializeOptionalValue(archive, "skipTag", skipTags_);
+    SerializeOptionalValue(archive, "keepNamesOnMerge", keepNamesOnMerge_);
+    SerializeOptionalValue(archive, "addEmptyNodesToSkeleton", addEmptyNodesToSkeleton_);
 
-    SerializeValue(archive, "cleanupBoneNames", value.cleanupBoneNames_);
-    SerializeValue(archive, "cleanupRootNodes", value.cleanupRootNodes_);
-    SerializeValue(archive, "combineLODs", value.combineLODs_);
-    SerializeValue(archive, "skipTag", value.skipTags_);
-    SerializeValue(archive, "keepNamesOnMerge", value.keepNamesOnMerge_);
-    SerializeValue(archive, "addEmptyNodesToSkeleton", value.addEmptyNodesToSkeleton_);
+    SerializeOptionalValue(archive, "offsetMatrixError", offsetMatrixError_);
+    SerializeOptionalValue(archive, "keyFrameTimeError", keyFrameTimeError_);
+    SerializeOptionalValue(archive, "nodeRenames", nodeRenames_);
 
-    SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
-    SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
-    SerializeValue(archive, "nodeRenames", value.nodeRenames_);
+    SerializeOptionalValue(archive, "gpuResources", gpuResources_);
 
-    SerializeValue(archive, "gpuResources", value.gpuResources_);
-
-    SerializeValue(archive, "addLights", value.preview_.addLights_);
-    SerializeValue(archive, "addSkybox", value.preview_.addSkybox_);
-    SerializeValue(archive, "skyboxMaterial", value.preview_.skyboxMaterial_);
-    SerializeValue(archive, "addReflectionProbe", value.preview_.addReflectionProbe_);
-    SerializeValue(archive, "reflectionProbeCubemap", value.preview_.reflectionProbeCubemap_);
-    SerializeValue(archive, "highRenderQuality", value.preview_.highRenderQuality_);
+    SerializeOptionalValue(archive, "addLights", preview_.addLights_);
+    SerializeOptionalValue(archive, "addSkybox", preview_.addSkybox_);
+    SerializeOptionalValue(archive, "skyboxMaterial", preview_.skyboxMaterial_);
+    SerializeOptionalValue(archive, "addReflectionProbe", preview_.addReflectionProbe_);
+    SerializeOptionalValue(archive, "reflectionProbeCubemap", preview_.reflectionProbeCubemap_);
+    SerializeOptionalValue(archive, "highRenderQuality", preview_.highRenderQuality_);
 }
 
 GLTFImporter::GLTFImporter(Context* context, const GLTFImporterSettings& settings)
@@ -3891,7 +3856,7 @@ bool GLTFImporter::LoadFile(const ea::string& fileName)
     return LoadFileInternal([&]() { return LoadGLTF(fileName); });
 }
 
-bool GLTFImporter::LoadFileBinary(ByteSpan data)
+bool GLTFImporter::LoadFileBinary(ConstByteSpan data)
 {
     return LoadFileInternal([&]() { return LoadGLTFBinary(data); });
 }
@@ -3952,8 +3917,12 @@ bool GLTFImporter::Process(
         if (impl_)
             throw RuntimeException("Source GLTF model is already processed");
 
-        impl_ = ea::make_unique<Impl>(context_, settings_, ea::move(*model_), outputPath, resourceNamePrefix,
-            callback ? callback : &defaultCallback_);
+        if (!callback)
+            callback = &defaultCallback_;
+
+        PreprocessModel(*model_, settings_, callback);
+
+        impl_ = ea::make_unique<Impl>(context_, settings_, ea::move(*model_), outputPath, resourceNamePrefix, callback);
         model_ = nullptr;
         return true;
     }

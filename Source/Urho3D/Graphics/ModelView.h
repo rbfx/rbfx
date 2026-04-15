@@ -97,6 +97,8 @@ struct URHO3D_API ModelVertex
     bool HasBinormal() const { return binormal_ != Vector4::ZERO; }
     /// Return whether the vertex has tangent and binormal combined.
     bool HasTangentBinormalCombined() const { return tangent_ != Vector4::ZERO && tangent_.w_ != 0; }
+    /// Return vertex as array of Vector4 elements.
+    const Vector4* Data() const { return &position_; }
 
     /// Replace given semantics from another vector.
     bool ReplaceElement(const ModelVertex& source, const VertexElement& element);
@@ -209,6 +211,8 @@ struct URHO3D_API GeometryView
     ea::vector<GeometryLODView> lods_;
     /// Material resource name.
     ea::string material_;
+    /// Whether this geometry should be exported to Model.
+    bool exported_{true};
 
     /// Calculate number of morphs in the model.
     unsigned CalculateNumMorphs() const;
@@ -273,6 +277,10 @@ enum class ModelViewExportFlag
     /// Export into pre-allocated GPU resources.
     /// If there is not enough space, export is aborted before any changes are made to Model.
     Inplace = 1 << 0,
+    /// Create headless vertex and index buffers.
+    /// Exported model will be unusable for rendering.
+    /// Headless export could be performed from any thread.
+    Headless = 1 << 1,
 };
 URHO3D_FLAGSET(ModelViewExportFlag, ModelViewExportFlags);
 
@@ -293,12 +301,13 @@ public:
     /// @{
     bool ImportModel(const Model* model);
     void ExportModel(Model* model, ModelViewExportFlags flags = ModelViewExportFlag::None) const;
-    SharedPtr<Model> ExportModel(const ea::string& name = EMPTY_STRING) const;
+    SharedPtr<Model> ExportModel(
+        ModelViewExportFlags flags = ModelViewExportFlag::None, const ea::string& name = EMPTY_STRING) const;
     ResourceRefList ExportMaterialList() const;
     /// @}
 
     /// Calculate bounding box.
-    BoundingBox CalculateBoundingBox() const;
+    BoundingBox CalculateBoundingBox(bool exportedOnly = true) const;
     /// All equivalent views should be literally equal after normalization.
     void Normalize();
     /// Mirror geometries along X axis. Useful for conversion between left-handed and right-handed systems.
@@ -314,7 +323,7 @@ public:
     /// Normalize bone weights and cleanup invalid bones. Ignored if there's no bones.
     void RepairBoneWeights();
     /// Recalculate bounding boxes for bones.
-    void RecalculateBoneBoundingBoxes();
+    void RecalculateBoneBoundingBoxes(bool exportedOnly = true);
 
     /// Set contents
     /// @{

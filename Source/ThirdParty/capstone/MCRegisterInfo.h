@@ -20,11 +20,13 @@
 #define CS_LLVM_MC_MCREGISTERINFO_H
 
 #include "capstone/platform.h"
+#include "SStream.h"
 
 /// An unsigned integer type large enough to represent all physical registers,
 /// but not necessarily virtual registers.
-typedef uint16_t MCPhysReg;
+typedef int16_t MCPhysReg;
 typedef const MCPhysReg* iterator;
+typedef uint16_t MCRegister;
 
 typedef struct MCRegisterClass2 {
 	iterator RegsBegin;
@@ -112,5 +114,7 @@ unsigned MCRegisterInfo_getSubReg(const MCRegisterInfo *RI, unsigned Reg, unsign
 const MCRegisterClass* MCRegisterInfo_getRegClass(const MCRegisterInfo *RI, unsigned i);
 
 bool MCRegisterClass_contains(const MCRegisterClass *c, unsigned Reg);
+
+unsigned MCRegisterClass_getRegister(const MCRegisterClass *c, unsigned i);
 
 #endif

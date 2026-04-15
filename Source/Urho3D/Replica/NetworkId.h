@@ -81,4 +81,15 @@ inline NetworkFrame operator-(NetworkFrame lhs, long long rhs)
     return static_cast<NetworkFrame>(static_cast<long long>(lhs) - rhs);
 }
 
+/// Marker used to synchronize the beginning of the fixed-step event (like physical world update)
+/// and the network frame.
+struct NetworkFrameSync
+{
+    /// Synchronized network frame.
+    NetworkFrame networkFrame_{};
+    /// Index of the fixed-step event that corresponds to the beginning of the synchronized network frame.
+    /// If network update rate is the same as fixed-step event rate, index is always zero.
+    unsigned offset_{};
+};
+
 } // namespace Urho3D

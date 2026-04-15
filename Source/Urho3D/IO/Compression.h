@@ -38,7 +38,7 @@ URHO3D_API unsigned CompressData(void* dest, const void* src, unsigned srcSize);
 /// Uncompress data using the LZ4 algorithm. The uncompressed data size must be known. Return the number of compressed data bytes consumed.
 URHO3D_API unsigned DecompressData(void* dest, const void* src, unsigned destSize);
 /// Compress a source stream (from current position to the end) to the destination stream using the LZ4 algorithm. Return true on success.
-URHO3D_API bool CompressStream(Serializer& dest, Deserializer& src);
+URHO3D_API bool CompressStream(Serializer& dest, Deserializer& src, unsigned compressionLevel = 0);
 /// Decompress a compressed source stream produced using CompressStream() to the destination stream. Return true on success.
 URHO3D_API bool DecompressStream(Serializer& dest, Deserializer& src);
 /// Compress a VectorBuffer using the LZ4 algorithm and return the compressed result buffer.

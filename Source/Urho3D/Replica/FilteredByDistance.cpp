@@ -61,14 +61,11 @@ ea::optional<NetworkObjectRelevance> FilteredByDistance::GetRelevanceForClient(A
     ServerReplicator* serverReplicator = replicationManager->GetServerReplicator();
     const auto& ownedObjects = serverReplicator->GetNetworkObjectsOwnedByConnection(connection);
 
-    const Vector3 thisPosition = GetNode()->GetWorldPosition();
     float distanceToConnectionObjects = M_LARGE_VALUE;
-
     for (NetworkObject* networkObject : ownedObjects)
     {
-        const Vector3 otherPosition = networkObject->GetNode()->GetWorldPosition();
-        const float distance = (thisPosition - otherPosition).Length();
-        distanceToConnectionObjects = ea::min(distanceToConnectionObjects, distance);
+        if (const auto distance = networkObject->CalculateDistanceForFiltering(GetNetworkObject()))
+            distanceToConnectionObjects = ea::min(distanceToConnectionObjects, *distance);
     }
 
     if (distanceToConnectionObjects < distance_)

@@ -37,7 +37,7 @@ static StringHashRegister& GetGlobalStringHashRegister()
 const StringHash StringHash::Empty{""};
 
 StringHash::StringHash(const ea::string_view& str) noexcept
-    : value_(Calculate(str.data(), str.length()))
+: value_(Calculate(str.data(), static_cast<unsigned>(str.length())))
 {
 #ifdef URHO3D_HASH_DEBUG
     Urho3D::GetGlobalStringHashRegister().RegisterString(*this, str);
@@ -56,7 +56,7 @@ StringHashRegister* StringHash::GetGlobalStringHashRegister()
 ea::string StringHash::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%08X", value_);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%08X", value_);
     return ea::string(tempBuffer);
 }
 

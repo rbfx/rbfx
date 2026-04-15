@@ -1,4 +1,4 @@
-## Copyright 2009-2020 Intel Corporation
+## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
 MACRO(_SET_IF_EMPTY VAR VALUE)
@@ -13,12 +13,11 @@ IF (WIN32)
   _SET_IF_EMPTY(FLAGS_SSE42 "/QxSSE4.2")
   _SET_IF_EMPTY(FLAGS_AVX   "/arch:AVX")
   _SET_IF_EMPTY(FLAGS_AVX2  "/QxCORE-AVX2")
-  _SET_IF_EMPTY(FLAGS_AVX512KNL "/QxMIC-AVX512")
-  _SET_IF_EMPTY(FLAGS_AVX512SKX "/QxCORE-AVX512")
+  _SET_IF_EMPTY(FLAGS_AVX512 "/QxCORE-AVX512")
 
   SET(COMMON_CXX_FLAGS "")
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /EHsc")        # catch C++ exceptions only and extern "C" functions never throw a C++ exception
-  # SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /MP")          # compile source files in parallel
+  SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /MP")          # compile source files in parallel
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GR")          # enable runtime type information (on by default)
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Qvec-")       # disable auto vectorizer
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Qfast-transcendentals-") # disable fast transcendentals, prevents sin(x),cos(x) -> sincos(x) optimization
@@ -71,7 +70,7 @@ IF (WIN32)
 
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4217")  # locally defined symbol XXX imported in function YYY (happens as the ISPC API layer uses exported library functions)
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4049")  # warning LNK4049: locally defined symbol _rtcOccluded1M imported
-
+  
   INCLUDE(msvc_post)
 
   # remove libmmd dependency
@@ -99,15 +98,14 @@ ELSE()
   _SET_IF_EMPTY(FLAGS_SSE42  "-xsse4.2")
   _SET_IF_EMPTY(FLAGS_AVX    "-xAVX")
   _SET_IF_EMPTY(FLAGS_AVX2   "-xCORE-AVX2")
-  _SET_IF_EMPTY(FLAGS_AVX512KNL "-xMIC-AVX512")
-  _SET_IF_EMPTY(FLAGS_AVX512SKX "-xCORE-AVX512")
+  _SET_IF_EMPTY(FLAGS_AVX512 "-xCORE-AVX512")
 
   OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)
   IF (EMBREE_IGNORE_CMAKE_CXX_FLAGS)
     SET(CMAKE_CXX_FLAGS "")
   ENDIF()
 
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") 
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")                       # enables most warnings
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security")  # enables string format vulnerability warnings
 
@@ -137,7 +135,7 @@ ELSE()
       SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "-fno-stack-protector")
     ENDIF()
   ENDMACRO()
-
+  
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -restrict")                   # enable restrict keyword
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-inline-max-total-size")   # no size limit when performing inlining
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-inline-max-per-compile")  # no maximal number of inlinings per compilation unit
@@ -162,7 +160,7 @@ ELSE()
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -g")              # generate debug information
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DNDEBUG")        # disable assertions
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3")             # enable full optimizations
-
+  
   IF (APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")   # makes sure code runs on older MacOSX versions
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")             # link against libc++ which supports C++11 features

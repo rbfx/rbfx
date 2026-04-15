@@ -1,0 +1,289 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+    
+<title>EARandom</title>
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAStopwatch</h1>
+
+<h2>Introduction</h2>
+<p>EAStopwatch provides timing facilities for use in game development. It provides 
+  two C++ classes:</p>
+<blockquote>
+  <table width="100%" border="1">
+    <tr>
+      <td>Stopwatch</td>
+      <td>A general-purpose timer</td>
+    </tr>
+    <tr>
+      <td>LimitStopwatch</td>
+      <td>A special-purpose countdown-style timer</td>
+    </tr>
+  </table>
+</blockquote>
+<p>Stopwatch acts much like and classic hand-held stopwatch or like the stopwatch 
+  found on sports watches. It has additional flexibility, such as the ability 
+  to set an elapsed time to any value.</p>
+<p>LimitStopwatch is a stopwatch which simply tells you if a given amount of time 
+  has passed. You can accomplish this same functionality by polling a Stopwatch, 
+  but LimitStopwatch is more efficient.</p>
+<h2>Important things to remember</h2>
+<ul>
+  <li> You won't get very accurate timings if you use a millisecond stopwatch 
+    repeatedly to time tiny sections of code that take only nanoseconds.</li>
+  <li>You can start and stop a stopwatch repeatedly and it will do the right thing, 
+    which is sum up the times during which it was running.</li>
+  <li>Timing CPU cycles (clock ticks) accurately can be hard if you are trying 
+    to time very small pieces of code. Pipeline stalls and memory stalls can result 
+    in highly variable results.</li>
+  <li>A running stopwatch consumes no resources (CPU cycles nor memory) during 
+    its existence nor while it is running.</li>
+  <li>You don't have to stop a stopwatch that is running; it doesn't take up CPU 
+    time to be running. It is not an error to not stop a stopwatch.</li>
+  <li>There is a distinction between stopwatch cycles and CPU-based cycles. While 
+    it may be the case that the stopwatch uses a CPU cycle counter as its basis, 
+    this also may not be the case. In fact, using a CPU cycles counter as the 
+    basis for a stopwatch is often a dangerous thing to do because processors 
+    these days will sometimes switch frequencies on the fly. </li>
+  <li>You don't have to worry about multi-processor issues unless you are running 
+    on a desktop platform such as Windows. In the case of such platforms, you 
+    only need to worry about such issues if you happen to define EA_STOPWATCH_FORCE_CPU_CYCLE_USAGE = 1.</li>
+  <li>You can call safely GetElapsedTime while the stopwatch is running; it will 
+    simply return the currently elapsed time.</li>
+  <li>The construction and destruction instances of Stopwatch is fast; don't worry 
+    about it. Similarly, a Stopwatch instance is small in size.</li>
+</ul>
+<h2>Example usage </h2>
+<p>EAStopwatch is very easy to use, though curiously its simplicity actually confuses 
+  some users familiar with more cumbersome alternatives.</p>
+<p>Basic usage:</p>
+<pre class="code-example">Stopwatch stopwatch(Stopwatch::kUnitsMilliseconds);
+
+stopwatch.Start();
+DoSomethingThatYouWantToMeasure();
+printf("Time to do something: %u.\n", stopwatch.GetElapsedTime());</pre>
+Example of stopwatch reuse (via Restart):
+<pre class="code-example">Stopwatch stopwatch(Stopwatch::kUnitsCycles, true); // Note that 'true' tells the timer to auto-start here.
+
+DoSomethingSmall();
+printf("Time to do something small: %u.\n", stopwatch.GetElapsedTime());
+
+stopwatch.Restart();
+DoSomethingElseSmall();
+printf("Time to do something else small: %d.\n", stopwatch.GetElapsedTime());</pre>
+Example of SetElapsedTime usage.
+<pre class="code-example">Stopwatch stopwatch(Stopwatch::kUnitsMilliseconds);
+
+stopwatch.SetElapsedTime(100); // Give the stopwatch a &quot;100 ms head start.&quot;
+stopwatch.Start();
+printf("This should print out 100 (or maybe 101): %u.\n", stopwatch.GetElapsedTime());</pre>
+<p>Example of LimitStopwatch usage:</p>
+<pre class="code-example">LimitStopwatch limitStopwatch(Stopwatch::kUnitsMilliseconds, 1000, true);
+
+while(!limitStopwatch.IsTimeUp())
+    printf("waiting\n"); </pre>
+<h2>Don't do this!</h2>
+<p> It seems that quite often people unfamiliar with a C++ stopwatch tend to revert 
+  away from using the stopwatch as it was designed and try to do timings manually, 
+  like shown below. The code below is more complicated than it needs to be and 
+  is less precise than it can be, as the high internal resolution of the stopwatch 
+  is lost when using it like this. </p>
+<pre class="code-example"><font color="#CC0000">Stopwatch stopwatch(Stopwatch::kUnitsMilliseconds);
+
+stopwatch.Start();
+uint64_t timeStart = stopwatch.GetElapsedTime();
+DoSomething();
+uint64_t timeElapsed = stopwatch.GetElapsedTime() - time;</font>
+</pre>
+<h2>Interface </h2>
+<p>Stopwatch</p>
+<pre class="code-example">class Stopwatch
+{
+public:
+<span class="code-example-comment">    /// Units
+    /// Defines common timing units plus a user-definable set of units.
+</span>    enum Units
+    {
+        kUnitsCycles       =    0,  <font color="#999999">/// Stopwatch clock ticks. </font>
+        kUnitsCPUCycles    =    1,  <font color="#999999">/// CPU clock ticks (or similar equivalent for the platform).</font>
+        kUnitsNanoseconds  =    2,  <font color="#999999">/// Count in nanoseconds.</font>
+        kUnitsMicroseconds =    3,  <font color="#999999">/// Count in microseconds.</font>
+        kUnitsMilliseconds =    4,  <font color="#999999">/// Count in milliseconds.</font>
+        kUnitsSeconds      =    5,  <font color="#999999">/// Count in seconds.</font>
+        kUnitsMinutes      =    6,  <font color="#999999">/// Count in minutes.</font>
+        kUnitsUserDefined  = 1000   <font color="#999999">/// User defined units (animation frames, video vertical retrace, etc.).</font>
+    };
+
+public:
+<span class="code-example-comment">    /// Stopwatch
+    /// Constructor for Stopwatch, allows user to specify units. 
+    /// If units are kUnitsUserDefined,  you'll need to either subclass 
+    /// Stopwatch and implement GetUserDefinedStopwatchCycle or call 
+    /// SetUserDefinedUnitsToStopwatchCyclesRatio in order to allow it 
+    /// to know how to convert units.
+</span>    explicit Stopwatch(int nUnits = kUnitsCycles, bool bStartImmediately = false);
+
+<span class="code-example-comment">    /// Stopwatch
+    /// Copy constructor.
+</span>    Stopwatch(const Stopwatch& stopwatch);
+
+<span class="code-example-comment">    /// ~Stopwatch
+    /// Destructor.
+</span>    ~Stopwatch();
+
+<span class="code-example-comment">    /// operator=
+    /// Assignment operator.
+</span>    Stopwatch& operator=(const Stopwatch& stopwatch);
+
+<span class="code-example-comment">    /// GetUnits
+    /// Gets the current units. Returns one of enum Units or kUnitsUserDefined+.
+</span>    int GetUnits() const;
+
+<span class="code-example-comment">    /// SetUnits
+    /// Sets the current units. One of enum Units or kUnitsUserDefined+.
+</span>    void SetUnits(int nUnits);
+
+<span class="code-example-comment">    /// Start
+    /// Starts the stopwatch. Continues where it was last stopped. 
+    /// Does nothing if the stopwatch is already started.
+</span>    void Start();
+
+<span class="code-example-comment">    /// Stop
+    /// Stops the stopwatch it it was running and retaines the elasped time.
+</span>    void Stop();
+
+<span class="code-example-comment">    /// Reset
+    /// Stops the stopwatch if it was running and clears the elapsed time.
+</span>    void Reset();
+
+<span class="code-example-comment">    /// Restart
+    /// Clears the elapsed time and starts the stopwatch if it was not 
+    /// already running. Has the same effect as Reset(), Start().
+</span>    void Restart();
+
+<span class="code-example-comment">    /// IsRunning
+    /// Returns true if the stopwatch is running.
+</span>    bool IsRunning() const;
+
+<span class="code-example-comment">    /// GetElapsedTime
+    /// Gets the elapsed time, which properly takes into account any 
+    /// intervening stops and starts. Works properly whether the stopwatch 
+    /// is running or not.
+</span>    uint64_t GetElapsedTime() const;
+
+<span class="code-example-comment">    /// SetElapsedTime
+    /// Allows you to set the elapsed time. Erases whatever is current. 
+    /// Works properly whether the stopwatch is running or not.
+</span>    void SetElapsedTime(uint64_t nElapsedTime);
+
+<span class="code-example-comment">    /// GetElapsedTimeFloat
+    /// Float version, which is useful for counting fractions of 
+    /// seconds or possibly milliseconds.
+</span>    float GetElapsedTimeFloat() const;
+
+<span class="code-example-comment">    /// SetElapsedTimeFloat
+    /// Allows you to set the elapsed time. Erases whatever is current. 
+    /// Works properly whether the stopwatch is running or not.
+</span>    void SetElapsedTimeFloat(float fElapsedTime);
+
+<span class="code-example-comment">    /// SetCyclesPerUnit
+    /// Allows the user to manually override the frequency of the 
+    /// timer. 
+</span>    void SetCyclesPerUnit(float fCyclesPerUnit);
+
+<span class="code-example-comment">    /// GetCyclesPerUnit
+    /// Returns the value number of cycles per unit. If the user 
+    /// set a manual value via SetCyclesPerUnit, this function returns 
+    /// that value.
+</span>    float GetCyclesPerUnit() const;
+
+<span class="code-example-comment">    /// GetStopwatchCycle
+    /// Gets the current stopwatch cycle on the current machine.
+    /// Note that a stopwatch cyle may or may not be the same thing
+    /// as a CPU cycle. We provide the distinction between stopwatch
+    /// cycles and CPU cycles in order to accomodate platforms (e.g.
+    /// desktop platforms) in which CPU cycle counting is unreliable.
+</span>    static uint64_t GetStopwatchCycle();
+
+<span class="code-example-comment">    /// GetStopwatchFrequency
+    /// Note that the stopwatch freqency may or may not be the same thing
+    /// as the CPU freqency. We provide the distinction between stopwatch
+    /// cycles and CPU cycles in order to accomodate platforms (e.g.
+    /// desktop platforms) in which CPU cycle counting is unreliable.
+</span>    static uint64_t GetStopwatchFrequency();
+
+<span class="code-example-comment">    /// GetUnitsPerStopwatchCycle
+    /// Returns the number of stopwatch cycles per the given unit.  
+    /// If the unit is seconds, the return value would be the frequency of 
+    /// the stopwatch timer and thus be the same value as returned by
+    /// GetStopwatchFrequency().
+</span>    static float GetUnitsPerStopwatchCycle(Units units);
+
+<span class="code-example-comment">    /// GetCPUCycle
+    /// Gets the current CPU-based timer cycle on the current processor 
+    /// (if in a multiprocessor system). Note that this doesn't necessarily
+    /// get the actual machine CPU clock cycle; rather it returns the 
+    /// CPU-based timer cycle. One some platforms the CPU-based timer is
+    /// a 1:1 relation to the CPU clock, while on others it is some multiple
+    /// of it.
+</span>    static uint64_t GetCPUCycle();
+
+<span class="code-example-comment">    /// GetCPUFrequency
+    /// Gets the frequency of the CPU-based timer. Note that this doesn't 
+    /// necessarily get the actual machine CPU clock frequency; rather it returns  
+    /// the CPU-based timer frequency. One some platforms the CPU-based timer is
+    /// a 1:1 relation to the CPU clock, while on others it is some multiple of it.
+</span>    static uint64_t GetCPUFrequency(); 
+
+<span class="code-example-comment">    /// GetUnitsPerCPUCycle
+    /// Returns the number of CPU cycles per the given unit.  
+    /// If the unit is seconds, the return value would be the frequency 
+    /// of the CPU-based timer.
+</span>    static float GetUnitsPerCPUCycle(Units units);
+};
+  </pre>
+<p>LimitStopwatch</p>
+<pre class="code-example">class LimitStopwatch : public Stopwatch
+{
+public:
+<span class="code-example-comment">    /// LimitStopwatch
+    /// Constructor
+</span>    LimitStopwatch(int nUnits = kUnitsCycles, uint32_t nLimit = 0, bool bStartImmediately = false);
+
+<span class="code-example-comment">    /// SetTimeLimit
+    /// Sets the time limit and lets you start the stopwatch at the same time.
+</span>    void SetTimeLimit(uint32_t nLimit, bool bStartImmediately = false); 
+
+<span class="code-example-comment">    /// IsTimeUp
+    /// Returns true if the limit has been reached. Highly efficient.
+</span>    bool IsTimeUp();
+
+<span class="code-example-comment">    /// GetTimeRemaining
+    /// More expensive than IsTimeUp, as it returns a value.
+</span>    int64_t GetTimeRemaining();
+
+<span class="code-example-comment">    /// GetTimeRemainingFloat
+    /// More expensive than IsTimeUp, as it returns a value.
+</span>    float GetTimeRemainingFloat();
+};</pre>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p> </p>
+</body></html>
+
+
+

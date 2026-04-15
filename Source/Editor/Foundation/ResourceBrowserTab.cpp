@@ -459,7 +459,7 @@ void ResourceBrowserTab::RenderEntryContextMenuItems(const FileSystemEntry& entr
     if (ui::MenuItem("Copy Absolute Path"))
         ui::SetClipboardText(entry.absolutePath_.c_str());
 
-    if (ui::MenuItem("Copy Relative Path (aka Resource Name)"))
+    if (ui::MenuItem("Copy Resource Name"))
         ui::SetClipboardText(entry.resourceName_.c_str());
 
     ui::Separator();

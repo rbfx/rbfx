@@ -71,11 +71,15 @@ public:
     /// @}
 
 protected:
+    void UpdateFrameParameters();
+
+protected:
     RenderPipeline* const renderPipeline_{};
     Graphics* const graphics_{};
     Renderer* const renderer_{};
 
     bool linearColorSpace_{};
+    ea::vector<ShaderParameterDesc> frameParameters_;
 };
 
 /// Scene component that spawns render pipeline instances.
@@ -115,12 +119,25 @@ public:
 
     const StringVariantMap& GetRenderPathParameters() const { return renderPathParameters_; }
     void SetRenderPathParameters(const StringVariantMap& params);
+
+    const StringVariantMap& GetFrameShaderParameters() const { return frameShaderParameters_; }
+    void SetFrameShaderParameters(const StringVariantMap& params);
     /// @}
 
     /// Update existing render path parameters.
     void UpdateRenderPathParameters(const VariantMap& params);
+    /// Update existing render path parameter.
+    void UpdateRenderPathParameter(const StringHash& nameHash, const Variant& value);
+
     /// Update render pass enabled state.
     void SetRenderPassEnabled(const ea::string& passName, bool enabled);
+
+    /// Update existing global parameters.
+    void UpdateFrameShaderParameters(const VariantMap& params);
+    /// Update existing render path parameter.
+    void UpdateFrameShaderParameter(const StringHash& nameHash, const Variant& value);
+    /// Add or update render path parameter.
+    void SetFrameShaderParameter(const ea::string& name, const Variant& value);
 
     /// Create new instance of render pipeline.
     virtual SharedPtr<RenderPipelineView> Instantiate();
@@ -133,6 +150,7 @@ private:
 
     EnabledRenderPasses renderPasses_;
     StringVariantMap renderPathParameters_;
+    StringVariantMap frameShaderParameters_;
 
     RenderPipelineSettings settings_;
 };

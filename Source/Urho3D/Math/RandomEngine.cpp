@@ -20,11 +20,12 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Math/RandomEngine.h"
+#include "Urho3D/Math/RandomEngine.h"
 
-#include "../Math/MathDefs.h"
+#include "Urho3D/Core/Assert.h"
+#include "Urho3D/Math/MathDefs.h"
 
 #include <ctime>
 #include <sstream>
@@ -68,7 +69,7 @@ ea::string RandomEngine::Save() const
 
 unsigned RandomEngine::GetUInt(unsigned range)
 {
-    assert(range <= MaxRange());
+    URHO3D_ASSERT(range <= MaxRange());
     if (range == 0)
         return 0;
 
@@ -88,14 +89,14 @@ unsigned RandomEngine::GetUInt(unsigned range)
 
 unsigned RandomEngine::GetUInt(unsigned min, unsigned max)
 {
-    assert(min <= max);
+    URHO3D_ASSERT(min <= max);
     return GetUInt(max - min) + min;
 }
 
 int RandomEngine::GetInt(int min, int max)
 {
     // Avoid signed integer overflow
-    assert(min <= max);
+    URHO3D_ASSERT(min <= max);
     const auto range = static_cast<unsigned>(max) - min;
     return static_cast<int>(GetUInt(range) + min);
 }
@@ -125,7 +126,7 @@ void RandomEngine::GetStandardNormalFloatArray(ea::span<float> array)
 
 void RandomEngine::GetDirection(ea::span<float> direction)
 {
-    assert(direction.size() > 0);
+    URHO3D_ASSERT(direction.size() > 0);
 
     for (unsigned i = 0; i < MaxIterations; ++i)
     {

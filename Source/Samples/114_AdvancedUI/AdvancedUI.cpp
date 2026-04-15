@@ -51,6 +51,7 @@ AdvancedUIWindow::AdvancedUIWindow(Context* context)
     for (int i = 1; i <= numSavedGames; ++i)
         savedGames_.push_back(Format("Saved Game {}<br/>2022-08-14 16:00", i));
     ea::reverse(savedGames_.begin(), savedGames_.end());
+    nextGameIndex_ = savedGames_.size() + 1;
 }
 
 void AdvancedUIWindow::OnDataModelInitialized()
@@ -58,15 +59,24 @@ void AdvancedUIWindow::OnDataModelInitialized()
     Rml::DataModelConstructor* constructor = GetDataModelConstructor();
     constructor->RegisterArray<StringVector>();
 
+    constructor->Bind("current_page", &currentPage_);
+    constructor->Bind("selected_game_index", &selectedGameIndex_);
+
     constructor->Bind("saved_games", &savedGames_);
-    constructor->Bind("game_to_load", &gameToLoad_);
     constructor->Bind("is_game_played", &isGamePlayed_);
 
     constructor->BindEventCallback("on_continue", WrapCallback(&AdvancedUIWindow::OnContinue));
     constructor->BindEventCallback("on_new_game", WrapCallback(&AdvancedUIWindow::OnNewGame));
     constructor->BindEventCallback("on_load_game", WrapCallback(&AdvancedUIWindow::OnLoadGame));
+    constructor->BindEventCallback("on_delete_game", WrapCallback(&AdvancedUIWindow::OnDeleteGame));
     constructor->BindEventCallback("on_settings", WrapCallback(&AdvancedUIWindow::OnSettings));
     constructor->BindEventCallback("on_exit", WrapCallback(&AdvancedUIWindow::OnExit));
+    constructor->BindEventCallback("go_back", WrapCallback(&AdvancedUIWindow::GoBack));
+}
+
+void AdvancedUIWindow::OnDocumentPostLoad()
+{
+    RestoreFocus();
 }
 
 AdvancedUI* AdvancedUIWindow::GetSample() const
@@ -87,8 +97,9 @@ void AdvancedUIWindow::OnContinue()
 void AdvancedUIWindow::OnNewGame()
 {
     isGamePlayed_ = true;
-    playedGameName_ = Format("New Game {}<br/>2022-08-14 16:00", newGameIndex_);
-    ++newGameIndex_;
+    playedGameName_ = Format("New Game {}<br/>2022-08-14 16:00", nextGameIndex_);
+    ++nextGameIndex_;
+    savedGames_.push_front(playedGameName_);
 
     if (auto sample = GetSample())
         sample->InitGame(isGamePlayed_, playedGameName_);
@@ -98,11 +109,24 @@ void AdvancedUIWindow::OnNewGame()
 
 void AdvancedUIWindow::OnLoadGame()
 {
+    if (selectedGameIndex_ >= savedGames_.size())
+        return;
+
     isGamePlayed_ = true;
-    playedGameName_ = gameToLoad_;
+    playedGameName_ = savedGames_[selectedGameIndex_];
 
     if (auto sample = GetSample())
         sample->InitGame(isGamePlayed_, playedGameName_);
+
+    DirtyAllVariables();
+}
+
+void AdvancedUIWindow::OnDeleteGame()
+{
+    if (selectedGameIndex_ >= savedGames_.size())
+        return;
+
+    savedGames_.erase_at(selectedGameIndex_);
 
     DirtyAllVariables();
 }
@@ -115,6 +139,13 @@ void AdvancedUIWindow::OnExit()
 {
     if (auto sample = GetSample())
         sample->CloseSample();
+}
+
+void AdvancedUIWindow::GoBack()
+{
+    currentPage_ = PageIndex::MainMenu;
+
+    DirtyAllVariables();
 }
 
 AdvancedUI::AdvancedUI(Context* context)

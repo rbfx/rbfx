@@ -70,7 +70,7 @@ unsigned ClientInputStatistics::GetMaxRepeatedLoss() const
 {
     const auto isRepeated = [](unsigned x) { return x >= 2; };
     const auto iter = ea::find_if(histogram_.rbegin(), histogram_.rend(), isRepeated).base();
-    return iter != histogram_.begin() ? iter - histogram_.begin() - 1 : 0;
+    return iter != histogram_.begin() ? static_cast<unsigned>(iter - histogram_.begin() - 1) : 0;
 }
 
 }

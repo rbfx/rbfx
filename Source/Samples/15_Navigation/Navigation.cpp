@@ -143,7 +143,7 @@ void Navigation::CreateScene()
     // Create a NavigationMesh component to the scene root
     auto* navMesh = scene_->CreateComponent<NavigationMesh>();
     // Set small tiles to show navigation mesh streaming
-    navMesh->SetTileSize(32);
+    navMesh->SetTileSize(30);
     // Create a Navigable component to the scene root. This tags all of the geometry in the scene as being part of the
     // navigation mesh. By default this is recursive, but the recursion could be turned off from Navigable
     scene_->CreateComponent<Navigable>();
@@ -458,11 +458,21 @@ void Navigation::Update(float timeStep)
 
     // Update streaming
     auto* input = GetSubsystem<Input>();
-    if (input->GetKeyPress(KEY_TAB))
+    if (scene_->GetWorldOrigin() != IntVector3::ZERO)
+    {
+        if (useStreaming_)
+        {
+            // Streaming and world offset can work together, but it is beyond the scope of this sample.
+            useStreaming_ = false;
+            ToggleStreaming(false);
+        }
+    }
+    else if (input->GetKeyPress(KEY_TAB))
     {
         useStreaming_ = !useStreaming_;
         ToggleStreaming(useStreaming_);
     }
+
     if (useStreaming_)
         UpdateStreaming();
 }

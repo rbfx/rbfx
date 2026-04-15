@@ -165,7 +165,7 @@ void Physics::CreateScene()
 
     // Create the camera. Set far clip to match the fog. Note: now we actually create the camera node outside the scene, because
     // we want it to be unaffected by scene load / save
-    cameraNode_ = new Node(context_);
+    cameraNode_ = scene_->CreateChild("Camera");
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(500.0f);
 
@@ -183,7 +183,6 @@ void Physics::CreateInstructions()
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "LMB to spawn physics objects\n"
-        "F5 to save scene, F7 to load\n"
         "Space to toggle physics debug geometry"
     );
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
@@ -247,29 +246,6 @@ void Physics::MoveCamera(float timeStep)
     // "Shoot" a physics object with left mousebutton
     if (input->GetMouseButtonPress(MOUSEB_LEFT))
         SpawnObject();
-
-    // Check for loading/saving the scene. Save the scene to the file Data/Scenes/Physics.xml relative to the executable
-    // directory
-    if (input->GetKeyPress(KEY_F5))
-    {
-        ea::string filePath = GetSubsystem<FileSystem>()->GetProgramDir();
-#if _MSC_VER
-        filePath += "../";
-#endif
-        filePath += "Data/Scenes/Physics.xml";
-        File saveFile(context_, filePath, FILE_WRITE);
-        scene_->SaveXML(saveFile);
-    }
-    if (input->GetKeyPress(KEY_F7))
-    {
-        ea::string filePath = GetSubsystem<FileSystem>()->GetProgramDir();
-#if _MSC_VER
-        filePath += "../";
-#endif
-        filePath += "Data/Scenes/Physics.xml";
-        File loadFile(context_, filePath, FILE_READ);
-        scene_->LoadXML(loadFile);
-    }
 
     // Toggle physics debug geometry with space
     if (input->GetKeyPress(KEY_SPACE))

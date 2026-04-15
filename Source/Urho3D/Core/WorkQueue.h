@@ -185,7 +185,7 @@ public:
 
 private:
     void ProcessPostedTasks();
-    void ProcessMainThreadTasks();
+    bool ProcessMainThreadTasks();
     void PurgeProcessedTasksInFallbackQueue();
     void CompleteImmediateForAnotherThread(unsigned threadIndex);
 

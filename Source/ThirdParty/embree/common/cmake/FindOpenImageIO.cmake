@@ -1,4 +1,4 @@
-## Copyright 2009-2020 Intel Corporation
+## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
 IF (NOT OPENIMAGEIO_ROOT)
@@ -36,7 +36,7 @@ FIND_PATH(OPENIMAGEIO_ROOT include/OpenImageIO/imageio.h
   DOC "Root of OpenImageIO installation"
   HINTS ${OPENIMAGEIO_ROOT}
   PATHS
-    ${PROJECT_SOURCE_DIR}/oiio
+    "${PROJECT_SOURCE_DIR}/oiio"
     /usr/local
     /usr
     /

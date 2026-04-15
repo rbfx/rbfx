@@ -83,7 +83,6 @@
 %csattribute(Urho3D::IKSolver, %arg(Urho3D::StringHash), PostUpdateEvent, GetPostUpdateEvent);
 %csattribute(Urho3D::IKSolver, %arg(bool), IsSolveWhenPaused, IsSolveWhenPaused, SetSolveWhenPaused);
 %csattribute(Urho3D::IKSolver, %arg(bool), IsContinuousRotation, IsContinuousRotation, SetContinuousRotation);
-%csattribute(Urho3D::IKTargetExtractor, %arg(bool), IsExecutedOnOutput, IsExecutedOnOutput);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {

@@ -1,0 +1,48 @@
+# Urho3DThirdPartyConfigVersion.cmake - Custom version file with platform compatibility checking
+
+set(PACKAGE_VERSION "@URHO3D_THIRDPARTY_VERSION@")
+
+# Include platform tag generation module
+include("${CMAKE_CURRENT_LIST_DIR}/Modules/PlatformTag.cmake")
+
+# Platform compatibility check for Urho3DThirdParty
+function(urho3d_thirdparty_check_platform_compatibility_version)
+    # Generate current platform tag (TARGET mode - checking target platform)
+    rbfx_get_platform_tag(CURRENT_PLATFORM_TAG TARGET)
+
+    # Platform tag that was used at build time (embedded during configuration)
+    set(BUILD_TIME_PLATFORM_TAG "@RBFX_PLATFORM_TAG@")
+
+    # Compare tags
+    if(NOT CURRENT_PLATFORM_TAG STREQUAL BUILD_TIME_PLATFORM_TAG)
+        set(PACKAGE_VERSION_UNSUITABLE TRUE PARENT_SCOPE)
+        set(PACKAGE_VERSION_COMPATIBLE FALSE PARENT_SCOPE)
+        if(NOT Urho3DThirdParty_FIND_QUIETLY)
+            message(STATUS "Urho3DThirdParty: Platform tag mismatch detected.")
+            message(STATUS "  Current platform: ${CURRENT_PLATFORM_TAG}")
+            message(STATUS "  Built for:        ${BUILD_TIME_PLATFORM_TAG}")
+            message(STATUS "  Hint: The Urho3DThirdParty package was built for a different platform/architecture/runtime.")
+            message(STATUS "        Ensure you're using the correct build for your target configuration.")
+        endif()
+        return()
+    endif()
+
+    # Platform is compatible, continue with version checking
+    set(PACKAGE_VERSION_COMPATIBLE TRUE PARENT_SCOPE)
+endfunction()
+
+# Perform platform compatibility check
+urho3d_thirdparty_check_platform_compatibility_version()
+
+# Only do version checking if platform is compatible
+if(PACKAGE_VERSION_COMPATIBLE)
+    # For ThirdParty hash-based versioning, require exact match
+    # Hash-based versions don't have semantic meaning, so only exact matches are valid
+    if(PACKAGE_FIND_VERSION AND NOT PACKAGE_FIND_VERSION STREQUAL PACKAGE_VERSION)
+        set(PACKAGE_VERSION_COMPATIBLE FALSE)
+    endif()
+
+    if (PACKAGE_FIND_VERSION STREQUAL PACKAGE_VERSION)
+        set(PACKAGE_VERSION_EXACT TRUE)
+    endif()
+endif()

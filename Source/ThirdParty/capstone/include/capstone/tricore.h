@@ -12,6 +12,7 @@ extern "C" {
 #include <stdint.h>
 #endif
 
+#include "cs_operand.h"
 #include "platform.h"
 
 #ifdef _MSC_VER
@@ -30,7 +31,7 @@ typedef enum tricore_op_type {
 /// This is associated with TRICORE_OP_MEM operand type above
 typedef struct tricore_op_mem {
 	uint8_t base; ///< base register
-	int32_t disp; ///< displacement/offset value
+	int64_t disp; ///< displacement/offset value
 } tricore_op_mem;
 
 /// Instruction operand
@@ -38,7 +39,7 @@ typedef struct cs_tricore_op {
 	tricore_op_type type;	    ///< operand type
 	union {
 		unsigned int reg;   ///< register value for REG operand
-		int32_t imm;	    ///< immediate value for IMM operand
+		int64_t imm;	    ///< immediate value for IMM operand
 		tricore_op_mem mem; ///< base/disp value for MEM operand
 	};
 	/// This field is combined of cs_ac_type.
@@ -46,13 +47,13 @@ typedef struct cs_tricore_op {
 	uint8_t access; ///< How is this operand accessed? (READ, WRITE or READ|WRITE)
 } cs_tricore_op;
 
-#define TRICORE_OP_COUNT 8
+#define NUM_TRICORE_OPS 8
 
 /// Instruction structure
 typedef struct cs_tricore {
 	uint8_t op_count; ///< number of operands of this instruction.
 	cs_tricore_op
-		operands[TRICORE_OP_COUNT]; ///< operands for this instruction.
+		operands[NUM_TRICORE_OPS]; ///< operands for this instruction.
 	/// TODO: Mark the modified flags register in td files and regenerate inc files
 	bool update_flags; ///< whether the flags register is updated.
 } cs_tricore;

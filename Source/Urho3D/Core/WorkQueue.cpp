@@ -32,7 +32,7 @@
 #include "Urho3D/IO/Log.h"
 
 #ifdef URHO3D_THREADING
-#include <enkiTS/src/TaskScheduler.h>
+    #include <enkiTS/src/TaskScheduler.h>
 #endif
 
 namespace Urho3D
@@ -46,8 +46,7 @@ unsigned threadIndexCount{};
 WorkQueue* workQueue{};
 
 #ifdef URHO3D_THREADING
-template <class T>
-struct ReleaseInternalTask : enki::ICompletable
+template <class T> struct ReleaseInternalTask : enki::ICompletable
 {
     enki::Dependency dependency_;
 
@@ -68,7 +67,7 @@ TaskPriority ConvertLegacyPriority(unsigned priority)
         : static_cast<TaskPriority>(static_cast<unsigned>(TaskPriority::Low) - ea::min(priority, 2u));
 }
 
-}
+} // namespace
 
 #ifdef URHO3D_THREADING
 
@@ -117,7 +116,8 @@ template <class T> WorkQueue::TaskStack<T>::~TaskStack()
 {
 }
 
-template <class T> WorkQueue::TaskStack<T>::TaskStack(TaskStack<T>&& other)
+template <class T>
+WorkQueue::TaskStack<T>::TaskStack(TaskStack<T>&& other)
     : pool_(ea::move(other.pool_))
 {
 }
@@ -158,10 +158,7 @@ public:
         releaser_.SetDependency(releaser_.dependency_, this);
     }
 
-    void Release()
-    {
-        owner_->Release(this);
-    }
+    void Release() { owner_->Release(this); }
 
     void ExecuteRange(enki::TaskSetPartition range, uint32_t threadNum) override
     {
@@ -186,10 +183,7 @@ public:
         releaser_.SetDependency(releaser_.dependency_, this);
     }
 
-    void Release()
-    {
-        owner_->Release(this);
-    }
+    void Release() { owner_->Release(this); }
 
     void Execute() override
     {
@@ -243,9 +237,7 @@ public:
         SetDependency(internalTask->observerDependency_, internalTask);
     }
 
-    void ExecuteRange(enki::TaskSetPartition range, uint32_t threadNum) override
-    {
-    }
+    void ExecuteRange(enki::TaskSetPartition range, uint32_t threadNum) override {}
 };
 
 #endif
@@ -301,8 +293,21 @@ void WorkQueue::Initialize(unsigned numThreads)
         localPinnedTaskStack_.resize(threadIndexCount);
         pendingImmediateTasks_.resize(threadIndexCount);
 
+        for (unsigned i = 1; i < numProcessingThreads_; ++i)
+        {
+            const std::string threadName = fmt::format("Worker {}", i);
+            PostTaskForThread([=]() { SetProfilerThreadName(threadName.c_str()); }, TaskPriority::Immediate, i);
+        }
+        CompleteAll();
+
         URHO3D_LOGINFO("Created {} worker thread{}", numThreads, numThreads > 1 ? "s" : "");
     }
+    else
+    {
+        URHO3D_LOGINFO("Worker threads are disabled on initialization");
+    }
+#else
+    URHO3D_LOGINFO("Worker threads are disabled in this build");
 #endif
 }
 
@@ -314,6 +319,8 @@ void WorkQueue::Update()
 
 void WorkQueue::ProcessPostedTasks()
 {
+    URHO3D_PROFILE("AnyThreadTasks");
+
 #ifdef URHO3D_THREADING
     if (taskScheduler_)
     {
@@ -341,8 +348,10 @@ void WorkQueue::ProcessPostedTasks()
     }
 }
 
-void WorkQueue::ProcessMainThreadTasks()
+bool WorkQueue::ProcessMainThreadTasks()
 {
+    URHO3D_PROFILE("MainThreadTasks");
+
 #ifdef URHO3D_THREADING
     if (taskScheduler_)
         taskScheduler_->RunPinnedTasks();
@@ -355,7 +364,10 @@ void WorkQueue::ProcessMainThreadTasks()
 
     for (const auto& callback : mainThreadTasksSwap_)
         callback(0, this);
+    const bool nothingToRun = mainThreadTasksSwap_.empty();
     mainThreadTasksSwap_.clear();
+
+    return !nothingToRun;
 }
 
 void WorkQueue::PurgeProcessedTasksInFallbackQueue()
@@ -509,6 +521,8 @@ void WorkQueue::CompleteImmediateForThisThread()
 
 void WorkQueue::CompleteAll()
 {
+    URHO3D_PROFILE("CompleteWorkQueueTasks");
+
 #ifdef URHO3D_THREADING
     if (taskScheduler_)
         taskScheduler_->WaitforAll();
@@ -519,6 +533,11 @@ void WorkQueue::CompleteAll()
         for (auto& [taskPriority, task] : fallbackTaskQueue_)
             task(0, this);
         fallbackTaskQueue_.clear();
+    }
+
+    while (ProcessMainThreadTasks())
+    {
+        // Run tasks in main thread until there is nothing to run
     }
 }
 
@@ -596,4 +615,4 @@ void WorkQueue::Complete(unsigned priority)
         CompleteAll();
 }
 
-}
+} // namespace Urho3D

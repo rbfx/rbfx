@@ -25,6 +25,8 @@
 #include "../Core/IniHelpers.h"
 
 #include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/Engine/Engine.h>
+#include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/Engine/StateManager.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/GraphicsEvents.h>
@@ -69,6 +71,7 @@ class GameViewTab::PlayState : public Object
 public:
     PlayState(Context* context, CustomBackbufferTexture* backbuffer)
         : Object(context)
+        , engine_(GetSubsystem<Engine>())
         , renderer_(GetSubsystem<Renderer>())
         , pluginManager_(GetSubsystem<PluginManager>())
         , input_(GetSubsystem<Input>())
@@ -81,6 +84,8 @@ public:
         , project_(GetSubsystem<Project>())
         , backbuffer_(backbuffer)
     {
+        engine_->SetParameter(Param_IsRunningInEditor, true);
+
         UpdateRenderSurface();
 
         legacyUI_->GetRoot()->RemoveAllChildren();
@@ -167,6 +172,8 @@ public:
         renderer_->SetNumViewports(0);
 
         stateManager_->Reset();
+
+        engine_->SetParameter(Param_IsRunningInEditor, Variant::EMPTY);
     }
 
 private:
@@ -190,6 +197,7 @@ private:
         }
     }
 
+    Engine* engine_{};
     Renderer* renderer_{};
     PluginManager* pluginManager_{};
     Input* input_{};
@@ -285,15 +293,17 @@ void GameViewTab::RenderContent()
 
     if (state_)
     {
+        const auto& io = ui::GetIO();
         Texture2D* sceneTexture = backbuffer_->GetTexture();
         Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
 
-#if URHO3D_SYSTEMUI_VIEWPORTS
-        const IntVector2 origin = IntVector2::ZERO;
-#else
-        auto graphics = GetSubsystem<Graphics>();
-        const IntVector2 origin = graphics->GetWindowPosition();
-#endif
+        IntVector2 origin = IntVector2::ZERO;
+        if(!(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
+        {
+            auto graphics = GetSubsystem<Graphics>();
+            origin = graphics->GetWindowPosition();
+        }
+
         const IntVector2 windowMin = origin + ToIntVector2(ui::GetItemRectMin());
         const IntVector2 windowMax = origin + ToIntVector2(ui::GetItemRectMax());
         state_->Update({windowMin, windowMax});

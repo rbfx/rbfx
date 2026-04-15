@@ -85,6 +85,8 @@ void BehaviorNetworkObject::InitializeBehaviors()
 {
     InvalidateBehaviors();
 
+    CreateBehaviors();
+
     ea::vector<NetworkBehavior*> networkBehaviors;
     node_->FindComponents(networkBehaviors, ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
 
@@ -119,6 +121,19 @@ void BehaviorNetworkObject::InitializeBehaviors()
             const float replicaTimeStep = eventData[P_TIMESTEP_REPLICA].GetFloat();
             const float inputTimeStep = eventData[P_TIMESTEP_INPUT].GetFloat();
             Update(replicaTimeStep, inputTimeStep);
+        });
+    }
+
+    UnsubscribeFromEvent(E_SCENENETWORKPOSTUPDATE);
+    if (callbackMask_.Test(NetworkCallbackMask::PostUpdate))
+    {
+        SubscribeToEvent(GetScene(), E_SCENENETWORKPOSTUPDATE,
+            [this](VariantMap& eventData)
+        {
+            using namespace SceneNetworkPostUpdate;
+            const float replicaTimeStep = eventData[P_TIMESTEP_REPLICA].GetFloat();
+            const float inputTimeStep = eventData[P_TIMESTEP_INPUT].GetFloat();
+            PostUpdate(replicaTimeStep, inputTimeStep);
         });
     }
 }
@@ -415,11 +430,41 @@ void BehaviorNetworkObject::Update(float replicaTimeStep, float inputTimeStep)
 {
     BaseClassName::Update(replicaTimeStep, inputTimeStep);
 
-    for (const auto& connectedBehavior : behaviors_)
+    if (callbackMask_.Test(NetworkCallbackMask::Update))
     {
-        if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::Update))
-            connectedBehavior.component_->Update(replicaTimeStep, inputTimeStep);
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::Update))
+                connectedBehavior.component_->Update(replicaTimeStep, inputTimeStep);
+        }
     }
 }
 
+void BehaviorNetworkObject::PostUpdate(float replicaTimeStep, float inputTimeStep)
+{
+    BaseClassName::PostUpdate(replicaTimeStep, inputTimeStep);
+
+    if (callbackMask_.Test(NetworkCallbackMask::PostUpdate))
+    {
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::PostUpdate))
+                connectedBehavior.component_->PostUpdate(replicaTimeStep, inputTimeStep);
+        }
+    }
+}
+
+void BehaviorNetworkObject::PrepareToRemove()
+{
+    if (callbackMask_.Test(NetworkCallbackMask::PrepareToRemove))
+    {
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::PrepareToRemove))
+                connectedBehavior.component_->PrepareToRemove();
+        }
+    }
+
+    BaseClassName::PrepareToRemove();
+}
 }

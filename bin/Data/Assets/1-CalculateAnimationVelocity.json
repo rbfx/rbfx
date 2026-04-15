@@ -1,0 +1,10 @@
+{
+    "taskTemplates": [
+        {
+            "model": "Fox.glb.d/Models/fox1.mdl",
+            "animation": "Fox.glb.d/Animations/*.ani",
+            "targetBones": ["b_LeftFoot02_018", "b_RightFoot02_022", "b_LeftHand_011", "b_RightHand_08"],
+            "groundThreshold": 0.01
+        }
+    ]
+}

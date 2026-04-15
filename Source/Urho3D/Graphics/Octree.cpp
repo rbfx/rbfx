@@ -415,6 +415,23 @@ Octree::Octree(Context* context) :
         SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Octree, HandleRenderUpdate));
 }
 
+void Octree::OnSceneSet(Scene* previousScene, Scene* scene)
+{
+    BaseClassName::OnSceneSet(previousScene, scene);
+
+    if (previousScene)
+    {
+        UnsubscribeFromEvent(E_WORLDORIGINUPDATE);
+        UnsubscribeFromEvent(E_WORLDORIGINPOSTUPDATE);
+    }
+
+    if (scene)
+    {
+        SubscribeToEvent(scene, E_WORLDORIGINUPDATE, &Octree::HandleWorldOriginUpdate);
+        SubscribeToEvent(scene, E_WORLDORIGINPOSTUPDATE, &Octree::HandleWorldOriginPostUpdate);
+    }
+}
+
 Octree::~Octree()
 {
     // Reset root pointer from all child octants now so that they do not move their drawables to root
@@ -591,10 +608,15 @@ void Octree::RemoveManualDrawable(Drawable* drawable)
 
 void Octree::AddDrawable(Drawable* drawable)
 {
+    if (locked_)
+    {
+        URHO3D_ASSERTLOG(false, "Cannot add Drawable during rendering sequence");
+        return;
+    }
+
     if (drawable->GetDrawableIndex() != M_MAX_UNSIGNED)
     {
-        URHO3D_LOGERROR("Cannot add Drawable that is already added to Octree");
-        assert(0);
+        URHO3D_ASSERTLOG(false, "Cannot add Drawable that is already added to Octree");
         return;
     }
 
@@ -622,11 +644,16 @@ void Octree::AddDrawable(Drawable* drawable)
 
 void Octree::RemoveDrawable(Drawable* drawable, Octant* octant)
 {
+    if (locked_)
+    {
+        URHO3D_ASSERTLOG(false, "Cannot add Drawable during rendering sequence");
+        return;
+    }
+
     const unsigned index = drawable->GetDrawableIndex();
     if (index >= drawables_.size() || drawables_[index] != drawable)
     {
-        URHO3D_LOGERROR("Cannot remove Drawable that doesn't belong to Octree");
-        assert(0);
+        URHO3D_ASSERTLOG(false, "Cannot remove Drawable that doesn't belong to Octree");
         return;
     }
 
@@ -779,6 +806,36 @@ void Octree::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
     frame.camera_ = nullptr;
 
     Update(frame);
+}
+
+void Octree::HandleWorldOriginUpdate(StringHash eventType, VariantMap& eventData)
+{
+    using namespace WorldOriginUpdate;
+
+    const IntVector3 oldOrigin = eventData[P_OLDORIGIN].GetIntVector3();
+    const IntVector3 newOrigin = eventData[P_NEWORIGIN].GetIntVector3();
+    const IntVector3 delta = eventData[P_DELTA].GetIntVector3();
+
+    for (Drawable* drawable : drawables_)
+    {
+        if (drawable)
+            drawable->UpdateWorldOrigin(oldOrigin, newOrigin, delta);
+    }
+}
+
+void Octree::HandleWorldOriginPostUpdate(StringHash eventType, VariantMap& eventData)
+{
+    using namespace WorldOriginPostUpdate;
+
+    const IntVector3 oldOrigin = eventData[P_OLDORIGIN].GetIntVector3();
+    const IntVector3 newOrigin = eventData[P_NEWORIGIN].GetIntVector3();
+    const IntVector3 delta = eventData[P_DELTA].GetIntVector3();
+
+    for (Drawable* drawable : drawables_)
+    {
+        if (drawable)
+            drawable->PostUpdateWorldOrigin(oldOrigin, newOrigin, delta);
+    }
 }
 
 }

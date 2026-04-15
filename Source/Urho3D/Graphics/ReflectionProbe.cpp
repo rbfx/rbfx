@@ -211,7 +211,7 @@ void ReflectionProbeManager::DrawDebugGeometry(DebugRenderer* debug, bool depthT
         reflectionProbe->DrawDebugGeometry(debug, depthTest, true);
 }
 
-void ReflectionProbeManager::OnSceneSet(Scene* scene)
+void ReflectionProbeManager::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene)
         cubemapRenderer_ = MakeShared<CubemapRenderer>(scene);

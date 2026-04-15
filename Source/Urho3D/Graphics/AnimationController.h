@@ -54,17 +54,17 @@ public:
 
     /// Factory helpers.
     /// @{
-    AnimationParameters& Looped();
+    AnimationParameters& Looped(bool value = true);
     AnimationParameters& StartBone(ea::string_view startBone);
     AnimationParameters& Layer(unsigned layer);
     AnimationParameters& Time(float time);
     AnimationParameters& TimeRange(float minTime, float maxTime);
-    AnimationParameters& Additive();
+    AnimationParameters& Additive(bool value = true);
     AnimationParameters& Weight(float weight);
     AnimationParameters& Speed(float speed);
     AnimationParameters& AutoFadeOut(float fadeOut);
-    AnimationParameters& KeepOnCompletion();
-    AnimationParameters& KeepOnZeroWeight();
+    AnimationParameters& KeepOnCompletion(bool value = true);
+    AnimationParameters& KeepOnZeroWeight(bool value = true);
     /// @}
 
     /// Getters for read-only properties.
@@ -161,7 +161,9 @@ public:
     /// Update the animations. Is called from HandleScenePostUpdate().
     virtual void Update(float timeStep);
     /// Smoothly replace existing animations with animations from external source.
-    void ReplaceAnimations(ea::span<const AnimationParameters> newAnimations, float elapsedTime, float fadeTime);
+    /// If layers are specified, only these layers will be affected.
+    void ReplaceAnimations(ea::span<const AnimationParameters> newAnimations, float elapsedTime, float fadeTime,
+        ea::span<const unsigned> layers = {});
 
     /// Manage played animations on low level.
     /// @{
@@ -227,7 +229,7 @@ protected:
     /// Handle node being assigned.
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
 
 private:
     /// Handle scene post-update event.

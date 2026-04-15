@@ -20,13 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Math/Matrix2.h"
+#include "Urho3D/Math/Matrix2.h"
+
+#include "Urho3D/Container/Str.h"
 
 #include <cstdio>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -53,7 +55,7 @@ Matrix2 Matrix2::Inverse() const
 ea::string Matrix2::ToString() const
 {
     char tempBuffer[MATRIX_CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%g %g %g %g", m00_, m01_, m10_, m11_);
+    snprintf(tempBuffer, MATRIX_CONVERSION_BUFFER_LENGTH, "%g %g %g %g", m00_, m01_, m10_, m11_);
     return ea::string(tempBuffer);
 }
 }

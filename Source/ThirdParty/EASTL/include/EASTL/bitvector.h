@@ -21,6 +21,9 @@
 #include <EASTL/vector.h>
 #include <EASTL/algorithm.h>
 #include <EASTL/bitset.h>
+#if EASTL_EXCEPTIONS_ENABLED
+#include <stdexcept>
+#endif
 
 EA_DISABLE_VC_WARNING(4480); // nonstandard extension used: specifying underlying type for enum
 
@@ -64,6 +67,7 @@ namespace eastl
 	public:
 		typedef eastl_size_t size_type;
 		bitvector_reference(Element* ptr, eastl_size_t i);
+		bitvector_reference(const bitvector_reference& other);
 
 		bitvector_reference& operator=(bool value);
 		bitvector_reference& operator=(const bitvector_reference& rhs);
@@ -112,6 +116,7 @@ namespace eastl
 		bitvector_const_iterator();
 		bitvector_const_iterator(const element_type* p, eastl_size_t i);
 		bitvector_const_iterator(const reference_type& referenceType);
+		bitvector_const_iterator(const bitvector_const_iterator& other);
 
 		bitvector_const_iterator& operator++();
 		bitvector_const_iterator  operator++(int);
@@ -240,12 +245,10 @@ namespace eastl
 		explicit bitvector(const allocator_type& allocator);
 		explicit bitvector(size_type n, const allocator_type& allocator = EASTL_BITVECTOR_DEFAULT_ALLOCATOR);
 		bitvector(size_type n, value_type value, const allocator_type& allocator = EASTL_BITVECTOR_DEFAULT_ALLOCATOR);
-		bitvector(const bitvector& copy);
 
 		template <typename InputIterator>
 		bitvector(InputIterator first, InputIterator last);
 
-		bitvector& operator=(const bitvector& x);
 		void swap(this_type& x);
 
 		template <typename InputIterator>
@@ -348,6 +351,14 @@ namespace eastl
 
 
 	template <typename Element>
+	bitvector_reference<Element>::bitvector_reference(const bitvector_reference& other)
+	  : mpBitWord(other.mpBitWord), 
+		mnBitIndex(other.mnBitIndex)
+	{
+	}
+
+
+	template <typename Element>
 	bitvector_reference<Element>&
 	bitvector_reference<Element>::operator=(bool value)
 	{
@@ -401,6 +412,13 @@ namespace eastl
 	template <typename Element>
 	bitvector_const_iterator<Element>::bitvector_const_iterator(const reference_type& reference)
 		: mReference(reference)
+	{
+	}
+
+
+	template <typename Element>
+	bitvector_const_iterator<Element>::bitvector_const_iterator(const bitvector_const_iterator& other)
+		: mReference(other.mReference)
 	{
 	}
 
@@ -1337,18 +1355,6 @@ namespace eastl
 
 
 	template <typename Allocator, typename Element, typename Container>
-	bitvector<Allocator, Element, Container>&
-	bitvector<Allocator, Element, Container>::operator=(const bitvector& rhs)
-	{
-		// The following is OK if (&rhs == this)
-		mContainer = rhs.mContainer;
-		mFreeBitCount = rhs.mFreeBitCount;
-
-		return *this;
-	}
-
-
-	template <typename Allocator, typename Element, typename Container>
 	bitvector<Allocator, Element, Container>::bitvector()
 	  : mContainer(), 
 		mFreeBitCount(0)
@@ -1383,14 +1389,6 @@ namespace eastl
 
 		if(mFreeBitCount == kBitCount)
 			mFreeBitCount = 0;
-	}
-
-
-	template <typename Allocator, typename Element, typename Container>
-	bitvector<Allocator, Element, Container>::bitvector(const bitvector& copy)
-	  : mContainer(copy.mContainer), 
-		mFreeBitCount(copy.mFreeBitCount)
-	{
 	}
 
 

@@ -64,7 +64,7 @@ public:
     void customStepSimulation(unsigned clampedSimulationSteps, btScalar fixedTimeStep, btScalar overtime)
     {
         m_fixedTimeStep = fixedTimeStep;
-        m_localTime = overtime;
+        m_localTime = 0.0f;
 
         if (getDebugDrawer())
         {
@@ -78,6 +78,10 @@ public:
 
             for (int i = 0; i < clampedSimulationSteps; i++)
             {
+                const bool isLastStep = i + 1 == clampedSimulationSteps;
+                if (isLastStep)
+                    m_localTime = overtime;
+
                 // Urho3D: apply gravity on each substep
                 applyGravity();
 
@@ -90,6 +94,7 @@ public:
         }
         else
         {
+            m_localTime = overtime;
             synchronizeMotionStates();
         }
 
@@ -141,26 +146,6 @@ static bool CustomMaterialCombinerCallback(btManifoldPoint& cp, const btCollisio
     return true;
 }
 
-void RemoveCachedGeometryImpl(CollisionGeometryDataCache& cache, Model* model)
-{
-    for (auto i = cache.begin(); i != cache.end();)
-    {
-        auto current = i++;
-        if (current->first.first == model)
-            cache.erase(current);
-    }
-}
-
-void CleanupGeometryCacheImpl(CollisionGeometryDataCache& cache)
-{
-    for (auto i = cache.begin(); i != cache.end();)
-    {
-        auto current = i++;
-        if (current->second.Refs() == 1)
-            cache.erase(current);
-    }
-}
-
 /// Callback for physics world queries.
 struct PhysicsQueryCallback : public btCollisionWorld::ContactResultCallback
 {
@@ -190,10 +175,14 @@ struct PhysicsQueryCallback : public btCollisionWorld::ContactResultCallback
     unsigned collisionMask_;
 };
 
-PhysicsWorld::PhysicsWorld(Context* context) :
-    Component(context),
-    fps_(DEFAULT_FPS),
-    debugMode_(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawConstraints | btIDebugDraw::DBG_DrawConstraintLimits)
+PhysicsWorld::PhysicsWorld(Context* context)
+    : Component(context)
+    , fps_(DEFAULT_FPS)
+    , debugMode_(
+          btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawConstraints | btIDebugDraw::DBG_DrawConstraintLimits)
+    , triMeshCache_{MakeShared<CollisionGeometryDataCache>(context_, SHAPE_TRIANGLEMESH)}
+    , convexCache_{MakeShared<CollisionGeometryDataCache>(context_, SHAPE_CONVEXHULL)}
+    , gimpactTrimeshCache_{MakeShared<CollisionGeometryDataCache>(context_, SHAPE_GIMPACTMESH)}
 {
     gContactAddedCallback = CustomMaterialCombinerCallback;
 
@@ -369,7 +358,8 @@ void PhysicsWorld::ApplyDelayedWorldTransforms()
     }
 }
 
-void PhysicsWorld::CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime, ea::optional<SynchronizedPhysicsStep> sync)
+void PhysicsWorld::CustomUpdate(
+    unsigned numSteps, float fixedTimeStep, float overtime, ea::optional<NetworkFrameSync> sync)
 {
     URHO3D_PROFILE("UpdatePhysics");
     const float timeStep = numSteps * fixedTimeStep + overtime;
@@ -682,9 +672,9 @@ void PhysicsWorld::ConvexCast(PhysicsRaycastResult& result, btCollisionShape* sh
 
 void PhysicsWorld::RemoveCachedGeometry(Model* model)
 {
-    RemoveCachedGeometryImpl(triMeshCache_, model);
-    RemoveCachedGeometryImpl(convexCache_, model);
-    RemoveCachedGeometryImpl(gimpactTrimeshCache_, model);
+    triMeshCache_->ReleaseCachedGeometry(model);
+    convexCache_->ReleaseCachedGeometry(model);
+    gimpactTrimeshCache_->ReleaseCachedGeometry(model);
 }
 
 void PhysicsWorld::GetRigidBodies(ea::vector<RigidBody*>& result, const Sphere& sphere, unsigned collisionMask)
@@ -842,33 +832,35 @@ btDiscreteDynamicsWorld* PhysicsWorld::GetWorld() const
     return world_.get();
 }
 
-void PhysicsWorld::CleanupGeometryCache()
-{
-    // Remove cached shapes whose only reference is the cache itself
-    CleanupGeometryCacheImpl(triMeshCache_);
-    CleanupGeometryCacheImpl(convexCache_);
-    CleanupGeometryCacheImpl(gimpactTrimeshCache_);
-}
-
-void PhysicsWorld::OnSceneSet(Scene* scene)
+void PhysicsWorld::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     // Subscribe to the scene subsystem update, which will trigger the physics simulation step
     if (scene)
     {
         scene_ = GetScene();
-        SubscribeToEvent(scene_, E_SCENESUBSYSTEMUPDATE, URHO3D_HANDLER(PhysicsWorld, HandleSceneSubsystemUpdate));
+        SubscribeToEvent(scene_, E_SCENESUBSYSTEMUPDATE, &PhysicsWorld::HandleSceneSubsystemUpdate);
+        SubscribeToEvent(scene_, E_WORLDORIGINUPDATE, &PhysicsWorld::HandleWorldOriginUpdate);
     }
     else
+    {
         UnsubscribeFromEvent(E_SCENESUBSYSTEMUPDATE);
+        UnsubscribeFromEvent(E_WORLDORIGINUPDATE);
+    }
 }
 
 void PhysicsWorld::HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData)
 {
-    if (!updateEnabled_)
+    if (!updateEnabled_ || manualUpdate_)
         return;
 
     using namespace SceneSubsystemUpdate;
     Update(eventData[P_TIMESTEP].GetFloat());
+}
+
+void PhysicsWorld::HandleWorldOriginUpdate(StringHash eventType, VariantMap& eventData)
+{
+    for (RigidBody* rigidBody : rigidBodies_)
+        rigidBody->PrepareToWorldOriginUpdate();
 }
 
 void PhysicsWorld::PreUpdate(float timeStep)

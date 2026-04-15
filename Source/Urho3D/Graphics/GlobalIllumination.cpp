@@ -31,6 +31,7 @@
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Scene.h"
+#include "../Scene/SceneEvents.h"
 
 namespace Urho3D
 {
@@ -42,11 +43,34 @@ GlobalIllumination::GlobalIllumination(Context* context) :
 
 GlobalIllumination::~GlobalIllumination() = default;
 
+void GlobalIllumination::OnSceneSet(Scene* previousScene, Scene* scene)
+{
+    BaseClassName::OnSceneSet(previousScene, scene);
+
+    if (previousScene)
+        UnsubscribeFromEvent(E_WORLDORIGINPOSTUPDATE);
+
+    if (scene)
+        SubscribeToEvent(scene, E_WORLDORIGINPOSTUPDATE, &GlobalIllumination::HandleWorldOriginPostUpdate);
+}
+
+void GlobalIllumination::HandleWorldOriginPostUpdate(VariantMap& eventData)
+{
+    using namespace WorldOriginPostUpdate;
+    const Vector3 delta = eventData[P_DELTA].GetIntVector3().ToVector3();
+
+    offset_ -= delta;
+    for (Vector3& position : lightProbesMesh_.vertices_)
+        position -= delta;
+}
+
 void GlobalIllumination::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<GlobalIllumination>(Category_Subsystem);
 
+    URHO3D_ACTION_STATIC_LABEL("Reload!", ReloadData, "Reload data from the file");
     URHO3D_ATTRIBUTE("Emission Brightness", float, emissionBrightness_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Offset", Vector3, offset_, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Data File", GetFileRef, SetFileRef, ResourceRef, ResourceRef{ BinaryFile::GetTypeStatic() }, AM_DEFAULT | AM_NOEDIT);
 }
 
@@ -165,6 +189,11 @@ void GlobalIllumination::ReloadData()
     {
         lightProbesMesh_ = {};
         lightProbesBakedData_.Clear();
+    }
+    else
+    {
+        for (Vector3& position : lightProbesMesh_.vertices_)
+            position += offset_;
     }
 }
 

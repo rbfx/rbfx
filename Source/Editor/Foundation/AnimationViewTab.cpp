@@ -106,7 +106,7 @@ void AnimationViewTab::RenderContent()
 void AnimationViewTab::OnResourceLoaded(const ea::string& resourceName)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    animation_ = cache->GetResource<Animation>(resourceName);
+    animation_ = cache->GetResource<Animation>(resourceName, false);
 
     auto params = AnimationParameters{animation_}.Layer(0);
     params.looped_ = true;

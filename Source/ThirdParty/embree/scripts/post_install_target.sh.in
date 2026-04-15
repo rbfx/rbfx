@@ -1,0 +1,10 @@
+#!/bin/bash
+
+## Copyright 2009-2021 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
+
+# get last argument to bash script
+for i; do :; done
+
+echo signing $i ...
+@EMBREE_SIGN_FILE@ -o runtime -e @CMAKE_CURRENT_SOURCE_DIR@/common/cmake/embree.entitlements $i

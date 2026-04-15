@@ -22,14 +22,13 @@
 
 #pragma once
 
-#include <EASTL/unique_ptr.h>
-
-#include "../IO/VectorBuffer.h"
-#include "../Math/BoundingBox.h"
-#include "../Math/Sphere.h"
-#include "../Math/Vector3.h"
-#include "../Replica/NetworkId.h"
-#include "../Scene/Component.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Sphere.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Physics/CollisionGeometryDataCache.h"
+#include "Urho3D/Replica/NetworkId.h"
+#include "Urho3D/Scene/Component.h"
 
 #if defined(_MSC_VER)
     #pragma warning(push)
@@ -41,6 +40,7 @@
 #endif
 
 #include <EASTL/optional.h>
+#include <EASTL/unique_ptr.h>
 
 class btCollisionConfiguration;
 class btCollisionShape;
@@ -68,12 +68,6 @@ class Serializer;
 class XMLElement;
 
 struct CollisionGeometryData;
-
-struct SynchronizedPhysicsStep
-{
-    unsigned offset_{};
-    NetworkFrame networkFrame_{};
-};
 
 /// Physics raycast hit.
 struct URHO3D_API PhysicsRaycastResult
@@ -140,9 +134,6 @@ struct PhysicsWorldConfig
 static const int DEFAULT_FPS = 60;
 static const float DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY = 100.0f;
 
-/// Cache of collision geometry data.
-using CollisionGeometryDataCache = ea::unordered_map<ea::pair<Model*, unsigned>, SharedPtr<CollisionGeometryData> >;
-
 /// Physics simulation world component. Should be added only to the root scene node.
 class URHO3D_API PhysicsWorld : public Component, public btIDebugDraw
 {
@@ -159,6 +150,9 @@ public:
     /// Register object factory.
     /// @nobind
     static void RegisterObject(Context* context);
+
+    /// Set whether the physical world is updated manually by external code.
+    void SetManualUpdate(bool enabled) { manualUpdate_ = enabled; }
 
     /// Check if an AABB is visible for debug drawing.
     bool isVisible(const btVector3& aabbMin, const btVector3& aabbMax) override;
@@ -184,7 +178,7 @@ public:
     /// Step the simulation forward.
     void Update(float timeStep);
     /// Custom simulation with explicit steps and extrapolation/interpolation time.
-    void CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime, ea::optional<SynchronizedPhysicsStep> sync);
+    void CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime, ea::optional<NetworkFrameSync> sync);
     /// Refresh collisions only without updating dynamics.
     void UpdateCollisions();
     /// Set simulation substeps per second.
@@ -300,17 +294,14 @@ public:
     /// Return the Bullet physics world.
     btDiscreteDynamicsWorld* GetWorld() const;
 
-    /// Clean up the geometry cache.
-    void CleanupGeometryCache();
-
     /// Return trimesh collision geometry cache.
-    CollisionGeometryDataCache& GetTriMeshCache() { return triMeshCache_; }
+    CollisionGeometryDataCache& GetTriMeshCache() { return *triMeshCache_; }
 
     /// Return convex collision geometry cache.
-    CollisionGeometryDataCache& GetConvexCache() { return convexCache_; }
+    CollisionGeometryDataCache& GetConvexCache() { return *convexCache_; }
 
     /// Return GImpact trimesh collision geometry cache.
-    CollisionGeometryDataCache& GetGImpactTrimeshCache() { return gimpactTrimeshCache_; }
+    CollisionGeometryDataCache& GetGImpactTrimeshCache() { return *gimpactTrimeshCache_; }
 
     /// Set node dirtying to be disregarded.
     void SetApplyingTransforms(bool enable) { applyingTransforms_ = enable; }
@@ -326,11 +317,13 @@ public:
 
 protected:
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
 
 private:
     /// Handle the scene subsystem update event, step simulation here.
     void HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle world origin update.
+    void HandleWorldOriginUpdate(StringHash eventType, VariantMap& eventData);
     /// Trigger before physics update, before any of simulation steps.
     void PreUpdate(float timeStep);
     /// Trigger after physics update, after all of simulation steps.
@@ -368,11 +361,11 @@ private:
     /// Delayed (parented) world transform assignments.
     ea::unordered_map<RigidBody*, DelayedWorldTransform> delayedWorldTransforms_;
     /// Cache for trimesh geometry data by model and LOD level.
-    CollisionGeometryDataCache triMeshCache_;
+    SharedPtr<CollisionGeometryDataCache> triMeshCache_;
     /// Cache for convex geometry data by model and LOD level.
-    CollisionGeometryDataCache convexCache_;
+    SharedPtr<CollisionGeometryDataCache> convexCache_;
     /// Cache for GImpact trimesh geometry data by model and LOD level.
-    CollisionGeometryDataCache gimpactTrimeshCache_;
+    SharedPtr<CollisionGeometryDataCache> gimpactTrimeshCache_;
     /// Preallocated event data map for physics collision events.
     VariantMap physicsCollisionData_;
     /// Preallocated event data map for node collision events.
@@ -384,13 +377,15 @@ private:
     /// Maximum number of simulation substeps per frame. 0 (default) unlimited, or negative values for adaptive timestep.
     int maxSubSteps_{};
     /// Indicates which physical step is synchronized with network frame.
-    ea::optional<SynchronizedPhysicsStep> synchronizedStep_;
+    ea::optional<NetworkFrameSync> synchronizedStep_;
     /// Time accumulator for non-interpolated mode.
     float timeAcc_{};
     /// Maximum angular velocity for network replication.
     float maxNetworkAngularVelocity_{DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY};
     /// Automatic simulation update enabled flag.
     bool updateEnabled_{true};
+    /// Whether update is invoked manually.
+    bool manualUpdate_{};
     /// Interpolation flag.
     bool interpolation_{true};
     /// Use internal edge utility flag.

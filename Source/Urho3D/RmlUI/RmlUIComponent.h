@@ -20,7 +20,6 @@ namespace Urho3D
 {
 
 class RmlCanvasComponent;
-class RmlNavigationManager;
 struct RmlCanvasResizedArgs;
 struct RmlDocumentReloadedArgs;
 
@@ -71,8 +70,19 @@ public:
     RmlUI* GetUI() const;
     /// Return currently open document, may be null.
     Rml::ElementDocument* GetDocument() const { return document_; }
-    /// Return navigation manager.
-    RmlNavigationManager& GetNavigationManager() const { return *navigationManager_; }
+
+    /// Set current document body element font size in pixels, also known as "em" unit.
+    void SetEmSize(float sizePx);
+    /// Get current document body element font size, also known as "em" unit.
+    float GetEmSize() const;
+
+    /// Return whether the current document is modal.
+    bool IsModal() const;
+    /// Set modal flag to the current document.
+    void SetModal(bool modal);
+
+    /// Focus on the document.
+    void Focus(bool focusVisible);
 
     // Bind data model property.
     bool BindDataModelProperty(const ea::string& name, GetterFunc getter, SetterFunc setter);
@@ -131,20 +141,24 @@ protected:
     /// Callbacks for document loading and unloading.
     /// If load failed, only first callback will be called.
     /// @{
-    virtual ea::string GetDataModelName() { return GetTypeName(); }
+    virtual ea::string GetDataModelName() { return "{{__data_model_id}}"; }
     virtual void OnDataModelInitialized() {}
 
     virtual void OnDocumentPreLoad() {}
     virtual void OnDocumentPostLoad() {}
     virtual void OnDocumentPreUnload() {}
     virtual void OnDocumentPostUnload() {}
+
+    /// Called after all pending changes are processed by RmlUI.
+    virtual void OnDocumentUpdated();
     /// @}
 
     /// Get data model constructor. Only available in OnDataModelInitialized method.
     Rml::DataModelConstructor* GetDataModelConstructor() const { return modelConstructor_.get(); }
     /// If current focus is invalid, focus on the first valid navigable element.
-    void RestoreFocus();
+    bool RestoreFocus();
     /// Schedule element focus by ID on next update. This is useful when focus-ability is not updated yet.
+    /// Empty id focuses on any focusable element.
     void ScheduleFocusById(const ea::string& elementId);
 
     /// Implement Component
@@ -178,9 +192,6 @@ private:
     void CreateDataModel();
     void RemoveDataModel();
 
-    void OnNavigableGroupChanged();
-    void DoNavigablePush(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
-    void DoNavigablePop(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
     void DoFocusById(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
 
     /// Attributes
@@ -190,10 +201,9 @@ private:
     Vector2 size_;
     Vector2 position_;
     bool autoSize_ = true;
+    bool modal_ = false;
     /// @}
 
-    /// Navigation manager.
-    SharedPtr<RmlNavigationManager> navigationManager_;
     /// Currently open document. Null if document was closed.
     Rml::ElementDocument* document_{};
     /// Component which holds RmlUI instance containing UI managed by this component. May be null if UI is rendered into

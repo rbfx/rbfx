@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <limits>
 
+#include "TracyColor.hpp"
 #include "TracyImGui.hpp"
 #include "TracyLockHelpers.hpp"
 #include "TracyMouse.hpp"
@@ -274,6 +275,21 @@ void TimelineItemThread::DrawOverlay( const ImVec2& ul, const ImVec2& dr )
     m_view.DrawThreadOverlays( *m_thread, ul, dr );
 }
 
+void TimelineItemThread::DrawExtraPopupItems()
+{
+    if( m_view.GetSelectThread() == m_thread->id )
+    {
+        if( ImGui::MenuItem( ICON_FA_TIMELINE " Unselect in CPU timeline" ) )
+        {
+            m_view.SelectThread( 0 );
+        }
+    }
+    else if( m_view.GetViewData().drawCpuData && ImGui::MenuItem( ICON_FA_TIMELINE " Select in CPU timeline" ) )
+    {
+        m_view.SelectThread( m_thread->id );
+    }
+ }
+
 void TimelineItemThread::DrawFinished()
 {
     m_samplesDraw.clear();
@@ -300,7 +316,7 @@ void TimelineItemThread::Preprocess( const TimelineContext& ctx, TaskDispatch& t
         else
 #endif
         {
-            m_depth = PreprocessZoneLevel( ctx, m_thread->timeline, 0, visible );
+            m_depth = PreprocessZoneLevel( ctx, m_thread->timeline, 0, visible, 0 );
         }
     } );
 
@@ -399,20 +415,20 @@ int TimelineItemThread::PreprocessGhostLevel( const TimelineContext& ctx, const 
 }
 #endif
 
-int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth, bool visible )
+int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const Vector<short_ptr<ZoneEvent>>& vec, int depth, bool visible, const uint32_t inheritedColor )
 {
     if( vec.is_magic() )
     {
-        return PreprocessZoneLevel<VectorAdapterDirect<ZoneEvent>>( ctx, *(Vector<ZoneEvent>*)( &vec ), depth, visible );
+        return PreprocessZoneLevel<VectorAdapterDirect<ZoneEvent>>( ctx, *(Vector<ZoneEvent>*)( &vec ), depth, visible, inheritedColor );
     }
     else
     {
-        return PreprocessZoneLevel<VectorAdapterPointer<ZoneEvent>>( ctx, vec, depth, visible );
+        return PreprocessZoneLevel<VectorAdapterPointer<ZoneEvent>>( ctx, vec, depth, visible, inheritedColor );
     }
 }
 
 template<typename Adapter, typename V>
-int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible )
+int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V& vec, int depth, bool visible, const uint32_t inheritedColor )
 {
     const auto vStart = ctx.vStart;
     const auto vEnd = ctx.vEnd;
@@ -450,17 +466,39 @@ int TimelineItemThread::PreprocessZoneLevel( const TimelineContext& ctx, const V
                 if( nt - pt >= MinVisNs ) break;
                 nextTime = nt + MinVisNs;
             }
-            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Folded, uint16_t( depth ), (void**)&ev, m_worker.GetZoneEnd( a(*(next-1)) ), uint32_t( next - it ) } );
+            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Folded, uint16_t( depth ), (void**)&ev, m_worker.GetZoneEnd( a(*(next-1)) ), uint32_t( next - it ), inheritedColor } );
             it = next;
         }
         else
         {
-            if( ev.HasChildren() )
+            const auto hasChildren = ev.HasChildren();
+            auto currentInherited = inheritedColor;
+            auto childrenInherited = inheritedColor;
+            if( m_view.GetViewData().inheritParentColors )
             {
-                const auto d = PreprocessZoneLevel( ctx, m_worker.GetZoneChildren( ev.Child() ), depth + 1, visible );
+                uint32_t color = 0;
+                if( m_worker.HasZoneExtra( ev ) )
+                {
+                    const auto& extra = m_worker.GetZoneExtra( ev );
+                    color = extra.color.Val();
+                }
+                if( color == 0 )
+                {
+                    auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
+                    color = srcloc.color;
+                }
+                if( color != 0 )
+                {
+                    currentInherited = color | 0xFF000000;
+                    if( hasChildren ) childrenInherited = DarkenColorSlightly( color );
+                }
+            }
+            if( hasChildren )
+            {
+                const auto d = PreprocessZoneLevel( ctx, m_worker.GetZoneChildren( ev.Child() ), depth + 1, visible, childrenInherited );
                 if( d > maxdepth ) maxdepth = d;
             }
-            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Zone, uint16_t( depth ), (void**)&ev } );
+            if( visible ) m_draw.emplace_back( TimelineDraw { TimelineDrawType::Zone, uint16_t( depth ), (void**)&ev, 0, 0, currentInherited } );
             ++it;
         }
     }

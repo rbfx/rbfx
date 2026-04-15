@@ -73,10 +73,10 @@ Vector4 Ubyte4ToVector4(const Ubyte4& value)
     };
 }
 
-/// Convert float to unsigned byte (with clamping).
+/// Convert float to unsigned byte.
 unsigned char FloatToUByte(float value)
 {
-    return static_cast<unsigned char>(Clamp(RoundToInt(value), 0, 255));
+    return static_cast<unsigned char>(value + 0.5f);
 }
 
 /// Convert float vector to unsigned byte vector.
@@ -90,6 +90,17 @@ Ubyte4 Vector4ToUbyte4(const Vector4& value)
     };
 }
 
+/// Convert float vector to unsigned byte vector (normalized).
+Ubyte4 Vector4ToUbyte4Norm(const Vector4& value)
+{
+    return {
+        FloatToUByte(value.x_ * 255.0f),
+        FloatToUByte(value.y_ * 255.0f),
+        FloatToUByte(value.z_ * 255.0f),
+        FloatToUByte(value.w_ * 255.0f)
+    };
+}
+
 /// Convert float weight vector to unsigned byte vector. Result is guaranteed to sum up to 255.
 Ubyte4 Vector4WeightsToUbyte4Norm(const Vector4& value)
 {
@@ -99,7 +110,7 @@ Ubyte4 Vector4WeightsToUbyte4Norm(const Vector4& value)
 
     Ubyte4 result = Vector4ToUbyte4(value * 255.0f / weightSum);
     const int underflowError = 255 - ea::accumulate(result.begin(), result.end(), 0);
-    const unsigned patchIndex = ea::max_element(result.begin(), result.end()) - result.begin();
+    const unsigned patchIndex = static_cast<unsigned>(ea::max_element(result.begin(), result.end()) - result.begin());
     result[patchIndex] += underflowError;
     return result;
 }
@@ -121,13 +132,12 @@ int Vector4ToInt(const Vector4& value) { return static_cast<int>(value.x_); }
 float Vector4ToFloat(const Vector4& value) { return value.x_; }
 Vector2 Vector4ToVector2(const Vector4& value) { return { value.x_, value.y_ }; }
 Vector3 Vector4ToVector3(const Vector4& value) { return { value.x_, value.y_, value.z_ }; }
-Ubyte4 Vector4ToUbyte4Norm(const Vector4& value) { return Vector4ToUbyte4(value * 255.0f); }
 /// @}
 
 }
 
-VertexBuffer::VertexBuffer(Context* context)
-    : RawBuffer(context)
+VertexBuffer::VertexBuffer(Context* context, DeviceObjectFlags flags)
+    : RawBuffer(context, flags)
 {
     UpdateOffsets();
 }
@@ -427,7 +437,7 @@ void VertexBuffer::ShuffleUnpackedVertexData(unsigned vertexCount,
             continue;
 
         // Copy data
-        const unsigned destElementIndex = iterMatching - destElements.begin();
+        const unsigned destElementIndex = static_cast<unsigned>(iterMatching - destElements.begin());
         for (unsigned i = 0; i < vertexCount; ++i)
             dest[i * numDestElements + destElementIndex] = source[i * numSourceElements + sourceElementIndex];
     }

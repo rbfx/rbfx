@@ -42,7 +42,7 @@ void LogShaderSource(const FileIdentifier& fileName, ea::string_view defines, ea
     {
         const ea::string header = Format("// {}\n", defines);
         sourceFile->Write(header.data(), header.size());
-        sourceFile->Write(source.data(), source.size());
+        sourceFile->Write(source.data(), static_cast<unsigned>(source.size()));
     }
 }
 

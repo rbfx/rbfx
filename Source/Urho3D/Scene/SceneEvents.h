@@ -68,6 +68,14 @@ URHO3D_EVENT(E_SCENENETWORKUPDATE, SceneNetworkUpdate)
     URHO3D_PARAM(P_TIMESTEP_INPUT, TimeStepInput);      // float
 }
 
+/// Network-aware scene post-update.
+URHO3D_EVENT(E_SCENENETWORKPOSTUPDATE, SceneNetworkPostUpdate)
+{
+    URHO3D_PARAM(P_SCENE, Scene);                       // Scene pointer
+    URHO3D_PARAM(P_TIMESTEP_REPLICA, TimeStepReplica);  // float
+    URHO3D_PARAM(P_TIMESTEP_INPUT, TimeStepInput);      // float
+}
+
 /// Scene drawable update finished. Custom animation (eg. IK) can be done at this point.
 URHO3D_EVENT(E_SCENEDRAWABLEUPDATEFINISHED, SceneDrawableUpdateFinished)
 {
@@ -198,21 +206,22 @@ URHO3D_EVENT(E_COMPONENTCLONED, ComponentCloned)
     URHO3D_PARAM(P_CLONECOMPONENT, CloneComponent); // Component pointer
 }
 
-/// A network attribute update from the server has been intercepted.
-URHO3D_EVENT(E_INTERCEPTNETWORKUPDATE, InterceptNetworkUpdate)
+/// World origin is about to be updated.
+URHO3D_EVENT(E_WORLDORIGINUPDATE, WorldOriginUpdate)
 {
-    URHO3D_PARAM(P_SERIALIZABLE, Serializable);    // Serializable pointer
-    URHO3D_PARAM(P_TIMESTAMP, TimeStamp);          // unsigned (0-255)
-    URHO3D_PARAM(P_INDEX, Index);                  // unsigned
-    URHO3D_PARAM(P_NAME, Name);                    // String
-    URHO3D_PARAM(P_VALUE, Value);                  // Variant
+    URHO3D_PARAM(P_SCENE, Scene);                   // Scene pointer
+    URHO3D_PARAM(P_OLDORIGIN, OldOrigin);           // IntVector3
+    URHO3D_PARAM(P_NEWORIGIN, NewOrigin);           // IntVector3
+    URHO3D_PARAM(P_DELTA, Delta);                   // IntVector3
 }
 
-/// Scene manager has activated a new scene.
-URHO3D_EVENT(E_SCENEACTIVATED, SceneActivated)
+/// World origin was updated.
+URHO3D_EVENT(E_WORLDORIGINPOSTUPDATE, WorldOriginPostUpdate)
 {
-    URHO3D_PARAM(P_OLDSCENE, OldScene);            // Scene pointer
-    URHO3D_PARAM(P_NEWSCENE, NewScene);            // Scene pointer
+    URHO3D_PARAM(P_SCENE, Scene);                   // Scene pointer
+    URHO3D_PARAM(P_OLDORIGIN, OldOrigin);           // IntVector3
+    URHO3D_PARAM(P_NEWORIGIN, NewOrigin);           // IntVector3
+    URHO3D_PARAM(P_DELTA, Delta);                   // IntVector3
 }
 
-}
+} // namespace Urho3D

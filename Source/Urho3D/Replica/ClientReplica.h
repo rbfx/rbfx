@@ -116,7 +116,7 @@ private:
     SoftNetworkTime inputTime_;
     float inputTimeStep_{};
 
-    PhysicsTickSynchronizer physicsSync_;
+    SharedPtr<SceneUpdateSynchronizer> updateSync_;
 };
 
 /// Client part of ReplicationManager subsystem.
@@ -130,7 +130,7 @@ public:
     ~ClientReplica() override;
 
     bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
-    void ProcessSceneUpdate();
+    void ProcessSceneUpdate(StringHash eventType);
 
     ea::string GetDebugInfo() const;
     const ea::unordered_set<WeakPtr<NetworkObject>>& GetOwnedNetworkObjects() const { return ownedObjects_; };

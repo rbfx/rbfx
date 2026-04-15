@@ -130,7 +130,7 @@ namespace eastl
 		template<typename T>
 		struct destroy_if_supported<T, false>
 		{
-			static void call(T* pThis) {} // intentionally blank
+			static void call(T*) {} // intentionally blank
 		};
 
 		///////////////////////////////////////////////////////////////////////////
@@ -153,7 +153,7 @@ namespace eastl
 		template<typename T>
 		struct copy_if_supported<T, false>
 		{
-			static void call(T* pThis, T* pOther) {} // intentionally blank
+			static void call(T*, T*) {} // intentionally blank
 		};
 
 		///////////////////////////////////////////////////////////////////////////
@@ -176,7 +176,7 @@ namespace eastl
 		template<typename T>
 		struct move_if_supported<T, false>
 		{
-			static void call(T* pThis, T* pOther) {} // intentionally blank
+			static void call(T*, T*) {} // intentionally blank
 		};
 	} // namespace internal
 
@@ -210,6 +210,8 @@ namespace eastl
 			throw bad_variant_access();
 	#elif EASTL_ASSERT_ENABLED
 		EASTL_ASSERT_MSG(b, "eastl::bad_variant_access assert");
+	#else
+		EA_UNUSED(b);
 	#endif
 	}
 
@@ -533,37 +535,35 @@ namespace eastl
 	//
 	template <class... Types>
 	struct hash<variant<Types...> >
-		{ size_t operator()(const variant<Types...>& val) const { return static_cast<size_t>(-0x42); } };
+		{ size_t operator()(const variant<Types...>&) const { return static_cast<size_t>(-0x42); } };
 
 
 	///////////////////////////////////////////////////////////////////////////
 	// get_if
 	//
-	template <size_t I, class... Types>
+	template <size_t I, class... Types, enable_if_t<I < sizeof...(Types), bool> = true>
 	EA_CONSTEXPR add_pointer_t<variant_alternative_t<I, variant<Types...>>> get_if(variant<Types...>* pv) EA_NOEXCEPT
 	{
-		static_assert(I < sizeof...(Types), "get_if is ill-formed if I is not a valid index in the variant typelist");
 		using return_type = add_pointer_t<variant_alternative_t<I, variant<Types...>>>;
 
 		return (!pv || pv->index() != I) ? nullptr : pv->mStorage.template get_as<return_type>();
 	}
 
-	template <size_t I, class... Types>
+	template <size_t I, class... Types, enable_if_t<I < sizeof...(Types), bool> = true>
 	EA_CONSTEXPR add_pointer_t<const variant_alternative_t<I, variant<Types...>>> get_if(const variant<Types...>* pv) EA_NOEXCEPT
 	{
-		static_assert(I < sizeof...(Types), "get_if is ill-formed if I is not a valid index in the variant typelist");
 		using return_type = add_pointer_t<variant_alternative_t<I, variant<Types...>>>;
 
 		return (!pv || pv->index() != I) ? nullptr : pv->mStorage.template get_as<return_type>();
 	}
 
-	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>>
+	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>, enable_if_t<I < sizeof...(Types) && meta::duplicate_type_check_v<T, Types...>, bool> = true>
 	EA_CONSTEXPR add_pointer_t<T> get_if(variant<Types...>* pv) EA_NOEXCEPT
 	{
 		return get_if<I>(pv);
 	}
 
-	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>>
+	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>, enable_if_t<I < sizeof...(Types) && meta::duplicate_type_check_v<T, Types...>, bool> = true>
 	EA_CONSTEXPR add_pointer_t<const T> get_if(const variant<Types...>* pv) EA_NOEXCEPT
 	{
 		return get_if<I>(pv);
@@ -573,67 +573,59 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////////
 	// get
 	//
-	template <size_t I, class... Types>
+	template <size_t I, class... Types, enable_if_t<I < sizeof...(Types), bool> = true>
 	EA_CONSTEXPR variant_alternative_t<I, variant<Types...>>& get(variant<Types...>& v)
 	{
-		static_assert(I < sizeof...(Types), "get is ill-formed if I is not a valid index in the variant typelist");
 		using return_type = add_pointer_t<variant_alternative_t<I, variant<Types...>>>;
 
 		return *v.mStorage.template get_as<return_type>();
 	}
 
-	template <size_t I, class... Types>
+	template <size_t I, class... Types, enable_if_t<I < sizeof...(Types), bool> = true>
 	EA_CONSTEXPR variant_alternative_t<I, variant<Types...>>&& get(variant<Types...>&& v)
 	{
-		static_assert(I < sizeof...(Types), "get is ill-formed if I is not a valid index in the variant typelist");
 		using return_type = add_pointer_t<variant_alternative_t<I, variant<Types...>>>;
 
 		return eastl::move(*v.mStorage.template get_as<return_type>());
 	}
 
-	template <size_t I, class... Types>
+	template <size_t I, class... Types, enable_if_t<I < sizeof...(Types), bool> = true>
 	EA_CONSTEXPR const variant_alternative_t<I, variant<Types...>>& get(const variant<Types...>& v)
 	{
-		static_assert(I < sizeof...(Types), "get is ill-formed if I is not a valid index in the variant typelist");
 		using return_type = add_pointer_t<variant_alternative_t<I, variant<Types...>>>;
 
 		return *v.mStorage.template get_as<return_type>();
 	}
 
-	template <size_t I, class... Types>
+	template <size_t I, class... Types, enable_if_t<I < sizeof...(Types), bool> = true>
 	EA_CONSTEXPR const variant_alternative_t<I, variant<Types...>>&& get(const variant<Types...>&& v)
 	{
-		static_assert(I < sizeof...(Types), "get is ill-formed if I is not a valid index in the variant typelist");
 		using return_type = add_pointer_t<variant_alternative_t<I, variant<Types...>>>;
 
 		return eastl::move(*v.mStorage.template get_as<return_type>());
 	}
 
-	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>>
+	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>, enable_if_t<I < sizeof...(Types) && meta::duplicate_type_check_v<T, Types...>, bool> = true>
 	EA_CONSTEXPR T& get(variant<Types...>& v)
 	{
-		static_assert(I < sizeof...(Types), "get is ill-formed if I is not a valid index in the variant typelist");
 		return get<I>(v);
 	}
 
-	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>>
+	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>, enable_if_t<I < sizeof...(Types) && meta::duplicate_type_check_v<T, Types...>, bool> = true>
 	EA_CONSTEXPR T&& get(variant<Types...>&& v)
 	{
-		static_assert(I < sizeof...(Types), "get is ill-formed if I is not a valid index in the variant typelist");
 		return get<I>(eastl::move(v));
 	}
 
-	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>>
+	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>, enable_if_t<I < sizeof...(Types) && meta::duplicate_type_check_v<T, Types...>, bool> = true>
 	EA_CONSTEXPR const T& get(const variant<Types...>& v)
 	{
-		static_assert(I < sizeof...(Types), "get is ill-formed if I is not a valid index in the variant typelist");
 		return get<I>(v);
 	}
 
-	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>>
+	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>, enable_if_t<I < sizeof...(Types) && meta::duplicate_type_check_v<T, Types...>, bool> = true>
 	EA_CONSTEXPR const T&& get(const variant<Types...>&& v)
 	{
-		static_assert(I < sizeof...(Types), "get is ill-formed if I is not a valid index in the variant typelist");
 		return get<I>(v);
 	}
 
@@ -641,10 +633,9 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////////
 	// 20.7.4, value access
 	//
-	template <class T, class... Types, ssize_t I = meta::get_type_index_v<T, Types...>>
+	template <class T, class... Types, size_t I = meta::get_type_index_v<T, Types...>, enable_if_t<I < sizeof...(Types) && meta::duplicate_type_check_v<T, Types...>, bool> = true>
 	EA_CONSTEXPR bool holds_alternative(const variant<Types...>& v) EA_NOEXCEPT
 	{
-		// ssize_t template parameter because the value can be negative
 		return I == variant_npos ? false : (v.index() == I);
 	}
 
@@ -710,14 +701,11 @@ namespace eastl
 		// Conversion constructor
 		template <typename T,
 		          typename T_j = meta::overload_resolution_t<T, meta::overload_set<Types...>>,
-		          typename = enable_if_t<!is_same_v<decay_t<T>, variant>>,
-		          size_t I = meta::get_type_index_v<decay_t<T_j>, Types...>>
+		          size_t I = meta::get_type_index_v<decay_t<T_j>, Types...>,
+				  enable_if_t<!is_same_v<decay_t<T>, variant> && I < sizeof...(Types) && meta::duplicate_type_check_v<T_j, Types...>, bool> = true>
 		EA_CONSTEXPR variant(T&& t) EA_NOEXCEPT(is_nothrow_constructible_v<T_j, T>)
 		   : mIndex(variant_npos), mStorage()
 		{
-			static_assert(I >= 0, "T not found in type-list.");
-			static_assert((meta::type_count_v<T_j, Types...> == 1), "function overload is not unique - duplicate types in type list");
-
 			mIndex = static_cast<variant_index_t>(I);
 			mStorage.template set_as<T_j>(eastl::forward<T>(t));
 		}
@@ -808,6 +796,7 @@ namespace eastl
 		// std::is_constructible_v<T_I, Args...> is true. The behavior is undefined if I is not less than
 		// sizeof...(Types).
 		//
+		EA_DISABLE_VC_WARNING(4702) // unreachable code: suppress warning because set_as<T>() may always throws (because T(args...) throws).
 		template <size_t I,
 		          class... Args,
 		          typename T = meta::get_type_at_t<I, Types...>,
@@ -828,6 +817,7 @@ namespace eastl
 			mIndex = static_cast<variant_index_t>(I);
 			return *reinterpret_cast<T*>(&mStorage.mBuffer);
 		}
+		EA_RESTORE_VC_WARNING()
 
 		// First, destroys the currently contained value (if any). Then direct-initializes the contained value as if
 		// constructing a value of type T_I with the arguments il, std::forward<Args>(args).... If an exception is
@@ -835,6 +825,7 @@ namespace eastl
 		// std::is_constructible_v<T_I, initializer_list<U>&, Args...> is true. The behavior is undefined if I is not
 		// less than sizeof...(Types).
 		//
+		EA_DISABLE_VC_WARNING(4702) // unreachable code: suppress warning because set_as<T>() may always throws (because T(args...) throws).
 		template <size_t I,
 		          class U,
 		          class... Args,
@@ -855,6 +846,7 @@ namespace eastl
 			mIndex = static_cast<variant_index_t>(I);
 			return *reinterpret_cast<T*>(&mStorage.mBuffer);
 		}
+		EA_RESTORE_VC_WARNING()
 
 
 		///////////////////////////////////////////////////////////////////////////
@@ -862,16 +854,12 @@ namespace eastl
 		//
 		template <class T,
 		          typename T_j = meta::overload_resolution_t<T, meta::overload_set<Types...>>,
-		          ssize_t I = meta::get_type_index_v<decay_t<T_j>, Types...>,
-		          typename = enable_if_t<!eastl::is_same_v<decay_t<T>, variant> && eastl::is_assignable_v<T_j&, T> &&
-		                                 eastl::is_constructible_v<T_j, T>>>
+		          size_t I = meta::get_type_index_v<decay_t<T_j>, Types...>,
+		          enable_if_t<!eastl::is_same_v<decay_t<T>, variant> && eastl::is_assignable_v<T_j&, T> &&
+		                                 eastl::is_constructible_v<T_j, T> && I < sizeof...(Types) && meta::duplicate_type_check_v<T_j, Types...>, bool> = true>
 		EA_CPP14_CONSTEXPR variant& operator=(T&& t)
 		    EA_NOEXCEPT(conjunction_v<is_nothrow_assignable<T_j&, T>, is_nothrow_constructible<T_j, T>>)
 		{
-			static_assert(I >= 0, "T not found in type-list.");
-			static_assert((meta::type_count_v<T_j, Types...> == 1),
-			              "function overload is not unique - duplicate types in type list");
-
 			if (!valueless_by_exception())
 				mStorage.destroy();
 
@@ -947,14 +935,14 @@ namespace eastl
 
 	private:
 		// NOTE(rparolin): get_if accessors require internal access to the variant storage class
-		template <size_t I, class... Types2> friend EA_CONSTEXPR add_pointer_t<      variant_alternative_t<I, variant<Types2...>>> get_if(      variant<Types2...>* pv) EA_NOEXCEPT;
-		template <size_t I, class... Types2> friend EA_CONSTEXPR add_pointer_t<const variant_alternative_t<I, variant<Types2...>>> get_if(const variant<Types2...>* pv) EA_NOEXCEPT;
+		template <size_t I, class... Types2, enable_if_t<I < sizeof...(Types2), bool>> friend EA_CONSTEXPR add_pointer_t<      variant_alternative_t<I, variant<Types2...>>> get_if(      variant<Types2...>* pv) EA_NOEXCEPT;
+		template <size_t I, class... Types2, enable_if_t<I < sizeof...(Types2), bool>> friend EA_CONSTEXPR add_pointer_t<const variant_alternative_t<I, variant<Types2...>>> get_if(const variant<Types2...>* pv) EA_NOEXCEPT;
 
 		// NOTE(rparolin): get accessors require internal access to the variant storage class
-		template <size_t I, class... Types2> friend EA_CONSTEXPR       variant_alternative_t<I, variant<Types2...>>&  get(variant<Types2...>& v);
-		template <size_t I, class... Types2> friend EA_CONSTEXPR       variant_alternative_t<I, variant<Types2...>>&& get(variant<Types2...>&& v);
-		template <size_t I, class... Types2> friend EA_CONSTEXPR const variant_alternative_t<I, variant<Types2...>>&  get(const variant<Types2...>& v);
-		template <size_t I, class... Types2> friend EA_CONSTEXPR const variant_alternative_t<I, variant<Types2...>>&& get(const variant<Types2...>&& v);
+		template <size_t I, class... Types2, enable_if_t<I < sizeof...(Types2), bool>> friend EA_CONSTEXPR       variant_alternative_t<I, variant<Types2...>>&  get(variant<Types2...>& v);
+		template <size_t I, class... Types2, enable_if_t<I < sizeof...(Types2), bool>> friend EA_CONSTEXPR       variant_alternative_t<I, variant<Types2...>>&& get(variant<Types2...>&& v);
+		template <size_t I, class... Types2, enable_if_t<I < sizeof...(Types2), bool>> friend EA_CONSTEXPR const variant_alternative_t<I, variant<Types2...>>&  get(const variant<Types2...>& v);
+		template <size_t I, class... Types2, enable_if_t<I < sizeof...(Types2), bool>> friend EA_CONSTEXPR const variant_alternative_t<I, variant<Types2...>>&& get(const variant<Types2...>&& v);
 	};
 
 	///////////////////////////////////////////////////////////////////////////
@@ -1076,13 +1064,13 @@ namespace eastl
 
 
 	template <size_t N, typename Variant, typename... Variants, eastl::enable_if_t<N == 0, int> = 0>
-	static EA_CONSTEXPR decltype(auto) get_variant_n(Variant&& variant, Variants&&... variants)
+	static EA_CONSTEXPR decltype(auto) get_variant_n(Variant&& variant, Variants&&...)
 	{
 		return eastl::forward<Variant>(variant);
 	}
 
 	template <size_t N, typename Variant, typename... Variants, eastl::enable_if_t<N != 0, int> = 0>
-	static EA_CONSTEXPR decltype(auto) get_variant_n(Variant&& variant, Variants&&... variants)
+	static EA_CONSTEXPR decltype(auto) get_variant_n(Variant&&, Variants&&... variants)
 	{
 		return get_variant_n<N - 1>(eastl::forward<Variants>(variants)...);
 	}
@@ -1286,6 +1274,7 @@ namespace eastl
 
 	};
 
+
 	template <typename R>
 	struct visitor_r
 	{
@@ -1308,7 +1297,6 @@ namespace eastl
 						  eastl::get<I>(eastl::forward<Variant>(variant)));
 		}
 	};
-
 	template<> struct visitor_r<const void> : public visitor_r<void> {};
 	template<> struct visitor_r<volatile void> : public visitor_r<void> {};
 	template<> struct visitor_r<const volatile void> : public visitor_r<void> {};
@@ -1348,7 +1336,7 @@ namespace eastl
 	//     variant<int, long, string> v = "Hello, Variant";
 	//     visit(MyVisitor{}, v);  // calls MyVisitor::operator()(string) {}
 	//
-
+	EA_DISABLE_VC_WARNING(4100) // warning C4100: 't': unreferenced formal parameter
 	template <typename... Variants>
 	static EA_CPP14_CONSTEXPR void visit_throw_bad_variant_access(Variants&&... variants)
 	{
@@ -1364,9 +1352,10 @@ namespace eastl
 		}
 	#endif
 	}
+	EA_RESTORE_VC_WARNING()
 
 	template <typename... Variants>
-	static EA_CONSTEXPR void visit_static_assert_check(Variants&&... variants)
+	static EA_CONSTEXPR void visit_static_assert_check(Variants&&...)
 	{
 		static_assert(sizeof...(Variants) > 0, "`visit` at least one variant instance must be passed as an argument to the visit function");
 
@@ -1374,7 +1363,6 @@ namespace eastl
 		static_assert(conjunction_v<is_same<variant_type, decay_t<Variants>>...>,
 					  "`visit` all variants passed to eastl::visit() must have the same type");
 	}
-
 
 	// visit
 	//

@@ -920,7 +920,7 @@ void RawTexture::Update(unsigned level, const IntVector3& offset, const IntVecto
     if (!isAligned)
     {
         URHO3D_LOGWARNING(
-            "RawTexture::Update is called with unaligned data with stride {} and depth stride {}."
+            "RawTexture::Update is called with unaligned data with stride {} and depth stride {}. "
             "The data is being repacked. Consider aligning the data rows to {} bytes.",
             resourceData.Stride, resourceData.DepthStride, alignment);
 
@@ -928,7 +928,7 @@ void RawTexture::Update(unsigned level, const IntVector3& offset, const IntVecto
         const auto newDepthStride = heightInBlocks * newStride;
 
         static thread_local ByteVector dataCopy;
-        dataCopy.resize(newDepthStride * size.z_);
+        dataCopy.resize(static_cast<unsigned>(newDepthStride * size.z_));
 
         auto dest = dataCopy.data();
         auto src = static_cast<const unsigned char*>(data);

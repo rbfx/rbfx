@@ -112,7 +112,7 @@ public:
     bool HasDynamicProbes() const { return !spatial_.movableProbes_.empty(); }
 
 protected:
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     void OnComponentAdded(TrackedComponentBase* baseComponent) override;
     void OnComponentRemoved(TrackedComponentBase* baseComponent) override;
 
@@ -215,7 +215,7 @@ public:
 
     void SetBoxProjectionUsed(bool useBoxProjection);
     bool IsBoxProjectionUsed() const { return useBoxProjection_; }
-    void SetProjectionBox(const BoundingBox& box);
+    void SetProjectionBox(const BoundingBox& box) { projectionBox_ = box; }
     const BoundingBox& GetProjectionBox() const { return projectionBox_; }
 
     const CubemapRenderingSettings& GetCubemapRenderingSettings() const { return cubemapRenderingSettings_; }

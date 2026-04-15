@@ -181,7 +181,7 @@ NodeInspectorWidget::ComponentVectorsByType NodeInspectorWidget::GetSharedCompon
                 if (matchingComponentIter != components.end())
                 {
                     sharedComponents.emplace_back(*matchingComponentIter);
-                    index = (matchingComponentIter - components.begin()) + 1;
+                    index = static_cast<unsigned>((matchingComponentIter - components.begin()) + 1);
                     continue;
                 }
             }

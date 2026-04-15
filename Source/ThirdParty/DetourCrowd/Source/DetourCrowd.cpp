@@ -204,6 +204,7 @@ static int getNeighbours(const float* pos, const float height, const float range
 		const dtCrowdAgent* ag = agents[ids[i]];
 		
 		if (ag == skip) continue;
+		if (skip->params.layer && !(skip->params.mask & ag->params.layer)) continue; // Urho3D
 		
 		// Check for overlap.
 		float diff[3];

@@ -1,33 +1,20 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Animation.h"
-#include "../Graphics/AnimationController.h"
-#include "../Network/NetworkEvents.h"
-#include "../Replica/ReplicatedAnimation.h"
-#include "../Resource/ResourceCache.h"
+#include "Urho3D/Replica/ReplicatedAnimation.h"
+
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Graphics/Animation.h"
+#include "Urho3D/Graphics/AnimationController.h"
+#include "Urho3D/Network/NetworkEvents.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#ifdef URHO3D_IK
+    #include "Urho3D/IK/IKSolver.h"
+#endif
 
 namespace Urho3D
 {
@@ -47,9 +34,27 @@ void ReplicatedAnimation::RegisterObject(Context* context)
 
     URHO3D_COPY_BASE_ATTRIBUTES(NetworkBehavior);
 
+    // clang-format off
     URHO3D_ATTRIBUTE("Num Upload Attempts", unsigned, numUploadAttempts_, DefaultNumUploadAttempts, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Replicate Owner", bool, replicateOwner_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Smoothing Time", float, smoothingTime_, DefaultSmoothingTime, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Layers", GetLayersAttr, SetLayersAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT);
+    // clang-format on
+}
+
+void ReplicatedAnimation::SetLayersAttr(const VariantVector& layers)
+{
+    layers_.clear();
+    const auto toUint = [](const Variant& value) { return value.GetUInt(); };
+    ea::transform(layers.begin(), layers.end(), ea::back_inserter(layers_), toUint);
+}
+
+const VariantVector& ReplicatedAnimation::GetLayersAttr() const
+{
+    static thread_local VariantVector result;
+    result.clear();
+    ea::copy(layers_.begin(), layers_.end(), ea::back_inserter(result));
+    return result;
 }
 
 void ReplicatedAnimation::InitializeStandalone()
@@ -68,8 +73,7 @@ void ReplicatedAnimation::InitializeOnServer()
     UpdateLookupsOnServer();
     server_.newAnimationLookups_.clear();
 
-    SubscribeToEvent(E_ENDSERVERNETWORKFRAME,
-        [this](VariantMap& eventData)
+    SubscribeToEvent(E_ENDSERVERNETWORKFRAME, [this](VariantMap& eventData)
     {
         using namespace BeginServerNetworkFrame;
         const auto serverFrame = static_cast<NetworkFrame>(eventData[P_FRAME].GetInt64());
@@ -79,6 +83,9 @@ void ReplicatedAnimation::InitializeOnServer()
 
 void ReplicatedAnimation::WriteSnapshot(NetworkFrame frame, Serializer& dest)
 {
+    if (!animationController_)
+        return;
+
     dest.WriteVLE(animationLookup_.size());
     for (const auto& [nameHash, name] : animationLookup_)
         dest.WriteString(name);
@@ -108,12 +115,17 @@ void ReplicatedAnimation::InitializeFromSnapshot(NetworkFrame frame, Deserialize
 
 void ReplicatedAnimation::InitializeCommon()
 {
-    animationController_ = GetComponent<AnimationController>();
+    animationController_ = node_->GetDerivedComponent<AnimationController>();
     if (!animationController_)
         return;
 
     // Update controller manually
     animationController_->SetEnabled(false);
+
+    animatedModel_ = node_->GetDerivedComponent<AnimatedModel>();
+#ifdef URHO3D_IK
+    ikSolver_ = node_->GetDerivedComponent<IKSolver>();
+#endif
 }
 
 void ReplicatedAnimation::OnServerFrameEnd(NetworkFrame frame)
@@ -162,6 +174,12 @@ void ReplicatedAnimation::ReadLookupsOnClient(Deserializer& src)
     }
 }
 
+bool ReplicatedAnimation::IsAnimationReplicated() const
+{
+    NetworkObject* networkObject = GetNetworkObject();
+    return networkObject->IsReplicatedClient() || (replicateOwner_ && networkObject->IsOwnedByThisClient());
+}
+
 Animation* ReplicatedAnimation::GetAnimationByHash(StringHash nameHash) const
 {
     const auto iter = animationLookup_.find(nameHash);
@@ -179,6 +197,9 @@ void ReplicatedAnimation::WriteSnapshot(Serializer& dest)
     for (unsigned i = 0; i < numAnimations; ++i)
     {
         const AnimationParameters& params = animationController_->GetAnimationParameters(i);
+        if (!layers_.empty() && !layers_.contains(params.layer_))
+            continue;
+
         server_.snapshotBuffer_.WriteStringHash(params.GetAnimationName());
         params.Serialize(server_.snapshotBuffer_);
     }
@@ -195,7 +216,8 @@ ReplicatedAnimation::AnimationSnapshot ReplicatedAnimation::ReadSnapshot(Deseria
     return result;
 }
 
-void ReplicatedAnimation::DecodeSnapshot(const AnimationSnapshot& snapshot, ea::vector<AnimationParameters>& result) const
+void ReplicatedAnimation::DecodeSnapshot(
+    const AnimationSnapshot& snapshot, ea::vector<AnimationParameters>& result) const
 {
     result.clear();
     MemoryBuffer src{snapshot.data(), snapshot.size()};
@@ -243,14 +265,16 @@ void ReplicatedAnimation::ReadUnreliableDelta(NetworkFrame frame, Deserializer& 
     client_.animationTrace_.Set(frame, snapshot);
 }
 
-void ReplicatedAnimation::InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
+void ReplicatedAnimation::InterpolateState(
+    float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
-    if (!animationController_ || !GetNetworkObject()->IsReplicatedClient())
+    if (!animationController_ || !IsAnimationReplicated())
         return;
 
     // Subtract time step because it is will be applied during Update
     const NetworkTime adjustedReplicaTime = replicaTime - replicaTimeStep / client_.networkStepTime_;
-    const auto closestPriorFrame = client_.animationTrace_.FindClosestAllocatedFrame(adjustedReplicaTime.Frame(), true, false);
+    const auto closestPriorFrame =
+        client_.animationTrace_.FindClosestAllocatedFrame(adjustedReplicaTime.Frame(), true, false);
     if (!closestPriorFrame || *closestPriorFrame == client_.latestAppliedFrame_)
         return;
 
@@ -260,19 +284,30 @@ void ReplicatedAnimation::InterpolateState(float replicaTimeStep, float inputTim
     DecodeSnapshot(snapshot, client_.snapshotAnimations_);
 
     const float delay = (adjustedReplicaTime - NetworkTime{*closestPriorFrame}) * client_.networkStepTime_;
-    animationController_->ReplaceAnimations(client_.snapshotAnimations_, delay, firstUpdate ? 0.0f : smoothingTime_);
+    animationController_->ReplaceAnimations(
+        client_.snapshotAnimations_, delay, firstUpdate ? 0.0f : smoothingTime_, layers_);
 }
 
-void ReplicatedAnimation::Update(float replicaTimeStep, float inputTimeStep)
+void ReplicatedAnimation::PostUpdate(float replicaTimeStep, float inputTimeStep)
 {
     if (!animationController_)
         return;
 
+    const float timeStep = IsAnimationReplicated() ? replicaTimeStep : inputTimeStep;
+    animationController_->Update(timeStep);
+
+    // On server, force updates now because there may be no Viewport.
     NetworkObject* networkObject = GetNetworkObject();
-    if (networkObject->IsOwnedByThisClient() && !replicateOwner_)
-        animationController_->Update(inputTimeStep);
-    else
-        animationController_->Update(replicaTimeStep);
+    if (networkObject->IsServer())
+    {
+        if (animatedModel_)
+            animatedModel_->ApplyAnimation();
+
+#ifdef URHO3D_IK
+        if (ikSolver_)
+            ikSolver_->Solve(timeStep);
+#endif
+    }
 }
 
-}
+} // namespace Urho3D

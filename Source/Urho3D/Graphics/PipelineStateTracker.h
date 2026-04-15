@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "../Urho3D.h"
-#include "../Container/Ptr.h"
+#include <Urho3D/Urho3D.h>
+#include <Urho3D/Container/Ptr.h>
 
 #include <atomic>
 #include <EASTL/vector.h>
@@ -122,7 +122,7 @@ private:
     DependantVector::iterator FindSubscriberIter(PipelineStateTracker* subscriber);
 
     /// Cached hash.
-    mutable std::atomic_uint32_t pipelineStateHash_;
+    mutable std::atomic_uint32_t pipelineStateHash_{0};
     /// Other pipeline state trackers depending on this tracker.
     DependantVector subscribers_;
 };

@@ -7,12 +7,17 @@
     #error Include _Config.glsl before _Uniforms.glsl
 #endif
 
-UNIFORM_BUFFER_BEGIN(0, Frame)
-    /// Time elapsed since previous frame, in seconds.
-    UNIFORM_HIGHP(float cDeltaTime)
-    /// Time elapsed since scene started updating, in seconds. Avoid using it.
+/// cDeltaTime: Time elapsed since previous frame, in seconds.
+/// cElapsedTime: Time elapsed since scene started updating, in seconds. Avoid using it.
+#define UNIFORMS_FRAME \
+    UNIFORM_HIGHP(float cDeltaTime) \
     UNIFORM_HIGHP(float cElapsedTime)
+
+#ifndef URHO3D_CUSTOM_FRAME_UNIFORMS
+UNIFORM_BUFFER_BEGIN(0, Frame)
+    UNIFORMS_FRAME
 UNIFORM_BUFFER_END(0, Frame)
+#endif
 
 #ifdef URHO3D_XR
     #define VIEW_XR [2]

@@ -34,9 +34,10 @@
 namespace Urho3D
 {
 
-AssetTransformerInput::AssetTransformerInput(const ApplicationFlavor& flavor, const ea::string& resourceName,
-    const ea::string& inputFileName, FileTime inputFileTime)
-    : flavor_(flavor)
+AssetTransformerInput::AssetTransformerInput(bool isPostTransform, const ApplicationFlavor& flavor,
+    const ea::string& resourceName, const ea::string& inputFileName, FileTime inputFileTime)
+    : isPostTransform_(isPostTransform)
+    , flavor_(flavor)
     , originalResourceName_(resourceName)
     , originalInputFileName_(inputFileName)
     , resourceName_(resourceName)
@@ -56,6 +57,8 @@ AssetTransformerInput::AssetTransformerInput(const AssetTransformerInput& other,
 
 void AssetTransformerInput::SerializeInBlock(Archive& archive)
 {
+    SerializeValue(archive, "isPostTransform", isPostTransform_);
+
     SerializeValue(archive, "flavor", flavor_.components_);
     SerializeValue(archive, "originalResourceName", originalResourceName_);
     SerializeValue(archive, "originalInputFileName", originalInputFileName_);

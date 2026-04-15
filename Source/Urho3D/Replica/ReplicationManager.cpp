@@ -1,37 +1,21 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2020-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include <Urho3D/Precompiled.h>
+#include "Urho3D/Precompiled.h"
 
-#include <Urho3D/Core/Context.h>
-#include <Urho3D/Core/Exception.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/Network/Connection.h>
-#include <Urho3D/Network/Network.h>
-#include <Urho3D/Replica/NetworkObject.h>
-#include <Urho3D/Replica/NetworkSettingsConsts.h>
-#include <Urho3D/Replica/ReplicationManager.h>
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Scene/SceneEvents.h>
+#include "Urho3D/Replica/ReplicationManager.h"
+
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Exception.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Network/Connection.h"
+#include "Urho3D/Network/MessageUtils.h"
+#include "Urho3D/Network/Network.h"
+#include "Urho3D/Replica/NetworkObject.h"
+#include "Urho3D/Replica/NetworkSettingsConsts.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
 namespace Urho3D
 {
@@ -183,23 +167,32 @@ ReplicationManager::~ReplicationManager() = default;
 void ReplicationManager::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<ReplicationManager>(Category_Subsystem);
+
+    // clang-format off
+    URHO3D_ATTRIBUTE("Is Fixed Update Server", bool, attributes_.isFixedUpdateServer_, Attributes{}.isFixedUpdateServer_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Allow Zero Updates On Server", bool, attributes_.allowZeroUpdatesOnServer_, Attributes{}.allowZeroUpdatesOnServer_, AM_DEFAULT);
+    // clang-format on
 }
 
-void ReplicationManager::OnSceneSet(Scene* scene)
+void ReplicationManager::OnSceneSet(Scene* previousScene, Scene* scene)
 {
-    BaseClassName::OnSceneSet(scene);
+    BaseClassName::OnSceneSet(previousScene, scene);
 
     if (scene)
     {
         SubscribeToEvent(scene, E_SCENEUPDATE,
             [this](VariantMap& eventData)
         {
-            using namespace SceneUpdate;
-            const float timeStep = eventData[P_TIMESTEP].GetFloat();
+            const float timeStep = eventData[SceneUpdate::P_TIMESTEP].GetFloat();
             OnSceneUpdate(timeStep);
         });
 
-        SubscribeToEvent(scene, E_SCENEPOSTUPDATE, &ReplicationManager::UpdateNetworkObjects);
+        SubscribeToEvent(scene, E_SCENEPOSTUPDATE,
+            [this](VariantMap& eventData)
+        {
+            const float timeStep = eventData[ScenePostUpdate::P_TIMESTEP].GetFloat();
+            OnScenePostUpdate(timeStep);
+        });
     }
     else
     {
@@ -215,18 +208,30 @@ void ReplicationManager::OnComponentAdded(TrackedComponentBase* baseComponent)
     if (IsStandalone())
     {
         auto networkObject = static_cast<NetworkObject*>(baseComponent);
-        networkObject->SetNetworkMode(NetworkObjectMode::Standalone);
-        networkObject->InitializeStandalone();
+        standalone_.recentlyAddedObjects_.insert(networkObject->GetNetworkId());
     }
 }
 
-void ReplicationManager::OnSceneUpdate(float timeStep)
+void ReplicationManager::OnComponentRemoved(TrackedComponentBase* baseComponent)
+{
+    if (IsStandalone())
+    {
+        auto networkObject = static_cast<NetworkObject*>(baseComponent);
+        standalone_.recentlyAddedObjects_.erase(networkObject->GetNetworkId());
+    }
+
+    BaseClassName::OnComponentRemoved(baseComponent);
+}
+
+void ReplicationManager::HandleSceneUpdate(StringHash eventType, float timeStep)
 {
     switch (mode_)
     {
     case ReplicationManagerMode::Standalone:
     {
         URHO3D_ASSERT(!server_ && !client_);
+
+        InitializeObjectsStandalone();
 
         Scene* scene = GetScene();
         VariantMap& eventData = scene->GetEventDataMap();
@@ -235,7 +240,7 @@ void ReplicationManager::OnSceneUpdate(float timeStep)
         eventData[P_SCENE] = scene;
         eventData[P_TIMESTEP_REPLICA] = timeStep;
         eventData[P_TIMESTEP_INPUT] = timeStep;
-        scene->SendEvent(E_SCENENETWORKUPDATE, eventData);
+        scene->SendEvent(eventType, eventData);
 
         break;
     }
@@ -243,7 +248,7 @@ void ReplicationManager::OnSceneUpdate(float timeStep)
     {
         URHO3D_ASSERT(server_);
 
-        server_->ProcessSceneUpdate();
+        server_->ProcessSceneUpdate(eventType);
 
         break;
     }
@@ -253,13 +258,41 @@ void ReplicationManager::OnSceneUpdate(float timeStep)
         URHO3D_ASSERT(client_);
 
         if (client_->replica_)
-            client_->replica_->ProcessSceneUpdate();
+            client_->replica_->ProcessSceneUpdate(eventType);
 
         break;
     }
 
     default: break;
     }
+}
+
+void ReplicationManager::OnSceneUpdate(float timeStep)
+{
+    HandleSceneUpdate(E_SCENENETWORKUPDATE, timeStep);
+}
+
+void ReplicationManager::OnScenePostUpdate(float timeStep)
+{
+    HandleSceneUpdate(E_SCENENETWORKPOSTUPDATE, timeStep);
+    UpdateNetworkObjects();
+}
+
+void ReplicationManager::InitializeObjectsStandalone()
+{
+    for (const NetworkId networkId : standalone_.recentlyAddedObjects_)
+    {
+        NetworkObject* networkObject = GetNetworkObject(networkId);
+        if (!networkObject)
+        {
+            URHO3D_ASSERTLOG(0, "Cannot find recently added NetworkObject");
+            continue;
+        }
+
+        networkObject->SetNetworkMode(NetworkObjectMode::Standalone);
+        networkObject->InitializeStandalone();
+    }
+    standalone_.recentlyAddedObjects_.clear();
 }
 
 void ReplicationManager::Stop()
@@ -275,6 +308,8 @@ void ReplicationManager::Stop()
         URHO3D_LOGINFO("Stopped server for scene replication");
         server_ = nullptr;
     }
+
+    standalone_ = {};
 
     mode_ = ReplicationManagerMode::Standalone;
 }
@@ -387,16 +422,16 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
 
     if (messageId == MSG_CONFIGURE)
     {
-        const auto msg = ReadNetworkMessage<MsgConfigure>(messageData);
-        connection->OnMessageReceived(messageId, msg);
+        const auto msg = ReadSerializedMessage<MsgConfigure>(messageData);
+        connection->LogMessagePayload(messageId, msg);
 
         client_->ackMagic_ = msg.magic_;
         client_->serverSettings_ = msg.settings_;
     }
     else if (messageId == MSG_SCENE_CLOCK)
     {
-        const auto msg = ReadNetworkMessage<MsgSceneClock>(messageData);
-        connection->OnMessageReceived(messageId, msg);
+        const auto msg = ReadSerializedMessage<MsgSceneClock>(messageData);
+        connection->LogMessagePayload(messageId, msg);
 
         client_->initialClock_ = msg;
     }
@@ -411,8 +446,8 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
         client_->replica_ =
             MakeShared<ClientReplica>(GetScene(), connection, *client_->initialClock_, *client_->serverSettings_);
 
-        connection->SendSerializedMessage(
-            MSG_SYNCHRONIZED, MsgSynchronized{*client_->ackMagic_}, PacketType::ReliableUnordered);
+        WriteSerializedMessage(
+            *connection, MSG_SYNCHRONIZED, MsgSynchronized{*client_->ackMagic_}, PacketType::ReliableUnordered);
     }
 
     return true;

@@ -1,0 +1,110 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<Title>EAAlignment</title>
+
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAAlignment</h1>
+
+<h2>Introduction</h2>
+<p>EAAlignment provides a number of utilities for working with variable alignment. These include:</p>
+<blockquote>
+  <table border="1">
+    <tr>
+      <td><strong>Entity</strong></td>
+      <td><strong>Description</strong></td>
+    </tr>
+    <tr>
+      <td>EAAlignOf(type)</td>
+      <td valign="top">Macro which returns the alignment of the given type as a constant expression. </td>
+    </tr>
+    <tr>
+      <td>AlignOf&lt;T&gt;</td>
+      <td valign="top">Template which returns the alignment of the given type. </td>
+    </tr>
+    <tr>
+      <td>AlignAddressUp<br>
+      AlignAddressDown</td>
+      <td valign="top">Function which aligns an arbitrary address up or down to the next user-supplied power of two. </td>
+    </tr>
+    <tr>
+      <td>AlignObjectUp<br>
+      AlignObjectDown</td>
+      <td valign="top">Function which aligns an arbitrary object up or down to the next user-supplied power of two. </td>
+    </tr>
+    <tr>
+      <td>GetAlignment<br>
+        IsAddressAligned<br>
+        IsObjectAligned&lt;T&gt;<br>
+      IsAligned&lt;T&gt;<br></td>
+      <td valign="top">Gets information about alignment. </td>
+    </tr>
+    <tr>
+      <td>AlignedType</td>
+      <td valign="top">Template which portably allows the re-typing of a class to have a specific alignment. </td>
+    </tr>
+    <tr>
+      <td>AlignedArray</td>
+      <td valign="top">Template which implements an array of an arbitrary class with a given alignment.</td>
+    </tr>
+    <tr>
+      <td>AlignedObject</td>
+      <td valign="top">Template which implements an instance of an arbitrary class with a given alignment.</td>
+    </tr>
+    <tr>
+      <td>ReadMisalignedUint16<br>
+      ReadMisalignedUint32<br>
+      ReadMisalignedUint64</td>
+      <td valign="top">Function which safely and portably reads potentially misaligned memory. </td>
+    </tr>
+    <tr>
+      <td>WriteMisalignedUint16<br>
+      WriteMisalignedUint32<br>
+      WriteMisalignedUint64</td>
+      <td valign="top">Function which safely and portably writes potentially misaligned memory. </td>
+    </tr>
+  </table>
+</blockquote>
+<p>We'll discuss some of these briefly.</p>
+<h2>EAAlignOf</h2>
+<p>EAAlignOf is your basic macro for retrieving the alignment of an object by its type. Recent versions of EABase define EA_ALIGN_OF, so EAAlignOf is currently a duplication of the EABase functionality. </p>
+<p>Example usage: </p>
+<pre class="code-example">printf(&quot;Alignment of type 'int' is %u.\n&quot;, (unsigned)EAAlignOf(int)); </pre>
+<h2>AlignedType</h2>
+<p> This class makes an aligned typedef for a given class based on a user-supplied class and alignment. This class exists because of a weakness in VC++ whereby it can only accept __declspec(align) and thus EA_PREFIX_ALIGN usage via an integer literal (e.g. &quot;16&quot;) and not an otherwise equivalent constant integral expression (e.g. sizeof Foo).</p>
+<p>Example usage: </p>
+<pre class="code-example">const size_t kAlignment = 32; <span class="code-example-comment">// Note that in this case the alignment is defined elsewhere as a non-literal.</span><br>
+AlignedType&lt;Widget, kAlignment&gt;::Type widgetAlign128;<br>
+widgetAlign128.DoSomething();</pre>
+<h2>ReadMisaligned16/32/64</h2>
+<p>ReadMisaligned reads  an unsigned integer from a possibly non-aligned address. The MIPS processor on the PS2, for example, cannot read a 32-bit value from an unaligned address. This function can be used to make reading such misaligned data portable.. </p>
+<p>Example usage: </p>
+<pre class="code-example">void DoSomeReading(const char* pData)
+{
+    uint16_t x = ReadMisalignedUint16(pData);
+    pData += sizeof(uint16_t);
+ 
+    uint32_t y = ReadMisalignedUint32(pData);
+    pData += sizeof(uint32_t);
+ 
+    uint64_t z = ReadMisalignedUint64(pData);
+    pData += sizeof(uint64_t);
+    
+    ...
+}</pre>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p> </p>
+</body></html>
+
+
+

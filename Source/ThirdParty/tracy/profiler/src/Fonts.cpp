@@ -1,9 +1,9 @@
 #include <imgui.h>
 #include <math.h>
+#include <backends/imgui_impl_opengl3.h>
+#include <misc/freetype/imgui_freetype.h>
 
 #include "Fonts.hpp"
-#include "imgui_freetype.h"
-#include "imgui_impl_opengl3.h"
 #include "profiler/IconsFontAwesome6.h"
 
 #include "font/DroidSans.hpp"
@@ -44,7 +44,7 @@ void LoadFonts( float scale )
     configMerge.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
     ImFontConfig configFixed;
     configFixed.FontBuilderFlags = ImGuiFreeTypeBuilderFlags_LightHinting;
-    configFixed.GlyphExtraSpacing.x = -1;
+    //configFixed.GlyphExtraAdvanceX = -1;
 
     io.Fonts->Clear();
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::DroidSans_compressed_data, tracy::DroidSans_compressed_size, round( 15.0f * scale ), &configBasic, rangesBasic );

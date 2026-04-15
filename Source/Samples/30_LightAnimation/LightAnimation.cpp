@@ -88,7 +88,8 @@ void LightAnimation::CreateScene()
     planeObject->SetMaterial(cache->GetResource<Material>("Materials/StoneTiled.xml"));
 
     // Create a point light to the world so that we can see something.
-    Node* lightNode = scene_->CreateChild("PointLight");
+    Node* lightContainer = scene_->CreateChild("PointLightContainer");
+    Node* lightNode = lightContainer->CreateChild("PointLight");
     auto* light = lightNode->CreateComponent<Light>();
     light->SetLightType(LIGHT_POINT);
     light->SetRange(10.0f);

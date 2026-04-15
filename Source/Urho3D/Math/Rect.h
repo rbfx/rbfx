@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Math/Vector4.h"
+#include "Urho3D/Core/AssertBase.h"
+#include "Urho3D/Math/Vector4.h"
 
 namespace Urho3D
 {
@@ -530,7 +531,7 @@ public:
     }
 
     /// Compare for equality.
-    bool operator ==(const IntRectIterator& rhs) const { assert(rect_ == rhs.rect_); return index_ == rhs.index_; }
+    bool operator ==(const IntRectIterator& rhs) const { URHO3D_ASSERT(rect_ == rhs.rect_); return index_ == rhs.index_; }
 
     /// Compare for non-equality.
     bool operator !=(const IntRectIterator& rhs) const { return !(*this == rhs); }

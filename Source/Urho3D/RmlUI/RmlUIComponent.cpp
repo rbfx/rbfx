@@ -11,12 +11,12 @@
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/Resource/BinaryFile.h"
 #include "Urho3D/RmlUI/RmlCanvasComponent.h"
-#include "Urho3D/RmlUI/RmlNavigationManager.h"
 #include "Urho3D/RmlUI/RmlUI.h"
 #include "Urho3D/Scene/Node.h"
 #include "Urho3D/Scene/Scene.h"
 
 #include <RmlUi/Core/ComputedValues.h>
+#include <RmlUi/Core/Core.h>
 
 #include "Urho3D/DebugNew.h"
 
@@ -25,8 +25,6 @@ namespace Urho3D
 
 namespace
 {
-
-const Rml::String ComponentPtrAttribute = "__RmlUIComponentPtr__";
 
 bool IsElementNavigable(Rml::Element* element)
 {
@@ -46,15 +44,43 @@ bool IsElementNavigable(Rml::Element* element)
     return true;
 };
 
+Rml::Input::KeyIdentifier GetKeyArg(const Rml::VariantList& arguments)
+{
+    const auto value = arguments.size() >= 1 ? arguments[0].Get<int>() : 0;
+    return static_cast<Rml::Input::KeyIdentifier>(value);
+}
+
+Rml::Variant IsKeyOk(const Rml::VariantList& arguments)
+{
+    const auto key = GetKeyArg(arguments);
+    return Rml::Variant{key == Rml::Input::KI_RETURN};
+}
+
+Rml::Variant IsKeyCancel(const Rml::VariantList& arguments)
+{
+    const auto key = GetKeyArg(arguments);
+    return Rml::Variant{key == Rml::Input::KI_ESCAPE};
+}
+
+Rml::Variant IsKeySecondary(const Rml::VariantList& arguments)
+{
+    const auto key = GetKeyArg(arguments);
+    return Rml::Variant{key == Rml::Input::KI_SPACE};
+}
+
+Rml::Variant IsKeyTertiary(const Rml::VariantList& arguments)
+{
+    const auto key = GetKeyArg(arguments);
+    return Rml::Variant{key == Rml::Input::KI_BACK};
+}
+
 } // namespace
 
 RmlUIComponent::RmlUIComponent(Context* context)
     : LogicComponent(context)
-    , navigationManager_(MakeShared<RmlNavigationManager>(this))
     , resource_{BinaryFile::GetTypeStatic()}
 {
     SetUpdateEventMask(USE_UPDATE);
-    navigationManager_->OnGroupChanged.Subscribe(this, &RmlUIComponent::OnNavigableGroupChanged);
 }
 
 RmlUIComponent::~RmlUIComponent()
@@ -78,9 +104,12 @@ void RmlUIComponent::RegisterObject(Context* context)
 
 void RmlUIComponent::Update(float timeStep)
 {
-    navigationManager_->Update();
     // There should be only a few of RmlUIComponent enabled at a time, so this is not a performance issue.
     UpdateConnectedCanvas();
+}
+
+void RmlUIComponent::OnDocumentUpdated()
+{
     UpdatePendingFocus();
 }
 
@@ -171,19 +200,28 @@ void RmlUIComponent::UpdatePendingFocus()
 
     if (pendingFocusId_ && document_)
     {
-        if (Rml::Element* element = document_->GetElementById(*pendingFocusId_))
+        if (pendingFocusId_->empty())
         {
-            if (element->Focus(true))
-            {
-                element->ScrollIntoView(Rml::ScrollAlignment::Nearest);
-                suppressRestoreFocus_ = true;
-            }
+            // If failed to restore focus, keep trying
+            if (RestoreFocus())
+                pendingFocusId_ = ea::nullopt;
         }
-        pendingFocusId_ = ea::nullopt;
+        else
+        {
+            if (Rml::Element* element = document_->GetElementById(*pendingFocusId_))
+            {
+                if (element->Focus(true))
+                {
+                    element->ScrollIntoView(Rml::ScrollAlignment::Nearest);
+                    suppressRestoreFocus_ = true;
+                }
+            }
+            pendingFocusId_ = ea::nullopt;
+        }
     }
 }
 
-void RmlUIComponent::RestoreFocus()
+bool RmlUIComponent::RestoreFocus()
 {
     if (document_ && document_->IsVisible() && !suppressRestoreFocus_
         && !IsElementNavigable(document_->GetFocusLeafNode()))
@@ -193,9 +231,11 @@ void RmlUIComponent::RestoreFocus()
             if (nextElement->Focus(true))
             {
                 nextElement->ScrollIntoView(Rml::ScrollAlignment::Nearest);
+                return true;
             }
         }
     }
+    return false;
 }
 
 void RmlUIComponent::ScheduleFocusById(const ea::string& elementId)
@@ -205,6 +245,7 @@ void RmlUIComponent::ScheduleFocusById(const ea::string& elementId)
 
 void RmlUIComponent::OnSetEnabled()
 {
+    BaseClassName::OnSetEnabled();
     UpdateDocumentOpen();
 }
 
@@ -235,9 +276,10 @@ void RmlUIComponent::OpenInternal()
     }
 
     RmlUI* ui = GetUI();
-    ui->documentClosedEvent_.Subscribe(this, &RmlUIComponent::OnDocumentClosed);
-    ui->canvasResizedEvent_.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
-    ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
+    ui->OnDocumentClosedEvent.Subscribe(this, &RmlUIComponent::OnDocumentClosed);
+    ui->OnCanvasResizedEvent.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
+    ui->OnDocumentReloaded.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
+    ui->OnUpdated.Subscribe(this, &RmlUIComponent::OnDocumentUpdated);
 
     OnDocumentPreLoad();
 
@@ -249,7 +291,8 @@ void RmlUIComponent::OpenInternal()
         modelConstructor_.reset();
     }
 
-    SetDocument(ui->LoadDocument(resource_.name_));
+    // Load document from resource with placeholder substitution.
+    SetDocument(ui->LoadDocument(resource_.name_, this));
 
     if (document_ == nullptr)
     {
@@ -259,8 +302,9 @@ void RmlUIComponent::OpenInternal()
 
     SetPosition(position_);
     SetSize(size_);
-    document_->Show();
+    document_->Show(modal_ ? Rml::ModalFlag::Modal : Rml::ModalFlag::None, Rml::FocusFlag::None);
     OnDocumentPostLoad();
+    RestoreFocus();
 }
 
 void RmlUIComponent::CloseInternal()
@@ -269,9 +313,10 @@ void RmlUIComponent::CloseInternal()
         return; // Already closed.
 
     RmlUI* ui = static_cast<Detail::RmlContext*>(document_->GetContext())->GetOwnerSubsystem();
-    ui->documentClosedEvent_.Unsubscribe(this);
-    ui->canvasResizedEvent_.Unsubscribe(this);
-    ui->documentReloaded_.Unsubscribe(this);
+    ui->OnDocumentClosedEvent.Unsubscribe(this);
+    ui->OnCanvasResizedEvent.Unsubscribe(this);
+    ui->OnDocumentReloaded.Unsubscribe(this);
+    ui->OnUpdated.Unsubscribe(this);
 
     position_ = GetPosition();
     size_ = GetSize();
@@ -412,53 +457,74 @@ RmlUI* RmlUIComponent::GetUI() const
     return GetSubsystem<RmlUI>();
 }
 
+void RmlUIComponent::SetEmSize(float sizePx)
+{
+    if (!document_)
+    {
+        return;
+    }
+
+    document_->SetProperty(Rml::PropertyId::FontSize, Rml::Property(sizePx, Rml::Unit::PX));
+}
+
+float RmlUIComponent::GetEmSize() const
+{
+    if (!document_)
+    {
+        return 0.0f;
+    }
+
+    return document_->ResolveLength(document_->GetProperty(Rml::PropertyId::FontSize)->GetNumericValue());
+}
+
+bool RmlUIComponent::IsModal() const
+{
+    return modal_;
+}
+
+void RmlUIComponent::SetModal(bool modal)
+{
+    if (modal_ == modal)
+        return;
+
+    modal_ = modal;
+    if (!document_)
+        return;
+
+    if (document_->IsVisible())
+    {
+        const Rml::Element* oldFocusedElement = document_->GetContext()->GetFocusElement();
+        const Rml::FocusFlag focus = oldFocusedElement && oldFocusedElement->GetOwnerDocument() == document_
+            ? Rml::FocusFlag::Document
+            : Rml::FocusFlag::Auto;
+
+        document_->Hide();
+        document_->Show(modal ? Rml::ModalFlag::Modal : Rml::ModalFlag::None, focus);
+    }
+}
+
+void RmlUIComponent::Focus(bool focusVisible)
+{
+    if (document_)
+    {
+        document_->Focus(focusVisible);
+    }
+}
+
 void RmlUIComponent::SetDocument(Rml::ElementDocument* document)
 {
     if (document_ != document)
     {
         if (document_)
-            document_->SetAttribute(ComponentPtrAttribute, static_cast<void*>(nullptr));
+            document_->SetAttribute(Detail::ComponentPtrAttribute, static_cast<void*>(nullptr));
 
         document_ = document;
 
         if (document_)
         {
-            document_->SetAttribute(ComponentPtrAttribute, static_cast<void*>(this));
-            navigationManager_->Reset(document_);
+            document_->SetAttribute(Detail::ComponentPtrAttribute, static_cast<void*>(this));
         }
     }
-}
-
-void RmlUIComponent::OnNavigableGroupChanged()
-{
-    DirtyVariable("navigable_group");
-}
-
-void RmlUIComponent::DoNavigablePush(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args)
-{
-    if (args.size() > 2)
-    {
-        URHO3D_LOGWARNING("RmlUIComponent::DoNavigablePush is called with unexpected arguments");
-        return;
-    }
-
-    const bool enabled = args.size() > 1 ? args[0].Get<bool>() : true;
-    const ea::string group = args.back().Get<Rml::String>();
-    if (enabled)
-        navigationManager_->PushCursorGroup(group);
-}
-
-void RmlUIComponent::DoNavigablePop(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args)
-{
-    if (args.size() > 1)
-    {
-        URHO3D_LOGWARNING("RmlUIComponent::DoNavigablePop is called with unexpected arguments");
-        return;
-    }
-
-    const bool enabled = args.size() > 0 ? args[0].Get<bool>() : true;
-    if (enabled)
-        navigationManager_->PopCursorGroup();
 }
 
 void RmlUIComponent::DoFocusById(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args)
@@ -481,16 +547,19 @@ void RmlUIComponent::CreateDataModel()
     Rml::Context* context = ui->GetRmlContext();
 
     dataModelName_ = GetDataModelName();
+    Detail::InsertVariablePlaceholders(dataModelName_, this);
+
     typeRegister_.emplace();
     modelConstructor_ =
         ea::make_unique<Rml::DataModelConstructor>(context->CreateDataModel(dataModelName_, &*typeRegister_));
     RegisterVariantDefinition(&*typeRegister_);
 
-    modelConstructor_->BindFunc(
-        "navigable_group", [this](Rml::Variant& result) { result = navigationManager_->GetTopCursorGroup(); });
-    modelConstructor_->BindEventCallback("navigable_push", &RmlUIComponent::DoNavigablePush, this);
-    modelConstructor_->BindEventCallback("navigable_pop", &RmlUIComponent::DoNavigablePop, this);
     modelConstructor_->BindEventCallback("focus", &RmlUIComponent::DoFocusById, this);
+
+    modelConstructor_->RegisterTransformFunc("is_key_ok", IsKeyOk);
+    modelConstructor_->RegisterTransformFunc("is_key_cancel", IsKeyCancel);
+    modelConstructor_->RegisterTransformFunc("is_key_secondary", IsKeySecondary);
+    modelConstructor_->RegisterTransformFunc("is_key_tertiary", IsKeyTertiary);
 }
 
 void RmlUIComponent::RemoveDataModel()
@@ -532,7 +601,7 @@ RmlUIComponent* RmlUIComponent::FromDocument(Rml::ElementDocument* document)
 {
     if (document)
     {
-        if (const Rml::Variant* value = document->GetAttribute(ComponentPtrAttribute))
+        if (const Rml::Variant* value = document->GetAttribute(Detail::ComponentPtrAttribute))
             return static_cast<RmlUIComponent*>(value->Get<void*>());
     }
     return nullptr;

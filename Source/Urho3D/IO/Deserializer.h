@@ -22,10 +22,11 @@
 
 #pragma once
 
-#include "../Container/ByteVector.h"
-#include "../Core/Variant.h"
-#include "../Math/BoundingBox.h"
-#include "../Math/Rect.h"
+#include "Urho3D/Container/ByteVector.h"
+#include "Urho3D/Core/Variant.h"
+#include "Urho3D/IO/IODefs.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Rect.h"
 
 namespace Urho3D
 {
@@ -104,14 +105,14 @@ public:
     Vector2 ReadVector2();
     /// Read a Vector3.
     Vector3 ReadVector3();
-    /// Read a Vector3 packed into 3 x 16 bits with the specified maximum absolute range.
-    Vector3 ReadPackedVector3(float maxAbsCoord);
+    /// Read a DoubleVector3 packed with specified encoding.
+    DoubleVector3 ReadPackedVector3(VectorBinaryEncoding encoding, float param = 1.0f);
     /// Read a Vector4.
     Vector4 ReadVector4();
     /// Read a quaternion.
     Quaternion ReadQuaternion();
     /// Read a quaternion with each component packed in 16 bits.
-    Quaternion ReadPackedQuaternion();
+    Quaternion ReadPackedQuaternion(VectorBinaryEncoding encoding);
     /// Read a Matrix3.
     Matrix3 ReadMatrix3();
     /// Read a Matrix3x4.

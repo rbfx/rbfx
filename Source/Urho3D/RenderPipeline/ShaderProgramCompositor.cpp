@@ -313,8 +313,10 @@ void ShaderProgramCompositor::ApplyDefinesForShadowPass(ShaderProgramDesc& resul
     for (const ea::string& name : pass->GetPixelTextureDefines())
         AddTextureDefine(result, PS, material, name);
 
+    // This is not strictly true for unusual geometry types that generate normals from other attributes,
+    // but it's good enough for average shadow caster with usual geometry.
     if (vertexBuffer->HasElement(SEM_NORMAL))
-        result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_NORMAL");
+        result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_NORMAL URHO3D_VERTEX_NORMAL_AVAILABLE");
 
     if (light->GetShadowBias().normalOffset_ > 0.0)
         result.AddShaderDefines(VS, "URHO3D_SHADOW_NORMAL_OFFSET");

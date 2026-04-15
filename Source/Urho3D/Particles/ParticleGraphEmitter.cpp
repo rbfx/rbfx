@@ -193,10 +193,8 @@ ResourceRef ParticleGraphEmitter::GetEffectAttr() const
 }
 
 
-void ParticleGraphEmitter::OnSceneSet(Scene* scene)
+void ParticleGraphEmitter::OnSceneSet(Scene* previousScene, Scene* scene)
 {
-    Component::OnSceneSet(scene);
-
     if (scene && IsEnabledEffective())
         SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(ParticleGraphEmitter, HandleScenePostUpdate));
     else if (!scene)

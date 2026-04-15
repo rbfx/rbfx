@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+    
+<title>EABitTricks</title>
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EABitTricks</h1>
+
+<h2>Introduction</h2>
+<p>EABitTricks provides a number of integer bit-manipulation utilities that are 
+  very fast and simple. For example, it is well-known that (x * 2) can be also 
+  accomplished with (x << 1). And while this example may not be useful in practice, 
+  there are many more such tricks which have real use, particularly for speeding 
+  up code. Some of these tricks may seem odd or even useless, but it turns out 
+  that there are surprising uses for many of these.</p>
+<h2>Notes</h2>
+<ul>
+  <li>Twos-complement integer storage is assumed. Nearly all modern processors 
+    use twos-complement storage.</li>
+  <li>Some tricks assume that right shifts of signed values preserve the sign. 
+    While nearly all modern processors and C/C++ compilers support this, some 
+    primitive processors don't. By preserving sign, we mean that signed binary 
+    (10000000 >> 1) gives (11000000). </li>
+  <li>Only 'tricky' efficient solutions are provided. Obvious brute force loops 
+    to do useful things aren't included. We attempt to use branchless and loopless 
+    logic where possible.</li>
+  <li>We don't cover magic number tricks for simplifying multiplication and division 
+    by constants. For example (x * 17) can also be quickly accomplished with ((x 
+    << 4) + x). Optimized integer multiplication and division tricks such as this 
+    is something for a separate library.</li>
+  <li>We don't cover floating point tricks. That is something for a separate library. 
+  </li>
+  <li>Implementations here are written as standalone functions for readability. 
+    However, the user may find that it's better in some cases to copy the implementation 
+    to a macro or to simply copy the implementation directly inline into source 
+    code. EABitTricks is meant to be a reference for copy and paste as much as 
+    it is meant to be used as-is.</li>
+  <li>Many of these functions are templated instead of taking a given integer 
+    type such as uint32_t. The reason for this is that we want 64 bit support 
+    and that can be had automatically in most cases by the use of templates. The 
+    generated code will be exactly as fast as the case when templates are not 
+  used.</li>
+</ul>
+<h2>Example usage </h2>
+<p>All examples presume a <font face="Courier New, Courier, mono" size="-1">#include 
+  &quot;Foundation/EABitTricks.h&quot;</font> and assume the using of <font face="Courier New, Courier, mono" size="-1">namespace 
+  EA</font>.</p>
+<p>TurnOffLowestBit</p>
+<pre class="code-example">int16_t i16 = 0x0005;           <span class="code-example-comment">// i16 =&gt; 000000101</span>
+i16 = TurnOffLowestBit(i16);    <span class="code-example-comment">// i16 =&gt; 000000100</span></pre>
+IsolateSingle0And1Bits
+<pre class="code-example">uint32_t u32 = 0xabababab;               <span class="code-example-comment"> // u32 =&gt; 10101011101010111010101110101011</span>
+u32 = IsolateSingle0And1Bits(0xabababab); <span class="code-example-comment">// u32 =&gt; 11111100011111000111110001111100</span></pre>
+RoundUpToPowerOf2
+<pre class="code-example">uint32_t u32 = 66;                <span class="code-example-comment">// u32 =&gt; 66  (01000010)</span>
+u32 = RoundUpToPowerOf2(u32);     <span class="code-example-comment">// u32 =&gt; 128 (10000000)</span></pre>
+<p> UnsignedMultiplyWouldOverflow</p>
+<pre class="code-example">bool b = UnsignedMultiplyWouldOverflow(0xffffffff, 0xffffffff);  <span class="code-example-comment">// b =&gt; true</span> </pre>
+<h2>Interface</h2>
+<p>The following is a simple listing of EABitTricks functions as of January 2006. 
+  For an up to date listing of current functionality, see EABitTricks.h. Also, 
+  the EABitTricks.h file has documentation and example usage for each function.</p>
+<p>Bit manipulation</p>
+<pre class="code-example">T        TurnOffLowestBit(T x);
+T        IsolateLowestBit(T x);
+T        IsolateLowest0Bit(T x);
+T        GetTrailing0Bits(T x);
+T        GetTrailing1And0Bits(T x);
+T        PropogateLowestBitDownward(T x);
+T        TurnOffLowestContiguousBits(T x);
+T        TurnOnLowest0Bit(T x);
+uint32_t GetNextWithEqualBitCount(uint32_t x);
+uint32_t IsolateSingleBits(uint32_t x);
+uint32_t IsolateSingle0Bits(uint32_t x);
+uint32_t IsolateSingle0And1Bits(uint32_t x);
+int32_t  ShiftRightSigned(int32_t x, uint32_t n);
+uint32_t CountTrailing0Bits(uint32_t x);
+uint32_t CountLeading0Bits(uint32_t x);
+uint32_t CountBits(uint32_t x);
+uint32_t CountBits64(uint64_t x);
+uint32_t RotateLeft(uint32_t x, uint32_t n);
+uint32_t RotateRight(uint32_t x, uint32_t n);
+uint32_t ReverseBits(uint32_t x);
+uint32_t IsolateHighestBit(uint32_t x);
+uint32_t IsolateHighest0Bit(uint32_t x);
+uint32_t PropogateHighestBitDownward(uint32_t x);
+uint32_t GetHighestContiguous0Bits(uint32_t x);
+T        GetBitwiseEquivalence(T x, T y);
+bool     AreLessThan2BitsSet(int32_t x);
+T        GetHighestBit(T t);
+  </pre>
+<p>Alignment / Power of 2</p>
+<pre class="code-example">bool     IsPowerOf2(T x);
+uint32_t RoundUpToPowerOf2(uint32_t x);
+bool     IsMultipleOf(T x);
+bool     IsPowerOf2Minus1(T x);
+uint32_t GetHighestBitPowerOf2(uint32_t x);
+bool     CrossesPowerOf2(T x, T y, T n);
+bool     CrossesPowerOf2(T x, T y);
+T        GetNextGreaterEven(T x);<br>T        GetNextGreaterOdd(T x);
+T        RoundUpTo(T x);
+int32_t  RoundUpToEx(T x);
+T        RoundDownTo(T x);
+T        RoundDownToEx(T x);
+uint32_t Log2(uint32_t x);</pre>
+<p>Overflow</p>
+<pre class="code-example">bool SignedAdditionWouldOverflow(T x, T y);
+bool SignedSubtractionWouldOverflow(T x, T y);
+bool UnsignedAdditionWouldOverflow(T x, T y);
+bool UnsignedSubtractionWouldOverflow(T x, T y);
+bool UnsignedMultiplyWouldOverflow(uint32_t x, uint32_t y);
+bool SignedMultiplyWouldOverflow(int32_t x, int32_t y);
+bool UnsignedDivisionWouldOverflow(uint32_t x, uint32_t y);
+bool SignedDivisionWouldOverflow(int32_t x, int32_t y);
+int  GetAverage(int32_t x, int32_t y);
+int  GetAverage_Ceiling(int32_t x, int32_t y);</pre>
+<p>Miscellaneous</p>
+<pre class="code-example">int32_t GetParity(uint32_t32_t x);
+bool    GetIsBigEndian();
+int32_t ToggleBetween0And1(int32_t x);
+T       ToggleBetweenint32_tegers(T x, T a, T b);
+bool    IsBetween0AndValue(int32_t x, int32_t a);
+void    ExchangeValues(T& x, T& y);
+T       FloorMod(T n, T mod);
+int32_t GetSign(int32_t32_t x);
+int32_t GetSignEx(int32_t32_t x);
+int32_t SignExtend12(int32_t32_t x);
+int32_t SignExtend24(int32_t32_t x);
+bool    IsUnsigned(T x);
+#define EAIsUnsigned(x)
+bool    IsTwosComplement();
+bool    IsOnesComplement();
+bool    IsSignMagnitude();
+bool    IsOffsetBinary();
+#define EAArrayCount(array);</pre>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p> </p>
+</body></html>
+
+
+

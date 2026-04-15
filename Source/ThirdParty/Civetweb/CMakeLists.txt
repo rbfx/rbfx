@@ -55,12 +55,14 @@ target_link_libraries(Civetweb PRIVATE ssl crypto)
 # TODO: This needs a better detection.
 target_compile_definitions(Civetweb PRIVATE -DHAVE_POLL=1)
 
+if (ANDROID)
+    target_compile_definitions(Civetweb PRIVATE -D_FILE_OFFSET_BITS=64)
+endif ()
+
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(Civetweb PRIVATE -DCIVETWEB_DLL_EXPORTS PUBLIC -DCIVETWEB_DLL_IMPORTS)
 endif ()
 
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.h)
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS Civetweb EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+install_third_party_libs(Civetweb)

@@ -112,8 +112,8 @@ public:
     /// Play a non-looping sound effect.
     void PlaySoundEffect(const ea::string& soundName);
 
-    /// Filename used in load/save functions.
-    ea::string demoFilename_;
+    /// Buffer for load/save functions.
+    VectorBuffer savedScene_;
     /// The scene.
     Scene* scene_{};
 

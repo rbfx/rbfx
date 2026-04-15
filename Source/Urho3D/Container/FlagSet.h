@@ -222,9 +222,24 @@ public:
         return (value_ & flags) == flags && (flags != 0 || value_ == flags);
     }
 
+    /// Return true if all of specified flags are set.
+    constexpr bool IsAllOf(Integer flags) const { return (value_ & flags) == flags; }
+    constexpr bool IsAllOf(Enum value) const { return IsAllOf(static_cast<Integer>(value)); }
+
+    /// Return true if any of specified flags are set.
+    constexpr bool IsAnyOf(Integer flags) const { return !!(value_ & flags); }
+    constexpr bool IsAnyOf(Enum value) const { return IsAnyOf(static_cast<Integer>(value)); }
+
+    /// Return true of none of specified flags are set.
+    constexpr bool IsNoneOf(Integer flags) const { return !(value_ & flags); }
+    constexpr bool IsNoneOf(Enum value) const { return IsNoneOf(static_cast<Integer>(value)); }
+
+    /// Return value of bit.
+    constexpr bool IsBitSet(unsigned bit) const { return !!(value_ & (Integer{1} << static_cast<Integer>(bit))); }
+
     /// Set or unset specified subset of flags
     /// @{
-    constexpr void Set(const Integer flags, bool enabled = true)
+    constexpr void Set(Integer flags, bool enabled = true)
     {
         if (enabled)
             value_ |= flags;
@@ -232,20 +247,13 @@ public:
             value_ &= ~flags;
     }
 
-    constexpr void Set(const Enum value, bool enabled = true)
-    {
-        Set(static_cast<Integer>(value), enabled);
-    }
+    constexpr void Set(Enum value, bool enabled = true) { Set(static_cast<Integer>(value), enabled); }
 
-    constexpr void Unset(const Integer flags)
-    {
-        Set(flags, false);
-    }
+    constexpr void Unset(Integer flags) { Set(flags, false); }
+    constexpr void Unset(Enum value) { Set(value, false); }
 
-    constexpr void Unset(const Enum value)
-    {
-        Set(value, false);
-    }
+    constexpr void SetBit(unsigned bit, bool enabled = true) { Set(Integer{1} << static_cast<Integer>(bit), enabled); }
+    constexpr void UnsetBit(unsigned bit) { SetBit(bit, false); }
     /// @}
 
     /// Return underlying integer (constant).

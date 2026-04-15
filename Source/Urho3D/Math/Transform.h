@@ -7,6 +7,7 @@
 #include "Urho3D/Math/Matrix3x4.h"
 #include "Urho3D/Math/Quaternion.h"
 #include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Math/MathDefs.h"
 
 namespace Urho3D
 {
@@ -66,7 +67,30 @@ struct URHO3D_API Transform
     Quaternion operator*(const Quaternion& rhs) const { return rotation_ * rhs; }
 };
 
+/// 3D transform decomposed into translation, rotation and scale components.
+/// Position uses `double` precision components.
+struct URHO3D_API DoubleTransform
+{
+    DoubleVector3 position_;
+    Quaternion rotation_;
+    Vector3 scale_{Vector3::ONE};
+
+    static const DoubleTransform Identity;
+
+    /// Interpolate between two transforms.
+    DoubleTransform Lerp(const DoubleTransform& rhs, float t) const
+    {
+        return DoubleTransform{
+            position_.Lerp(rhs.position_, t), rotation_.Slerp(rhs.rotation_, t), scale_.Lerp(rhs.scale_, t)};
+    }
+};
+
 inline Transform Lerp(const Transform& lhs, const Transform& rhs, float t)
+{
+    return lhs.Lerp(rhs, t);
+}
+
+inline DoubleTransform Lerp(const DoubleTransform& lhs, const DoubleTransform& rhs, float t)
 {
     return lhs.Lerp(rhs, t);
 }

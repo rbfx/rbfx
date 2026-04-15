@@ -196,6 +196,11 @@ void View::DrawThreadOverlays( const ThreadData& thread, const ImVec2& ul, const
         draw->AddRectFilled( ul, dr, 0x2DFF8888 );
         draw->AddRect( ul, dr, 0x4DFF8888 );
     }
+    if( m_selectedThread == thread.id )
+    {
+        draw->AddRectFilled( ul, dr, 0x2D88AA88 );
+        draw->AddRect( ul, dr, 0x4D88AA88 );
+    }
 }
 
 void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineDraw>& drawList, int _offset, uint64_t tid )
@@ -223,7 +228,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
         case TimelineDrawType::Folded:
         {
             auto& ev = *(const ZoneEvent*)v.ev.get();
-            const auto color = m_vd.dynamicColors == 2 ? 0xFF666666 : GetThreadColor( tid, v.depth );
+            const auto color = v.inheritedColor ? v.inheritedColor : ( m_vd.dynamicColors == 2 ? 0xFF666666 : GetThreadColor( tid, v.depth ) );
             const auto rend = v.rend.Val();
             const auto px0 = ( ev.Start() - vStart ) * pxns;
             const auto px1 = ( rend - vStart ) * pxns;
@@ -284,7 +289,7 @@ void View::DrawZoneList( const TimelineContext& ctx, const std::vector<TimelineD
             auto& ev = *(const ZoneEvent*)v.ev.get();
             const auto end = m_worker.GetZoneEnd( ev );
             const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
-            const auto zoneColor = GetZoneColorData( ev, tid, v.depth );
+            const auto zoneColor = GetZoneColorData( ev, tid, v.depth, v.inheritedColor );
             const char* zoneName = m_worker.GetZoneName( ev );
 
             auto tsz = ImGui::CalcTextSize( zoneName );

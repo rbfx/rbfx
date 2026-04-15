@@ -32,16 +32,31 @@ namespace Urho3D
 namespace Detail
 {
 
-ea::string NumberArrayToString(float* values, unsigned size)
+namespace
+{
+
+template <class T> ea::string NumberArrayToStringDouble(T* values, unsigned size, const char* format)
 {
     ea::string result;
     for (unsigned i = 0; i < size; ++i)
     {
         if (i > 0)
             result += " ";
-        result += ea::string(ea::string::CtorSprintf(), "%g", values[i]);
+        result += ea::string(ea::string::CtorSprintf(), format, values[i]);
     }
     return result;
+}
+
+} // namespace
+
+ea::string NumberArrayToString(float* values, unsigned size)
+{
+    return NumberArrayToStringDouble(values, size, "%.6g");
+}
+
+ea::string NumberArrayToString(double* values, unsigned size)
+{
+    return NumberArrayToStringDouble(values, size, "%.15g");
 }
 
 ea::string NumberArrayToString(int* values, unsigned size)
@@ -62,6 +77,16 @@ unsigned StringToNumberArray(const ea::string& string, float* values, unsigned m
     const unsigned size = elements.size() < maxSize ? elements.size() : maxSize;
     for (unsigned i = 0; i < size; ++i)
         values[i] = ToFloat(elements[i]);
+
+    return elements.size();
+}
+
+unsigned StringToNumberArray(const ea::string& string, double* values, unsigned maxSize)
+{
+    const ea::vector<ea::string> elements = string.split(' ');
+    const unsigned size = elements.size() < maxSize ? elements.size() : maxSize;
+    for (unsigned i = 0; i < size; ++i)
+        values[i] = ToDouble(elements[i]);
 
     return elements.size();
 }
@@ -139,7 +164,7 @@ struct ResourceRefListStringCaster
 
 void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, VariantType variantType)
 {
-    static_assert(MAX_VAR_TYPES == 30, "Update me");
+    static_assert(MAX_VAR_TYPES == 32, "Update me");
     switch (variantType)
     {
     case VAR_NONE:
@@ -161,8 +186,16 @@ void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, 
         Detail::SerializeVariantAsType<Vector2>(archive, name, value);
         return;
 
+    case VAR_DOUBLEVECTOR2:
+        Detail::SerializeVariantAsType<DoubleVector2>(archive, name, value);
+        return;
+
     case VAR_VECTOR3:
         Detail::SerializeVariantAsType<Vector3>(archive, name, value);
+        return;
+
+    case VAR_DOUBLEVECTOR3:
+        Detail::SerializeVariantAsType<DoubleVector3>(archive, name, value);
         return;
 
     case VAR_VECTOR4:

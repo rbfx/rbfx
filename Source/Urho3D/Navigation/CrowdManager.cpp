@@ -197,10 +197,10 @@ void CrowdManager::UpdateAgentVelocity(
 
 void CrowdManager::UpdateAgentPosition(CrowdAgent* agent, float timeStep, Vector3& position) const
 {
-    const CrowdAgentHeightCallback& agentCallback = agent->GetHeightCallback();
-    const CrowdAgentHeightCallback& callback = agentCallback ? agentCallback : heightCallback_;
+    const CrowdAgentPositionCallback& agentCallback = agent->GetPositionCallback();
+    const CrowdAgentPositionCallback& callback = agentCallback ? agentCallback : positionCallback_;
     if (callback)
-        position.y_ = callback(agent, timeStep, position);
+        callback(agent, timeStep, position);
 }
 
 void CrowdManager::SetCrowdTarget(const Vector3& position, Node* node)
@@ -645,7 +645,7 @@ void CrowdManager::RemoveAgent(CrowdAgent* agent)
     crowd_->removeAgent(agent->GetAgentCrowdId());
 }
 
-void CrowdManager::OnSceneSet(Scene* scene)
+void CrowdManager::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     // Subscribe to the scene subsystem update, which will trigger the crowd update step, and grab a reference
     // to the scene's NavigationMesh
@@ -657,7 +657,8 @@ void CrowdManager::OnSceneSet(Scene* scene)
             return;
         }
 
-        SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, URHO3D_HANDLER(CrowdManager, HandleSceneSubsystemUpdate));
+        SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, &CrowdManager::HandleSceneSubsystemUpdate);
+        SubscribeToEvent(scene, E_WORLDORIGINPOSTUPDATE, &CrowdManager::HandleWorldOriginPostUpdate);
 
         // Attempt to auto discover a NavigationMesh component (or its derivative) under the scene node
         if (navigationMeshId_ == 0)
@@ -675,6 +676,7 @@ void CrowdManager::OnSceneSet(Scene* scene)
     else
     {
         UnsubscribeFromEvent(E_SCENESUBSYSTEMUPDATE);
+        UnsubscribeFromEvent(E_WORLDORIGINPOSTUPDATE);
         UnsubscribeFromEvent(E_NAVIGATION_MESH_REBUILT);
         UnsubscribeFromEvent(E_COMPONENTADDED);
         UnsubscribeFromEvent(E_COMPONENTREMOVED);
@@ -703,6 +705,23 @@ dtCrowdAgent* CrowdManager::GetEditableDetourCrowdAgent(int agent)
 const dtQueryFilter* CrowdManager::GetDetourQueryFilter(unsigned queryFilterType) const
 {
     return crowd_ ? crowd_->getFilter(queryFilterType) : nullptr;
+}
+
+void CrowdManager::HandleWorldOriginPostUpdate(VariantMap& eventData)
+{
+    if (!crowd_)
+        return;
+
+    const Vector3 delta = eventData[WorldOriginPostUpdate::P_DELTA].GetIntVector3().ToVector3();
+    for (int i = 0; i < crowd_->getAgentCount(); i++)
+    {
+        const dtCrowdAgent* ag = crowd_->getAgent(i);
+        if (!ag->active)
+            continue;
+
+        auto* crowdAgent = static_cast<CrowdAgent*>(ag->params.userData);
+        crowdAgent->UpdateWorldOrigin(delta);
+    }
 }
 
 void CrowdManager::HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData)

@@ -87,8 +87,8 @@ TEST_CASE("TrackedAnimatedModel tracks bones on server")
 
     // Spend some more time and check that trace matches
     sim.SimulateTime(2.0f);
-    REQUIRE(trackedAnimatedModel->SampleTemporalBonePosition(serverTime, 1) == quad1Position);
-    REQUIRE(trackedAnimatedModel->SampleTemporalBonePosition(serverTime, 2) == quad2Position);
+    REQUIRE(trackedAnimatedModel->SampleTemporalBonePosition(serverTime, 1).Cast<Vector3>() == quad1Position);
+    REQUIRE(trackedAnimatedModel->SampleTemporalBonePosition(serverTime, 2).Cast<Vector3>() == quad2Position);
     REQUIRE(trackedAnimatedModel->SampleTemporalBoneRotation(serverTime, 1) == quad1Rotation);
     REQUIRE(trackedAnimatedModel->SampleTemporalBoneRotation(serverTime, 2) == quad2Rotation);
 }

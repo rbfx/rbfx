@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -240,6 +240,11 @@ namespace embree
   template<typename T>
     __forceinline bool isvalid( const LBBox<T>& v ) {
     return isvalid(v.bounds0) && isvalid(v.bounds1);
+  }
+
+  template<typename T>
+    __forceinline bool isvalid_non_empty( const LBBox<T>& v ) {
+    return isvalid_non_empty(v.bounds0) && isvalid_non_empty(v.bounds1);
   }
   
   template<typename T>

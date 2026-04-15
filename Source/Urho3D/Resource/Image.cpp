@@ -177,8 +177,9 @@ bool Image::BeginLoad(Deserializer& source)
 
         // Calculate the size of the data
         const IntVector3 dimensions = ToIntVector3(ddsd.dwWidth_, ddsd.dwHeight_, ddsd.dwDepth_);
+        const unsigned numLevels = ea::max(1u, ddsd.dwMipMapCount_);
         unsigned dataSize = 0;
-        for (unsigned level = 0; level < ddsd.dwMipMapCount_; ++level)
+        for (unsigned level = 0; level < numLevels; ++level)
             dataSize += GetMipLevelSizeInBytes(compressedFormat_, dimensions, level);
 
         // Do not use a shared ptr here, in case nothing is refcounting the image outside this function.
@@ -196,7 +197,7 @@ bool Image::BeginLoad(Deserializer& source)
             currentImage->height_ = ddsd.dwHeight_;
             currentImage->depth_ = ddsd.dwDepth_;
 
-            currentImage->numCompressedLevels_ = ddsd.dwMipMapCount_;
+            currentImage->numCompressedLevels_ = numLevels;
             if (!currentImage->numCompressedLevels_)
                 currentImage->numCompressedLevels_ = 1;
 
@@ -578,7 +579,7 @@ bool Image::BeginLoad(Deserializer& source)
 
         memset(data.get(), 0, sizeof(uint8_t) * dataSize);
         source.Seek(0);
-        source.Read(data.get(), dataSize);
+        source.Read(data.get(), static_cast<unsigned>(dataSize));
 
         WebPBitstreamFeatures features;
 
@@ -1295,7 +1296,7 @@ bool Image::SaveWEBP(const ea::string& fileName, float compression /* = 0.0f */)
     }
 
     WebPPictureFree(&pic);
-    outFile.Write(wrt.mem, wrt.size);
+    outFile.Write(wrt.mem, static_cast<unsigned>(wrt.size));
     WebPMemoryWriterClear(&wrt);
 
     return true;
@@ -1453,6 +1454,10 @@ SharedPtr<Image> Image::GetNextLevel() const
         URHO3D_LOGERROR("Illegal number of image components for mip level generation");
         return SharedPtr<Image>();
     }
+
+    // No next level for 1x1 (or 1x1x1) images
+    if (width_ <= 1 && height_ <= 1 && depth_ <= 1)
+        return SharedPtr<Image>();
 
     if (nextLevel_)
         return nextLevel_;

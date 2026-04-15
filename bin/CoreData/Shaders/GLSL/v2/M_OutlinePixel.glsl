@@ -2,6 +2,7 @@
 #define URHO3D_CUSTOM_LIGHT_UNIFORMS
 #define URHO3D_CUSTOM_MATERIAL_UNIFORMS
 #define URHO3D_IGNORE_VERTEX_COLOR
+#define URHO3D_CUSTOM_FRAME_UNIFORMS
 
 #include "_Config.glsl"
 #include "_Uniforms.glsl"

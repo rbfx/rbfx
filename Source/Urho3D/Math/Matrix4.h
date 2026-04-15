@@ -632,6 +632,9 @@ public:
     /// Return decomposition to translation, rotation and scale.
     void Decompose(Vector3& translation, Quaternion& rotation, Vector3& scale) const;
 
+    /// Return determinant.
+    float Determinant() const;
+
     /// Return inverse.
     Matrix4 Inverse() const;
 

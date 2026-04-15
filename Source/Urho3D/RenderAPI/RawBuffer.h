@@ -28,12 +28,15 @@ struct RawBufferParams
 };
 
 /// Common class for buffer on GPU and/or CPU.
-class URHO3D_API RawBuffer : public Object, public DeviceObject
+class URHO3D_API RawBuffer
+    : public Object
+    , public DeviceObject
 {
     URHO3D_OBJECT(RawBuffer, Object);
 
 public:
-    RawBuffer(Context* context, const RawBufferParams& params, const void* data = nullptr);
+    RawBuffer(Context* context, const RawBufferParams& params, const void* data = nullptr,
+        DeviceObjectFlags flags = DeviceObjectFlag::None);
     ~RawBuffer() override;
 
     /// Implement DeviceObject.
@@ -74,7 +77,7 @@ public:
     /// @}
 
 protected:
-    explicit RawBuffer(Context* context);
+    explicit RawBuffer(Context* context, DeviceObjectFlags flags = DeviceObjectFlag::None);
     /// Create buffer. If data is provided, it should contain exactly `size` bytes.
     bool Create(const RawBufferParams& params, const void* data = nullptr);
 

@@ -35,8 +35,8 @@
 namespace Urho3D
 {
 
-IndexBuffer::IndexBuffer(Context* context)
-    : RawBuffer(context)
+IndexBuffer::IndexBuffer(Context* context, DeviceObjectFlags flags)
+    : RawBuffer(context, flags)
 {
 }
 
@@ -163,20 +163,32 @@ void IndexBuffer::UnpackIndexData(const void* source, bool largeIndices, unsigne
     }
 }
 
-void IndexBuffer::PackIndexData(const unsigned source[], void* dest, bool largeIndices, unsigned start, unsigned count)
+void IndexBuffer::PackIndexData(
+    const unsigned source[], void* dest, bool largeIndices, unsigned start, unsigned count, unsigned offset)
 {
     const unsigned stride = largeIndices ? 4 : 2;
     unsigned char* destBytes = reinterpret_cast<unsigned char*>(dest) + start * stride;
 
     if (largeIndices)
     {
-        memcpy(destBytes, source, count * stride);
+        if (offset == 0)
+        {
+            memcpy(destBytes, source, count * stride);
+        }
+        else
+        {
+            for (unsigned i = 0; i < count; ++i)
+            {
+                const unsigned index = source[i] + offset;
+                memcpy(&destBytes[i * stride], &index, sizeof(index));
+            }
+        }
     }
     else
     {
         for (unsigned i = 0; i < count; ++i)
         {
-            const unsigned short index = static_cast<unsigned short>(source[i]);
+            const unsigned short index = static_cast<unsigned short>(source[i] + offset);
             memcpy(&destBytes[i * stride], &index, sizeof(index));
         }
     }

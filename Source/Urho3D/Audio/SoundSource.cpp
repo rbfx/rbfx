@@ -436,7 +436,7 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
                 break;
             case SPK_SURROUND_5_1:
                 if (lowFrequency_)
-                    MixMonoToMonoIP(sound, dest, samples, mixRate, SOUND_SOURCE_LOW_FREQ_CHANNEL[mode], 6);
+                    MixMonoToMonoIP(sound, dest, samples, mixRate, effectiveFrequency, SOUND_SOURCE_LOW_FREQ_CHANNEL[mode], 6);
                 else
                     MixMonoToSurroundIP(sound, dest, samples, mixRate, effectiveFrequency, mode);
                 break;
@@ -1890,14 +1890,14 @@ void SoundSource::MixNull(float timeStep, float effectiveFrequency)
 
 float SoundSource::GetEffectiveTimeScale() const
 {
+    if (ignoreSceneTimeScale_)
+        return 1.0f;
+
     if (!node_ || !node_->GetScene())
         return 0.0f;
 
     if (!IsEnabledEffective())
         return 0.0f;
-
-    if (ignoreSceneTimeScale_)
-        return 1.0f;
 
     return node_->GetScene()->GetEffectiveTimeScale();
 }

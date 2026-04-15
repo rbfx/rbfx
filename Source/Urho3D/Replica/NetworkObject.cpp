@@ -109,6 +109,13 @@ NetworkObject* NetworkObject::GetOtherNetworkObject(NetworkId networkId) const
     return GetReplicationManager() ? GetReplicationManager()->GetNetworkObject(networkId) : nullptr;
 }
 
+ea::optional<float> NetworkObject::CalculateDistanceForFiltering(NetworkObject* otherNetworkObject)
+{
+    const Vector3 thisPosition = GetNode()->GetWorldPosition();
+    const Vector3 otherPosition = otherNetworkObject->GetNode()->GetWorldPosition();
+    return (thisPosition - otherPosition).Length();
+}
+
 void NetworkObject::SetParentNetworkObject(NetworkId parentNetworkId)
 {
     if (parentNetworkId != NetworkId::None)

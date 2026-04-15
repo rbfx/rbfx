@@ -45,12 +45,14 @@ void SceneSelectionRenderer::Settings::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "DirectSelectionColor", directSelectionColor_, Settings{}.directSelectionColor_);
     SerializeOptionalValue(archive, "IndirectSelectionColor", indirectSelectionColor_, Settings{}.indirectSelectionColor_);
+    SerializeOptionalValue(archive, "DebugGeometryDepthTest", debugGeometryDepthTest_, Settings{}.debugGeometryDepthTest_);
 }
 
 void SceneSelectionRenderer::Settings::RenderSettings()
 {
     ui::ColorEdit3("Direct Selection", &directSelectionColor_.r_);
     ui::ColorEdit3("Indirect Selection", &indirectSelectionColor_.r_);
+    ui::Checkbox("Depth Test for Debug Geometry", &debugGeometryDepthTest_);
 }
 
 SceneSelectionRenderer::SceneSelectionRenderer(SceneViewTab* owner, SettingsPage* settings)
@@ -202,6 +204,13 @@ void SceneSelectionRenderer::AddNodeChildrenDrawablesToGroup(const Node* node, O
     }
 }
 
+bool SceneSelectionRenderer::NeedDepthTest(Component* component) const
+{
+    // TODO: Customize per component type
+    const Settings& cfg = settings_->GetValues();
+    return cfg.debugGeometryDepthTest_;
+}
+
 void SceneSelectionRenderer::DrawNodeSelection(Scene* scene, Node* node, bool recursive)
 {
     for (Component* component : node->GetComponents())
@@ -219,7 +228,7 @@ void SceneSelectionRenderer::DrawComponentSelection(Scene* scene, Component* com
     if (!drawDebugGeometry_)
         return;
     auto debugRenderer = scene->GetComponent<DebugRenderer>();
-    component->DrawDebugGeometry(debugRenderer, true);
+    component->DrawDebugGeometry(debugRenderer, NeedDepthTest(component));
 }
 
 }

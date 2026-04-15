@@ -1,7 +1,49 @@
 @PACKAGE_INIT@
 
-# TODO: Finding threads should not be necessary here.
 include(CMakeFindDependencyMacro)
-find_dependency(Threads)
+
+# Find required dependencies
+find_dependency(Threads REQUIRED)
+
+# If built with external ThirdParty package, find it
+if (@Urho3DThirdParty_FOUND@)
+    find_dependency(Urho3DThirdParty @URHO3D_THIRDPARTY_VERSION@ EXACT)
+endif()
+find_package(OpenGL QUIET)
+find_package(TBB QUIET)
+find_package(EGL QUIET)
+find_package(Vulkan QUIET)
+if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
+    find_package(X11 REQUIRED)
+endif ()
 
 include("${CMAKE_CURRENT_LIST_DIR}/Urho3D.cmake")
+
+set(Urho3D_FOUND TRUE)
+
+# Export platform detection variables
+set(PLATFORM_WIN32 @PLATFORM_WIN32@ CACHE INTERNAL "")
+set(PLATFORM_UNIVERSAL_WINDOWS @PLATFORM_UNIVERSAL_WINDOWS@ CACHE INTERNAL "")
+set(PLATFORM_LINUX @PLATFORM_LINUX@ CACHE INTERNAL "")
+set(PLATFORM_ANDROID @PLATFORM_ANDROID@ CACHE INTERNAL "")
+set(PLATFORM_APPLE @PLATFORM_APPLE@ CACHE INTERNAL "")
+set(PLATFORM_MACOS @PLATFORM_MACOS@ CACHE INTERNAL "")
+set(PLATFORM_IOS @PLATFORM_IOS@ CACHE INTERNAL "")
+set(PLATFORM_TVOS @PLATFORM_TVOS@ CACHE INTERNAL "")
+set(PLATFORM_EMSCRIPTEN @PLATFORM_EMSCRIPTEN@ CACHE INTERNAL "")
+
+# Export graphics backend support variables
+set(D3D11_SUPPORTED @D3D11_SUPPORTED@ CACHE INTERNAL "D3D11 is supported")
+set(D3D12_SUPPORTED @D3D12_SUPPORTED@ CACHE INTERNAL "D3D12 is supported")
+set(GL_SUPPORTED @GL_SUPPORTED@ CACHE INTERNAL "OpenGL is supported")
+set(GLES_SUPPORTED @GLES_SUPPORTED@ CACHE INTERNAL "OpenGL ES is supported")
+set(VULKAN_SUPPORTED @VULKAN_SUPPORTED@ CACHE INTERNAL "Vulkan is supported")
+set(METAL_SUPPORTED @METAL_SUPPORTED@ CACHE INTERNAL "Metal is supported")
+set(WEBGPU_SUPPORTED @WEBGPU_SUPPORTED@ CACHE INTERNAL "WebGPU is supported")
+
+# Provide path to package root
+set(Urho3D_PACKAGE_ROOT "${PACKAGE_PREFIX_DIR}")
+set(Urho3D_IS_SDK ON)
+
+list(APPEND CMAKE_MODULE_PATH "${PACKAGE_PREFIX_DIR}/share/Urho3D/CMake/Modules")
+include(UrhoCommon)

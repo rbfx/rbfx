@@ -67,7 +67,6 @@
 
 
 /* First part of user prologue.  */
-#line 25 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
 
 #define yylex yylex
 
@@ -1584,7 +1583,6 @@ static String *add_qualifier_to_declarator(SwigType *type, SwigType *qualifier) 
 }
 
 
-#line 1588 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -4682,7 +4680,6 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* program: interface  */
-#line 1713 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             {
                    if (!classes) classes = NewHash();
 		   Setattr((yyvsp[0].node),"classes",classes); 
@@ -4695,60 +4692,46 @@ yyreduce:
 		   Setattr((yyvsp[0].node),"module",module_node);
 	           top = (yyvsp[0].node);
                }
-#line 4699 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 3: /* program: PARSETYPE parm SEMI  */
-#line 1725 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      {
                  top = Copy(Getattr((yyvsp[-1].p),"type"));
 		 Delete((yyvsp[-1].p));
                }
-#line 4708 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 4: /* program: PARSETYPE error  */
-#line 1729 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
                  top = 0;
                }
-#line 4716 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 5: /* program: PARSEPARM parm SEMI  */
-#line 1732 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      {
                  top = (yyvsp[-1].p);
                }
-#line 4724 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 6: /* program: PARSEPARM error  */
-#line 1735 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
                  top = 0;
                }
-#line 4732 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 7: /* program: PARSEPARMS LPAREN parms RPAREN SEMI  */
-#line 1738 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                      {
                  top = (yyvsp[-2].pl);
                }
-#line 4740 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 8: /* program: PARSEPARMS error SEMI  */
-#line 1741 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        {
                  top = 0;
                }
-#line 4748 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 9: /* interface: interface declaration  */
-#line 1746 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        {  
                    /* add declaration to end of linked list (the declaration isn't always a single declaration, sometimes it is a linked list itself) */
                    if (currentDeclComment != NULL) {
@@ -4758,20 +4741,16 @@ yyreduce:
                    appendChild((yyvsp[-1].node),(yyvsp[0].node));
                    (yyval.node) = (yyvsp[-1].node);
                }
-#line 4762 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 10: /* interface: interface DOXYGENSTRING  */
-#line 1755 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          {
                    currentDeclComment = (yyvsp[0].str); 
                    (yyval.node) = (yyvsp[-1].node);
                }
-#line 4771 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 11: /* interface: interface DOXYGENPOSTSTRING  */
-#line 1759 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                              {
                    Node *node = lastChild((yyvsp[-1].node));
                    if (node) {
@@ -4779,43 +4758,31 @@ yyreduce:
                    }
                    (yyval.node) = (yyvsp[-1].node);
                }
-#line 4783 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 12: /* interface: empty  */
-#line 1766 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
                    (yyval.node) = new_node("top");
                }
-#line 4791 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 13: /* declaration: swig_directive  */
-#line 1771 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 { (yyval.node) = (yyvsp[0].node); }
-#line 4797 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 14: /* declaration: c_declaration  */
-#line 1772 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                { (yyval.node) = (yyvsp[0].node); }
-#line 4803 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 15: /* declaration: cpp_declaration  */
-#line 1773 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { (yyval.node) = (yyvsp[0].node); }
-#line 4809 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 16: /* declaration: SEMI  */
-#line 1774 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                       { (yyval.node) = 0; }
-#line 4815 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 17: /* declaration: error  */
-#line 1775 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
                   (yyval.node) = 0;
 		  if (cparse_unknown_directive) {
@@ -4825,157 +4792,109 @@ yyreduce:
 		  }
 		  exit(1);
                }
-#line 4829 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 18: /* declaration: c_constructor_decl  */
-#line 1785 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { 
                   if ((yyval.node)) {
    		      add_symbols((yyval.node));
                   }
                   (yyval.node) = (yyvsp[0].node); 
 	       }
-#line 4840 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 19: /* declaration: error CONVERSIONOPERATOR  */
-#line 1801 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                           {
                   (yyval.node) = 0;
                   skip_decl();
                }
-#line 4849 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 20: /* swig_directive: extend_directive  */
-#line 1811 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 4855 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 21: /* swig_directive: apply_directive  */
-#line 1812 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { (yyval.node) = (yyvsp[0].node); }
-#line 4861 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 22: /* swig_directive: clear_directive  */
-#line 1813 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { (yyval.node) = (yyvsp[0].node); }
-#line 4867 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 23: /* swig_directive: constant_directive  */
-#line 1814 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { (yyval.node) = (yyvsp[0].node); }
-#line 4873 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 24: /* swig_directive: echo_directive  */
-#line 1815 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 { (yyval.node) = (yyvsp[0].node); }
-#line 4879 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 25: /* swig_directive: except_directive  */
-#line 1816 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 4885 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 26: /* swig_directive: fragment_directive  */
-#line 1817 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { (yyval.node) = (yyvsp[0].node); }
-#line 4891 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 27: /* swig_directive: include_directive  */
-#line 1818 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    { (yyval.node) = (yyvsp[0].node); }
-#line 4897 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 28: /* swig_directive: inline_directive  */
-#line 1819 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 4903 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 29: /* swig_directive: insert_directive  */
-#line 1820 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 4909 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 30: /* swig_directive: module_directive  */
-#line 1821 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 4915 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 31: /* swig_directive: name_directive  */
-#line 1822 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 { (yyval.node) = (yyvsp[0].node); }
-#line 4921 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 32: /* swig_directive: native_directive  */
-#line 1823 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 4927 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 33: /* swig_directive: pragma_directive  */
-#line 1824 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 4933 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 34: /* swig_directive: rename_directive  */
-#line 1825 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 4939 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 35: /* swig_directive: feature_directive  */
-#line 1826 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    { (yyval.node) = (yyvsp[0].node); }
-#line 4945 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 36: /* swig_directive: varargs_directive  */
-#line 1827 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    { (yyval.node) = (yyvsp[0].node); }
-#line 4951 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 37: /* swig_directive: typemap_directive  */
-#line 1828 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    { (yyval.node) = (yyvsp[0].node); }
-#line 4957 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 38: /* swig_directive: types_directive  */
-#line 1829 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 4963 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 39: /* swig_directive: template_directive  */
-#line 1830 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { (yyval.node) = (yyvsp[0].node); }
-#line 4969 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 40: /* swig_directive: warn_directive  */
-#line 1831 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 { (yyval.node) = (yyvsp[0].node); }
-#line 4975 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 41: /* $@1: %empty  */
-#line 1838 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                              {
                Node *cls;
 	       String *clsname;
@@ -5017,11 +4936,9 @@ yyreduce:
 	       Namespaceprefix= Swig_symbol_qualifiedscopename(0);
 	       Delete(clsname);
 	     }
-#line 5021 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 42: /* extend_directive: EXTEND options classkeyopt idcolon LBRACE $@1 cpp_members RBRACE  */
-#line 1878 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
                String *clsname;
 	       extendmode = 0;
@@ -5058,30 +4975,24 @@ yyreduce:
 	       (yyval.node) = 0;
 
 	     }
-#line 5062 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 43: /* apply_directive: APPLY typemap_parm LBRACE tm_list RBRACE  */
-#line 1920 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                            {
                     (yyval.node) = new_node("apply");
                     Setattr((yyval.node),"pattern",Getattr((yyvsp[-3].p),"pattern"));
 		    appendChild((yyval.node),(yyvsp[-1].p));
                }
-#line 5072 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 44: /* clear_directive: CLEAR tm_list SEMI  */
-#line 1930 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      {
 		 (yyval.node) = new_node("clear");
 		 appendChild((yyval.node),(yyvsp[-1].p));
                }
-#line 5081 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 45: /* constant_directive: CONSTANT identifier EQUAL definetype SEMI  */
-#line 1941 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                 {
 		   if (((yyvsp[-1].dtype).type != T_ERROR) && ((yyvsp[-1].dtype).type != T_SYMBOL)) {
 		     SwigType *type = NewSwigType((yyvsp[-1].dtype).type);
@@ -5102,11 +5013,9 @@ yyreduce:
 		   }
 
 	       }
-#line 5106 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 46: /* constant_directive: CONSTANT type declarator def_args SEMI  */
-#line 1961 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                         {
 		 if (((yyvsp[-1].dtype).type != T_ERROR) && ((yyvsp[-1].dtype).type != T_SYMBOL)) {
 		   SwigType_push((yyvsp[-3].type),(yyvsp[-2].decl).type);
@@ -5129,11 +5038,9 @@ yyreduce:
 		   (yyval.node) = 0;
 		 }
                }
-#line 5133 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 47: /* constant_directive: CONSTANT type direct_declarator LPAREN parms RPAREN cv_ref_qualifier def_args SEMI  */
-#line 1985 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                                     {
 		 if (((yyvsp[-1].dtype).type != T_ERROR) && ((yyvsp[-1].dtype).type != T_SYMBOL)) {
 		   SwigType_add_function((yyvsp[-7].type), (yyvsp[-4].pl));
@@ -5158,20 +5065,16 @@ yyreduce:
 		   (yyval.node) = 0;
 		 }
 	       }
-#line 5162 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 48: /* constant_directive: CONSTANT error SEMI  */
-#line 2009 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      {
 		 Swig_warning(WARN_PARSE_BAD_VALUE,cparse_file,cparse_line,"Bad constant value (ignored).\n");
 		 (yyval.node) = 0;
 	       }
-#line 5171 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 49: /* echo_directive: ECHO HBLOCK  */
-#line 2020 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              {
 		 char temp[64];
 		 Replace((yyvsp[0].str),"$file",cparse_file, DOH_REPLACE_ANY);
@@ -5181,11 +5084,9 @@ yyreduce:
 		 Delete((yyvsp[0].str));
                  (yyval.node) = 0;
 	       }
-#line 5185 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 50: /* echo_directive: ECHO string  */
-#line 2029 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              {
 		 char temp[64];
 		 String *s = (yyvsp[0].str);
@@ -5196,76 +5097,60 @@ yyreduce:
 		 Delete(s);
                  (yyval.node) = 0;
                }
-#line 5200 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 51: /* except_directive: EXCEPT LPAREN identifier RPAREN LBRACE  */
-#line 2048 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                           {
                     skip_balanced('{','}');
 		    (yyval.node) = 0;
 		    Swig_warning(WARN_DEPRECATED_EXCEPT,cparse_file, cparse_line, "%%except is deprecated.  Use %%exception instead.\n");
 	       }
-#line 5210 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 52: /* except_directive: EXCEPT LBRACE  */
-#line 2054 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {
                     skip_balanced('{','}');
 		    (yyval.node) = 0;
 		    Swig_warning(WARN_DEPRECATED_EXCEPT,cparse_file, cparse_line, "%%except is deprecated.  Use %%exception instead.\n");
                }
-#line 5220 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 53: /* except_directive: EXCEPT LPAREN identifier RPAREN SEMI  */
-#line 2060 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                       {
 		 (yyval.node) = 0;
 		 Swig_warning(WARN_DEPRECATED_EXCEPT,cparse_file, cparse_line, "%%except is deprecated.  Use %%exception instead.\n");
                }
-#line 5229 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 54: /* except_directive: EXCEPT SEMI  */
-#line 2065 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              {
 		 (yyval.node) = 0;
 		 Swig_warning(WARN_DEPRECATED_EXCEPT,cparse_file, cparse_line, "%%except is deprecated.  Use %%exception instead.\n");
 	       }
-#line 5238 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 55: /* stringtype: string LBRACE parm RBRACE  */
-#line 2072 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                           {		 
                  (yyval.node) = NewHash();
                  Setattr((yyval.node),"value",(yyvsp[-3].str));
 		 Setattr((yyval.node),"type",Getattr((yyvsp[-1].p),"type"));
                }
-#line 5248 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 56: /* fname: string  */
-#line 2079 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
                  (yyval.node) = NewHash();
                  Setattr((yyval.node),"value",(yyvsp[0].str));
               }
-#line 5257 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 57: /* fname: stringtype  */
-#line 2083 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            {
                 (yyval.node) = (yyvsp[0].node);
               }
-#line 5265 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 58: /* fragment_directive: FRAGMENT LPAREN fname COMMA kwargs RPAREN HBLOCK  */
-#line 2096 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                      {
                    Hash *p = (yyvsp[-2].node);
 		   (yyval.node) = new_node("fragment");
@@ -5275,11 +5160,9 @@ yyreduce:
 		   Setattr((yyval.node),"kwargs",nextSibling(p));
 		   Setattr((yyval.node),"code",(yyvsp[0].str));
                  }
-#line 5279 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 59: /* fragment_directive: FRAGMENT LPAREN fname COMMA kwargs RPAREN LBRACE  */
-#line 2105 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                     {
 		   Hash *p = (yyvsp[-2].node);
 		   String *code;
@@ -5295,22 +5178,18 @@ yyreduce:
 		   Setattr((yyval.node),"code",code);
 		   Delete(code);
                  }
-#line 5299 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 60: /* fragment_directive: FRAGMENT LPAREN fname RPAREN SEMI  */
-#line 2120 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                      {
 		   (yyval.node) = new_node("fragment");
 		   Setattr((yyval.node),"value",Getattr((yyvsp[-2].node),"value"));
 		   Setattr((yyval.node),"type",Getattr((yyvsp[-2].node),"type"));
 		   Setattr((yyval.node),"emitonly","1");
 		 }
-#line 5310 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 61: /* $@2: %empty  */
-#line 2133 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                         {
                      (yyvsp[-3].loc).filename = Copy(cparse_file);
 		     (yyvsp[-3].loc).line = cparse_line;
@@ -5321,11 +5200,9 @@ yyreduce:
 		         scanner_set_main_input_file(NewString(maininput));
 		     }
                }
-#line 5325 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 62: /* include_directive: includetype options string BEGINFILE $@2 interface ENDOFFILE  */
-#line 2142 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      {
                      String *mname = 0;
                      (yyval.node) = (yyvsp[-1].node);
@@ -5371,23 +5248,17 @@ yyreduce:
 		     }
 		     Setattr((yyval.node),"options",(yyvsp[-5].node));
                }
-#line 5375 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 63: /* includetype: INCLUDE  */
-#line 2189 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          { (yyval.loc).type = "include"; }
-#line 5381 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 64: /* includetype: IMPORT  */
-#line 2190 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          { (yyval.loc).type = "import"; ++import_mode;}
-#line 5387 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 65: /* inline_directive: INLINE HBLOCK  */
-#line 2197 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
                  String *cpps;
 		 if (Namespaceprefix) {
@@ -5407,11 +5278,9 @@ yyreduce:
 		 }
 		 
 	       }
-#line 5411 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 66: /* inline_directive: INLINE LBRACE  */
-#line 2216 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {
                  String *cpps;
 		 int start_line = cparse_line;
@@ -5433,20 +5302,16 @@ yyreduce:
 		   Delete(cpps);
 		 }
                }
-#line 5437 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 67: /* insert_directive: HBLOCK  */
-#line 2247 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
                  (yyval.node) = new_node("insert");
 		 Setattr((yyval.node),"code",(yyvsp[0].str));
 	       }
-#line 5446 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 68: /* insert_directive: INSERT LPAREN idstring options_ex RPAREN string  */
-#line 2251 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                  {
 		 String *code = NewStringEmpty();
 		 (yyval.node) = new_node("insert");
@@ -5458,22 +5323,18 @@ yyreduce:
 		   (yyval.node) = 0;
 		 } 
                }
-#line 5462 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 69: /* insert_directive: INSERT LPAREN idstring options_ex RPAREN HBLOCK  */
-#line 2262 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                  {
 		 (yyval.node) = new_node("insert");
 		 Setattr((yyval.node),"section",(yyvsp[-3].id));
 		 Setattr((yyval.node),"options",(yyvsp[-2].node));
 		 Setattr((yyval.node),"code",(yyvsp[0].str));
                }
-#line 5473 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 70: /* insert_directive: INSERT LPAREN idstring options_ex RPAREN LBRACE  */
-#line 2268 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                  {
 		 String *code;
                  skip_balanced('{','}');
@@ -5486,11 +5347,9 @@ yyreduce:
 		 Setattr((yyval.node),"code", code);
 		 Delete(code);
 	       }
-#line 5490 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 71: /* module_directive: MODULE options idstring  */
-#line 2287 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                           {
                  (yyval.node) = new_node("module");
 		 if ((yyvsp[-1].node)) {
@@ -5527,43 +5386,35 @@ yyreduce:
 		 }		 
 		 if (!module_node) module_node = (yyval.node);
 	       }
-#line 5531 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 72: /* name_directive: NAME LPAREN idstring RPAREN  */
-#line 2330 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                              {
                  Swig_warning(WARN_DEPRECATED_NAME,cparse_file,cparse_line, "%%name is deprecated.  Use %%rename instead.\n");
 		 Delete(yyrename);
                  yyrename = NewString((yyvsp[-1].id));
 		 (yyval.node) = 0;
                }
-#line 5542 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 73: /* name_directive: NAME LPAREN RPAREN  */
-#line 2336 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     {
 		 Swig_warning(WARN_DEPRECATED_NAME,cparse_file,cparse_line, "%%name is deprecated.  Use %%rename instead.\n");
 		 (yyval.node) = 0;
 		 Swig_error(cparse_file,cparse_line,"Missing argument to %%name directive.\n");
 	       }
-#line 5552 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 74: /* native_directive: NATIVE LPAREN identifier RPAREN storage_class identifier SEMI  */
-#line 2349 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                  {
                  (yyval.node) = new_node("native");
 		 Setattr((yyval.node),"name",(yyvsp[-4].id));
 		 Setattr((yyval.node),"wrap:name",(yyvsp[-1].id));
 	         add_symbols((yyval.node));
 	       }
-#line 5563 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 75: /* native_directive: NATIVE LPAREN identifier RPAREN storage_class type declarator SEMI  */
-#line 2355 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                     {
 		 if (!SwigType_isfunction((yyvsp[-1].decl).type)) {
 		   Swig_error(cparse_file,cparse_line,"%%native declaration '%s' is not a function.\n", (yyvsp[-1].decl).id);
@@ -5581,56 +5432,42 @@ yyreduce:
 		 }
 	         add_symbols((yyval.node));
 	       }
-#line 5585 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 76: /* pragma_directive: PRAGMA pragma_lang identifier EQUAL pragma_arg  */
-#line 2381 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                   {
                  (yyval.node) = new_node("pragma");
 		 Setattr((yyval.node),"lang",(yyvsp[-3].id));
 		 Setattr((yyval.node),"name",(yyvsp[-2].id));
 		 Setattr((yyval.node),"value",(yyvsp[0].str));
 	       }
-#line 5596 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 77: /* pragma_directive: PRAGMA pragma_lang identifier  */
-#line 2387 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                               {
 		(yyval.node) = new_node("pragma");
 		Setattr((yyval.node),"lang",(yyvsp[-1].id));
 		Setattr((yyval.node),"name",(yyvsp[0].id));
 	      }
-#line 5606 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 78: /* pragma_arg: string  */
-#line 2394 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.str) = (yyvsp[0].str); }
-#line 5612 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 79: /* pragma_arg: HBLOCK  */
-#line 2395 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.str) = (yyvsp[0].str); }
-#line 5618 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 80: /* pragma_lang: LPAREN identifier RPAREN  */
-#line 2398 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          { (yyval.id) = (yyvsp[-1].id); }
-#line 5624 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 81: /* pragma_lang: empty  */
-#line 2399 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                       { (yyval.id) = (char *) "swig"; }
-#line 5630 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 82: /* rename_directive: rename_namewarn declarator idstring SEMI  */
-#line 2406 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                             {
                 SwigType *t = (yyvsp[-2].decl).type;
 		Hash *kws = NewHash();
@@ -5677,11 +5514,9 @@ yyreduce:
                 (yyval.node) = 0;
 		scanner_clear_rename();
               }
-#line 5681 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 83: /* rename_directive: rename_namewarn LPAREN kwargs RPAREN declarator cpp_const SEMI  */
-#line 2452 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                {
 		String *fixname;
 		Hash *kws = (yyvsp[-4].node);
@@ -5728,11 +5563,9 @@ yyreduce:
                 (yyval.node) = 0;
 		scanner_clear_rename();
               }
-#line 5732 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 84: /* rename_directive: rename_namewarn LPAREN kwargs RPAREN string SEMI  */
-#line 2498 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                  {
 		if ((yyvsp[-5].intvalue)) {
 		  Swig_name_rename_add(Namespaceprefix,(yyvsp[-1].str),0,(yyvsp[-3].node),0);
@@ -5742,154 +5575,122 @@ yyreduce:
 		(yyval.node) = 0;
 		scanner_clear_rename();
               }
-#line 5746 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 85: /* rename_namewarn: RENAME  */
-#line 2509 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
 		    (yyval.intvalue) = 1;
                 }
-#line 5754 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 86: /* rename_namewarn: NAMEWARN  */
-#line 2512 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            {
                     (yyval.intvalue) = 0;
                 }
-#line 5762 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 87: /* feature_directive: FEATURE LPAREN idstring RPAREN declarator cpp_const stringbracesemi  */
-#line 2539 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                         {
                     String *val = (yyvsp[0].str) ? NewString((yyvsp[0].str)) : NewString("1");
                     new_feature((yyvsp[-4].id), val, 0, (yyvsp[-2].decl).id, (yyvsp[-2].decl).type, (yyvsp[-2].decl).parms, (yyvsp[-1].dtype).qualifier);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5773 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 88: /* feature_directive: FEATURE LPAREN idstring COMMA stringnum RPAREN declarator cpp_const SEMI  */
-#line 2545 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                              {
                     String *val = Len((yyvsp[-4].str)) ? (yyvsp[-4].str) : 0;
                     new_feature((yyvsp[-6].id), val, 0, (yyvsp[-2].decl).id, (yyvsp[-2].decl).type, (yyvsp[-2].decl).parms, (yyvsp[-1].dtype).qualifier);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5784 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 89: /* feature_directive: FEATURE LPAREN idstring featattr RPAREN declarator cpp_const stringbracesemi  */
-#line 2551 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                                  {
                     String *val = (yyvsp[0].str) ? NewString((yyvsp[0].str)) : NewString("1");
                     new_feature((yyvsp[-5].id), val, (yyvsp[-4].node), (yyvsp[-2].decl).id, (yyvsp[-2].decl).type, (yyvsp[-2].decl).parms, (yyvsp[-1].dtype).qualifier);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5795 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 90: /* feature_directive: FEATURE LPAREN idstring COMMA stringnum featattr RPAREN declarator cpp_const SEMI  */
-#line 2557 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                                       {
                     String *val = Len((yyvsp[-5].str)) ? (yyvsp[-5].str) : 0;
                     new_feature((yyvsp[-7].id), val, (yyvsp[-4].node), (yyvsp[-2].decl).id, (yyvsp[-2].decl).type, (yyvsp[-2].decl).parms, (yyvsp[-1].dtype).qualifier);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5806 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 91: /* feature_directive: FEATURE LPAREN idstring RPAREN stringbracesemi  */
-#line 2565 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                    {
                     String *val = (yyvsp[0].str) ? NewString((yyvsp[0].str)) : NewString("1");
                     new_feature((yyvsp[-2].id), val, 0, 0, 0, 0, 0);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5817 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 92: /* feature_directive: FEATURE LPAREN idstring COMMA stringnum RPAREN SEMI  */
-#line 2571 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                         {
                     String *val = Len((yyvsp[-2].str)) ? (yyvsp[-2].str) : 0;
                     new_feature((yyvsp[-4].id), val, 0, 0, 0, 0, 0);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5828 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 93: /* feature_directive: FEATURE LPAREN idstring featattr RPAREN stringbracesemi  */
-#line 2577 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                             {
                     String *val = (yyvsp[0].str) ? NewString((yyvsp[0].str)) : NewString("1");
                     new_feature((yyvsp[-3].id), val, (yyvsp[-2].node), 0, 0, 0, 0);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5839 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 94: /* feature_directive: FEATURE LPAREN idstring COMMA stringnum featattr RPAREN SEMI  */
-#line 2583 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                  {
                     String *val = Len((yyvsp[-3].str)) ? (yyvsp[-3].str) : 0;
                     new_feature((yyvsp[-5].id), val, (yyvsp[-2].node), 0, 0, 0, 0);
                     (yyval.node) = 0;
                     scanner_clear_rename();
                   }
-#line 5850 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 95: /* stringbracesemi: stringbrace  */
-#line 2591 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { (yyval.str) = (yyvsp[0].str); }
-#line 5856 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 96: /* stringbracesemi: SEMI  */
-#line 2592 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.str) = 0; }
-#line 5862 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 97: /* stringbracesemi: PARMS LPAREN parms RPAREN SEMI  */
-#line 2593 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                  { (yyval.str) = (yyvsp[-2].pl); }
-#line 5868 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 98: /* featattr: COMMA idstring EQUAL stringnum  */
-#line 2596 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                  {
 		  (yyval.node) = NewHash();
 		  Setattr((yyval.node),"name",(yyvsp[-2].id));
 		  Setattr((yyval.node),"value",(yyvsp[0].str));
                 }
-#line 5878 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 99: /* featattr: COMMA idstring EQUAL stringnum featattr  */
-#line 2601 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                           {
 		  (yyval.node) = NewHash();
 		  Setattr((yyval.node),"name",(yyvsp[-3].id));
 		  Setattr((yyval.node),"value",(yyvsp[-1].str));
                   set_nextSibling((yyval.node),(yyvsp[0].node));
                 }
-#line 5889 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 100: /* varargs_directive: VARARGS LPAREN varargs_parms RPAREN declarator cpp_const SEMI  */
-#line 2611 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                   {
                  Parm *val;
 		 String *name;
@@ -5925,17 +5726,13 @@ yyreduce:
 		 Delete(name);
 		 (yyval.node) = 0;
               }
-#line 5929 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 101: /* varargs_parms: parms  */
-#line 2647 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { (yyval.pl) = (yyvsp[0].pl); }
-#line 5935 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 102: /* varargs_parms: NUM_INT COMMA parm  */
-#line 2648 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      { 
 		  int i;
 		  int n;
@@ -5960,11 +5757,9 @@ yyreduce:
 		    }
 		  }
                 }
-#line 5964 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 103: /* typemap_directive: TYPEMAP LPAREN typemap_type RPAREN tm_list stringbrace  */
-#line 2683 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                             {
 		   (yyval.node) = 0;
 		   if ((yyvsp[-3].tmap).method) {
@@ -5982,11 +5777,9 @@ yyreduce:
 		     appendChild((yyval.node),(yyvsp[-1].p));
 		   }
 	       }
-#line 5986 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 104: /* typemap_directive: TYPEMAP LPAREN typemap_type RPAREN tm_list SEMI  */
-#line 2700 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                  {
 		 (yyval.node) = 0;
 		 if ((yyvsp[-3].tmap).method) {
@@ -5995,11 +5788,9 @@ yyreduce:
 		   appendChild((yyval.node),(yyvsp[-1].p));
 		 }
 	       }
-#line 5999 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 105: /* typemap_directive: TYPEMAP LPAREN typemap_type RPAREN tm_list EQUAL typemap_parm SEMI  */
-#line 2708 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                     {
 		   (yyval.node) = 0;
 		   if ((yyvsp[-5].tmap).method) {
@@ -6009,11 +5800,9 @@ yyreduce:
 		     appendChild((yyval.node),(yyvsp[-3].p));
 		   }
 	       }
-#line 6013 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 106: /* typemap_type: kwargs  */
-#line 2721 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         {
 		 Hash *p;
 		 String *name;
@@ -6037,35 +5826,27 @@ yyreduce:
 		   (yyval.tmap).kwargs = p;
 		 }
                 }
-#line 6041 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 107: /* tm_list: typemap_parm tm_tail  */
-#line 2746 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                       {
                  (yyval.p) = (yyvsp[-1].p);
 		 set_nextSibling((yyval.p),(yyvsp[0].p));
 		}
-#line 6050 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 108: /* tm_tail: COMMA typemap_parm tm_tail  */
-#line 2752 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                             {
                  (yyval.p) = (yyvsp[-1].p);
 		 set_nextSibling((yyval.p),(yyvsp[0].p));
                 }
-#line 6059 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 109: /* tm_tail: empty  */
-#line 2756 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.p) = 0;}
-#line 6065 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 110: /* typemap_parm: type plain_declarator  */
-#line 2759 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        {
                   Parm *parm;
 		  SwigType_push((yyvsp[-1].type),(yyvsp[0].decl).type);
@@ -6077,43 +5858,35 @@ yyreduce:
 		  /*		  $$ = NewParmWithoutFileLineInfo($1,$2.id);
 				  Setattr($$,"parms",$2.parms); */
                 }
-#line 6081 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 111: /* typemap_parm: LPAREN parms RPAREN  */
-#line 2770 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      {
                   (yyval.p) = new_node("typemapitem");
 		  Setattr((yyval.p),"pattern",(yyvsp[-1].pl));
 		  /*		  Setattr($$,"multitype",$2); */
                }
-#line 6091 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 112: /* typemap_parm: LPAREN parms RPAREN LPAREN parms RPAREN  */
-#line 2775 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                          {
 		 (yyval.p) = new_node("typemapitem");
 		 Setattr((yyval.p),"pattern", (yyvsp[-4].pl));
 		 /*                 Setattr($$,"multitype",$2); */
 		 Setattr((yyval.p),"parms",(yyvsp[-1].pl));
                }
-#line 6102 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 113: /* types_directive: TYPES LPAREN parms RPAREN stringbracesemi  */
-#line 2788 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                             {
                    (yyval.node) = new_node("types");
 		   Setattr((yyval.node),"parms",(yyvsp[-2].pl));
                    if ((yyvsp[0].str))
 		     Setattr((yyval.node),"convcode",NewString((yyvsp[0].str)));
                }
-#line 6113 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 114: /* template_directive: SWIGTEMPLATE LPAREN idstringopt RPAREN idcolonnt LESSTHAN valparms GREATERTHAN SEMI  */
-#line 2800 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                                         {
                   Parm *p, *tp;
 		  Node *n;
@@ -6405,20 +6178,16 @@ yyreduce:
 		  Delete(Namespaceprefix);
 		  Namespaceprefix = Swig_symbol_qualifiedscopename(0);
                 }
-#line 6409 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 115: /* warn_directive: WARN string  */
-#line 3098 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              {
 		  Swig_warning(0,cparse_file, cparse_line,"%s\n", (yyvsp[0].str));
 		  (yyval.node) = 0;
                }
-#line 6418 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 116: /* c_declaration: c_decl  */
-#line 3108 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
                     (yyval.node) = (yyvsp[0].node); 
                     if ((yyval.node)) {
@@ -6426,33 +6195,25 @@ yyreduce:
                       default_arguments((yyval.node));
    	            }
                 }
-#line 6430 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 117: /* c_declaration: c_enum_decl  */
-#line 3115 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { (yyval.node) = (yyvsp[0].node); }
-#line 6436 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 118: /* c_declaration: c_enum_forward_decl  */
-#line 3116 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                       { (yyval.node) = (yyvsp[0].node); }
-#line 6442 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 119: /* $@3: %empty  */
-#line 3120 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        {
 		  if (Strcmp((yyvsp[-1].str),"C") == 0) {
 		    cparse_externc = 1;
 		  }
 		}
-#line 6452 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 120: /* c_declaration: EXTERN string LBRACE $@3 interface RBRACE  */
-#line 3124 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    {
 		  cparse_externc = 0;
 		  if (Strcmp((yyvsp[-4].str),"C") == 0) {
@@ -6474,22 +6235,18 @@ yyreduce:
 		    appendChild((yyval.node),firstChild((yyvsp[-1].node)));
 		  }
                 }
-#line 6478 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 121: /* c_declaration: cpp_lambda_decl  */
-#line 3145 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
 		  (yyval.node) = (yyvsp[0].node);
 		  SWIG_WARN_NODE_BEGIN((yyval.node));
 		  Swig_warning(WARN_CPP11_LAMBDA, cparse_file, cparse_line, "Lambda expressions and closures are not fully supported yet.\n");
 		  SWIG_WARN_NODE_END((yyval.node));
 		}
-#line 6489 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 122: /* c_declaration: USING idcolon EQUAL type plain_declarator SEMI  */
-#line 3151 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                  {
 		  /* Convert using statement to a typedef statement */
 		  (yyval.node) = new_node("cdecl");
@@ -6500,11 +6257,9 @@ yyreduce:
 		  SetFlag((yyval.node),"typealias");
 		  add_symbols((yyval.node));
 		}
-#line 6504 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 123: /* c_declaration: TEMPLATE LESSTHAN template_parms GREATERTHAN USING idcolon EQUAL type plain_declarator SEMI  */
-#line 3161 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                                               {
 		  /* Convert alias template to a "template" typedef statement */
 		  (yyval.node) = new_node("template");
@@ -6517,19 +6272,15 @@ yyreduce:
 		  SetFlag((yyval.node),"aliastemplate");
 		  add_symbols((yyval.node));
 		}
-#line 6521 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 124: /* c_declaration: cpp_static_assert  */
-#line 3173 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     {
                    (yyval.node) = (yyvsp[0].node);
                 }
-#line 6529 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 125: /* c_decl: storage_class type declarator cpp_const initializer c_decl_tail  */
-#line 3182 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                           {
 	      String *decl = (yyvsp[-3].decl).type;
               (yyval.node) = new_node("cdecl");
@@ -6608,11 +6359,9 @@ yyreduce:
 	      if ((yyvsp[-2].dtype).qualifier && (yyvsp[-5].id) && Strstr((yyvsp[-5].id), "static"))
 		Swig_error(cparse_file, cparse_line, "Static function %s cannot have a qualifier.\n", Swig_name_decl((yyval.node)));
            }
-#line 6612 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 126: /* c_decl: storage_class AUTO declarator cpp_const ARROW cpp_alternate_rettype virt_specifier_seq_opt initializer c_decl_tail  */
-#line 3262 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                                                                 {
               (yyval.node) = new_node("cdecl");
 	      if ((yyvsp[-5].dtype).qualifier) SwigType_push((yyvsp[-6].decl).type, (yyvsp[-5].dtype).qualifier);
@@ -6672,20 +6421,16 @@ yyreduce:
 	      if ((yyvsp[-5].dtype).qualifier && (yyvsp[-8].id) && Strstr((yyvsp[-8].id), "static"))
 		Swig_error(cparse_file, cparse_line, "Static function %s cannot have a qualifier.\n", Swig_name_decl((yyval.node)));
            }
-#line 6676 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 127: /* c_decl_tail: SEMI  */
-#line 3325 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                       { 
                    (yyval.node) = 0;
                    Clear(scanner_ccode); 
                }
-#line 6685 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 128: /* c_decl_tail: COMMA declarator cpp_const initializer c_decl_tail  */
-#line 3329 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                     {
 		 (yyval.node) = new_node("cdecl");
 		 if ((yyvsp[-2].dtype).qualifier) SwigType_push((yyvsp[-3].decl).type,(yyvsp[-2].dtype).qualifier);
@@ -6711,20 +6456,16 @@ yyreduce:
 		   set_nextSibling((yyval.node), (yyvsp[0].node));
 		 }
 	       }
-#line 6715 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 129: /* c_decl_tail: LBRACE  */
-#line 3354 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { 
                    skip_balanced('{','}');
                    (yyval.node) = 0;
                }
-#line 6724 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 130: /* c_decl_tail: error  */
-#line 3358 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
 		   (yyval.node) = 0;
 		   if (yychar == RPAREN) {
@@ -6734,165 +6475,123 @@ yyreduce:
 		   }
 		   exit(1);
                }
-#line 6738 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 131: /* initializer: def_args  */
-#line 3369 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
                    (yyval.dtype) = (yyvsp[0].dtype);
               }
-#line 6746 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 132: /* cpp_alternate_rettype: primitive_type  */
-#line 3374 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        { (yyval.node) = (yyvsp[0].type); }
-#line 6752 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 133: /* cpp_alternate_rettype: TYPE_BOOL  */
-#line 3375 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           { (yyval.node) = (yyvsp[0].type); }
-#line 6758 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 134: /* cpp_alternate_rettype: TYPE_VOID  */
-#line 3376 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           { (yyval.node) = (yyvsp[0].type); }
-#line 6764 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 135: /* cpp_alternate_rettype: TYPE_RAW  */
-#line 3380 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          { (yyval.node) = (yyvsp[0].type); }
-#line 6770 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 136: /* cpp_alternate_rettype: idcolon  */
-#line 3381 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { (yyval.node) = (yyvsp[0].str); }
-#line 6776 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 137: /* cpp_alternate_rettype: decltype  */
-#line 3382 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          { (yyval.node) = (yyvsp[0].type); }
-#line 6782 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 138: /* cpp_lambda_decl: storage_class AUTO idcolon EQUAL lambda_introducer LPAREN parms RPAREN cpp_const lambda_body lambda_tail  */
-#line 3393 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                                                            {
 		  (yyval.node) = new_node("lambda");
 		  Setattr((yyval.node),"name",(yyvsp[-8].str));
 		  add_symbols((yyval.node));
 	        }
-#line 6792 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 139: /* cpp_lambda_decl: storage_class AUTO idcolon EQUAL lambda_introducer LPAREN parms RPAREN cpp_const ARROW type lambda_body lambda_tail  */
-#line 3398 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                                                                       {
 		  (yyval.node) = new_node("lambda");
 		  Setattr((yyval.node),"name",(yyvsp[-10].str));
 		  add_symbols((yyval.node));
 		}
-#line 6802 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 140: /* cpp_lambda_decl: storage_class AUTO idcolon EQUAL lambda_introducer lambda_body lambda_tail  */
-#line 3403 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                              {
 		  (yyval.node) = new_node("lambda");
 		  Setattr((yyval.node),"name",(yyvsp[-4].str));
 		  add_symbols((yyval.node));
 		}
-#line 6812 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 141: /* lambda_introducer: LBRACKET  */
-#line 3410 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              {
 		  skip_balanced('[',']');
 		  (yyval.node) = 0;
 	        }
-#line 6821 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 142: /* lambda_body: LBRACE  */
-#line 3416 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                      {
 		  skip_balanced('{','}');
 		  (yyval.node) = 0;
 		}
-#line 6830 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 143: /* lambda_tail: SEMI  */
-#line 3421 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                      {
 		  (yyval.pl) = 0;
 		}
-#line 6838 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 144: /* $@4: %empty  */
-#line 3424 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
 		  skip_balanced('(',')');
 		}
-#line 6846 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 145: /* lambda_tail: LPAREN $@4 SEMI  */
-#line 3426 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
 		  (yyval.pl) = 0;
 		}
-#line 6854 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 146: /* c_enum_key: ENUM  */
-#line 3437 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                   {
 		   (yyval.node) = (char *)"enum";
 	      }
-#line 6862 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 147: /* c_enum_key: ENUM CLASS  */
-#line 3440 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            {
 		   (yyval.node) = (char *)"enum class";
 	      }
-#line 6870 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 148: /* c_enum_key: ENUM STRUCT  */
-#line 3443 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             {
 		   (yyval.node) = (char *)"enum struct";
 	      }
-#line 6878 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 149: /* c_enum_inherit: COLON type_right  */
-#line 3452 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
                    (yyval.node) = (yyvsp[0].type);
               }
-#line 6886 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 150: /* c_enum_inherit: empty  */
-#line 3455 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                       { (yyval.node) = 0; }
-#line 6892 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 151: /* c_enum_forward_decl: storage_class c_enum_key ename c_enum_inherit SEMI  */
-#line 3462 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                          {
 		   SwigType *ty = 0;
 		   int scopedenum = (yyvsp[-2].id) && !Equal((yyvsp[-3].node), "enum");
@@ -6907,11 +6606,9 @@ yyreduce:
 		   Setattr((yyval.node),"sym:weak", "1");
 		   add_symbols((yyval.node));
 	      }
-#line 6911 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 152: /* c_enum_decl: storage_class c_enum_key ename c_enum_inherit LBRACE enumlist RBRACE SEMI  */
-#line 3484 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                          {
 		  SwigType *ty = 0;
 		  int scopedenum = (yyvsp[-5].id) && !Equal((yyvsp[-6].node), "enum");
@@ -6941,11 +6638,9 @@ yyreduce:
 		    Namespaceprefix = Swig_symbol_qualifiedscopename(0);
 		  }
                }
-#line 6945 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 153: /* c_enum_decl: storage_class c_enum_key ename c_enum_inherit LBRACE enumlist RBRACE declarator cpp_const initializer c_decl_tail  */
-#line 3513 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                                                                    {
 		 Node *n;
 		 SwigType *ty = 0;
@@ -7042,11 +6737,9 @@ yyreduce:
 	         add_symbols(n);
 		 Delete(unnamed);
 	       }
-#line 7046 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 154: /* c_constructor_decl: storage_class type LPAREN parms RPAREN ctor_end  */
-#line 3611 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                      {
                    /* This is a sick hack.  If the ctor_end has parameters,
                       and the parms parameter only has 1 parameter, this
@@ -7094,47 +6787,33 @@ yyreduce:
 		      exit(1);
 		    }
                 }
-#line 7098 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 155: /* cpp_declaration: cpp_class_decl  */
-#line 3664 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {  (yyval.node) = (yyvsp[0].node); }
-#line 7104 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 156: /* cpp_declaration: cpp_forward_class_decl  */
-#line 3665 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          { (yyval.node) = (yyvsp[0].node); }
-#line 7110 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 157: /* cpp_declaration: cpp_template_decl  */
-#line 3666 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { (yyval.node) = (yyvsp[0].node); }
-#line 7116 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 158: /* cpp_declaration: cpp_using_decl  */
-#line 3667 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { (yyval.node) = (yyvsp[0].node); }
-#line 7122 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 159: /* cpp_declaration: cpp_namespace_decl  */
-#line 3668 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      { (yyval.node) = (yyvsp[0].node); }
-#line 7128 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 160: /* cpp_declaration: cpp_catch_decl  */
-#line 3669 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { (yyval.node) = 0; }
-#line 7134 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 161: /* @5: %empty  */
-#line 3674 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                {
                    String *prefix;
                    List *bases = 0;
@@ -7229,11 +6908,9 @@ yyreduce:
 		     Delete(code);
 		   }
                }
-#line 7233 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 162: /* cpp_class_decl: storage_class cpptype idcolon inherit LBRACE @5 cpp_members RBRACE cpp_opt_declarators  */
-#line 3767 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                         {
 		   Node *p;
 		   SwigType *ty;
@@ -7387,11 +7064,9 @@ yyreduce:
 		   Namespaceprefix = Swig_symbol_qualifiedscopename(0);
 		   Classprefix = currentOuterClass ? Getattr(currentOuterClass, "Classprefix") : 0;
 	       }
-#line 7391 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 163: /* @6: %empty  */
-#line 3923 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                     {
 	       String *unnamed;
 	       String *code;
@@ -7432,11 +7107,9 @@ yyreduce:
 	       Setattr((yyval.node), "code", code);
 	       Delete(code);
 	     }
-#line 7436 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 164: /* cpp_class_decl: storage_class cpptype inherit LBRACE @6 cpp_members RBRACE cpp_opt_declarators  */
-#line 3962 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                       {
 	       String *unnamed;
                List *bases = 0;
@@ -7543,17 +7216,13 @@ yyreduce:
 	       }
 	       Classprefix = currentOuterClass ? Getattr(currentOuterClass, "Classprefix") : 0;
               }
-#line 7547 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 165: /* cpp_opt_declarators: SEMI  */
-#line 4070 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             { (yyval.node) = 0; }
-#line 7553 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 166: /* cpp_opt_declarators: declarator cpp_const initializer c_decl_tail  */
-#line 4071 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                     {
                         (yyval.node) = new_node("cdecl");
                         Setattr((yyval.node),"name",(yyvsp[-3].decl).id);
@@ -7561,11 +7230,9 @@ yyreduce:
                         Setattr((yyval.node),"parms",(yyvsp[-3].decl).parms);
 			set_nextSibling((yyval.node), (yyvsp[0].node));
                     }
-#line 7565 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 167: /* cpp_forward_class_decl: storage_class cpptype idcolon SEMI  */
-#line 4083 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                             {
               if ((yyvsp[-3].id) && (Strcmp((yyvsp[-3].id),"friend") == 0)) {
 		/* Ignore */
@@ -7578,22 +7245,18 @@ yyreduce:
 		add_symbols((yyval.node));
 	      }
              }
-#line 7582 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 168: /* $@7: %empty  */
-#line 4101 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                  { 
 		    if (currentOuterClass)
 		      Setattr(currentOuterClass, "template_parameters", template_parameters);
 		    template_parameters = (yyvsp[-1].tparms); 
 		    parsing_template_declaration = 1;
 		  }
-#line 7593 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 169: /* cpp_template_decl: TEMPLATE LESSTHAN template_parms GREATERTHAN $@7 cpp_template_possible  */
-#line 4106 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                           {
 			String *tname = 0;
 			int     error = 0;
@@ -7848,77 +7511,59 @@ yyreduce:
 			  template_parameters = 0;
 			parsing_template_declaration = 0;
                 }
-#line 7852 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 170: /* cpp_template_decl: TEMPLATE cpptype idcolon  */
-#line 4362 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                            {
 		  Swig_warning(WARN_PARSE_EXPLICIT_TEMPLATE, cparse_file, cparse_line, "Explicit template instantiation ignored.\n");
                   (yyval.node) = 0; 
 		}
-#line 7861 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 171: /* cpp_template_decl: EXTERN TEMPLATE cpptype idcolon  */
-#line 4368 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                   {
 		  Swig_warning(WARN_PARSE_EXPLICIT_TEMPLATE, cparse_file, cparse_line, "Explicit template instantiation ignored.\n");
                   (yyval.node) = 0; 
                 }
-#line 7870 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 172: /* cpp_template_possible: c_decl  */
-#line 4374 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {
 		  (yyval.node) = (yyvsp[0].node);
                 }
-#line 7878 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 173: /* cpp_template_possible: cpp_class_decl  */
-#line 4377 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
                    (yyval.node) = (yyvsp[0].node);
                 }
-#line 7886 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 174: /* cpp_template_possible: cpp_constructor_decl  */
-#line 4380 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        {
                    (yyval.node) = (yyvsp[0].node);
                 }
-#line 7894 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 175: /* cpp_template_possible: cpp_template_decl  */
-#line 4383 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     {
 		  (yyval.node) = 0;
                 }
-#line 7902 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 176: /* cpp_template_possible: cpp_forward_class_decl  */
-#line 4386 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          {
                   (yyval.node) = (yyvsp[0].node);
                 }
-#line 7910 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 177: /* cpp_template_possible: cpp_conversion_operator  */
-#line 4389 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                           {
                   (yyval.node) = (yyvsp[0].node);
                 }
-#line 7918 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 178: /* template_parms: templateparameters  */
-#line 4394 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      {
 		   /* Rip out the parameter names */
 		  Parm *p = (yyvsp[0].pl);
@@ -7953,57 +7598,43 @@ yyreduce:
 		    p = nextSibling(p);
 		  }
                  }
-#line 7957 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 179: /* templateparameters: templateparameter templateparameterstail  */
-#line 4430 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                               {
                       set_nextSibling((yyvsp[-1].p),(yyvsp[0].pl));
                       (yyval.pl) = (yyvsp[-1].p);
                    }
-#line 7966 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 180: /* templateparameters: empty  */
-#line 4434 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { (yyval.pl) = 0; }
-#line 7972 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 181: /* templateparameter: templcpptype  */
-#line 4437 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
 		    (yyval.p) = NewParmWithoutFileLineInfo(NewString((yyvsp[0].id)), 0);
                   }
-#line 7980 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 182: /* templateparameter: parm  */
-#line 4440 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
                     (yyval.p) = (yyvsp[0].p);
                   }
-#line 7988 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 183: /* templateparameterstail: COMMA templateparameter templateparameterstail  */
-#line 4445 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                         {
                          set_nextSibling((yyvsp[-1].p),(yyvsp[0].pl));
                          (yyval.pl) = (yyvsp[-1].p);
                        }
-#line 7997 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 184: /* templateparameterstail: empty  */
-#line 4449 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                { (yyval.pl) = 0; }
-#line 8003 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 185: /* cpp_using_decl: USING idcolon SEMI  */
-#line 4454 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     {
                   String *uname = Swig_symbol_type_qualify((yyvsp[-1].str),0);
 		  String *name = Swig_scopename_last((yyvsp[-1].str));
@@ -8014,11 +7645,9 @@ yyreduce:
 		  Delete(name);
 		  add_symbols((yyval.node));
              }
-#line 8018 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 186: /* cpp_using_decl: USING NAMESPACE idcolon SEMI  */
-#line 4464 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                             {
 	       Node *n = Swig_symbol_clookup((yyvsp[-1].str),0);
 	       if (!n) {
@@ -8048,11 +7677,9 @@ yyreduce:
 		 }
 	       }
              }
-#line 8052 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 187: /* @8: %empty  */
-#line 4495 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                               { 
                 Hash *h;
 		Node *parent_ns = 0;
@@ -8097,11 +7724,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		}
 		Delete(scopes);
              }
-#line 8101 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 188: /* cpp_namespace_decl: NAMESPACE idcolon LBRACE @8 interface RBRACE  */
-#line 4538 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
 		Node *n = (yyvsp[-2].node);
 		Node *top_ns = 0;
@@ -8117,11 +7742,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		Delete((yyvsp[-1].node));
 		(yyval.node) = top_ns;
              }
-#line 8121 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 189: /* $@9: %empty  */
-#line 4553 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
 	       Hash *h;
 	       (yyvsp[-1].node) = Swig_symbol_current();
@@ -8135,11 +7758,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       }
 	       Namespaceprefix = 0;
              }
-#line 8139 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 190: /* cpp_namespace_decl: NAMESPACE LBRACE $@9 interface RBRACE  */
-#line 4565 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
 	       (yyval.node) = (yyvsp[-1].node);
 	       set_nodeType((yyval.node),"namespace");
@@ -8150,11 +7771,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       Namespaceprefix = Swig_symbol_qualifiedscopename(0);
 	       add_symbols((yyval.node));
              }
-#line 8154 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 191: /* cpp_namespace_decl: NAMESPACE identifier EQUAL idcolon SEMI  */
-#line 4575 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                        {
 	       /* Namespace alias */
 	       Node *n;
@@ -8180,11 +7799,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 }
 	       }
              }
-#line 8184 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 192: /* cpp_members: cpp_member cpp_members  */
-#line 4602 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                       {
                    (yyval.node) = (yyvsp[-1].node);
                    /* Insert cpp_member (including any siblings) to the front of the cpp_members linked list */
@@ -8202,78 +7819,60 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		     (yyval.node) = (yyvsp[0].node);
 		   }
              }
-#line 8206 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 193: /* $@10: %empty  */
-#line 4619 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              { 
 	       extendmode = 1;
 	       if (cplus_mode != CPLUS_PUBLIC) {
 		 Swig_error(cparse_file,cparse_line,"%%extend can only be used in a public section\n");
 	       }
              }
-#line 8217 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 194: /* $@11: %empty  */
-#line 4624 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
 	       extendmode = 0;
 	     }
-#line 8225 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 195: /* cpp_members: EXTEND LBRACE $@10 cpp_members RBRACE $@11 cpp_members  */
-#line 4626 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            {
 	       (yyval.node) = new_node("extend");
 	       mark_nodes_as_extend((yyvsp[-3].node));
 	       appendChild((yyval.node),(yyvsp[-3].node));
 	       set_nextSibling((yyval.node),(yyvsp[0].node));
 	     }
-#line 8236 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 196: /* cpp_members: include_directive  */
-#line 4632 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { (yyval.node) = (yyvsp[0].node); }
-#line 8242 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 197: /* cpp_members: empty  */
-#line 4633 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                      { (yyval.node) = 0;}
-#line 8248 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 198: /* $@12: %empty  */
-#line 4634 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                      {
 	       int start_line = cparse_line;
 	       skip_decl();
 	       Swig_error(cparse_file,start_line,"Syntax error in input(3).\n");
 	       exit(1);
 	       }
-#line 8259 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 199: /* cpp_members: error $@12 cpp_members  */
-#line 4639 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              { 
 		 (yyval.node) = (yyvsp[0].node);
    	     }
-#line 8267 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 200: /* cpp_member_no_dox: c_declaration  */
-#line 4650 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 8273 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 201: /* cpp_member_no_dox: cpp_constructor_decl  */
-#line 4651 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { 
                  (yyval.node) = (yyvsp[0].node); 
 		 if (extendmode && current_class) {
@@ -8291,133 +7890,93 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 add_symbols((yyval.node));
                  default_arguments((yyval.node));
              }
-#line 8295 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 202: /* cpp_member_no_dox: cpp_destructor_decl  */
-#line 4668 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    { (yyval.node) = (yyvsp[0].node); }
-#line 8301 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 203: /* cpp_member_no_dox: cpp_protection_decl  */
-#line 4669 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    { (yyval.node) = (yyvsp[0].node); }
-#line 8307 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 204: /* cpp_member_no_dox: cpp_swig_directive  */
-#line 4670 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 8313 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 205: /* cpp_member_no_dox: cpp_conversion_operator  */
-#line 4671 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        { (yyval.node) = (yyvsp[0].node); }
-#line 8319 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 206: /* cpp_member_no_dox: cpp_forward_class_decl  */
-#line 4672 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                       { (yyval.node) = (yyvsp[0].node); }
-#line 8325 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 207: /* cpp_member_no_dox: cpp_class_decl  */
-#line 4673 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { (yyval.node) = (yyvsp[0].node); }
-#line 8331 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 208: /* cpp_member_no_dox: storage_class idcolon SEMI  */
-#line 4674 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                           { (yyval.node) = 0; }
-#line 8337 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 209: /* cpp_member_no_dox: cpp_using_decl  */
-#line 4675 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { (yyval.node) = (yyvsp[0].node); }
-#line 8343 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 210: /* cpp_member_no_dox: cpp_template_decl  */
-#line 4676 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { (yyval.node) = (yyvsp[0].node); }
-#line 8349 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 211: /* cpp_member_no_dox: cpp_catch_decl  */
-#line 4677 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { (yyval.node) = 0; }
-#line 8355 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 212: /* cpp_member_no_dox: template_directive  */
-#line 4678 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 8361 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 213: /* cpp_member_no_dox: warn_directive  */
-#line 4679 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { (yyval.node) = (yyvsp[0].node); }
-#line 8367 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 214: /* cpp_member_no_dox: anonymous_bitfield  */
-#line 4680 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = 0; }
-#line 8373 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 215: /* cpp_member_no_dox: fragment_directive  */
-#line 4681 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {(yyval.node) = (yyvsp[0].node); }
-#line 8379 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 216: /* cpp_member_no_dox: types_directive  */
-#line 4682 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {(yyval.node) = (yyvsp[0].node); }
-#line 8385 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 217: /* cpp_member_no_dox: SEMI  */
-#line 4683 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                     { (yyval.node) = 0; }
-#line 8391 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 218: /* cpp_member: cpp_member_no_dox  */
-#line 4685 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
 		(yyval.node) = (yyvsp[0].node);
 	     }
-#line 8399 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 219: /* cpp_member: DOXYGENSTRING cpp_member_no_dox  */
-#line 4688 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                {
 	         (yyval.node) = (yyvsp[0].node);
 		 set_comment((yyvsp[0].node), (yyvsp[-1].str));
 	     }
-#line 8408 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 220: /* cpp_member: cpp_member_no_dox DOXYGENPOSTSTRING  */
-#line 4692 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                    {
 	         (yyval.node) = (yyvsp[-1].node);
 		 set_comment((yyvsp[-1].node), (yyvsp[0].str));
 	     }
-#line 8417 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 221: /* cpp_constructor_decl: storage_class type LPAREN parms RPAREN ctor_end  */
-#line 4704 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                        {
               if (inclass || extendmode) {
 		SwigType *decl = NewStringEmpty();
@@ -8443,11 +8002,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		(yyval.node) = 0;
               }
               }
-#line 8447 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 222: /* cpp_destructor_decl: NOT idtemplate LPAREN parms RPAREN cpp_end  */
-#line 4733 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                  {
                String *name = NewStringf("%s",(yyvsp[-4].str));
 	       if (*(Char(name)) != '~') Insert(name,0,"~");
@@ -8475,11 +8032,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 Swig_error(cparse_file, cparse_line, "Destructor %s %s cannot have a qualifier.\n", Swig_name_decl((yyval.node)), SwigType_str((yyvsp[0].dtype).qualifier, 0));
 	       add_symbols((yyval.node));
 	      }
-#line 8479 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 223: /* cpp_destructor_decl: VIRTUAL NOT idtemplate LPAREN parms RPAREN cpp_vend  */
-#line 4763 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                     {
 		String *name;
 		(yyval.node) = new_node("destructor");
@@ -8509,11 +8064,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  Swig_error(cparse_file, cparse_line, "Destructor %s %s cannot have a qualifier.\n", Swig_name_decl((yyval.node)), SwigType_str((yyvsp[0].dtype).qualifier, 0));
 		add_symbols((yyval.node));
 	      }
-#line 8513 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 224: /* cpp_conversion_operator: storage_class CONVERSIONOPERATOR type pointer LPAREN parms RPAREN cpp_vend  */
-#line 4796 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                                      {
                  (yyval.node) = new_node("cdecl");
                  Setattr((yyval.node),"type",(yyvsp[-5].type));
@@ -8530,11 +8083,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 Setattr((yyval.node),"conversion_operator","1");
 		 add_symbols((yyval.node));
               }
-#line 8534 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 225: /* cpp_conversion_operator: storage_class CONVERSIONOPERATOR type AND LPAREN parms RPAREN cpp_vend  */
-#line 4812 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                         {
 		 SwigType *decl;
                  (yyval.node) = new_node("cdecl");
@@ -8553,11 +8104,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 Setattr((yyval.node),"conversion_operator","1");
 		 add_symbols((yyval.node));
 	       }
-#line 8557 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 226: /* cpp_conversion_operator: storage_class CONVERSIONOPERATOR type LAND LPAREN parms RPAREN cpp_vend  */
-#line 4830 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                          {
 		 SwigType *decl;
                  (yyval.node) = new_node("cdecl");
@@ -8576,11 +8125,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 Setattr((yyval.node),"conversion_operator","1");
 		 add_symbols((yyval.node));
 	       }
-#line 8580 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 227: /* cpp_conversion_operator: storage_class CONVERSIONOPERATOR type pointer AND LPAREN parms RPAREN cpp_vend  */
-#line 4849 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                                 {
 		 SwigType *decl;
                  (yyval.node) = new_node("cdecl");
@@ -8600,11 +8147,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 Setattr((yyval.node),"conversion_operator","1");
 		 add_symbols((yyval.node));
 	       }
-#line 8604 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 228: /* cpp_conversion_operator: storage_class CONVERSIONOPERATOR type LPAREN parms RPAREN cpp_vend  */
-#line 4869 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                    {
 		String *t = NewStringEmpty();
 		(yyval.node) = new_node("cdecl");
@@ -8621,125 +8166,91 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		Setattr((yyval.node),"conversion_operator","1");
 		add_symbols((yyval.node));
               }
-#line 8625 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 229: /* cpp_catch_decl: CATCH LPAREN parms RPAREN LBRACE  */
-#line 4889 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                   {
                  skip_balanced('{','}');
                  (yyval.node) = 0;
                }
-#line 8634 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 230: /* cpp_static_assert: STATIC_ASSERT LPAREN  */
-#line 4897 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          {
                 skip_balanced('(',')');
                 (yyval.node) = 0;
               }
-#line 8643 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 231: /* cpp_protection_decl: PUBLIC COLON  */
-#line 4904 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    { 
                 (yyval.node) = new_node("access");
 		Setattr((yyval.node),"kind","public");
                 cplus_mode = CPLUS_PUBLIC;
               }
-#line 8653 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 232: /* cpp_protection_decl: PRIVATE COLON  */
-#line 4911 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { 
                 (yyval.node) = new_node("access");
                 Setattr((yyval.node),"kind","private");
 		cplus_mode = CPLUS_PRIVATE;
 	      }
-#line 8663 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 233: /* cpp_protection_decl: PROTECTED COLON  */
-#line 4919 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 { 
 		(yyval.node) = new_node("access");
 		Setattr((yyval.node),"kind","protected");
 		cplus_mode = CPLUS_PROTECTED;
 	      }
-#line 8673 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 234: /* cpp_swig_directive: pragma_directive  */
-#line 4927 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      { (yyval.node) = (yyvsp[0].node); }
-#line 8679 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 235: /* cpp_swig_directive: constant_directive  */
-#line 4930 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.node) = (yyvsp[0].node); }
-#line 8685 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 236: /* cpp_swig_directive: name_directive  */
-#line 4934 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { (yyval.node) = (yyvsp[0].node); }
-#line 8691 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 237: /* cpp_swig_directive: rename_directive  */
-#line 4937 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 { (yyval.node) = (yyvsp[0].node); }
-#line 8697 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 238: /* cpp_swig_directive: feature_directive  */
-#line 4938 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { (yyval.node) = (yyvsp[0].node); }
-#line 8703 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 239: /* cpp_swig_directive: varargs_directive  */
-#line 4939 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { (yyval.node) = (yyvsp[0].node); }
-#line 8709 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 240: /* cpp_swig_directive: insert_directive  */
-#line 4940 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 { (yyval.node) = (yyvsp[0].node); }
-#line 8715 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 241: /* cpp_swig_directive: typemap_directive  */
-#line 4941 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { (yyval.node) = (yyvsp[0].node); }
-#line 8721 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 242: /* cpp_swig_directive: apply_directive  */
-#line 4942 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                { (yyval.node) = (yyvsp[0].node); }
-#line 8727 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 243: /* cpp_swig_directive: clear_directive  */
-#line 4943 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                { (yyval.node) = (yyvsp[0].node); }
-#line 8733 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 244: /* cpp_swig_directive: echo_directive  */
-#line 4944 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { (yyval.node) = (yyvsp[0].node); }
-#line 8739 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 245: /* cpp_end: cpp_const SEMI  */
-#line 4947 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
 	            Clear(scanner_ccode);
 		    (yyval.dtype).val = 0;
@@ -8751,11 +8262,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.dtype).nexcept = (yyvsp[-1].dtype).nexcept;
 		    (yyval.dtype).final = (yyvsp[-1].dtype).final;
                }
-#line 8755 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 246: /* cpp_end: cpp_const EQUAL default_delete SEMI  */
-#line 4958 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                      {
 	            Clear(scanner_ccode);
 		    (yyval.dtype).val = (yyvsp[-1].dtype).val;
@@ -8767,11 +8276,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.dtype).nexcept = (yyvsp[-3].dtype).nexcept;
 		    (yyval.dtype).final = (yyvsp[-3].dtype).final;
                }
-#line 8771 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 247: /* cpp_end: cpp_const LBRACE  */
-#line 4969 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { 
 		    skip_balanced('{','}'); 
 		    (yyval.dtype).val = 0;
@@ -8783,11 +8290,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.dtype).nexcept = (yyvsp[-1].dtype).nexcept;
 		    (yyval.dtype).final = (yyvsp[-1].dtype).final;
 	       }
-#line 8787 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 248: /* cpp_vend: cpp_const SEMI  */
-#line 4982 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 { 
                      Clear(scanner_ccode);
                      (yyval.dtype).val = 0;
@@ -8799,11 +8304,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                      (yyval.dtype).nexcept = (yyvsp[-1].dtype).nexcept;
                      (yyval.dtype).final = (yyvsp[-1].dtype).final;
                 }
-#line 8803 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 249: /* cpp_vend: cpp_const EQUAL definetype SEMI  */
-#line 4993 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                  { 
                      Clear(scanner_ccode);
                      (yyval.dtype).val = (yyvsp[-1].dtype).val;
@@ -8815,11 +8318,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                      (yyval.dtype).nexcept = (yyvsp[-3].dtype).nexcept;
                      (yyval.dtype).final = (yyvsp[-3].dtype).final;
                }
-#line 8819 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 250: /* cpp_vend: cpp_const LBRACE  */
-#line 5004 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { 
                      skip_balanced('{','}');
                      (yyval.dtype).val = 0;
@@ -8831,51 +8332,37 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                      (yyval.dtype).nexcept = (yyvsp[-1].dtype).nexcept;
                      (yyval.dtype).final = (yyvsp[-1].dtype).final;
                }
-#line 8835 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 251: /* anonymous_bitfield: storage_class anon_bitfield_type COLON expr SEMI  */
-#line 5018 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                        { }
-#line 8841 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 252: /* anon_bitfield_type: primitive_type  */
-#line 5021 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { (yyval.type) = (yyvsp[0].type);
                   /* Printf(stdout,"primitive = '%s'\n", $$);*/
                 }
-#line 8849 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 253: /* anon_bitfield_type: TYPE_BOOL  */
-#line 5024 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { (yyval.type) = (yyvsp[0].type); }
-#line 8855 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 254: /* anon_bitfield_type: TYPE_VOID  */
-#line 5025 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { (yyval.type) = (yyvsp[0].type); }
-#line 8861 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 255: /* anon_bitfield_type: TYPE_RAW  */
-#line 5029 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           { (yyval.type) = (yyvsp[0].type); }
-#line 8867 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 256: /* anon_bitfield_type: idcolon  */
-#line 5031 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
 		  (yyval.type) = (yyvsp[0].str);
                }
-#line 8875 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 257: /* extern_string: EXTERN string  */
-#line 5039 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {
                    if (Strcmp((yyvsp[0].str),"C") == 0) {
 		     (yyval.id) = "externc";
@@ -8886,131 +8373,89 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		     (yyval.id) = 0;
 		   }
                }
-#line 8890 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 258: /* storage_class: EXTERN  */
-#line 5051 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { (yyval.id) = "extern"; }
-#line 8896 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 259: /* storage_class: extern_string  */
-#line 5052 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                { (yyval.id) = (yyvsp[0].id); }
-#line 8902 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 260: /* storage_class: extern_string THREAD_LOCAL  */
-#line 5053 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                             { (yyval.id) = "thread_local"; }
-#line 8908 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 261: /* storage_class: extern_string TYPEDEF  */
-#line 5054 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        { (yyval.id) = "typedef"; }
-#line 8914 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 262: /* storage_class: STATIC  */
-#line 5055 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { (yyval.id) = "static"; }
-#line 8920 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 263: /* storage_class: TYPEDEF  */
-#line 5056 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          { (yyval.id) = "typedef"; }
-#line 8926 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 264: /* storage_class: VIRTUAL  */
-#line 5057 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          { (yyval.id) = "virtual"; }
-#line 8932 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 265: /* storage_class: FRIEND  */
-#line 5058 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { (yyval.id) = "friend"; }
-#line 8938 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 266: /* storage_class: EXPLICIT  */
-#line 5059 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           { (yyval.id) = "explicit"; }
-#line 8944 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 267: /* storage_class: CONSTEXPR  */
-#line 5060 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { (yyval.id) = "constexpr"; }
-#line 8950 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 268: /* storage_class: EXPLICIT CONSTEXPR  */
-#line 5061 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { (yyval.id) = "explicit constexpr"; }
-#line 8956 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 269: /* storage_class: CONSTEXPR EXPLICIT  */
-#line 5062 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { (yyval.id) = "explicit constexpr"; }
-#line 8962 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 270: /* storage_class: STATIC CONSTEXPR  */
-#line 5063 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.id) = "static constexpr"; }
-#line 8968 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 271: /* storage_class: CONSTEXPR STATIC  */
-#line 5064 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { (yyval.id) = "static constexpr"; }
-#line 8974 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 272: /* storage_class: THREAD_LOCAL  */
-#line 5065 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { (yyval.id) = "thread_local"; }
-#line 8980 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 273: /* storage_class: THREAD_LOCAL STATIC  */
-#line 5066 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      { (yyval.id) = "static thread_local"; }
-#line 8986 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 274: /* storage_class: STATIC THREAD_LOCAL  */
-#line 5067 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      { (yyval.id) = "static thread_local"; }
-#line 8992 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 275: /* storage_class: EXTERN THREAD_LOCAL  */
-#line 5068 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      { (yyval.id) = "extern thread_local"; }
-#line 8998 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 276: /* storage_class: THREAD_LOCAL EXTERN  */
-#line 5069 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      { (yyval.id) = "extern thread_local"; }
-#line 9004 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 277: /* storage_class: empty  */
-#line 5070 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.id) = 0; }
-#line 9010 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 278: /* parms: rawparms  */
-#line 5077 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
                  Parm *p;
 		 (yyval.pl) = (yyvsp[0].pl);
@@ -9020,55 +8465,43 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   p = nextSibling(p);
                  }
                }
-#line 9024 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 279: /* rawparms: parm ptail  */
-#line 5088 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {
                   set_nextSibling((yyvsp[-1].p),(yyvsp[0].pl));
                   (yyval.pl) = (yyvsp[-1].p);
 		}
-#line 9033 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 280: /* rawparms: empty  */
-#line 5092 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
 		  (yyval.pl) = 0;
 		  previousNode = currentNode;
 		  currentNode=0;
 	       }
-#line 9043 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 281: /* ptail: COMMA parm ptail  */
-#line 5099 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
                  set_nextSibling((yyvsp[-1].p),(yyvsp[0].pl));
 		 (yyval.pl) = (yyvsp[-1].p);
                 }
-#line 9052 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 282: /* ptail: COMMA DOXYGENPOSTSTRING parm ptail  */
-#line 5103 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                     {
 		 set_comment(previousNode, (yyvsp[-2].str));
                  set_nextSibling((yyvsp[-1].p), (yyvsp[0].pl));
 		 (yyval.pl) = (yyvsp[-1].p);
                }
-#line 9062 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 283: /* ptail: empty  */
-#line 5108 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.pl) = 0; }
-#line 9068 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 284: /* parm_no_dox: rawtype parameter_declarator  */
-#line 5112 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                {
                    SwigType_push((yyvsp[-1].type),(yyvsp[0].decl).type);
 		   (yyval.p) = NewParmWithoutFileLineInfo((yyvsp[-1].type),(yyvsp[0].decl).id);
@@ -9080,11 +8513,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		     Setattr((yyval.p),"value",(yyvsp[0].decl).defarg);
 		   }
 		}
-#line 9084 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 285: /* parm_no_dox: TEMPLATE LESSTHAN cpptype GREATERTHAN cpptype idcolon def_args  */
-#line 5124 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                  {
                   (yyval.p) = NewParmWithoutFileLineInfo(NewStringf("template<class> %s %s", (yyvsp[-2].id),(yyvsp[-1].str)), 0);
 		  previousNode = currentNode;
@@ -9095,11 +8526,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     Setattr((yyval.p),"value",(yyvsp[0].dtype).val);
                   }
                 }
-#line 9099 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 286: /* parm_no_dox: PERIOD PERIOD PERIOD  */
-#line 5134 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        {
 		  SwigType *t = NewString("v(...)");
 		  (yyval.p) = NewParmWithoutFileLineInfo(t, 0);
@@ -9108,37 +8537,29 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  Setfile((yyval.p),cparse_file);
 		  Setline((yyval.p),cparse_line);
 		}
-#line 9112 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 287: /* parm: parm_no_dox  */
-#line 5144 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               {
 		  (yyval.p) = (yyvsp[0].p);
 		}
-#line 9120 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 288: /* parm: DOXYGENSTRING parm_no_dox  */
-#line 5147 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                             {
 		  (yyval.p) = (yyvsp[0].p);
 		  set_comment((yyvsp[0].p), (yyvsp[-1].str));
 		}
-#line 9129 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 289: /* parm: parm_no_dox DOXYGENPOSTSTRING  */
-#line 5151 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                 {
 		  (yyval.p) = (yyvsp[-1].p);
 		  set_comment((yyvsp[-1].p), (yyvsp[0].str));
 		}
-#line 9138 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 290: /* valparms: rawvalparms  */
-#line 5157 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               {
                  Parm *p;
 		 (yyval.p) = (yyvsp[0].p);
@@ -9150,41 +8571,31 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   p = nextSibling(p);
                  }
                }
-#line 9154 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 291: /* rawvalparms: valparm valptail  */
-#line 5170 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    {
                   set_nextSibling((yyvsp[-1].p),(yyvsp[0].p));
                   (yyval.p) = (yyvsp[-1].p);
 		}
-#line 9163 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 292: /* rawvalparms: empty  */
-#line 5174 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.p) = 0; }
-#line 9169 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 293: /* valptail: COMMA valparm valptail  */
-#line 5177 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                         {
                  set_nextSibling((yyvsp[-1].p),(yyvsp[0].p));
 		 (yyval.p) = (yyvsp[-1].p);
                 }
-#line 9178 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 294: /* valptail: empty  */
-#line 5181 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.p) = 0; }
-#line 9184 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 295: /* valparm: parm  */
-#line 5185 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                       {
 		  (yyval.p) = (yyvsp[0].p);
 		  {
@@ -9213,22 +8624,18 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  }
 
                }
-#line 9217 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 296: /* valparm: valexpr  */
-#line 5213 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
                   (yyval.p) = NewParmWithoutFileLineInfo(0,0);
                   Setfile((yyval.p),cparse_file);
 		  Setline((yyval.p),cparse_line);
 		  Setattr((yyval.p),"value",(yyvsp[0].dtype).val);
                }
-#line 9228 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 297: /* def_args: EQUAL definetype  */
-#line 5221 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { 
                   (yyval.dtype) = (yyvsp[0].dtype); 
 		  if ((yyvsp[0].dtype).type == T_ERROR) {
@@ -9242,11 +8649,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.dtype).final = 0;
 		  }
                }
-#line 9246 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 298: /* def_args: EQUAL definetype LBRACKET expr RBRACKET  */
-#line 5234 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                          { 
 		  (yyval.dtype) = (yyvsp[-3].dtype);
 		  if ((yyvsp[-3].dtype).type == T_ERROR) {
@@ -9263,11 +8668,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.dtype).val = NewStringf("%s[%s]",(yyvsp[-3].dtype).val,(yyvsp[-1].dtype).val); 
 		  }		  
                }
-#line 9267 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 299: /* def_args: EQUAL LBRACE  */
-#line 5250 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               {
 		 skip_balanced('{','}');
 		 (yyval.dtype).val = NewString(scanner_ccode);
@@ -9279,11 +8682,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 (yyval.dtype).nexcept = 0;
 		 (yyval.dtype).final = 0;
 	       }
-#line 9283 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 300: /* def_args: COLON expr  */
-#line 5261 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             { 
 		 (yyval.dtype).val = 0;
 		 (yyval.dtype).rawval = 0;
@@ -9294,11 +8695,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 (yyval.dtype).nexcept = 0;
 		 (yyval.dtype).final = 0;
 	       }
-#line 9298 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 301: /* def_args: empty  */
-#line 5271 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
                  (yyval.dtype).val = 0;
                  (yyval.dtype).rawval = 0;
@@ -9309,39 +8708,31 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 (yyval.dtype).nexcept = 0;
 		 (yyval.dtype).final = 0;
                }
-#line 9313 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 302: /* parameter_declarator: declarator def_args  */
-#line 5283 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                            {
                  (yyval.decl) = (yyvsp[-1].decl);
 		 (yyval.decl).defarg = (yyvsp[0].dtype).rawval ? (yyvsp[0].dtype).rawval : (yyvsp[0].dtype).val;
             }
-#line 9322 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 303: /* parameter_declarator: abstract_declarator def_args  */
-#line 5287 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                            {
               (yyval.decl) = (yyvsp[-1].decl);
 	      (yyval.decl).defarg = (yyvsp[0].dtype).rawval ? (yyvsp[0].dtype).rawval : (yyvsp[0].dtype).val;
             }
-#line 9331 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 304: /* parameter_declarator: def_args  */
-#line 5291 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
    	      (yyval.decl).type = 0;
               (yyval.decl).id = 0;
 	      (yyval.decl).defarg = (yyvsp[0].dtype).rawval ? (yyvsp[0].dtype).rawval : (yyvsp[0].dtype).val;
             }
-#line 9341 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 305: /* parameter_declarator: direct_declarator LPAREN parms RPAREN cv_ref_qualifier  */
-#line 5298 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                      {
 	      SwigType *t;
 	      (yyval.decl) = (yyvsp[-4].decl);
@@ -9362,11 +8753,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).defarg = 0;
 	    }
-#line 9366 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 306: /* plain_declarator: declarator  */
-#line 5320 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               {
                  (yyval.decl) = (yyvsp[0].decl);
 		 if (SwigType_isfunction((yyvsp[0].decl).type)) {
@@ -9384,11 +8773,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.decl).parms = 0;
 		 }
             }
-#line 9388 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 307: /* plain_declarator: abstract_declarator  */
-#line 5337 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
               (yyval.decl) = (yyvsp[0].decl);
 	      if (SwigType_isfunction((yyvsp[0].decl).type)) {
@@ -9406,11 +8793,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		(yyval.decl).parms = 0;
 	      }
             }
-#line 9410 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 308: /* plain_declarator: direct_declarator LPAREN parms RPAREN cv_ref_qualifier  */
-#line 5356 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                      {
 	      SwigType *t;
 	      (yyval.decl) = (yyvsp[-4].decl);
@@ -9430,21 +8815,17 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		(yyval.decl).type = t;
 	      }
 	    }
-#line 9434 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 309: /* plain_declarator: empty  */
-#line 5375 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                     {
    	      (yyval.decl).type = 0;
               (yyval.decl).id = 0;
 	      (yyval.decl).parms = 0;
 	      }
-#line 9444 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 310: /* declarator: pointer notso_direct_declarator  */
-#line 5382 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                               {
               (yyval.decl) = (yyvsp[0].decl);
 	      if ((yyval.decl).type) {
@@ -9453,11 +8834,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-1].type);
            }
-#line 9457 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 311: /* declarator: pointer AND notso_direct_declarator  */
-#line 5390 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                  {
               (yyval.decl) = (yyvsp[0].decl);
 	      SwigType_add_reference((yyvsp[-2].type));
@@ -9467,11 +8846,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-2].type);
            }
-#line 9471 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 312: /* declarator: pointer LAND notso_direct_declarator  */
-#line 5399 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                   {
               (yyval.decl) = (yyvsp[0].decl);
 	      SwigType_add_rvalue_reference((yyvsp[-2].type));
@@ -9481,20 +8858,16 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-2].type);
            }
-#line 9485 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 313: /* declarator: direct_declarator  */
-#line 5408 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {
               (yyval.decl) = (yyvsp[0].decl);
 	      if (!(yyval.decl).type) (yyval.decl).type = NewStringEmpty();
            }
-#line 9494 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 314: /* declarator: AND notso_direct_declarator  */
-#line 5412 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          {
 	     (yyval.decl) = (yyvsp[0].decl);
 	     (yyval.decl).type = NewStringEmpty();
@@ -9504,11 +8877,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       Delete((yyvsp[0].decl).type);
 	     }
            }
-#line 9508 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 315: /* declarator: LAND notso_direct_declarator  */
-#line 5421 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                           {
 	     /* Introduced in C++11, move operator && */
              /* Adds one S/R conflict */
@@ -9520,11 +8891,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       Delete((yyvsp[0].decl).type);
 	     }
            }
-#line 9524 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 316: /* declarator: idcolon DSTAR notso_direct_declarator  */
-#line 5432 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                    { 
 	     SwigType *t = NewStringEmpty();
 
@@ -9536,11 +8905,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     }
 	     (yyval.decl).type = t;
 	     }
-#line 9540 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 317: /* declarator: pointer idcolon DSTAR notso_direct_declarator  */
-#line 5443 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                            { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
@@ -9553,11 +8920,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     (yyval.decl).type = (yyvsp[-3].type);
 	     Delete(t);
 	   }
-#line 9557 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 318: /* declarator: pointer idcolon DSTAR AND notso_direct_declarator  */
-#line 5455 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                { 
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer((yyvsp[-4].type),(yyvsp[-3].str));
@@ -9568,11 +8933,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     }
 	     (yyval.decl).type = (yyvsp[-4].type);
 	   }
-#line 9572 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 319: /* declarator: idcolon DSTAR AND notso_direct_declarator  */
-#line 5465 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                        { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
@@ -9584,11 +8947,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     } 
 	     (yyval.decl).type = t;
 	   }
-#line 9588 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 320: /* declarator: pointer PERIOD PERIOD PERIOD notso_direct_declarator  */
-#line 5479 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                    {
               (yyval.decl) = (yyvsp[0].decl);
 	      if ((yyval.decl).type) {
@@ -9597,11 +8958,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-4].type);
            }
-#line 9601 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 321: /* declarator: pointer AND PERIOD PERIOD PERIOD notso_direct_declarator  */
-#line 5487 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                       {
               (yyval.decl) = (yyvsp[0].decl);
 	      SwigType_add_reference((yyvsp[-5].type));
@@ -9611,11 +8970,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-5].type);
            }
-#line 9615 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 322: /* declarator: pointer LAND PERIOD PERIOD PERIOD notso_direct_declarator  */
-#line 5496 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                        {
               (yyval.decl) = (yyvsp[0].decl);
 	      SwigType_add_rvalue_reference((yyvsp[-5].type));
@@ -9625,20 +8982,16 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	      }
 	      (yyval.decl).type = (yyvsp[-5].type);
            }
-#line 9629 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 323: /* declarator: PERIOD PERIOD PERIOD direct_declarator  */
-#line 5505 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                     {
               (yyval.decl) = (yyvsp[0].decl);
 	      if (!(yyval.decl).type) (yyval.decl).type = NewStringEmpty();
            }
-#line 9638 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 324: /* declarator: AND PERIOD PERIOD PERIOD notso_direct_declarator  */
-#line 5509 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                               {
 	     (yyval.decl) = (yyvsp[0].decl);
 	     (yyval.decl).type = NewStringEmpty();
@@ -9648,11 +9001,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       Delete((yyvsp[0].decl).type);
 	     }
            }
-#line 9652 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 325: /* declarator: LAND PERIOD PERIOD PERIOD notso_direct_declarator  */
-#line 5518 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                {
 	     /* Introduced in C++11, move operator && */
              /* Adds one S/R conflict */
@@ -9664,11 +9015,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	       Delete((yyvsp[0].decl).type);
 	     }
            }
-#line 9668 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 326: /* declarator: idcolon DSTAR PERIOD PERIOD PERIOD notso_direct_declarator  */
-#line 5529 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                         { 
 	     SwigType *t = NewStringEmpty();
 
@@ -9680,11 +9029,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     }
 	     (yyval.decl).type = t;
 	     }
-#line 9684 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 327: /* declarator: pointer idcolon DSTAR PERIOD PERIOD PERIOD notso_direct_declarator  */
-#line 5540 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                 { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
@@ -9697,11 +9044,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     (yyval.decl).type = (yyvsp[-6].type);
 	     Delete(t);
 	   }
-#line 9701 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 328: /* declarator: pointer idcolon DSTAR AND PERIOD PERIOD PERIOD notso_direct_declarator  */
-#line 5552 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                     { 
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer((yyvsp[-7].type),(yyvsp[-6].str));
@@ -9712,11 +9057,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     }
 	     (yyval.decl).type = (yyvsp[-7].type);
 	   }
-#line 9716 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 329: /* declarator: pointer idcolon DSTAR LAND PERIOD PERIOD PERIOD notso_direct_declarator  */
-#line 5562 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                      { 
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer((yyvsp[-7].type),(yyvsp[-6].str));
@@ -9727,11 +9070,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     }
 	     (yyval.decl).type = (yyvsp[-7].type);
 	   }
-#line 9731 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 330: /* declarator: idcolon DSTAR AND PERIOD PERIOD PERIOD notso_direct_declarator  */
-#line 5572 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                             { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
@@ -9743,11 +9084,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     } 
 	     (yyval.decl).type = t;
 	   }
-#line 9747 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 331: /* declarator: idcolon DSTAR LAND PERIOD PERIOD PERIOD notso_direct_declarator  */
-#line 5583 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                              { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
@@ -9759,11 +9098,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     } 
 	     (yyval.decl).type = t;
 	   }
-#line 9763 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 332: /* notso_direct_declarator: idcolon  */
-#line 5596 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
                 /* Note: This is non-standard C.  Template declarator is allowed to follow an identifier */
                  (yyval.decl).id = Char((yyvsp[0].str));
@@ -9771,33 +9108,27 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 (yyval.decl).parms = 0;
 		 (yyval.decl).have_parms = 0;
                   }
-#line 9775 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 333: /* notso_direct_declarator: NOT idcolon  */
-#line 5603 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
                   (yyval.decl).id = Char(NewStringf("~%s",(yyvsp[0].str)));
                   (yyval.decl).type = 0;
                   (yyval.decl).parms = 0;
                   (yyval.decl).have_parms = 0;
                   }
-#line 9786 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 334: /* notso_direct_declarator: LPAREN idcolon RPAREN  */
-#line 5611 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          {
                   (yyval.decl).id = Char((yyvsp[-1].str));
                   (yyval.decl).type = 0;
                   (yyval.decl).parms = 0;
                   (yyval.decl).have_parms = 0;
                   }
-#line 9797 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 335: /* notso_direct_declarator: LPAREN pointer notso_direct_declarator RPAREN  */
-#line 5627 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                   {
 		    (yyval.decl) = (yyvsp[-1].decl);
 		    if ((yyval.decl).type) {
@@ -9806,11 +9137,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = (yyvsp[-2].type);
                   }
-#line 9810 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 336: /* notso_direct_declarator: LPAREN idcolon DSTAR notso_direct_declarator RPAREN  */
-#line 5635 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                         {
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-1].decl);
@@ -9822,11 +9151,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
 		    }
-#line 9826 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 337: /* notso_direct_declarator: notso_direct_declarator LBRACKET RBRACKET  */
-#line 5646 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                               { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-2].decl);
@@ -9838,11 +9165,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 9842 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 338: /* notso_direct_declarator: notso_direct_declarator LBRACKET expr RBRACKET  */
-#line 5657 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                    { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-3].decl);
@@ -9854,11 +9179,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 9858 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 339: /* notso_direct_declarator: notso_direct_declarator LPAREN parms RPAREN  */
-#line 5668 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                 {
 		    SwigType *t;
                     (yyval.decl) = (yyvsp[-3].decl);
@@ -9876,11 +9199,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      (yyval.decl).type = t;
 		    }
 		  }
-#line 9880 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 340: /* direct_declarator: idcolon  */
-#line 5687 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             {
                 /* Note: This is non-standard C.  Template declarator is allowed to follow an identifier */
                  (yyval.decl).id = Char((yyvsp[0].str));
@@ -9888,22 +9209,18 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 (yyval.decl).parms = 0;
 		 (yyval.decl).have_parms = 0;
                   }
-#line 9892 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 341: /* direct_declarator: NOT idcolon  */
-#line 5695 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
                   (yyval.decl).id = Char(NewStringf("~%s",(yyvsp[0].str)));
                   (yyval.decl).type = 0;
                   (yyval.decl).parms = 0;
                   (yyval.decl).have_parms = 0;
                   }
-#line 9903 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 342: /* direct_declarator: LPAREN pointer direct_declarator RPAREN  */
-#line 5712 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                             {
 		    (yyval.decl) = (yyvsp[-1].decl);
 		    if ((yyval.decl).type) {
@@ -9912,11 +9229,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = (yyvsp[-2].type);
                   }
-#line 9916 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 343: /* direct_declarator: LPAREN AND direct_declarator RPAREN  */
-#line 5720 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                         {
                     (yyval.decl) = (yyvsp[-1].decl);
 		    if (!(yyval.decl).type) {
@@ -9924,11 +9239,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    SwigType_add_reference((yyval.decl).type);
                   }
-#line 9928 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 344: /* direct_declarator: LPAREN LAND direct_declarator RPAREN  */
-#line 5727 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                          {
                     (yyval.decl) = (yyvsp[-1].decl);
 		    if (!(yyval.decl).type) {
@@ -9936,11 +9249,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    SwigType_add_rvalue_reference((yyval.decl).type);
                   }
-#line 9940 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 345: /* direct_declarator: LPAREN idcolon DSTAR declarator RPAREN  */
-#line 5734 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                            {
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-1].decl);
@@ -9952,11 +9263,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
 		  }
-#line 9956 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 346: /* direct_declarator: LPAREN idcolon DSTAR type_qualifier declarator RPAREN  */
-#line 5745 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                           {
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-1].decl);
@@ -9969,11 +9278,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
 		  }
-#line 9973 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 347: /* direct_declarator: LPAREN idcolon DSTAR abstract_declarator RPAREN  */
-#line 5757 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                     {
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-1].decl);
@@ -9985,11 +9292,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
 		  }
-#line 9989 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 348: /* direct_declarator: LPAREN idcolon DSTAR type_qualifier abstract_declarator RPAREN  */
-#line 5768 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                    {
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-1].decl);
@@ -10002,11 +9307,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
 		  }
-#line 10006 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 349: /* direct_declarator: direct_declarator LBRACKET RBRACKET  */
-#line 5780 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                         { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-2].decl);
@@ -10018,11 +9321,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 10022 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 350: /* direct_declarator: direct_declarator LBRACKET expr RBRACKET  */
-#line 5791 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                              { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-3].decl);
@@ -10034,11 +9335,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 10038 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 351: /* direct_declarator: direct_declarator LPAREN parms RPAREN  */
-#line 5802 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                           {
 		    SwigType *t;
                     (yyval.decl) = (yyvsp[-3].decl);
@@ -10056,11 +9355,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      (yyval.decl).type = t;
 		    }
 		  }
-#line 10060 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 352: /* direct_declarator: OPERATOR ID LPAREN parms RPAREN  */
-#line 5822 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                    {
 		    SwigType *t;
                     Append((yyvsp[-4].str), " "); /* intervening space is mandatory */
@@ -10080,33 +9377,27 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      (yyval.decl).type = t;
 		    }
 		  }
-#line 10084 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 353: /* abstract_declarator: pointer  */
-#line 5843 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               {
 		    (yyval.decl).type = (yyvsp[0].type);
                     (yyval.decl).id = 0;
 		    (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
                   }
-#line 10095 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 354: /* abstract_declarator: pointer direct_abstract_declarator  */
-#line 5849 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                        { 
                      (yyval.decl) = (yyvsp[0].decl);
                      SwigType_push((yyvsp[-1].type),(yyvsp[0].decl).type);
 		     (yyval.decl).type = (yyvsp[-1].type);
 		     Delete((yyvsp[0].decl).type);
                   }
-#line 10106 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 355: /* abstract_declarator: pointer AND  */
-#line 5855 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
 		    (yyval.decl).type = (yyvsp[-1].type);
 		    SwigType_add_reference((yyval.decl).type);
@@ -10114,11 +9405,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
 		  }
-#line 10118 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 356: /* abstract_declarator: pointer LAND  */
-#line 5862 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
 		    (yyval.decl).type = (yyvsp[-1].type);
 		    SwigType_add_rvalue_reference((yyval.decl).type);
@@ -10126,11 +9415,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
 		  }
-#line 10130 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 357: /* abstract_declarator: pointer AND direct_abstract_declarator  */
-#line 5869 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                            {
 		    (yyval.decl) = (yyvsp[0].decl);
 		    SwigType_add_reference((yyvsp[-2].type));
@@ -10140,11 +9427,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = (yyvsp[-2].type);
                   }
-#line 10144 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 358: /* abstract_declarator: pointer LAND direct_abstract_declarator  */
-#line 5878 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                             {
 		    (yyval.decl) = (yyvsp[0].decl);
 		    SwigType_add_rvalue_reference((yyvsp[-2].type));
@@ -10154,19 +9439,15 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = (yyvsp[-2].type);
                   }
-#line 10158 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 359: /* abstract_declarator: direct_abstract_declarator  */
-#line 5887 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                {
 		    (yyval.decl) = (yyvsp[0].decl);
                   }
-#line 10166 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 360: /* abstract_declarator: AND direct_abstract_declarator  */
-#line 5890 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                    {
 		    (yyval.decl) = (yyvsp[0].decl);
 		    (yyval.decl).type = NewStringEmpty();
@@ -10176,11 +9457,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      Delete((yyvsp[0].decl).type);
 		    }
                   }
-#line 10180 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 361: /* abstract_declarator: LAND direct_abstract_declarator  */
-#line 5899 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                     {
 		    (yyval.decl) = (yyvsp[0].decl);
 		    (yyval.decl).type = NewStringEmpty();
@@ -10190,11 +9469,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      Delete((yyvsp[0].decl).type);
 		    }
                   }
-#line 10194 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 362: /* abstract_declarator: AND  */
-#line 5908 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         {
                     (yyval.decl).id = 0;
                     (yyval.decl).parms = 0;
@@ -10202,11 +9479,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     (yyval.decl).type = NewStringEmpty();
 		    SwigType_add_reference((yyval.decl).type);
                   }
-#line 10206 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 363: /* abstract_declarator: LAND  */
-#line 5915 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
                     (yyval.decl).id = 0;
                     (yyval.decl).parms = 0;
@@ -10214,11 +9489,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     (yyval.decl).type = NewStringEmpty();
 		    SwigType_add_rvalue_reference((yyval.decl).type);
                   }
-#line 10218 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 364: /* abstract_declarator: idcolon DSTAR  */
-#line 5922 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   { 
 		    (yyval.decl).type = NewStringEmpty();
                     SwigType_add_memberpointer((yyval.decl).type,(yyvsp[-1].str));
@@ -10226,11 +9499,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
       	          }
-#line 10230 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 365: /* abstract_declarator: idcolon DSTAR type_qualifier  */
-#line 5929 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                  {
 		    (yyval.decl).type = NewStringEmpty();
 		    SwigType_add_memberpointer((yyval.decl).type, (yyvsp[-2].str));
@@ -10239,11 +9510,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.decl).parms = 0;
 		    (yyval.decl).have_parms = 0;
 		  }
-#line 10243 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 366: /* abstract_declarator: pointer idcolon DSTAR  */
-#line 5937 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                           { 
 		    SwigType *t = NewStringEmpty();
                     (yyval.decl).type = (yyvsp[-2].type);
@@ -10254,11 +9523,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    SwigType_push((yyval.decl).type,t);
 		    Delete(t);
                   }
-#line 10258 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 367: /* abstract_declarator: pointer idcolon DSTAR direct_abstract_declarator  */
-#line 5947 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                      { 
 		    (yyval.decl) = (yyvsp[0].decl);
 		    SwigType_add_memberpointer((yyvsp[-3].type),(yyvsp[-2].str));
@@ -10268,11 +9535,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = (yyvsp[-3].type);
                   }
-#line 10272 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 368: /* direct_abstract_declarator: direct_abstract_declarator LBRACKET RBRACKET  */
-#line 5958 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                           { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-2].decl);
@@ -10284,11 +9549,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 10288 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 369: /* direct_abstract_declarator: direct_abstract_declarator LBRACKET expr RBRACKET  */
-#line 5969 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                       { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-3].decl);
@@ -10300,11 +9563,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.decl).type = t;
                   }
-#line 10304 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 370: /* direct_abstract_declarator: LBRACKET RBRACKET  */
-#line 5980 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                       { 
 		    (yyval.decl).type = NewStringEmpty();
 		    (yyval.decl).id = 0;
@@ -10312,11 +9573,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.decl).have_parms = 0;
 		    SwigType_add_array((yyval.decl).type,"");
                   }
-#line 10316 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 371: /* direct_abstract_declarator: LBRACKET expr RBRACKET  */
-#line 5987 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                            { 
 		    (yyval.decl).type = NewStringEmpty();
 		    (yyval.decl).id = 0;
@@ -10324,19 +9583,15 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.decl).have_parms = 0;
 		    SwigType_add_array((yyval.decl).type,(yyvsp[-1].dtype).val);
 		  }
-#line 10328 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 372: /* direct_abstract_declarator: LPAREN abstract_declarator RPAREN  */
-#line 5994 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                       {
                     (yyval.decl) = (yyvsp[-1].decl);
 		  }
-#line 10336 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 373: /* direct_abstract_declarator: direct_abstract_declarator LPAREN parms RPAREN  */
-#line 5997 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                    {
 		    SwigType *t;
                     (yyval.decl) = (yyvsp[-3].decl);
@@ -10354,11 +9609,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      (yyval.decl).have_parms = 1;
 		    }
 		  }
-#line 10358 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 374: /* direct_abstract_declarator: direct_abstract_declarator LPAREN parms RPAREN cv_ref_qualifier  */
-#line 6014 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                     {
 		    SwigType *t;
                     (yyval.decl) = (yyvsp[-4].decl);
@@ -10377,11 +9630,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      (yyval.decl).have_parms = 1;
 		    }
 		  }
-#line 10381 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 375: /* direct_abstract_declarator: LPAREN parms RPAREN  */
-#line 6032 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                         {
                     (yyval.decl).type = NewStringEmpty();
                     SwigType_add_function((yyval.decl).type,(yyvsp[-1].pl));
@@ -10389,11 +9640,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.decl).have_parms = 1;
 		    (yyval.decl).id = 0;
                   }
-#line 10393 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 376: /* pointer: STAR type_qualifier pointer  */
-#line 6042 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          { 
              (yyval.type) = NewStringEmpty();
              SwigType_add_pointer((yyval.type));
@@ -10401,223 +9650,169 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     SwigType_push((yyval.type),(yyvsp[0].type));
 	     Delete((yyvsp[0].type));
            }
-#line 10405 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 377: /* pointer: STAR pointer  */
-#line 6049 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
 	     (yyval.type) = NewStringEmpty();
 	     SwigType_add_pointer((yyval.type));
 	     SwigType_push((yyval.type),(yyvsp[0].type));
 	     Delete((yyvsp[0].type));
 	   }
-#line 10416 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 378: /* pointer: STAR type_qualifier  */
-#line 6055 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { 
 	     (yyval.type) = NewStringEmpty();
 	     SwigType_add_pointer((yyval.type));
 	     SwigType_push((yyval.type),(yyvsp[0].str));
            }
-#line 10426 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 379: /* pointer: STAR  */
-#line 6060 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                   {
 	     (yyval.type) = NewStringEmpty();
 	     SwigType_add_pointer((yyval.type));
            }
-#line 10435 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 380: /* cv_ref_qualifier: type_qualifier  */
-#line 6067 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
 		  (yyval.dtype).qualifier = (yyvsp[0].str);
 		  (yyval.dtype).refqualifier = 0;
 	       }
-#line 10444 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 381: /* cv_ref_qualifier: type_qualifier ref_qualifier  */
-#line 6071 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                               {
 		  (yyval.dtype).qualifier = (yyvsp[-1].str);
 		  (yyval.dtype).refqualifier = (yyvsp[0].str);
 		  SwigType_push((yyval.dtype).qualifier, (yyvsp[0].str));
 	       }
-#line 10454 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 382: /* cv_ref_qualifier: ref_qualifier  */
-#line 6076 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {
 		  (yyval.dtype).qualifier = NewStringEmpty();
 		  (yyval.dtype).refqualifier = (yyvsp[0].str);
 		  SwigType_push((yyval.dtype).qualifier, (yyvsp[0].str));
 	       }
-#line 10464 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 383: /* ref_qualifier: AND  */
-#line 6083 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                     {
 	          (yyval.str) = NewStringEmpty();
 	          SwigType_add_reference((yyval.str));
 	       }
-#line 10473 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 384: /* ref_qualifier: LAND  */
-#line 6087 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                       {
 	          (yyval.str) = NewStringEmpty();
 	          SwigType_add_rvalue_reference((yyval.str));
 	       }
-#line 10482 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 385: /* type_qualifier: type_qualifier_raw  */
-#line 6093 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     {
 	          (yyval.str) = NewStringEmpty();
 	          if ((yyvsp[0].id)) SwigType_add_qualifier((yyval.str),(yyvsp[0].id));
                }
-#line 10491 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 386: /* type_qualifier: type_qualifier_raw type_qualifier  */
-#line 6097 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                    {
 		  (yyval.str) = (yyvsp[0].str);
 	          if ((yyvsp[-1].id)) SwigType_add_qualifier((yyval.str),(yyvsp[-1].id));
                }
-#line 10500 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 387: /* type_qualifier_raw: CONST_QUAL  */
-#line 6103 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { (yyval.id) = "const"; }
-#line 10506 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 388: /* type_qualifier_raw: VOLATILE  */
-#line 6104 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                { (yyval.id) = "volatile"; }
-#line 10512 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 389: /* type_qualifier_raw: REGISTER  */
-#line 6105 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                { (yyval.id) = 0; }
-#line 10518 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 390: /* type: rawtype  */
-#line 6111 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
                    (yyval.type) = (yyvsp[0].type);
                    Replace((yyval.type),"typename ","", DOH_REPLACE_ANY);
                 }
-#line 10527 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 391: /* rawtype: type_qualifier type_right  */
-#line 6117 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                            {
                    (yyval.type) = (yyvsp[0].type);
 	           SwigType_push((yyval.type),(yyvsp[-1].str));
                }
-#line 10536 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 392: /* rawtype: type_right  */
-#line 6121 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             { (yyval.type) = (yyvsp[0].type); }
-#line 10542 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 393: /* rawtype: type_right type_qualifier  */
-#line 6122 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                            {
 		  (yyval.type) = (yyvsp[-1].type);
 	          SwigType_push((yyval.type),(yyvsp[0].str));
 	       }
-#line 10551 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 394: /* rawtype: type_qualifier type_right type_qualifier  */
-#line 6126 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                           {
 		  (yyval.type) = (yyvsp[-1].type);
 	          SwigType_push((yyval.type),(yyvsp[0].str));
 	          SwigType_push((yyval.type),(yyvsp[-2].str));
 	       }
-#line 10561 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 395: /* type_right: primitive_type  */
-#line 6133 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 { (yyval.type) = (yyvsp[0].type);
                   /* Printf(stdout,"primitive = '%s'\n", $$);*/
                }
-#line 10569 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 396: /* type_right: TYPE_BOOL  */
-#line 6136 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { (yyval.type) = (yyvsp[0].type); }
-#line 10575 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 397: /* type_right: TYPE_VOID  */
-#line 6137 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { (yyval.type) = (yyvsp[0].type); }
-#line 10581 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 398: /* type_right: c_enum_key idcolon  */
-#line 6141 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { (yyval.type) = NewStringf("enum %s", (yyvsp[0].str)); }
-#line 10587 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 399: /* type_right: TYPE_RAW  */
-#line 6142 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           { (yyval.type) = (yyvsp[0].type); }
-#line 10593 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 400: /* type_right: idcolon  */
-#line 6144 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
 		  (yyval.type) = (yyvsp[0].str);
                }
-#line 10601 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 401: /* type_right: cpptype idcolon  */
-#line 6147 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  { 
 		 (yyval.type) = NewStringf("%s %s", (yyvsp[-1].id), (yyvsp[0].str));
                }
-#line 10609 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 402: /* type_right: decltype  */
-#line 6150 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
                  (yyval.type) = (yyvsp[0].type);
                }
-#line 10617 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 403: /* decltype: DECLTYPE LPAREN idcolon RPAREN  */
-#line 6155 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                 {
                  Node *n = Swig_symbol_clookup((yyvsp[-1].str),0);
                  if (!n) {
@@ -10627,11 +9822,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                    (yyval.type) = Getattr(n, "type");
                  }
                }
-#line 10631 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 404: /* primitive_type: primitive_type_list  */
-#line 6166 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      {
 		 if (!(yyvsp[0].ptype).type) (yyvsp[0].ptype).type = NewString("int");
 		 if ((yyvsp[0].ptype).us) {
@@ -10655,19 +9848,15 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.type) = NewString("long long");
 		 }
                }
-#line 10659 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 405: /* primitive_type_list: type_specifier  */
-#line 6191 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      { 
                  (yyval.ptype) = (yyvsp[0].ptype);
                }
-#line 10667 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 406: /* primitive_type_list: type_specifier primitive_type_list  */
-#line 6194 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                     {
                     if ((yyvsp[-1].ptype).us && (yyvsp[0].ptype).us) {
 		      Swig_error(cparse_file, cparse_line, "Extra %s specifier.\n", (yyvsp[0].ptype).us);
@@ -10719,143 +9908,111 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		      }
 		    }
                }
-#line 10723 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 407: /* type_specifier: TYPE_INT  */
-#line 6248 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           { 
 		    (yyval.ptype).type = NewString("int");
                     (yyval.ptype).us = 0;
                }
-#line 10732 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 408: /* type_specifier: TYPE_SHORT  */
-#line 6252 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             { 
                     (yyval.ptype).type = NewString("short");
                     (yyval.ptype).us = 0;
                 }
-#line 10741 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 409: /* type_specifier: TYPE_LONG  */
-#line 6256 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { 
                     (yyval.ptype).type = NewString("long");
                     (yyval.ptype).us = 0;
                 }
-#line 10750 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 410: /* type_specifier: TYPE_CHAR  */
-#line 6260 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { 
                     (yyval.ptype).type = NewString("char");
                     (yyval.ptype).us = 0;
                 }
-#line 10759 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 411: /* type_specifier: TYPE_WCHAR  */
-#line 6264 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             { 
                     (yyval.ptype).type = NewString("wchar_t");
                     (yyval.ptype).us = 0;
                 }
-#line 10768 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 412: /* type_specifier: TYPE_FLOAT  */
-#line 6268 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             { 
                     (yyval.ptype).type = NewString("float");
                     (yyval.ptype).us = 0;
                 }
-#line 10777 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 413: /* type_specifier: TYPE_DOUBLE  */
-#line 6272 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              { 
                     (yyval.ptype).type = NewString("double");
                     (yyval.ptype).us = 0;
                 }
-#line 10786 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 414: /* type_specifier: TYPE_SIGNED  */
-#line 6276 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              { 
                     (yyval.ptype).us = NewString("signed");
                     (yyval.ptype).type = 0;
                 }
-#line 10795 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 415: /* type_specifier: TYPE_UNSIGNED  */
-#line 6280 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                { 
                     (yyval.ptype).us = NewString("unsigned");
                     (yyval.ptype).type = 0;
                 }
-#line 10804 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 416: /* type_specifier: TYPE_COMPLEX  */
-#line 6284 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { 
                     (yyval.ptype).type = NewString("complex");
                     (yyval.ptype).us = 0;
                 }
-#line 10813 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 417: /* type_specifier: TYPE_NON_ISO_INT8  */
-#line 6288 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    { 
                     (yyval.ptype).type = NewString("__int8");
                     (yyval.ptype).us = 0;
                 }
-#line 10822 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 418: /* type_specifier: TYPE_NON_ISO_INT16  */
-#line 6292 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { 
                     (yyval.ptype).type = NewString("__int16");
                     (yyval.ptype).us = 0;
                 }
-#line 10831 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 419: /* type_specifier: TYPE_NON_ISO_INT32  */
-#line 6296 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { 
                     (yyval.ptype).type = NewString("__int32");
                     (yyval.ptype).us = 0;
                 }
-#line 10840 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 420: /* type_specifier: TYPE_NON_ISO_INT64  */
-#line 6300 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     { 
                     (yyval.ptype).type = NewString("__int64");
                     (yyval.ptype).us = 0;
                 }
-#line 10849 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 421: /* $@13: %empty  */
-#line 6306 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                  { /* scanner_check_typedef(); */ }
-#line 10855 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 422: /* definetype: $@13 expr  */
-#line 6306 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                          {
                    (yyval.dtype) = (yyvsp[0].dtype);
 		   if ((yyval.dtype).type == T_STRING) {
@@ -10872,35 +10029,27 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.dtype).final = 0;
 		   scanner_ignore_typedef();
                 }
-#line 10876 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 423: /* definetype: default_delete  */
-#line 6322 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
 		  (yyval.dtype) = (yyvsp[0].dtype);
 		}
-#line 10884 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 424: /* default_delete: deleted_definition  */
-#line 6327 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     {
 		  (yyval.dtype) = (yyvsp[0].dtype);
 		}
-#line 10892 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 425: /* default_delete: explicit_default  */
-#line 6330 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    {
 		  (yyval.dtype) = (yyvsp[0].dtype);
 		}
-#line 10900 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 426: /* deleted_definition: DELETE_KW  */
-#line 6336 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {
 		  (yyval.dtype).val = NewString("delete");
 		  (yyval.dtype).rawval = 0;
@@ -10913,11 +10062,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  (yyval.dtype).nexcept = 0;
 		  (yyval.dtype).final = 0;
 		}
-#line 10917 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 427: /* explicit_default: DEFAULT  */
-#line 6351 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            {
 		  (yyval.dtype).val = NewString("default");
 		  (yyval.dtype).rawval = 0;
@@ -10930,42 +10077,32 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  (yyval.dtype).nexcept = 0;
 		  (yyval.dtype).final = 0;
 		}
-#line 10934 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 428: /* ename: identifier  */
-#line 6367 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              { (yyval.id) = (yyvsp[0].id); }
-#line 10940 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 429: /* ename: empty  */
-#line 6368 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { (yyval.id) = (char *) 0;}
-#line 10946 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 434: /* enumlist: enumlist_item  */
-#line 6381 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
 		  Setattr((yyvsp[0].node),"_last",(yyvsp[0].node));
 		  (yyval.node) = (yyvsp[0].node);
 		}
-#line 10955 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 435: /* enumlist: enumlist_item DOXYGENPOSTSTRING  */
-#line 6385 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                   {
 		  Setattr((yyvsp[-1].node),"_last",(yyvsp[-1].node));
 		  set_comment((yyvsp[-1].node), (yyvsp[0].str));
 		  (yyval.node) = (yyvsp[-1].node);
 		}
-#line 10965 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 436: /* enumlist: enumlist_item COMMA enumlist  */
-#line 6390 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                {
 		  if ((yyvsp[0].node)) {
 		    set_nextSibling((yyvsp[-2].node), (yyvsp[0].node));
@@ -10974,11 +10111,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  }
 		  (yyval.node) = (yyvsp[-2].node);
 		}
-#line 10978 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 437: /* enumlist: enumlist_item COMMA DOXYGENPOSTSTRING enumlist  */
-#line 6398 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                  {
 		  if ((yyvsp[0].node)) {
 		    set_nextSibling((yyvsp[-3].node), (yyvsp[0].node));
@@ -10988,44 +10123,34 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  set_comment((yyvsp[-3].node), (yyvsp[-1].str));
 		  (yyval.node) = (yyvsp[-3].node);
 		}
-#line 10992 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 438: /* enumlist: optional_ignored_defines  */
-#line 6407 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                            {
 		  (yyval.node) = 0;
 		}
-#line 11000 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 439: /* enumlist_item: optional_ignored_defines edecl_with_dox optional_ignored_defines  */
-#line 6412 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                    {
 		  (yyval.node) = (yyvsp[-1].node);
 		}
-#line 11008 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 440: /* edecl_with_dox: edecl  */
-#line 6417 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         {
 		  (yyval.node) = (yyvsp[0].node);
 		}
-#line 11016 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 441: /* edecl_with_dox: DOXYGENSTRING edecl  */
-#line 6420 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                       {
 		  (yyval.node) = (yyvsp[0].node);
 		  set_comment((yyvsp[0].node), (yyvsp[-1].str));
 		}
-#line 11025 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 442: /* edecl: identifier  */
-#line 6426 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              {
 		   SwigType *type = NewSwigType(T_INT);
 		   (yyval.node) = new_node("enumitem");
@@ -11034,11 +10159,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   SetFlag((yyval.node),"feature:immutable");
 		   Delete(type);
 		 }
-#line 11038 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 443: /* edecl: identifier EQUAL etype  */
-#line 6434 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                           {
 		   SwigType *type = NewSwigType((yyvsp[0].dtype).type == T_BOOL ? T_BOOL : ((yyvsp[0].dtype).type == T_CHAR ? T_CHAR : T_INT));
 		   (yyval.node) = new_node("enumitem");
@@ -11049,11 +10172,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   Setattr((yyval.node),"value",(yyvsp[-2].id));
 		   Delete(type);
                  }
-#line 11053 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 444: /* etype: expr  */
-#line 6446 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         {
                    (yyval.dtype) = (yyvsp[0].dtype);
 		   if (((yyval.dtype).type != T_INT) && ((yyval.dtype).type != T_UINT) &&
@@ -11065,17 +10186,13 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		     Swig_error(cparse_file,cparse_line,"Type error. Expecting an integral type\n");
 		   }
                 }
-#line 11069 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 445: /* expr: valexpr  */
-#line 6461 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11075 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 446: /* expr: type  */
-#line 6462 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                       {
 		 Node *n;
 		 (yyval.dtype).val = (yyvsp[0].type);
@@ -11093,99 +10210,77 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                    }
 		 }
                }
-#line 11097 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 447: /* exprmem: ID ARROW ID  */
-#line 6482 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              {
 		 (yyval.dtype).val = NewStringf("%s->%s", (yyvsp[-2].id), (yyvsp[0].id));
 		 (yyval.dtype).type = 0;
 	       }
-#line 11106 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 448: /* exprmem: exprmem ARROW ID  */
-#line 6486 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
 		 (yyval.dtype) = (yyvsp[-2].dtype);
 		 Printf((yyval.dtype).val, "->%s", (yyvsp[0].id));
 	       }
-#line 11115 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 449: /* exprmem: exprmem PERIOD ID  */
-#line 6496 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    {
 		 (yyval.dtype) = (yyvsp[-2].dtype);
 		 Printf((yyval.dtype).val, ".%s", (yyvsp[0].id));
 	       }
-#line 11124 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 450: /* valexpr: exprnum  */
-#line 6502 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
 		    (yyval.dtype) = (yyvsp[0].dtype);
                }
-#line 11132 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 451: /* valexpr: exprmem  */
-#line 6505 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
 		    (yyval.dtype) = (yyvsp[0].dtype);
                }
-#line 11140 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 452: /* valexpr: string  */
-#line 6508 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         {
 		    (yyval.dtype).val = (yyvsp[0].str);
                     (yyval.dtype).type = T_STRING;
                }
-#line 11149 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 453: /* valexpr: SIZEOF LPAREN type parameter_declarator RPAREN  */
-#line 6512 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                 {
 		  SwigType_push((yyvsp[-2].type),(yyvsp[-1].decl).type);
 		  (yyval.dtype).val = NewStringf("sizeof(%s)",SwigType_str((yyvsp[-2].type),0));
 		  (yyval.dtype).type = T_ULONG;
                }
-#line 11159 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 454: /* valexpr: SIZEOF PERIOD PERIOD PERIOD LPAREN type parameter_declarator RPAREN  */
-#line 6517 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                                      {
 		  SwigType_push((yyvsp[-2].type),(yyvsp[-1].decl).type);
 		  (yyval.dtype).val = NewStringf("sizeof...(%s)",SwigType_str((yyvsp[-2].type),0));
 		  (yyval.dtype).type = T_ULONG;
                }
-#line 11169 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 455: /* valexpr: exprcompound  */
-#line 6522 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11175 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 456: /* valexpr: wstring  */
-#line 6523 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
 		    (yyval.dtype).val = (yyvsp[0].str);
 		    (yyval.dtype).rawval = NewStringf("L\"%s\"", (yyval.dtype).val);
                     (yyval.dtype).type = T_WSTRING;
 	       }
-#line 11185 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 457: /* valexpr: CHARCONST  */
-#line 6528 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            {
 		  (yyval.dtype).val = NewString((yyvsp[0].str));
 		  if (Len((yyval.dtype).val)) {
@@ -11200,11 +10295,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  (yyval.dtype).nexcept = 0;
 		  (yyval.dtype).final = 0;
 	       }
-#line 11204 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 458: /* valexpr: WCHARCONST  */
-#line 6542 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             {
 		  (yyval.dtype).val = NewString((yyvsp[0].str));
 		  if (Len((yyval.dtype).val)) {
@@ -11219,11 +10312,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		  (yyval.dtype).nexcept = 0;
 		  (yyval.dtype).final = 0;
 	       }
-#line 11223 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 459: /* valexpr: LPAREN expr RPAREN  */
-#line 6558 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                 {
 		    (yyval.dtype).val = NewStringf("(%s)",(yyvsp[-1].dtype).val);
 		    if ((yyvsp[-1].dtype).rawval) {
@@ -11231,11 +10322,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    }
 		    (yyval.dtype).type = (yyvsp[-1].dtype).type;
 	       }
-#line 11235 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 460: /* valexpr: LPAREN expr RPAREN expr  */
-#line 6568 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                     {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
@@ -11254,11 +10343,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 }
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type, (yyvsp[0].dtype).type);
  	       }
-#line 11258 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 461: /* valexpr: LPAREN expr pointer RPAREN expr  */
-#line 6586 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                             {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
@@ -11266,11 +10353,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.dtype).val = NewStringf("(%s) %s", SwigType_str((yyvsp[-3].dtype).val,0), (yyvsp[0].dtype).val);
 		 }
  	       }
-#line 11270 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 462: /* valexpr: LPAREN expr AND RPAREN expr  */
-#line 6593 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                         {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
@@ -11278,11 +10363,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.dtype).val = NewStringf("(%s) %s", SwigType_str((yyvsp[-3].dtype).val,0), (yyvsp[0].dtype).val);
 		 }
  	       }
-#line 11282 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 463: /* valexpr: LPAREN expr LAND RPAREN expr  */
-#line 6600 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                          {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
@@ -11290,11 +10373,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.dtype).val = NewStringf("(%s) %s", SwigType_str((yyvsp[-3].dtype).val,0), (yyvsp[0].dtype).val);
 		 }
  	       }
-#line 11294 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 464: /* valexpr: LPAREN expr pointer AND RPAREN expr  */
-#line 6607 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                 {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
@@ -11303,11 +10384,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.dtype).val = NewStringf("(%s) %s", SwigType_str((yyvsp[-4].dtype).val,0), (yyvsp[0].dtype).val);
 		 }
  	       }
-#line 11307 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 465: /* valexpr: LPAREN expr pointer LAND RPAREN expr  */
-#line 6615 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                  {
                  (yyval.dtype) = (yyvsp[0].dtype);
 		 if ((yyvsp[0].dtype).type != T_STRING) {
@@ -11316,277 +10395,211 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   (yyval.dtype).val = NewStringf("(%s) %s", SwigType_str((yyvsp[-4].dtype).val,0), (yyvsp[0].dtype).val);
 		 }
  	       }
-#line 11320 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 466: /* valexpr: AND expr  */
-#line 6623 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
 		 (yyval.dtype) = (yyvsp[0].dtype);
                  (yyval.dtype).val = NewStringf("&%s",(yyvsp[0].dtype).val);
 	       }
-#line 11329 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 467: /* valexpr: LAND expr  */
-#line 6627 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            {
 		 (yyval.dtype) = (yyvsp[0].dtype);
                  (yyval.dtype).val = NewStringf("&&%s",(yyvsp[0].dtype).val);
 	       }
-#line 11338 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 468: /* valexpr: STAR expr  */
-#line 6631 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            {
 		 (yyval.dtype) = (yyvsp[0].dtype);
                  (yyval.dtype).val = NewStringf("*%s",(yyvsp[0].dtype).val);
 	       }
-#line 11347 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 469: /* exprnum: NUM_INT  */
-#line 6637 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11353 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 470: /* exprnum: NUM_FLOAT  */
-#line 6638 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11359 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 471: /* exprnum: NUM_UNSIGNED  */
-#line 6639 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11365 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 472: /* exprnum: NUM_LONG  */
-#line 6640 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11371 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 473: /* exprnum: NUM_ULONG  */
-#line 6641 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11377 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 474: /* exprnum: NUM_LONGLONG  */
-#line 6642 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11383 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 475: /* exprnum: NUM_ULONGLONG  */
-#line 6643 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11389 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 476: /* exprnum: NUM_BOOL  */
-#line 6644 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { (yyval.dtype) = (yyvsp[0].dtype); }
-#line 11395 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 477: /* exprcompound: expr PLUS expr  */
-#line 6647 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
 		 (yyval.dtype).val = NewStringf("%s+%s", COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11404 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 478: /* exprcompound: expr MINUS expr  */
-#line 6651 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
 		 (yyval.dtype).val = NewStringf("%s-%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11413 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 479: /* exprcompound: expr STAR expr  */
-#line 6655 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
 		 (yyval.dtype).val = NewStringf("%s*%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11422 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 480: /* exprcompound: expr SLASH expr  */
-#line 6659 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
 		 (yyval.dtype).val = NewStringf("%s/%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11431 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 481: /* exprcompound: expr MODULO expr  */
-#line 6663 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
 		 (yyval.dtype).val = NewStringf("%s%%%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11440 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 482: /* exprcompound: expr AND expr  */
-#line 6667 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {
 		 (yyval.dtype).val = NewStringf("%s&%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11449 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 483: /* exprcompound: expr OR expr  */
-#line 6671 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               {
 		 (yyval.dtype).val = NewStringf("%s|%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11458 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 484: /* exprcompound: expr XOR expr  */
-#line 6675 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {
 		 (yyval.dtype).val = NewStringf("%s^%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type,(yyvsp[0].dtype).type);
 	       }
-#line 11467 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 485: /* exprcompound: expr LSHIFT expr  */
-#line 6679 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
 		 (yyval.dtype).val = NewStringf("%s << %s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote_type((yyvsp[-2].dtype).type);
 	       }
-#line 11476 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 486: /* exprcompound: expr RSHIFT expr  */
-#line 6683 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
 		 (yyval.dtype).val = NewStringf("%s >> %s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = promote_type((yyvsp[-2].dtype).type);
 	       }
-#line 11485 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 487: /* exprcompound: expr LAND expr  */
-#line 6687 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
 		 (yyval.dtype).val = NewStringf("%s&&%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11494 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 488: /* exprcompound: expr LOR expr  */
-#line 6691 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                {
 		 (yyval.dtype).val = NewStringf("%s||%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11503 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 489: /* exprcompound: expr EQUALTO expr  */
-#line 6695 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    {
 		 (yyval.dtype).val = NewStringf("%s==%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11512 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 490: /* exprcompound: expr NOTEQUALTO expr  */
-#line 6699 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                       {
 		 (yyval.dtype).val = NewStringf("%s!=%s",COMPOUND_EXPR_VAL((yyvsp[-2].dtype)),COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11521 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 491: /* exprcompound: expr GREATERTHANOREQUALTO expr  */
-#line 6713 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                 {
 		 (yyval.dtype).val = NewStringf("%s >= %s", COMPOUND_EXPR_VAL((yyvsp[-2].dtype)), COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11530 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 492: /* exprcompound: expr LESSTHANOREQUALTO expr  */
-#line 6717 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                              {
 		 (yyval.dtype).val = NewStringf("%s <= %s", COMPOUND_EXPR_VAL((yyvsp[-2].dtype)), COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = cparse_cplusplus ? T_BOOL : T_INT;
 	       }
-#line 11539 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 493: /* exprcompound: expr QUESTIONMARK expr COLON expr  */
-#line 6721 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                       {
 		 (yyval.dtype).val = NewStringf("%s?%s:%s", COMPOUND_EXPR_VAL((yyvsp[-4].dtype)), COMPOUND_EXPR_VAL((yyvsp[-2].dtype)), COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 /* This may not be exactly right, but is probably good enough
 		  * for the purposes of parsing constant expressions. */
 		 (yyval.dtype).type = promote((yyvsp[-2].dtype).type, (yyvsp[0].dtype).type);
 	       }
-#line 11550 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 494: /* exprcompound: MINUS expr  */
-#line 6727 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          {
 		 (yyval.dtype).val = NewStringf("-%s",(yyvsp[0].dtype).val);
 		 (yyval.dtype).type = (yyvsp[0].dtype).type;
 	       }
-#line 11559 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 495: /* exprcompound: PLUS expr  */
-#line 6731 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                         {
                  (yyval.dtype).val = NewStringf("+%s",(yyvsp[0].dtype).val);
 		 (yyval.dtype).type = (yyvsp[0].dtype).type;
 	       }
-#line 11568 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 496: /* exprcompound: NOT expr  */
-#line 6735 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
 		 (yyval.dtype).val = NewStringf("~%s",(yyvsp[0].dtype).val);
 		 (yyval.dtype).type = (yyvsp[0].dtype).type;
 	       }
-#line 11577 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 497: /* exprcompound: LNOT expr  */
-#line 6739 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            {
                  (yyval.dtype).val = NewStringf("!%s",COMPOUND_EXPR_VAL((yyvsp[0].dtype)));
 		 (yyval.dtype).type = T_INT;
 	       }
-#line 11586 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 498: /* exprcompound: type LPAREN  */
-#line 6743 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              {
 		 String *qty;
                  skip_balanced('(',')');
@@ -11601,61 +10614,45 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 (yyval.dtype).type = T_INT;
 		 Delete(qty);
                }
-#line 11605 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 499: /* ellipsis: PERIOD PERIOD PERIOD  */
-#line 6759 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                      {
 	        (yyval.str) = NewString("...");
 	      }
-#line 11613 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 500: /* variadic: ellipsis  */
-#line 6764 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
 	        (yyval.str) = (yyvsp[0].str);
 	      }
-#line 11621 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 501: /* variadic: empty  */
-#line 6767 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                       {
 	        (yyval.str) = 0;
 	      }
-#line 11629 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 502: /* inherit: raw_inherit  */
-#line 6772 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              {
 		 (yyval.bases) = (yyvsp[0].bases);
                }
-#line 11637 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 503: /* $@14: %empty  */
-#line 6777 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { inherit_list = 1; }
-#line 11643 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 504: /* raw_inherit: COLON $@14 base_list  */
-#line 6777 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                         { (yyval.bases) = (yyvsp[0].bases); inherit_list = 0; }
-#line 11649 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 505: /* raw_inherit: empty  */
-#line 6778 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { (yyval.bases) = 0; }
-#line 11655 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 506: /* base_list: base_specifier  */
-#line 6781 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
 		   Hash *list = NewHash();
 		   Node *base = (yyvsp[0].node);
@@ -11672,11 +10669,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   Append(Getattr(list,Getattr(base,"access")),name);
 	           (yyval.bases) = list;
                }
-#line 11676 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 507: /* base_list: base_list COMMA base_specifier  */
-#line 6798 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                 {
 		   Hash *list = (yyvsp[-2].bases);
 		   Node *base = (yyvsp[0].node);
@@ -11684,19 +10679,15 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		   Append(Getattr(list,Getattr(base,"access")),name);
                    (yyval.bases) = list;
                }
-#line 11688 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 508: /* @15: %empty  */
-#line 6807 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                              {
 		 (yyval.intvalue) = cparse_line;
 	       }
-#line 11696 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 509: /* base_specifier: opt_virtual @15 idcolon variadic  */
-#line 6809 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
 		 (yyval.node) = NewHash();
 		 Setfile((yyval.node),cparse_file);
@@ -11713,19 +10704,15 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 if ((yyvsp[0].str))
 		   SetFlag((yyval.node), "variadic");
                }
-#line 11717 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 510: /* @16: %empty  */
-#line 6825 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                               {
 		 (yyval.intvalue) = cparse_line;
 	       }
-#line 11725 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 511: /* base_specifier: opt_virtual access_specifier @16 opt_virtual idcolon variadic  */
-#line 6827 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                               {
 		 (yyval.node) = NewHash();
 		 Setfile((yyval.node),cparse_file);
@@ -11740,248 +10727,192 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		 if ((yyvsp[0].str))
 		   SetFlag((yyval.node), "variadic");
                }
-#line 11744 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 512: /* access_specifier: PUBLIC  */
-#line 6843 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { (yyval.id) = (char*)"public"; }
-#line 11750 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 513: /* access_specifier: PRIVATE  */
-#line 6844 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          { (yyval.id) = (char*)"private"; }
-#line 11756 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 514: /* access_specifier: PROTECTED  */
-#line 6845 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            { (yyval.id) = (char*)"protected"; }
-#line 11762 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 515: /* templcpptype: CLASS  */
-#line 6848 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { 
                    (yyval.id) = (char*)"class"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11771 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 516: /* templcpptype: TYPENAME  */
-#line 6852 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           { 
                    (yyval.id) = (char *)"typename"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11780 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 517: /* templcpptype: CLASS PERIOD PERIOD PERIOD  */
-#line 6856 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                             { 
                    (yyval.id) = (char *)"class..."; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11789 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 518: /* templcpptype: TYPENAME PERIOD PERIOD PERIOD  */
-#line 6860 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                { 
                    (yyval.id) = (char *)"typename..."; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11798 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 519: /* cpptype: templcpptype  */
-#line 6866 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               {
                  (yyval.id) = (yyvsp[0].id);
                }
-#line 11806 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 520: /* cpptype: STRUCT  */
-#line 6869 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { 
                    (yyval.id) = (char*)"struct"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11815 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 521: /* cpptype: UNION  */
-#line 6873 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
                    (yyval.id) = (char*)"union"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11824 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 522: /* classkey: CLASS  */
-#line 6879 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
                    (yyval.id) = (char*)"class";
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11833 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 523: /* classkey: STRUCT  */
-#line 6883 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         {
                    (yyval.id) = (char*)"struct";
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11842 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 524: /* classkey: UNION  */
-#line 6887 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
                    (yyval.id) = (char*)"union";
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
-#line 11851 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 525: /* classkeyopt: classkey  */
-#line 6893 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
 		   (yyval.id) = (yyvsp[0].id);
                }
-#line 11859 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 526: /* classkeyopt: empty  */
-#line 6896 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
 		   (yyval.id) = 0;
                }
-#line 11867 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 529: /* virt_specifier_seq: OVERRIDE  */
-#line 6905 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               {
                    (yyval.str) = 0;
 	       }
-#line 11875 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 530: /* virt_specifier_seq: FINAL  */
-#line 6908 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
                    (yyval.str) = NewString("1");
 	       }
-#line 11883 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 531: /* virt_specifier_seq: FINAL OVERRIDE  */
-#line 6911 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
                    (yyval.str) = NewString("1");
 	       }
-#line 11891 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 532: /* virt_specifier_seq: OVERRIDE FINAL  */
-#line 6914 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
                    (yyval.str) = NewString("1");
 	       }
-#line 11899 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 533: /* virt_specifier_seq_opt: virt_specifier_seq  */
-#line 6919 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                             {
                    (yyval.str) = (yyvsp[0].str);
                }
-#line 11907 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 534: /* virt_specifier_seq_opt: empty  */
-#line 6922 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
                    (yyval.str) = 0;
                }
-#line 11915 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 535: /* exception_specification: THROW LPAREN parms RPAREN  */
-#line 6927 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                     {
                     (yyval.dtype).throws = (yyvsp[-1].pl);
                     (yyval.dtype).throwf = NewString("1");
                     (yyval.dtype).nexcept = 0;
                     (yyval.dtype).final = 0;
 	       }
-#line 11926 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 536: /* exception_specification: NOEXCEPT  */
-#line 6933 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
                     (yyval.dtype).nexcept = NewString("true");
                     (yyval.dtype).final = 0;
 	       }
-#line 11937 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 537: /* exception_specification: virt_specifier_seq  */
-#line 6939 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                     {
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
                     (yyval.dtype).nexcept = 0;
                     (yyval.dtype).final = (yyvsp[0].str);
 	       }
-#line 11948 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 538: /* exception_specification: THROW LPAREN parms RPAREN virt_specifier_seq  */
-#line 6945 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                               {
                     (yyval.dtype).throws = (yyvsp[-2].pl);
                     (yyval.dtype).throwf = NewString("1");
                     (yyval.dtype).nexcept = 0;
                     (yyval.dtype).final = (yyvsp[0].str);
 	       }
-#line 11959 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 539: /* exception_specification: NOEXCEPT virt_specifier_seq  */
-#line 6951 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                              {
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
                     (yyval.dtype).nexcept = NewString("true");
                     (yyval.dtype).final = (yyvsp[0].str);
 	       }
-#line 11970 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 540: /* exception_specification: NOEXCEPT LPAREN expr RPAREN  */
-#line 6957 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                              {
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
                     (yyval.dtype).nexcept = (yyvsp[-1].dtype).val;
                     (yyval.dtype).final = 0;
 	       }
-#line 11981 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 541: /* qualifiers_exception_specification: cv_ref_qualifier  */
-#line 6965 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                       {
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
@@ -11990,39 +10921,31 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     (yyval.dtype).qualifier = (yyvsp[0].dtype).qualifier;
                     (yyval.dtype).refqualifier = (yyvsp[0].dtype).refqualifier;
                }
-#line 11994 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 542: /* qualifiers_exception_specification: exception_specification  */
-#line 6973 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          {
 		    (yyval.dtype) = (yyvsp[0].dtype);
                     (yyval.dtype).qualifier = 0;
                     (yyval.dtype).refqualifier = 0;
                }
-#line 12004 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 543: /* qualifiers_exception_specification: cv_ref_qualifier exception_specification  */
-#line 6978 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                           {
 		    (yyval.dtype) = (yyvsp[0].dtype);
                     (yyval.dtype).qualifier = (yyvsp[-1].dtype).qualifier;
                     (yyval.dtype).refqualifier = (yyvsp[-1].dtype).refqualifier;
                }
-#line 12014 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 544: /* cpp_const: qualifiers_exception_specification  */
-#line 6985 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                     {
                     (yyval.dtype) = (yyvsp[0].dtype);
                }
-#line 12022 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 545: /* cpp_const: empty  */
-#line 6988 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { 
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
@@ -12031,11 +10954,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     (yyval.dtype).qualifier = 0;
                     (yyval.dtype).refqualifier = 0;
                }
-#line 12035 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 546: /* ctor_end: cpp_const ctor_initializer SEMI  */
-#line 6998 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                  { 
                     Clear(scanner_ccode); 
                     (yyval.decl).have_parms = 0; 
@@ -12047,11 +10968,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     if ((yyvsp[-2].dtype).qualifier)
                       Swig_error(cparse_file, cparse_line, "Constructor cannot have a qualifier.\n");
                }
-#line 12051 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 547: /* ctor_end: cpp_const ctor_initializer LBRACE  */
-#line 7009 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                    { 
                     skip_balanced('{','}'); 
                     (yyval.decl).have_parms = 0; 
@@ -12063,11 +10982,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     if ((yyvsp[-2].dtype).qualifier)
                       Swig_error(cparse_file, cparse_line, "Constructor cannot have a qualifier.\n");
                }
-#line 12067 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 548: /* ctor_end: LPAREN parms RPAREN SEMI  */
-#line 7020 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                           { 
                     Clear(scanner_ccode); 
                     (yyval.decl).parms = (yyvsp[-2].pl); 
@@ -12078,11 +10995,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.decl).nexcept = 0;
 		    (yyval.decl).final = 0;
                }
-#line 12082 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 549: /* ctor_end: LPAREN parms RPAREN LBRACE  */
-#line 7030 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                             {
                     skip_balanced('{','}'); 
                     (yyval.decl).parms = (yyvsp[-2].pl); 
@@ -12093,11 +11008,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     (yyval.decl).nexcept = 0;
                     (yyval.decl).final = 0;
                }
-#line 12097 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 550: /* ctor_end: EQUAL definetype SEMI  */
-#line 7040 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        { 
                     (yyval.decl).have_parms = 0; 
                     (yyval.decl).defarg = (yyvsp[-1].dtype).val; 
@@ -12106,11 +11019,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     (yyval.decl).nexcept = 0;
                     (yyval.decl).final = 0;
                }
-#line 12110 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 551: /* ctor_end: exception_specification EQUAL default_delete SEMI  */
-#line 7048 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                                    {
                     (yyval.decl).have_parms = 0;
                     (yyval.decl).defarg = (yyvsp[-1].dtype).val;
@@ -12121,349 +11032,261 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
                     if ((yyvsp[-3].dtype).qualifier)
                       Swig_error(cparse_file, cparse_line, "Constructor cannot have a qualifier.\n");
                }
-#line 12125 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 558: /* mem_initializer: idcolon LPAREN  */
-#line 7070 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
 		  skip_balanced('(',')');
 		  Clear(scanner_ccode);
 		}
-#line 12134 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 559: /* mem_initializer: idcolon LBRACE  */
-#line 7082 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
 		  skip_balanced('{','}');
 		  Clear(scanner_ccode);
 		}
-#line 12143 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 560: /* less_valparms_greater: LESSTHAN valparms GREATERTHAN  */
-#line 7088 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                       {
                      String *s = NewStringEmpty();
                      SwigType_add_template(s,(yyvsp[-1].p));
                      (yyval.id) = Char(s);
 		     scanner_last_id(1);
                 }
-#line 12154 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 561: /* identifier: ID  */
-#line 7097 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                     { (yyval.id) = (yyvsp[0].id); }
-#line 12160 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 562: /* identifier: OVERRIDE  */
-#line 7098 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           { (yyval.id) = Swig_copy_string("override"); }
-#line 12166 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 563: /* identifier: FINAL  */
-#line 7099 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.id) = Swig_copy_string("final"); }
-#line 12172 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 564: /* idstring: identifier  */
-#line 7102 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             { (yyval.id) = (yyvsp[0].id); }
-#line 12178 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 565: /* idstring: default_delete  */
-#line 7103 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 { (yyval.id) = Char((yyvsp[0].dtype).val); }
-#line 12184 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 566: /* idstring: string  */
-#line 7104 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { (yyval.id) = Char((yyvsp[0].str)); }
-#line 12190 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 567: /* idstringopt: idstring  */
-#line 7107 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           { (yyval.id) = (yyvsp[0].id); }
-#line 12196 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 568: /* idstringopt: empty  */
-#line 7108 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.id) = 0; }
-#line 12202 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 569: /* idcolon: idtemplate idcolontail  */
-#line 7111 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                         { 
                   (yyval.str) = 0;
 		  if (!(yyval.str)) (yyval.str) = NewStringf("%s%s", (yyvsp[-1].str),(yyvsp[0].str));
       	          Delete((yyvsp[0].str));
                }
-#line 12212 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 570: /* idcolon: NONID DCOLON idtemplatetemplate idcolontail  */
-#line 7116 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                              {
 		 (yyval.str) = NewStringf("::%s%s",(yyvsp[-1].str),(yyvsp[0].str));
                  Delete((yyvsp[0].str));
                }
-#line 12221 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 571: /* idcolon: idtemplate  */
-#line 7120 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             {
 		 (yyval.str) = NewString((yyvsp[0].str));
    	       }
-#line 12229 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 572: /* idcolon: NONID DCOLON idtemplatetemplate  */
-#line 7123 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                  {
 		 (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12237 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 573: /* idcolon: OPERATOR  */
-#line 7126 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
                  (yyval.str) = NewStringf("%s", (yyvsp[0].str));
 	       }
-#line 12245 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 574: /* idcolon: OPERATOR less_valparms_greater  */
-#line 7129 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                 {
                  (yyval.str) = NewStringf("%s%s", (yyvsp[-1].str), (yyvsp[0].id));
 	       }
-#line 12253 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 575: /* idcolon: NONID DCOLON OPERATOR  */
-#line 7132 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        {
                  (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12261 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 576: /* idcolontail: DCOLON idtemplatetemplate idcolontail  */
-#line 7137 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                        {
                    (yyval.str) = NewStringf("::%s%s",(yyvsp[-1].str),(yyvsp[0].str));
 		   Delete((yyvsp[0].str));
                }
-#line 12270 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 577: /* idcolontail: DCOLON idtemplatetemplate  */
-#line 7141 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                            {
                    (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12278 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 578: /* idcolontail: DCOLON OPERATOR  */
-#line 7144 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
                    (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12286 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 579: /* idcolontail: DCNOT idtemplate  */
-#line 7151 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
 		 (yyval.str) = NewStringf("::~%s",(yyvsp[0].str));
                }
-#line 12294 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 580: /* idtemplate: identifier  */
-#line 7157 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                            {
 		(yyval.str) = NewStringf("%s", (yyvsp[0].id));
 	      }
-#line 12302 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 581: /* idtemplate: identifier less_valparms_greater  */
-#line 7160 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                  {
 		(yyval.str) = NewStringf("%s%s", (yyvsp[-1].id), (yyvsp[0].id));
 	      }
-#line 12310 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 582: /* idtemplatetemplate: idtemplate  */
-#line 7165 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                 {
 		(yyval.str) = (yyvsp[0].str);
 	      }
-#line 12318 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 583: /* idtemplatetemplate: TEMPLATE identifier less_valparms_greater  */
-#line 7168 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                           {
 		(yyval.str) = NewStringf("%s%s", (yyvsp[-1].id), (yyvsp[0].id));
 	      }
-#line 12326 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 584: /* idcolonnt: identifier idcolontailnt  */
-#line 7174 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          {
                   (yyval.str) = 0;
 		  if (!(yyval.str)) (yyval.str) = NewStringf("%s%s", (yyvsp[-1].id),(yyvsp[0].str));
       	          Delete((yyvsp[0].str));
                }
-#line 12336 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 585: /* idcolonnt: NONID DCOLON identifier idcolontailnt  */
-#line 7179 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                        {
 		 (yyval.str) = NewStringf("::%s%s",(yyvsp[-1].id),(yyvsp[0].str));
                  Delete((yyvsp[0].str));
                }
-#line 12345 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 586: /* idcolonnt: identifier  */
-#line 7183 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                             {
 		 (yyval.str) = NewString((yyvsp[0].id));
    	       }
-#line 12353 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 587: /* idcolonnt: NONID DCOLON identifier  */
-#line 7186 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                          {
 		 (yyval.str) = NewStringf("::%s",(yyvsp[0].id));
                }
-#line 12361 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 588: /* idcolonnt: OPERATOR  */
-#line 7189 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
                  (yyval.str) = NewString((yyvsp[0].str));
 	       }
-#line 12369 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 589: /* idcolonnt: NONID DCOLON OPERATOR  */
-#line 7192 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        {
                  (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12377 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 590: /* idcolontailnt: DCOLON identifier idcolontailnt  */
-#line 7197 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                   {
                    (yyval.str) = NewStringf("::%s%s",(yyvsp[-1].id),(yyvsp[0].str));
 		   Delete((yyvsp[0].str));
                }
-#line 12386 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 591: /* idcolontailnt: DCOLON identifier  */
-#line 7201 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                    {
                    (yyval.str) = NewStringf("::%s",(yyvsp[0].id));
                }
-#line 12394 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 592: /* idcolontailnt: DCOLON OPERATOR  */
-#line 7204 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                  {
                    (yyval.str) = NewStringf("::%s",(yyvsp[0].str));
                }
-#line 12402 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 593: /* idcolontailnt: DCNOT identifier  */
-#line 7207 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
 		 (yyval.str) = NewStringf("::~%s",(yyvsp[0].id));
                }
-#line 12410 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 594: /* string: string STRING  */
-#line 7213 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                { 
                    (yyval.str) = NewStringf("%s%s", (yyvsp[-1].str), (yyvsp[0].id));
                }
-#line 12418 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 595: /* string: STRING  */
-#line 7216 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         { (yyval.str) = NewString((yyvsp[0].id));}
-#line 12424 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 596: /* wstring: wstring WSTRING  */
-#line 7219 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                   {
                    (yyval.str) = NewStringf("%s%s", (yyvsp[-1].str), (yyvsp[0].id));
                }
-#line 12432 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 597: /* wstring: WSTRING  */
-#line 7227 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          { (yyval.str) = NewString((yyvsp[0].id));}
-#line 12438 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 598: /* stringbrace: string  */
-#line 7230 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         {
 		 (yyval.str) = (yyvsp[0].str);
                }
-#line 12446 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 599: /* stringbrace: LBRACE  */
-#line 7233 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         {
                   skip_balanced('{','}');
 		  (yyval.str) = NewString(scanner_ccode);
                }
-#line 12455 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 600: /* stringbrace: HBLOCK  */
-#line 7237 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        {
 		 (yyval.str) = (yyvsp[0].str);
               }
-#line 12463 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 601: /* options: LPAREN kwargs RPAREN  */
-#line 7242 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                       {
                   Hash *n;
                   (yyval.node) = NewHash();
@@ -12477,17 +11300,13 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		     n = nextSibling(n);
 		  }
                }
-#line 12481 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 602: /* options: empty  */
-#line 7255 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.node) = 0; }
-#line 12487 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 603: /* options_ex: COMMA kwargs  */
-#line 7257 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                               {
                   Hash *n;
                   (yyval.node) = NewHash();
@@ -12501,92 +11320,72 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		     n = nextSibling(n);
 		  }
                }
-#line 12505 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 604: /* options_ex: empty  */
-#line 7270 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                        { (yyval.node) = 0; }
-#line 12511 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 605: /* kwargs: idstring EQUAL stringnum  */
-#line 7274 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                           {
 		 (yyval.node) = NewHash();
 		 Setattr((yyval.node),"name",(yyvsp[-2].id));
 		 Setattr((yyval.node),"value",(yyvsp[0].str));
                }
-#line 12521 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 606: /* kwargs: idstring EQUAL stringnum COMMA kwargs  */
-#line 7279 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                        {
 		 (yyval.node) = NewHash();
 		 Setattr((yyval.node),"name",(yyvsp[-4].id));
 		 Setattr((yyval.node),"value",(yyvsp[-2].str));
 		 set_nextSibling((yyval.node),(yyvsp[0].node));
                }
-#line 12532 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 607: /* kwargs: idstring  */
-#line 7285 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                           {
                  (yyval.node) = NewHash();
                  Setattr((yyval.node),"name",(yyvsp[0].id));
 	       }
-#line 12541 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 608: /* kwargs: idstring COMMA kwargs  */
-#line 7289 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                        {
                  (yyval.node) = NewHash();
                  Setattr((yyval.node),"name",(yyvsp[-2].id));
                  set_nextSibling((yyval.node),(yyvsp[0].node));
                }
-#line 12551 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 609: /* kwargs: idstring EQUAL stringtype  */
-#line 7294 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                             {
                  (yyval.node) = (yyvsp[0].node);
 		 Setattr((yyval.node),"name",(yyvsp[-2].id));
                }
-#line 12560 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 610: /* kwargs: idstring EQUAL stringtype COMMA kwargs  */
-#line 7298 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                                                         {
                  (yyval.node) = (yyvsp[-2].node);
 		 Setattr((yyval.node),"name",(yyvsp[-4].id));
 		 set_nextSibling((yyval.node),(yyvsp[0].node));
                }
-#line 12570 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 611: /* stringnum: string  */
-#line 7305 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                         {
 		 (yyval.str) = (yyvsp[0].str);
                }
-#line 12578 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
   case 612: /* stringnum: exprnum  */
-#line 7308 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
                          {
                  (yyval.str) = Char((yyvsp[0].dtype).val);
                }
-#line 12586 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
     break;
 
 
-#line 12590 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.c"
 
       default: break;
     }
@@ -12779,7 +11578,6 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 7315 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
 
 
 SwigType *Swig_cparse_type(String *s) {

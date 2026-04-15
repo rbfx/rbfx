@@ -274,8 +274,8 @@ void AdvancedNetworking::SubscribeToEvents()
         ServerRaycastInfo info;
 
         info.clientConnection_.Reset(static_cast<Connection*>(eventData[RemoteEventData::P_CONNECTION].GetPtr()));
-        info.origin_ = eventData[P_ORIGIN].GetVector3();
-        info.target_ = eventData[P_TARGET].GetVector3();
+        info.origin_ = eventData[P_ORIGIN].GetVector3().Cast<DoubleVector3>();
+        info.target_ = eventData[P_TARGET].GetVector3().Cast<DoubleVector3>();
         info.replicaTime_ = NetworkTime{static_cast<NetworkFrame>(eventData[P_REPLICA_FRAME].GetInt64()), eventData[P_REPLICA_SUBFRAME].GetFloat()};
         info.inputTime_ = NetworkTime{static_cast<NetworkFrame>(eventData[P_INPUT_FRAME].GetInt64()), eventData[P_INPUT_SUBFRAME].GetFloat()};
 
@@ -289,7 +289,7 @@ void AdvancedNetworking::SubscribeToEvents()
         using namespace AdvancedNetworkingRayhit;
         const Variant& position = eventData[P_POSITION];
         if (!position.IsEmpty())
-            AddHitMarker(position.GetVector3(), true);
+            AddHitMarker(position.GetVector3().Cast<DoubleVector3>(), true);
     });
 
     // Subscribe HandlePostUpdate() method for processing update events. Subscribe to PostUpdate instead
@@ -348,12 +348,13 @@ void AdvancedNetworking::ProcessSingleRaycastOnServer(const ServerRaycastInfo& r
     // Get reliable origin from server data, not trusting client with this
     NetworkObject* clientObject = serverReplicator->GetNetworkObjectOwnedByConnection(raycastInfo.clientConnection_);
     auto replicatedTransform = clientObject->GetNode()->FindComponent<ReplicatedTransform>();
-    const Vector3 origin = replicatedTransform->SampleTemporalPosition(raycastInfo.inputTime_).value_ + Vector3::UP * CAMERA_OFFSET;
+    const Vector3 origin = scene_->ToRelativeWorldPosition(replicatedTransform->SampleTemporalPosition(raycastInfo.inputTime_).value_) + Vector3::UP * CAMERA_OFFSET;
+    const Vector3 target = scene_->ToRelativeWorldPosition(raycastInfo.target_);
 
     // Perform raycast using target position instead of ray direction
     // to get better precision on origin mismatch.
     auto* octree = scene_->GetComponent<Octree>();
-    const Ray ray{origin, raycastInfo.target_ - origin};
+    const Ray ray{origin, target - origin};
 
     // Query static scene geometry
     RayOctreeQuery query(ray, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY, IMPORTANT_VIEW_MASK);
@@ -384,9 +385,9 @@ void AdvancedNetworking::ProcessSingleRaycastOnServer(const ServerRaycastInfo& r
     // Send result to the client
     using namespace AdvancedNetworkingRayhit;
     auto& eventData = GetEventDataMap();
-    eventData[P_ORIGIN] = origin;
+    eventData[P_ORIGIN] = scene_->ToAbsoluteWorldPosition(origin).Cast<Vector3>();
     if (!query.result_.empty())
-        eventData[P_POSITION] = query.result_[0].position_;
+        eventData[P_POSITION] = scene_->ToAbsoluteWorldPosition(query.result_[0].position_).Cast<Vector3>();
     raycastInfo.clientConnection_->SendRemoteEvent(E_ADVANCEDNETWORKING_RAYHIT, false, eventData);
 }
 
@@ -522,7 +523,7 @@ void AdvancedNetworking::ProcessClientMovement(NetworkObject* clientObject)
         + cameraNode_->GetRotation() * Vector3::BACK * CAMERA_DISTANCE + Vector3::UP * CAMERA_OFFSET);
 }
 
-Vector3 AdvancedNetworking::GetAimPosition(const Vector3& playerPosition, const Ray& screenRay) const
+DoubleVector3 AdvancedNetworking::GetAimPosition(const DoubleVector3& playerPosition, const Ray& screenRay) const
 {
     if (ui_->GetCheatAutoAimHand())
     {
@@ -536,7 +537,8 @@ Vector3 AdvancedNetworking::GetAimPosition(const Vector3& playerPosition, const 
             if (model->GetViewMask() == UNIMPORTANT_VIEW_MASK)
                 continue;
 
-            const float distance = model->GetNode()->GetWorldPosition().DistanceToPoint(playerPosition);
+            const float distance =
+                model->GetNode()->GetWorldPosition().DistanceToPoint(scene_->ToRelativeWorldPosition(playerPosition));
             if (!closestModel || distance < closestDistance)
             {
                 closestModel = model;
@@ -547,12 +549,12 @@ Vector3 AdvancedNetworking::GetAimPosition(const Vector3& playerPosition, const 
         if (closestModel)
         {
             Node* aimNode = closestModel->GetSkeleton().GetBone("Mutant:RightHandIndex2")->node_;
-            return aimNode->GetWorldPosition();
+            return scene_->ToAbsoluteWorldPosition(aimNode->GetWorldPosition());
         }
     }
 
     const Vector3 defaultAimPosition = screenRay.origin_ + screenRay.direction_ * HIT_DISTANCE;
-    return RaycastImportantGeometries(screenRay).value_or(defaultAimPosition);
+    return scene_->ToAbsoluteWorldPosition(RaycastImportantGeometries(screenRay).value_or(defaultAimPosition));
 }
 
 void AdvancedNetworking::RequestClientRaycast(NetworkObject* clientObject, const Ray& screenRay)
@@ -568,19 +570,20 @@ void AdvancedNetworking::RequestClientRaycast(NetworkObject* clientObject, const
     const NetworkTime inputTime = clientReplica->GetInputTime();
 
     // Second, perform an actual raycast from the player model to the aim point.
-    const Vector3 aimPosition = GetAimPosition(clientObject->GetNode()->GetWorldPosition(), screenRay);
-    const Vector3 origin = clientObject->GetNode()->GetWorldPosition() + Vector3::UP * CAMERA_OFFSET;
-    const Ray castRay{origin, aimPosition - origin};
+    const DoubleVector3 playerPosition = scene_->ToAbsoluteWorldPosition(clientObject->GetNode()->GetWorldPosition());
+    const DoubleVector3 aimPosition = GetAimPosition(playerPosition, screenRay);
+    const DoubleVector3 origin = playerPosition + DoubleVector3::UP * CAMERA_OFFSET;
+    const Ray castRay{scene_->ToRelativeWorldPosition(origin), (aimPosition - origin).Cast<Vector3>()};
 
     // If hit on client, add marker
     if (auto hitPosition = RaycastImportantGeometries(castRay))
-        AddHitMarker(*hitPosition, false);
+        AddHitMarker(scene_->ToAbsoluteWorldPosition(*hitPosition), false);
 
     // Send event to the server regardless
     using namespace AdvancedNetworkingRaycast;
     VariantMap& eventData = GetEventDataMap();
-    eventData[P_ORIGIN] = origin;
-    eventData[P_TARGET] = aimPosition;
+    eventData[P_ORIGIN] = origin.Cast<Vector3>();
+    eventData[P_TARGET] = aimPosition.Cast<Vector3>();
     eventData[P_REPLICA_FRAME] = static_cast<long long>(replicaTime.Frame());
     eventData[P_REPLICA_SUBFRAME] = replicaTime.Fraction();
     eventData[P_INPUT_FRAME] = static_cast<long long>(inputTime.Frame());
@@ -588,7 +591,7 @@ void AdvancedNetworking::RequestClientRaycast(NetworkObject* clientObject, const
     serverConnection->SendRemoteEvent(E_ADVANCEDNETWORKING_RAYCAST, false, eventData);
 }
 
-void AdvancedNetworking::AddHitMarker(const Vector3& position, bool isConfirmed)
+void AdvancedNetworking::AddHitMarker(const DoubleVector3& position, bool isConfirmed)
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
@@ -598,7 +601,7 @@ void AdvancedNetworking::AddHitMarker(const Vector3& position, bool isConfirmed)
 
     // Add new marker: red sphere for client hits, green cube for server confirmations
     Node* markerNode = hitMarkers_->CreateChild("Client Hit");
-    markerNode->SetPosition(position);
+    markerNode->SetPosition(position.Cast<Vector3>());
 
     auto markerModel = markerNode->CreateComponent<StaticModel>();
     markerModel->SetViewMask(UNIMPORTANT_VIEW_MASK);

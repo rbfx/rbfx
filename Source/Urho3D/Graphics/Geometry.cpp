@@ -82,6 +82,8 @@ bool Geometry::SetVertexBuffer(unsigned index, VertexBuffer* buffer)
 
     vertexBuffersDependencies_[index] = CreateDependency(buffer);
     vertexBuffers_[index] = buffer;
+
+    UpdateHeadlessStatus();
     return true;
 }
 
@@ -91,12 +93,16 @@ void Geometry::SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer>>& verte
     for (unsigned i = 0; i < vertexBuffers.size(); ++i)
         vertexBuffersDependencies_[i] = CreateDependency(vertexBuffers[i]);
     vertexBuffers_ = vertexBuffers;
+
+    UpdateHeadlessStatus();
 }
 
 void Geometry::SetIndexBuffer(IndexBuffer* buffer)
 {
     indexBufferDependency_ = CreateDependency(indexBuffer_);
     indexBuffer_ = buffer;
+
+    UpdateHeadlessStatus();
 }
 
 bool Geometry::SetDrawRange(PrimitiveType type, unsigned indexStart, unsigned indexCount, bool getUsedVertexRange)
@@ -361,6 +367,13 @@ unsigned Geometry::RecalculatePipelineStateHash() const
     CombineHash(hash, indexBuffer_ ? indexBuffer_->GetPipelineStateHash() : 0);
     CombineHash(hash, primitiveType_);
     return hash;
+}
+
+void Geometry::UpdateHeadlessStatus()
+{
+    isHeadless_ = indexBuffer_ ? !indexBuffer_->GetRenderDevice() : false;
+    for (VertexBuffer* vertexBuffer : vertexBuffers_)
+        isHeadless_ = isHeadless_ || (vertexBuffer && !vertexBuffer->GetRenderDevice());
 }
 
 }

@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -94,7 +94,7 @@ namespace embree
       matrix[0][1] = computeRightEdgeBezierControlPoint(source.v,1,1);
       matrix[0][2] = computeLeftEdgeBezierControlPoint(source.v,1,2); 
       
-      /* compute buttom edge control points */
+      /* compute bottom edge control points */
       matrix[3][1] = computeRightEdgeBezierControlPoint(source.v,2,1);
       matrix[3][2] = computeLeftEdgeBezierControlPoint(source.v,2,2);
       

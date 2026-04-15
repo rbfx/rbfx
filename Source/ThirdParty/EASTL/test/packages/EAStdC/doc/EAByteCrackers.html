@@ -1,0 +1,107 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<Title>EAByteCrackers</title>
+
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAByteCrackers</h1>
+
+<h2>Introduction</h2>
+<p>EAByteCrackers is a small utility header file that provides macros for breaking down integers into component bytes and for building up integers from component 
+    bytes. These are particularly useful because working with signed values creates opportunities for mistakes, and the macros present in EAByteCrackers remove such 
+    possibilities for error. You can run into this need for dealing with signed values when working with Windows &quot;winproc&quot; message packing, for example.</p>
+<h2>Conventions</h2>
+<p>Components within an integer are numbered 0-N with 0 referring to the least significant component. Thus, the 32 bit value 0x12345678 consists of byte 0 = 0x78, 
+    byte 1 = 0x56, byte 2 = 0x34, and byte 3 = 0x12. This is done like so because the index of the byte is thus equal to its numerical shift within the integer. It 
+    also means that byte 2 of a uint32_t refers to the same value as byte 2 of a uint64_t. For example:</p>
+<pre class="code-example">uint16_t u16 = UINT16_5_FROM_UINT64(0x887766554433221100);  <font color="#0066FF">// u16 becomes 0x55</font></pre>
+<p>Similarly, we have this:</p>
+<pre class="code-example">uint32_t u32 = UINT32_FROM_UINT8(0x33, 0x22, 0x11, 0x00);   <font color="#0066FF">// u32 becomes 0x33221100</font></pre>
+<p>In the macros, the terms b, w, d, and q are used.</p>
+<ul>
+    <li>b means 8 bit byte</li>
+    <li>w means 16 bit word</li>
+    <li>d means 32 bit dword</li>
+    <li>q means 64 bit quadword</li>
+</ul>
+<h2>Example usage </h2>
+<p>Basic usage:</p>
+<pre class="code-example">// Integer breakdown
+uint8_t  u8  = UINT8_0_FROM_UINT16(0x1100);               <font color="#0066FF">// u8 becomes 0x00</font>
+uint8_t  u8  = UINT8_2_FROM_UINT64(0x7766554433221100);   <font color="#0066FF">// u8 becomes 0x22</font>
+uint16_t u16 = UINT16_3_FROM_UINT64(0x7766554433221100);  <font color="#0066FF">// u16 becomes 0x7766</font>
+
+// Integer build up
+uint16_t u16 = UINT16_FROM_UINT8(0x11, 0x00);             <font color="#0066FF">// u16 becomes 0x1100</font>
+uint32_t u32 = UINT32_FROM_UINT8(0x33, 0x22, 0x11, 0x00); <font color="#0066FF">// u32 becomes 0x33221100</font></pre>
+<p></p>
+<p>How to safely convert a 32 bit value to two signed 16 bit values:</p>
+<pre class="code-example">int16_t n0 = (int16_t)UINT16_0_FROM_UINT32(0x1000ffff);   <font color="#0066FF">// n0 becomes -1</font>
+int16_t n1 = (int16_t)UINT16_1_FROM_UINT32(0x1000ffff);   <font color="#0066FF">// n1 becomes 4096</font></pre>
+<p>How to build up a uint64_t from a uint32_t and two uint16_t values:</p>
+<pre class="code-example">uint64_t u64 = UINT64_FROM_UINT32(0x77665544, UINT32_FROM_UINT16(0x3322, 0x1100)); <font color="#0066FF">// u64 becomes 0x7766554433221100</font>
+</pre>
+<h2>Interface</h2>
+<pre class="code-example"><span class="code-example-comment">// uint8_t byte manipulators</span>
+#define UINT8_0_FROM_UINT16(w)
+#define UINT8_1_FROM_UINT16(w)
+
+#define UINT8_0_FROM_UINT32(d)
+#define UINT8_1_FROM_UINT32(d)
+#define UINT8_2_FROM_UINT32(d)
+#define UINT8_3_FROM_UINT32(d)
+
+#define UINT8_0_FROM_UINT64(q)
+#define UINT8_1_FROM_UINT64(q)
+#define UINT8_2_FROM_UINT64(q)
+#define UINT8_3_FROM_UINT64(q)
+#define UINT8_4_FROM_UINT64(q)
+#define UINT8_5_FROM_UINT64(q)
+#define UINT8_6_FROM_UINT64(q)
+#define UINT8_7_FROM_UINT64(q)
+
+<span class="code-example-comment">// uint16_t byte manipulators</span>
+#define UINT16_0_FROM_UINT32(d)
+#define UINT16_1_FROM_UINT32(d)
+
+#define UINT16_0_FROM_UINT64(q)
+#define UINT16_1_FROM_UINT64(q)
+#define UINT16_2_FROM_UINT64(q)
+#define UINT16_3_FROM_UINT64(q)
+
+#define UINT16_FROM_UINT8(b1, b0)
+
+<span class="code-example-comment">// uint32_t byte manipulators</span>
+#define UINT32_2_FROM_UINT64(q)
+#define UINT32_1_FROM_UINT64(q)
+
+#define UINT32_FROM_UINT8(b3, b2, b1, b0)
+#define UINT32_FROM_UINT16(w1, w0)
+
+<span class="code-example-comment">// uint64_t byte manipulators</span>
+#define UINT64_FROM_UINT8(b7, b6, b5, b4, b3, b2, b1, b0)
+#define UINT64_FROM_UINT16(w3, w2, w1, w0)
+#define UINT64_FROM_UINT32(d1, d0)
+</pre>
+<p></p>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</body></html>
+
+
+

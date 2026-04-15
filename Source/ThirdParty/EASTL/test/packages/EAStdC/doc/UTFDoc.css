@@ -1,0 +1,83 @@
+body 
+{
+	font-family: Palatino Linotype, Book Antiqua, Times New Roman;
+	font-size: 11pt;
+}
+
+h1
+{
+	font-family: Verdana;
+	display: block;
+	background-color: #FFF0B0;
+	border: solid 2px black;
+	font-size: 16pt;
+	font-weight: bold;
+	padding: 6px;
+}
+
+h2 
+{
+	font-size: 14pt;
+	font-family: Verdana;
+	border-bottom: 2px solid black;
+}
+
+h3
+{
+	font-family: Verdana;
+	font-size: 13pt;
+	font-weight: bold;
+}
+
+.code-example 
+{
+	display: block;
+	background-color: #e0e0f0;
+	margin-left: 3em;
+	margin-right: 3em;
+	margin-top: 1em;
+	margin-bottom: 1em;
+	padding: 8px;
+	border: solid 2px #a0a0d0;
+	font-family: monospace;
+	font-size: 10pt;
+	white-space: pre;
+}
+
+.code-example-span 
+{
+	font-family: monospace;
+	font-size: 10pt;
+	white-space: pre;
+}
+
+.code-example-comment
+{
+	background-color: #e0e0f0; 
+	padding: 0px 0px; 
+	font-family: monospace; 
+	font-size: 10pt; 
+	white-space: pre; 
+	color: #999999; 
+	margin: auto auto; 
+}
+
+
+.faq-question
+{
+	background-color: #D0E0D0;
+	font-size: 12pt;
+	font-weight: bold;
+	margin-bottom: 0.5em;
+	margin-top: 0em;
+	padding-left:8px;
+	padding-right:8px;
+	padding-top:2px;
+	padding-bottom:2px
+}
+
+.faq-answer
+{
+	display: block;
+	margin: 4pt 1em 0.5em 1em;
+}

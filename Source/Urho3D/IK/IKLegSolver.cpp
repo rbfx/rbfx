@@ -135,7 +135,7 @@ bool IKLegSolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKLegSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
+void IKLegSolver::UpdateChainLengths(const Transform& inverseLocalFrameOfReference)
 {
     legChain_.UpdateLengths();
     footSegment_.UpdateLength();
@@ -145,16 +145,18 @@ void IKLegSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
     const IKNode& heelBone = *legChain_.GetEndNode();
     const IKNode& toeBone = *footSegment_.endNode_;
 
-    local_.toeToHeel_ = node_->GetWorldRotation().Inverse() * (heelBone.position_ - toeBone.position_);
-    local_.defaultThighToToeDistance_ = (toeBone.position_ - thighBone.position_).Length();
+    local_.toeToHeel_ = heelBone.localOriginalPosition_ - toeBone.localOriginalPosition_;
+    local_.defaultThighToToeDistance_ = (toeBone.localOriginalPosition_ - thighBone.localOriginalPosition_).Length();
 
-    local_.bendDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
-    local_.targetDirection_ = inverseFrameOfReference.rotation_
-        * (legChain_.GetEndNode()->position_ - legChain_.GetBeginNode()->position_).Normalized();
-    local_.defaultFootRotation_ = calfBone.rotation_.Inverse() * heelBone.rotation_;
-    local_.defaultToeOffset_ = heelBone.rotation_.Inverse() * (toeBone.position_ - heelBone.position_);
-    local_.defaultToeRotation_ = heelBone.rotation_.Inverse() * toeBone.rotation_;
-    local_.toeRotation_ = inverseFrameOfReference.rotation_ * toeBone.rotation_;
+    local_.bendDirection_ = inverseLocalFrameOfReference.rotation_ * bendDirection_;
+    local_.targetDirection_ = inverseLocalFrameOfReference.rotation_
+        * (legChain_.GetEndNode()->localOriginalPosition_ - legChain_.GetBeginNode()->localOriginalPosition_)
+              .Normalized();
+    local_.defaultFootRotation_ = calfBone.localOriginalRotation_.Inverse() * heelBone.localOriginalRotation_;
+    local_.defaultToeOffset_ =
+        heelBone.localOriginalRotation_.Inverse() * (toeBone.localOriginalPosition_ - heelBone.localOriginalPosition_);
+    local_.defaultToeRotation_ = heelBone.localOriginalRotation_.Inverse() * toeBone.localOriginalRotation_;
+    local_.toeRotation_ = inverseLocalFrameOfReference.rotation_ * toeBone.localOriginalRotation_;
 }
 
 void IKLegSolver::EnsureInitialized()

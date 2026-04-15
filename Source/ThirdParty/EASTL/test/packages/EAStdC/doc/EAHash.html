@@ -1,0 +1,65 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+    <title>EAHash</title>
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAHash</h1>
+
+<h2>Introduction</h2>
+<p>EAHash is a family of hashing functions. There are string hashes, binary hashes, cryptographic hashes, checksums, and CRCs; each has its applications. If you are looking for hash tables, they are present in the EASTL library, which provides a suite of hash table containers.</p>
+<p>Hash functions are functions which take input data and produce a hash value, which is usually an integer or some short fixed-size data. This is useful for implementing hash-tables, cryptographic security, and error checking. A good hash function produces a unique hash value for the large majority of unique input. A cryptographic hash goes further and has a level of mathematical security built into it so that it is difficult or impossible to guess the original input from a given hash value output. You can read more about hash functions at Wikipedia at <a href="http://en.wikipedia.org/wiki/Hash_function">http://en.wikipedia.org/wiki/Hash_function</a>.</p>
+<p>EAStdC  provides the following hash submodules:</p>
+<ul><li>EAHashString (string hashing) </li>
+  <li>EAHashCRC (cyclical redundancy check)</li>
+</ul>
+<p>EAHash provides these hashes in forms that read from blocks in memory. </p>
+<h2>EAHashString</h2>
+<p>String hashes are probably the most common hashes used in game development. There is a particular interest in having string hashes that are fast but reasonably collision-free in practice. Cryptographical security is not of interest to string hashes. However, being able to do a case-insensitive hash often is. </p>
+<p>String hashes are different from binary hashes in that they hash characters and not bytes. Thus, the hash for the 8 bit string &quot;hello&quot; will be the same as the hash for a 16 bit char string L&quot;hello&quot; even though the latter uses twice as many bytes and would hash to a different value via a binary hash function. String hashes are also different in that they sometimes have the option to act with case insensitivity. In such cases the hash for &quot;Hello&quot; is the same as for &quot;hello&quot;. </p>
+<p>The primary string hash provided by EAHashString is the FNV1 hash, though the DJB2 hash is also provided. The FNV1 hash appears to be the best string hash for most users' needs, as it is very fast and yet generates surprisingly few collisions with typical text input. </p>
+<p>The FNV1 hash functions provided by EAHashString are:</p>
+<pre class="code-example">uint32_t FNV1         (const void*     pData, size_t nLength, uint32_t nInitialValue = kFNV1InitialValue);<br>uint32_t FNV1_String8 (const char8_t*  pData, uint32_t nInitialValue = kFNV1InitialValue, CharCase charCase = kCharCaseAny);<br>uint32_t FNV1_String16(const char16_t* pData, uint32_t nInitialValue = kFNV1InitialValue, CharCase charCase = kCharCaseAny);</pre>
+<p>Example usage: </p>
+<pre class="code-example">const char16_t fileName[IO::kMaxFileNameLength];
+ 
+const uint32_t fileNameHash = FNV1_string16(filePath, kFNV1InitialValue, kCharCaseLower);
+ 
+printf(&quot;Case-insensitive hash for file %ls is 0x%08x.\n&quot;, filePath, fileNameHash);</pre>
+<h2>EAHashCRC</h2>
+<p>A CRCs (cyclical redundancy check) is a form of hash which is good at detecting uniqueness of input yet is fairly simple to implement. CRCs are most often used to detect errors during data transmission in a non-security-sensitive environment. If a recieved file has a different checksum than the original file, there was a transmission error. A cryptographic hash could also be used to do what a CRC hash does, but it would have more overhead, particularly when implemented in hardware. </p>
+<p>There are many standards and variations of CRC algorithms, and trying to understand them can be a tedious frustrating experience. EAHashCRC provides a single CRC implementation for each of various bit sizes and doesn't try to cater to the myriad of variations that exist. Unless you need a CRC function which interacts with some specific third party CRC convention, the version in EAHashCRC is probably fine. You can read more about CRCs on Wikipedia at <a href="http://en.wikipedia.org/wiki/Cyclic_redundancy_check">http://en.wikipedia.org/wiki/Cyclic_redundancy_check</a>.</p>
+<p>The CRC functions have a 'bFinalize' parameter, which enables the inversion of the bits upon completion. This is a common practice in standardized CRC calculations. When doing iterative CRC calculations, you need to make sure you set bFinalize to false for all but the last call. See the example code below.</p>
+<p>EAHashCRC provides the following block functions: </p>
+<pre class="code-example">uint16_t CRC16(const void* pData, size_t nLength, uint16_t nInitialValue = kCRC16InitialValue, bool bFinalize = true);
+uint32_t CRC24(const void* pData, size_t nLength, uint32_t nInitialValue = kCRC24InitialValue, bool bFinalize = true);
+uint32_t CRC32(const void* pData, size_t nLength, uint32_t nInitialValue = kCRC32InitialValue, bool bFinalize = true);
+uint64_t CRC64(const void* pData, size_t nLength, uint64_t nInitialValue = kCRC64InitialValue, bool bFinalize = true);
+
+uint32_t CRC32Reverse(const void* pData, size_t nLength, uint32_t nInitialValue = kCRC32InitialValue, bool bFinalize = true);</pre>
+<p>Example basic usage:</p>
+<pre class="code-example">char*  fileData;
+size_t fileLength;
+ 
+ReadFile(pData, fileLength);
+ 
+uint16_t crc = CRC16(fileData, fileLength);</pre>
+<p>Example usage of incremental CRC calculation, which is useful when you don't have the data in a single block:</p>
+<pre class="code-example">char     pDataArray[1000];<br>uint64_t crc = kCRC64InitialValue;<br><br>for(int i = 0; i &lt; 10; i++)<span class="code-example-comment"> // Calculate the CRC for the data array incrementally.</span><br>    crc = EA::Hash::CRC64(pDataArray[i * 100], 100, crc, i == 9);<br>
+</pre>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+</body></html>
+
+
+

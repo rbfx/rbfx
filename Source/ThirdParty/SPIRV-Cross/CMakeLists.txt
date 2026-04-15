@@ -19,7 +19,7 @@
 #  2. The MIT License, found at <http://opensource.org/licenses/MIT>.
 #
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.0...3.25)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -263,6 +263,12 @@ if (SPIRV_CROSS_STATIC)
 		spirv_cross_add_library(spirv-cross-glsl spirv_cross_glsl STATIC
 				${spirv-cross-glsl-sources})
 		target_link_libraries(spirv-cross-glsl PRIVATE spirv-cross-core)
+
+		# Reduce optimization for spirv_glsl.cpp in release builds to avoid compilation issues on web
+		if(WEB)
+			set_source_files_properties(spirv_glsl.cpp
+				PROPERTIES COMPILE_FLAGS "$<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O0>")
+		endif()
 	endif()
 
 	if (SPIRV_CROSS_ENABLE_CPP)

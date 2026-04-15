@@ -68,7 +68,7 @@ struct URHO3D_API IKNode
     IKNode() = default;
     IKNode(const Vector3& position, const Quaternion& rotation);
 
-    void SetOriginalTransform(const Vector3& position, const Quaternion& rotation, const Matrix3x4& inverseWorldTransform);
+    void SetOriginalTransform(const Vector3& position, const Quaternion& rotation, const Matrix3x4& worldTransform);
     void UpdateOriginalTransform(const Matrix3x4& worldTransform);
 
     void RotateAround(const Vector3& point, const Quaternion& rotation);
@@ -139,6 +139,7 @@ class URHO3D_API IKEyeChain
 {
 public:
     void Initialize(IKNode* rootNode);
+    void SetEyeTransform(const Vector3& eyeOffset, const Vector3& eyeDirection);
     void SetLocalEyeTransform(const Vector3& eyeOffset, const Vector3& eyeDirection);
     void SetWorldEyeTransform(const Vector3& eyeOffset, const Vector3& eyeDirection);
 

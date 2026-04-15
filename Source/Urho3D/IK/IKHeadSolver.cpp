@@ -89,20 +89,20 @@ bool IKHeadSolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKHeadSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
+void IKHeadSolver::UpdateChainLengths(const Transform& inverseLocalFrameOfReference)
 {
     neckSegment_.UpdateLength();
 
     const IKNode& neckBone = *neckSegment_.beginNode_;
     const IKNode& headBone = *neckSegment_.endNode_;
 
-    local_.defaultNeckTransform_ = inverseFrameOfReference * Transform{neckBone.position_, neckBone.rotation_};
-    local_.defaultHeadTransform_ = inverseFrameOfReference * Transform{headBone.position_, headBone.rotation_};
+    local_.defaultNeckTransform_ =
+        inverseLocalFrameOfReference * Transform{neckBone.localOriginalPosition_, neckBone.localOriginalRotation_};
+    local_.defaultHeadTransform_ =
+        inverseLocalFrameOfReference * Transform{headBone.localOriginalPosition_, headBone.localOriginalRotation_};
 
-    const Vector3 eyeDirection = node_->GetWorldRotation() * eyeDirection_;
-    const Vector3 eyeOffset = node_->GetWorldRotation() * eyeOffset_;
-    neckChain_.SetWorldEyeTransform(eyeOffset, eyeDirection);
-    headChain_.SetWorldEyeTransform(eyeOffset, eyeDirection);
+    neckChain_.SetLocalEyeTransform(eyeOffset_, eyeDirection_);
+    headChain_.SetLocalEyeTransform(eyeOffset_, eyeDirection_);
 }
 
 void IKHeadSolver::EnsureInitialized()

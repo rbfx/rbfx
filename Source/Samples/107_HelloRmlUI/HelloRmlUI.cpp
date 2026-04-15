@@ -55,6 +55,8 @@ void SimpleWindow::OnDataModelInitialized()
     Rml::DataModelConstructor* constructor = GetDataModelConstructor();
     // Create a data model for connecting UI with state kept in this class.
     // Important: there can only be one data model with given name per unique RmlUI subsystem!
+    constructor->BindFunc("font_size", [this](Rml::Variant& v) { v = this->GetEmSize(); },
+        [this](const Rml::Variant& v) { this->SetEmSize(v.Get<float>()); });
     constructor->Bind("slider_value", &sliderValue_);
     constructor->Bind("counter", &counter_);
     constructor->Bind("progress", &progress_);

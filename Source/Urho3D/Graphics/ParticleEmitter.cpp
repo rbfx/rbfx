@@ -432,9 +432,9 @@ VariantVector ParticleEmitter::GetParticleBillboardsAttr() const
     return ret;
 }
 
-void ParticleEmitter::OnSceneSet(Scene* scene)
+void ParticleEmitter::OnSceneSet(Scene* previousScene, Scene* scene)
 {
-    BillboardSet::OnSceneSet(scene);
+    BillboardSet::OnSceneSet(previousScene, scene);
 
     if (scene && IsEnabledEffective())
         SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(ParticleEmitter, HandleScenePostUpdate));

@@ -22,19 +22,20 @@
 
 #pragma once
 
-#include <EASTL/unique_ptr.h>
-#include <EASTL/span.h>
-
-#include "../Core/Mutex.h"
-#include "../Core/Object.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/ShaderVariation.h"
-#include "../IO/FileIdentifier.h"
-#include "../Math/Color.h"
-#include "../Math/Plane.h"
-#include "../Math/Rect.h"
-#include "../Resource/Image.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/ShaderVariation.h"
+#include "Urho3D/IO/FileIdentifier.h"
+#include "Urho3D/Math/Color.h"
+#include "Urho3D/Math/MathDefs.h"
+#include "Urho3D/Math/Plane.h"
+#include "Urho3D/Math/Rect.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
+#include "Urho3D/Resource/Image.h"
+
+#include <EASTL/span.h>
+#include <EASTL/unique_ptr.h>
 
 struct SDL_Window;
 
@@ -52,8 +53,6 @@ class Texture;
 class Texture2D;
 class Texture2DArray;
 class TextureCube;
-class Vector3;
-class Vector4;
 class VertexBuffer;
 class PipelineState;
 class ShaderResourceBinding;

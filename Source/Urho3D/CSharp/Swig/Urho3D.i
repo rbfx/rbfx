@@ -207,9 +207,6 @@ CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 // Containers
 using StringMap = eastl::unordered_map<Urho3D::StringHash, eastl::string>;
 %template(ObjectReflectionMap) eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::ObjectReflection>>;
-#if defined(URHO3D_PHYSICS)
-%template(CollisionGeometryDataCache) eastl::unordered_map<eastl::pair<Urho3D::Model*, unsigned>, Urho3D::SharedPtr<Urho3D::CollisionGeometryData>>;
-#endif
 
 // Declare inheritable classes in this file
 %include "Context.i"
@@ -495,9 +492,6 @@ public:
 %include "generated/Urho3D/_pre_resource.i"
 %include "Urho3D/Resource/Resource.h"
 %include "Urho3D/Resource/SerializableResource.h"
-#if defined(URHO3D_THREADING)
-%include "Urho3D/Resource/BackgroundLoader.h"
-#endif
 %include "Urho3D/Resource/Image.h"
 %include "Urho3D/Resource/ImageCube.h"
 %include "Urho3D/Resource/BinaryFile.h"
@@ -510,8 +504,8 @@ public:
 %include "Urho3D/Resource/ResourceCache.h"
 
 %template(ImageVector)       eastl::vector<Urho3D::SharedPtr<Urho3D::Image>>;
-%template(FaceVectorPair)    eastl::pair<Urho3D::CubeMapFace, Urho3D::Vector2>;
-%template(FaceIntVectorPair) eastl::pair<Urho3D::CubeMapFace, Urho3D::IntVector2>;
+%template(FaceVectorPair)    eastl::pair<Urho3D::CubeMapFace, Urho3D::BaseVector2<float>>;
+%template(FaceIntVectorPair) eastl::pair<Urho3D::CubeMapFace, Urho3D::BaseIntegerVector2<int>>;
 
 
 // --------------------------------------- Scene ---------------------------------------
@@ -535,6 +529,9 @@ public:
 %ignore Urho3D::Component::id_;
 %ignore Urho3D::Component::enabled_;
 %ignore Urho3D::ObjectAnimation::GetAttributeAnimationInfos;
+
+%template(NodeMap) eastl::unordered_map<unsigned, Urho3D::Node*>;
+%template(ComponentMapt) eastl::unordered_map<unsigned, Urho3D::Component*>;
 
 %include "generated/Urho3D/_pre_scene.i"
 %include "Urho3D/Scene/AnimationDefs.h"
@@ -576,6 +573,7 @@ public:
 %include "Urho3D/Audio/Audio.h"
 %include "Urho3D/Audio/Sound.h"
 %include "Urho3D/Audio/SoundStream.h"
+%include "Urho3D/Audio/Microphone.h"
 %include "Urho3D/Audio/BufferedSoundStream.h"
 %include "Urho3D/Audio/OggVorbisSoundStream.h"
 %include "Urho3D/Audio/SoundListener.h"
@@ -796,12 +794,12 @@ public:
 %ignore Urho3D::NavBuildData::navAreas_;
 %ignore Urho3D::NavigationMesh::FindPath;
 %include "generated/Urho3D/_pre_navigation.i"
+%include "Urho3D/Navigation/NavigationDefs.h"
 %include "Urho3D/Navigation/CrowdAgent.h"
 %include "Urho3D/Navigation/CrowdManager.h"
 %include "Urho3D/Navigation/NavigationMesh.h"
 %include "Urho3D/Navigation/DynamicNavigationMesh.h"
 %include "Urho3D/Navigation/NavArea.h"
-%include "Urho3D/Navigation/NavBuildData.h"
 %include "Urho3D/Navigation/Navigable.h"
 %include "Urho3D/Navigation/Obstacle.h"
 %include "Urho3D/Navigation/OffMeshConnection.h"
@@ -837,6 +835,8 @@ public:
 %include "Urho3D/Replica/NetworkObject.h"
 %include "Urho3D/Replica/StaticNetworkObject.h"
 %include "Urho3D/Replica/BehaviorNetworkObject.h"
+%include "Urho3D/Replica/BaseFeedbackBehavior.h"
+%template(PredictedKinematicControllerBase) Urho3D::BaseFeedbackBehavior<Urho3D::PredictedKinematicControllerFrame>;
 %include "Urho3D/Replica/ClientInputStatistics.h"
 %include "Urho3D/Replica/ClientReplica.h"
 %include "Urho3D/Replica/FilteredByDistance.h"
@@ -881,6 +881,8 @@ public:
 #endif
 
 %include "generated/Urho3D/_pre_physics.i"
+%include "Urho3D/Physics/PhysicsDefs.h"
+%include "Urho3D/Physics/CollisionGeometryDataCache.h"
 %include "Urho3D/Physics/CollisionShape.h"
 %include "Urho3D/Physics/Constraint.h"
 %include "Urho3D/Physics/PhysicsWorld.h"
@@ -1084,14 +1086,13 @@ using ImGuiConfigFlags = unsigned;
 %template(VertexBufferMorphMap)         eastl::unordered_map<unsigned, Urho3D::VertexBufferMorph>;
 %template(ObjectMap)                    eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::Object>>;
 
-using Vector3 = Urho3D::Vector3;
 %template(StringHashList)                   eastl::vector<Urho3D::StringHash>;
-%template(Vector2List)                      eastl::vector<Urho3D::Vector2>;
-%template(Vector3List)                      eastl::vector<Urho3D::Vector3>;
-%template(Vector3Matrix)                    eastl::vector<eastl::vector<Urho3D::Vector3>>;
+%template(Vector2List)                      eastl::vector<Urho3D::BaseVector2<float>>;
+%template(Vector3List)                      eastl::vector<Urho3D::BaseVector3<float>>;
+%template(Vector3Matrix)                    eastl::vector<eastl::vector<Urho3D::BaseVector3<float>>>;
 %template(Vector4List)                      eastl::vector<Urho3D::Vector4>;
-%template(IntVector2List)                   eastl::vector<Urho3D::IntVector2>;
-%template(IntVector3List)                   eastl::vector<Urho3D::IntVector3>;
+%template(IntVector2List)                   eastl::vector<Urho3D::BaseIntegerVector2<int>>;
+%template(IntVector3List)                   eastl::vector<Urho3D::BaseIntegerVector3<int>>;
 %template(QuaternionList)                   eastl::vector<Urho3D::Quaternion>;
 %template(RectList)                         eastl::vector<Urho3D::Rect>;
 %template(IntRectList)                      eastl::vector<Urho3D::IntRect>;

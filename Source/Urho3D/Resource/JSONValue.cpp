@@ -392,6 +392,20 @@ void JSONValue::Clear()
         objectValue_->clear();
 }
 
+void JSONValue::ReplaceRecursively(const JSONValue& overrideValue)
+{
+    // Overwrite if not object
+    if (!IsObject() || !overrideValue.IsObject())
+    {
+        *this = overrideValue;
+        return;
+    }
+
+    // Merge recursively otherwise
+    for (const auto& [key, sourceValue] : overrideValue.GetObject())
+        (*this)[key].ReplaceRecursively(sourceValue);
+}
+
 void JSONValue::SetType(JSONValueType valueType, JSONNumberType numberType)
 {
     int type = valueType << 16u | numberType;

@@ -25,6 +25,8 @@ if (NOT DESKTOP)
     return ()
 endif ()
 
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Tools)
+
 add_subdirectory(PackageTool)
 add_subdirectory(RampGenerator)
 add_subdirectory(SpritePacker)

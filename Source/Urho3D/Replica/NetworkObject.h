@@ -82,6 +82,13 @@ public:
     void SetNetworkMode(NetworkObjectMode mode) { networkMode_ = mode; }
     /// @}
 
+    /// Calculate distance to another network object, for the purpose of per-connection object filtering.
+    /// Return null if this network object cannot be used to evaluate filtering distance.
+    virtual ea::optional<float> CalculateDistanceForFiltering(NetworkObject* otherNetworkObject);
+
+    /// Set another NetworkObject as parent of this NetworkObject.
+    void SetParentNetworkObject(NetworkId parentNetworkId);
+
     /// Return current or last NetworkId. Return NetworkId::None if not registered.
     NetworkId GetNetworkId() const { return GetReference(); }
     ReplicationManager* GetReplicationManager() const { return static_cast<ReplicationManager*>(GetRegistry()); }
@@ -114,7 +121,6 @@ protected:
     /// @}
 
     NetworkObject* GetOtherNetworkObject(NetworkId networkId) const;
-    void SetParentNetworkObject(NetworkId parentNetworkId);
 
 private:
     NetworkObject* FindParentNetworkObject() const;

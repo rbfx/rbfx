@@ -1,0 +1,298 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="content-type"
+ content="text/html; charset=ISO-8859-1">
+  <title>EASprintf</title>
+  <link type="text/css" rel="stylesheet"
+ href="UTFDoc.css">
+  <meta name="author" content="Paul Pedriana">
+</head>
+<body style="background-color: rgb(255, 255, 255);">
+<h1>EASprintf</h1>
+<h2>Introduction</h2>
+<p>EAStdC provides a portable
+version of the C printf family of functions which improves on
+the C family in the following ways:</p>
+<ul>
+  <li>Behaves identically on all
+platforms</li>
+  <li>Provides the full gamut of
+printf functions, including vsnprintf</li>
+  <li>Is more efficient; executes 20-80% faster. </li>
+  <li>Never allocates memory</li>
+  <li>Provides both 8 and 16 bit
+versions for all platforms</li>
+  <li>Provides&nbsp;useful
+extended functionality</li>
+  <li>Complies with the C99
+standard (except for the %a format, as of this writing)</li>
+  <li>Is readable enough to be
+traced/debugged by non-experts</li>
+  <li>Is savvy to UTF8 Unicode</li>
+</ul>
+<p>The primary disadvantages of
+EAStdC's printf are:</p>
+<ul>
+  <li>It doesn't use
+locale-specific formatting</li>
+  <li>It isn't part of the C/C++
+standard library</li>
+</ul>
+<p>EAStdC doesn't attempt to
+solve the locale formatting problem because users really are better off
+using serious locale libraries for such things rather than using the
+meager support provided by the C standard library. The EALocale library
+attempts to provide such functionality.</p>
+<p>EAStdC provides the
+following functions in 8, 16, and 32 bit versions:
+</p>
+<pre><span class="code-example">int Cprintf(WriteFunction8 pWriteFunction, void* pContext, const char8_t* pFormat, ...);
+int Fprintf(FILE* pFile, const char8_t* pFormat, ...);
+int Printf(const char8_t* pFormat, ...);
+int Sprintf(char8_t* pDestination, const char8_t* pFormat, ...);
+int Snprintf(char8_t* pDestination, size_t n, const char8_t* pFormat, ...);
+
+int Vcprintf(WriteFunction8 pWriteFunction8, void* pContext, const char8_t* pFormat, va_list arguments);
+int Vfprintf(FILE* pFile, const char8_t* pFormat, va_list arguments);
+int Vprintf(const char8_t* pFormat, va_list arguments);
+int Vsprintf(char8_t* pDestination, const char8_t* pFormat, va_list arguments);
+int Vsnprintf(char8_t* pDestination, size_t n, const char8_t* pFormat, va_list arguments);<br>int Vscprintf(const char8_t* EA_RESTRICT pFormat, va_list arguments);</span></pre>
+<p>Also there are:</p>
+<pre class="code-example">template &lt;typename String&gt; 
+int StringPrintf(String&amp; s, const typename String::value_type* EA_RESTRICT pFormat, ...);</pre>
+<pre class="code-example">template &lt;typename String&gt;
+int StringVcprintf(String&amp; s, const typename String::value_type* EA_RESTRICT pFormat, va_list arguments);</pre>
+<blockquote></blockquote>
+<h2>Snprintf uses C99 behavior</h2>
+<p> The EASprintf 'n' functions (Snprintf and Vsnprintf) follow the C99 standard 
+  for return value, which is different from some C standard library implementations 
+  such as VC++. These functions return the number of characters that would have 
+  been written had n been sufficiently large, not counting the terminating null 
+  character, or a negative value if an encoding error occurred. Thus, the null-terminated 
+  output has been completely written if and only if the returned value is nonnegative 
+  and less than n. Another way of saying it is that the return value equal to 
+  the strlen of the intended output. See the examples below.</p>
+<h2>Watch out for common mistakes and security problems</h2>
+<p> The sprintf family of functions are very convenient but offer numerous opportunities 
+  for incorrect usage and security problems. Here is a list of some of the most 
+  common issues.</p>
+<ul>
+  <li>Don't use sprintf unless you are absolutely certain the result will fit 
+    into the output buffer. Instead use snprintf.</li>
+  <li>When printing a string, always use <font face="Courier New, Courier, mono" size="-1">printf(&quot;%s&quot;, 
+    pStr)</font> and never <font face="Courier New, Courier, mono" size="-1">printf(pStr)</font>, 
+    as the latter may have formatting characters in it.</li>
+  <li>Watch out for platform differences between format types. For example, %u 
+    means unsigned int, and you can't use a size_t argument with it on 64 bit 
+    platforms. Instead, explicitly cast your arguments to the expected type or 
+    use the EASprintf extended format types (see below).</li>
+  <li>Similarly, watch out when passing int8_t and int16_t arguments to EAPrintf 
+    (and regular printf), as the compiler will promote them to int and they might 
+    not print as you expected, depending on your output format.</li>
+  <li>Watch out for EASprintf's C99 behaviour. C99 behaviour is standard C and 
+    is superior to previous C library behaviour, but the previous behaviour exists 
+    in the C library today with compilers such as VC++. This behaviour affects 
+    the return value of Snprintf/Vsnprintf, and affects the way some format specifiers 
+    are rendered.</li>
+</ul>
+<h2>Extended Functionality</h2>
+<p> Printf provides extended
+format functionality not found in the C99 standard but which is useful
+nevertheless:</p>
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+ cellspacing="2">
+  <tbody>
+    <tr style="font-weight: bold;">
+      <td>Format/modifier</td>
+      <td>Description</td>
+      <td>Example</td>
+      <td>Example output</td>
+    </tr>
+    <tr style="font-weight: bold;">
+      <td><span style="font-weight: normal;">b</span></td>
+      <td style="font-weight: normal;">Binary
+output field type (joins d, i, x, o, etc.).</td>
+      <td><span class="code-example-span">printf("0b%b", 255);<br>
+        printf<span style="font-weight: normal;">("%<span style="font-weight: normal;"><span style="font-weight: normal;">#</span></span>b", 255);</span></span> <span class="code-example-span"><br>
+      <span style="font-weight: normal;">printf<span style="font-weight: normal;">("%<span style="font-weight: normal;"><span style="font-weight: normal;">#</span></span>B", 255);</span> </span></span> </td>
+      <td><span class="code-example-span">0b11111111<br>
+          <span style="font-weight: normal;">0b11111111</span></span> <span class="code-example-span"><br>
+        <span style="font-weight: normal;"><span style="font-weight: normal;">0B11111111</span> </span></span></td>
+    </tr>
+    <tr>
+      <td>I8</td>
+      <td>8 bit integer field
+modifier.</td>
+      <td class="code-example-span">printf("%I8d", 0xff);</td>
+      <td class="code-example-span">-1</td>
+    </tr>
+    <tr>
+      <td>I16</td>
+      <td>16 bit integer field
+modifier.</td>
+      <td class="code-example-span">printf("%I16u", 0xffff);</td>
+      <td class="code-example-span">65535</td>
+    </tr>
+    <tr>
+      <td>I32</td>
+      <td>32 bit integer field
+modifier.</td>
+      <td class="code-example-span">printf("%I32d",
+0xffffffff);</td>
+      <td class="code-example-span">-1</td>
+    </tr>
+    <tr>
+      <td>I64</td>
+      <td>64 bit integer field
+modifier.</td>
+      <td class="code-example-span">printf("%I64u",
+0xffffffffffffffff);</td>
+      <td class="code-example-span">18446744073709551615</td>
+    </tr>
+    <tr>
+      <td>I128</td>
+      <td>128 bit integer field
+modifier.</td>
+      <td class="code-example-span">printf("%I128d",
+0xffffffffffffffffffffffffffffffff);</td>
+      <td class="code-example-span">-1</td>
+    </tr>
+    <tr>
+      <td>'</td>
+      <td>Display a thousands separator.</td>
+      <td class="code-example-span">printf("%'I16u", 0xffff);</td>
+      <td class="code-example-span">65,535</td>
+    </tr>
+  </tbody>
+</table>
+<h2>SprintfOrdered</h2>
+<p>EAStdC also provides an ordered sprintf</p>
+<p>Ordered printf is like printf except it works on &quot;ordered&quot; printf specifiers. This means that instead of using &quot;%4d %f&quot; we give an order to the arguments via an index and colon, as with &quot;%1:4d %2:f&quot;. The point, however, is that you can reorder the indexes, as with &quot;%2:f %1:4d&quot;. This is particularly useful for formatted string localization, as different locales use subjects and verbs in different orders.<br>
+<br>
+User indexes can start at either 0 or 1. Oprintf detects which is in use as it goes. So the following have identical effect:</p>
+<pre class="code-example">OPrintf(&quot;%1:s&quot; %0:f&quot;, 3.0, &quot;hello&quot;);
+OPrintf(&quot;%2:s&quot; %1:f&quot;, 3.0, &quot;hello&quot;);</pre>
+<p>  // User indexes must be contiguous and the behaviour of Oprintf is undefined<br>
+  // if the ordering is non-contiguous. There are debug checks to validate <br>
+  // contiguity, so debug tests should catch mistakes. The following is an <br>
+  // example of non-contiguous ordering, as it is missing a &quot;3:&quot; format:<br>
+  // OPrintf(&quot;%1:d&quot; %0:d %3:d&quot;, 17, 18, 19, 20);<br>
+</p>
+<p>Example usage:</p>
+<pre><span class="code-example">char16_t buffer[80];</span></pre>
+<p>// The module provides ordered versions of the printf family of functions:<br>
+  // int OCprintf(WriteFunction pFunction, void* pContext, const char_t* pFormat, ...);<br>
+  // int OFprintf(FILE* pFile, const char_t* pFormat, ...);<br>
+  // int OPrintf(cconst char_t* pFormat, ...);<br>
+  // int OSprintf(char_t* pDestination, const char_t* pFormat, ...);<br>
+  // int OSnprintf(char_t* pDestination, size_t n, const char_t* pFormat, ...);<br>
+  //<br>
+  // int OVcprintf(WriteFunction pFunction, void* pContext, const char_t* pFormat, va_list arguments);<br>
+  // int OVfprintf(FILE* pFile, const char_t* pFormat, va_list arguments);<br>
+  // int OVprintf(const char_t* pFormat, va_list arguments);<br>
+  // int OVsprintf(char_t* pDestination, const char_t* pFormat, va_list arguments);<br>
+  // int OVsnprintf(char_t* pDestination, size_t n, const char_t* pFormat, va_list arguments);<br>
+  // int OVscprintf(const char* pFormat, va_list arguments);<br>
+  //<br>
+  // Ordered printf is like printf except it works on &quot;ordered&quot; printf specifiers.<br>
+  // This means that instead of using &quot;%4d %f&quot; we give an order to the arguments via <br>
+  // an index and colon, as with &quot;%1:4d %2:f&quot;. The point, however, is that you can <br>
+  // reorder the indexes, as with &quot;%2:f %1:4d&quot;. This is particularly useful for <br>
+  // formatted string localization, as different locales use subjects and verbs<br>
+  // in different orders.<br>
+  //<br>
+  // User indexes can start at either 0 or 1. Oprintf detects which is in use as <br>
+  // it goes. So the following have identical effect:<br>
+  // OPrintf(&quot;%1:s&quot; %0:f&quot;, 3.0, &quot;hello&quot;);<br>
+  // OPrintf(&quot;%2:s&quot; %1:f&quot;, 3.0, &quot;hello&quot;);<br>
+  //<br>
+  // User indexes must be contiguous and the behaviour of Oprintf is undefined<br>
+  // if the ordering is non-contiguous. There are debug checks to validate <br>
+  // contiguity, so debug tests should catch mistakes. The following is an <br>
+  // example of non-contiguous ordering, as it is missing a &quot;3:&quot; format:<br>
+  // OPrintf(&quot;%1:d&quot; %0:d %3:d&quot;, 17, 18, 19, 20);<br>
+  /////////////////////////////////////////////////////////////////////////////<br> 
+</p>
+<h2>Example usage</h2>
+<p>All examples presume the #include of EASprintf.h.</p>
+<p>Snprintf usage:</p>
+<pre><span class="code-example">char16_t buffer[80];
+int nStrlen = Snprintf16(buffer, 80, &quot;Columbus arrived in %d.&quot;, 1492);
+
+if((unsigned)nStrlen &lt; 80) // Cast to unsigned in order to make any negative values be positive and &gt; 80.
+    puts(&quot;success&quot;);</span></pre>
+<p>How to write a function that takes variable arguments (e.g. ...) and passes 
+  them to EASprintf:</p>
+<pre><span class="code-example">#include &lt;stdarg.h&gt;
+
+void CustomFormattedOutput(const char* pFormat, ...)
+{
+    va_list arguments;
+    va_start(arguments, pFormat);
+    Vprintf8(pFormat, arguments);
+    va_end(arguments);
+}</span></pre>
+<p>How to write a function that does custom formatted output to a buffer that 
+  is resized as needed for it. This is useful for the implementation of fail-safe 
+  utility functions and for debug tracing systems, among other things.</p>
+<pre><span class="code-example">#include &lt;stdarg.h&gt;
+#include &lt;string&gt;
+
+<span class="code-example-comment">// This is a generic function for doing a sprintf into a C++ std::string object.
+// If the string object lacks enough space for the output, then the string will
+// be resized to exactly fit the output.
+</span>size_t StringSprintf(std::string&amp; s, const char* pFormat, ...)
+{
+    va_list arguments;
+    va_start(arguments, pFormat);
+
+    if(s.size() &lt; s.capacity())
+        s.resize(s.capacity());
+
+    const int nStrlen = Vsnprintf8(const_cast&lt;char*&gt;(s.data()), s.capacity() + 1, pFormat, arguments);
+
+    va_end(arguments);
+
+    if(nStrlen &gt; (int)s.size())
+    {
+        s.resize(nStrlen);
+        Vsnprintf8(const_cast&lt;char*&gt;(s.data()), s.capacity() + 1, pFormat, arguments);
+
+    return (size_t)nStrlen;
+}</span></pre>
+<p>Write to the C stderr stream:</p>
+<pre><span class="code-example">#include &lt;stdio.h&gt;
+
+Fprintf8(stderr, &quot;Columbus arrived in %d.&quot;, 1492);</span></pre>
+<p>Vsscanf usage. A complete discussion of the ins and outs of vsscanf are currently 
+  beyond the scope of this document. The scanf found in EAPrintf acts the same 
+  as with the C++ standard, so you can read about that elsewhere for the time 
+  being.</p>
+<pre><span class="code-example">char16_t buffer[64] = EAText16(&quot;Columbus arrived in 1492&quot;);
+int      year;
+
+Vsscanf16(buffer, &quot;Columbus arrived in %d.&quot;, &amp;year);</span></pre>
+<h2>Interface</h2>
+<p>Printf family</p>
+<pre><span class="code-example">int     Fprintf8(FILE* pFile, const char8_t* pFormat, ...);<br>int     Printf8(const char8_t* pFormat, ...);<br>int     Sprintf8(char8_t* pDestination, const char8_t* pFormat, ...);<br>int     Snprintf8(char8_t* pDestination, size_t n, const char8_t* pFormat, ...);<br><br>int     Fprintf16(FILE* pFile, const char16_t* pFormat, ...);<br>int     Printf16(const char16_t* pFormat, ...);<br>int     Sprintf16(char16_t* pDestination, const char16_t* pFormat, ...);<br>int     Snprintf16(char16_t* pDestination, size_t n, const char16_t* pFormat, ...);<br></span></pre>
+<p>Vprintf family</p>
+<pre><span class="code-example"><span class="code-example-comment">/// Note that vsnprintf was not added to the C standard until C99.<br>/// Here we follow the C99 standard and have the return value of vsnprintf <br>/// return the number of required characters to complete the formatted string.<br>/// This is more useful than the way some libraries implement vsnprintf by <br>/// returning -1 if there isn't enough space. The return value is -1 if there <br>/// was an "encoding error" or the implementation was unable to return a <br>/// value &gt; n upon lack of sufficient space as per the C99 standard.<br>///<br>/// Specification:<br>/// The vsnprintf function is equivalent to snprintf, with the variable <br>/// argument list replaced by arguments, which shall have been initialized <br>/// by the va_start macro (and possibly subsequent va_arg calls). <br>/// The vsnprintf function does not invoke the va_end macro. If copying <br>/// takes place between objects that overlap, the behavior is undefined.<br>///<br>/// The vsnprintf function returns the number of characters that would <br>/// have been written had n been sufficiently large, not counting the <br>/// terminating null character, or a neg ative value if an encoding error <br>/// occurred. Thus, the null-terminated output has been completely written <br>/// if and only if the returned value is nonnegative and less than n.<br>///<br></span>int Vfprintf8(FILE* pFile, const char8_t* pFormat, va_list arguments);<br>int Vprintf8(const char8_t* pFormat, va_list arguments);<br>int Vsprintf8(char8_t* pDestination, const char8_t* pFormat, va_list arguments);<br>int Vsnprintf8(char8_t* pDestination, size_t n, const char8_t* pFormat, va_list arguments);<br><br>int Vfprintf16(FILE* pFile, const char16_t* pFormat, va_list arguments);<br>int Vprintf16(const char16_t* pFormat, va_list arguments);<br>int Vsprintf16(char16_t* pDestination, const char16_t* pFormat, va_list arguments);<br>int Vsnprintf16(char16_t* pDestination, size_t n, const char16_t* pFormat, va_list arguments);<br></span><br>
+</pre>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p> </p>
+</body>
+</html>

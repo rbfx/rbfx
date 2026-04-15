@@ -51,6 +51,8 @@ static const char* typeNames[] =
     "Vector2",
     "Vector3",
     "Vector4",
+    "DoubleVector2",
+    "DoubleVector3",
     "Quaternion",
     "Color",
     "String",
@@ -135,6 +137,10 @@ Variant& Variant::operator =(const Variant& rhs)
 
     case VAR_MATRIX4:
         *value_.matrix4_ = *rhs.value_.matrix4_;
+        break;
+
+    case VAR_DOUBLEVECTOR3:
+        *value_.doubleVector3_ = *rhs.value_.doubleVector3_;
         break;
 
     case VAR_VARIANTCURVE:
@@ -244,6 +250,12 @@ bool Variant::operator ==(const Variant& rhs) const
 
     case VAR_VECTOR3:
         return value_.vector3_ == rhs.value_.vector3_;
+
+    case VAR_DOUBLEVECTOR2:
+        return value_.doubleVector2_ == rhs.value_.doubleVector2_;
+
+    case VAR_DOUBLEVECTOR3:
+        return *value_.doubleVector3_ == *rhs.value_.doubleVector3_;
 
     case VAR_VECTOR4:
         return value_.vector4_ == rhs.value_.vector4_;
@@ -373,6 +385,14 @@ Variant::Variant(VariantType type)
         *this = Vector3::ZERO;
         break;
 
+    case VAR_DOUBLEVECTOR2:
+        *this = DoubleVector2::ZERO;
+        break;
+
+    case VAR_DOUBLEVECTOR3:
+        *this = DoubleVector3::ZERO;
+        break;
+
     case VAR_VECTOR4:
         *this = Vector4::ZERO;
         break;
@@ -489,6 +509,14 @@ void Variant::FromString(VariantType type, const char* value)
 
     case VAR_VECTOR3:
         *this = ToVector3(value);
+        break;
+
+    case VAR_DOUBLEVECTOR2:
+        *this = ToDoubleVector2(value);
+        break;
+
+    case VAR_DOUBLEVECTOR3:
+        *this = ToDoubleVector3(value);
         break;
 
     case VAR_VECTOR4:
@@ -716,6 +744,12 @@ ea::string Variant::ToString() const
     case VAR_VECTOR4:
         return value_.vector4_.ToString();
 
+    case VAR_DOUBLEVECTOR2:
+        return value_.doubleVector2_.ToString();
+
+    case VAR_DOUBLEVECTOR3:
+        return value_.doubleVector3_->ToString();
+
     case VAR_QUATERNION:
         return value_.quaternion_.ToString();
 
@@ -809,6 +843,12 @@ bool Variant::IsZero() const
 
     case VAR_VECTOR4:
         return value_.vector4_ == Vector4::ZERO;
+
+    case VAR_DOUBLEVECTOR2:
+        return value_.doubleVector2_ == DoubleVector2::ZERO;
+
+    case VAR_DOUBLEVECTOR3:
+        return *value_.doubleVector3_ == DoubleVector3::ZERO;
 
     case VAR_QUATERNION:
         return value_.quaternion_ == Quaternion::IDENTITY;
@@ -925,6 +965,10 @@ void Variant::SetType(VariantType newType)
         delete value_.variantMap_;
         break;
 
+    case VAR_DOUBLEVECTOR3:
+        delete value_.doubleVector3_;
+        break;
+
     case VAR_PTR:
         value_.weakPtr_.~WeakPtr<RefCounted>();
         break;
@@ -987,6 +1031,10 @@ void Variant::SetType(VariantType newType)
 
     case VAR_VARIANTMAP:
         value_.variantMap_ = new VariantMap();
+        break;
+
+    case VAR_DOUBLEVECTOR3:
+        value_.doubleVector3_ = new DoubleVector3();
         break;
 
     case VAR_PTR:
@@ -1183,6 +1231,16 @@ template <> Vector3 Variant::Get<Vector3>(int) const
     return GetVector3();
 }
 
+template <> DoubleVector2 Variant::Get<DoubleVector2>(int) const
+{
+    return GetDoubleVector2();
+}
+
+template <> DoubleVector3 Variant::Get<DoubleVector3>(int) const
+{
+    return GetDoubleVector3();
+}
+
 template <> Vector4 Variant::Get<Vector4>(int) const
 {
     return GetVector4();
@@ -1290,6 +1348,12 @@ Variant Variant::Lerp(const Variant& rhs, float t) const
     case VAR_VECTOR3:
         return GetVector3().Lerp(rhs.GetVector3(), t);
 
+    case VAR_DOUBLEVECTOR2:
+        return GetDoubleVector2().Lerp(rhs.GetDoubleVector2(), t);
+
+    case VAR_DOUBLEVECTOR3:
+        return GetDoubleVector3().Lerp(rhs.GetDoubleVector3(), t);
+
     case VAR_VECTOR4:
         return GetVector4().Lerp(rhs.GetVector4(), t);
 
@@ -1355,6 +1419,10 @@ unsigned Variant::ToHash() const
         return MakeHash(Get<Urho3D::Vector3>());
     case Urho3D::VAR_VECTOR4:
         return MakeHash(Get<Urho3D::Vector4>());
+    case Urho3D::VAR_DOUBLEVECTOR2:
+        return MakeHash(Get<DoubleVector2>());
+    case Urho3D::VAR_DOUBLEVECTOR3:
+        return MakeHash(Get<DoubleVector3>());
     case Urho3D::VAR_QUATERNION:
         return MakeHash(Get<Urho3D::Quaternion>());
     case Urho3D::VAR_COLOR:
@@ -1426,6 +1494,10 @@ unsigned GetVariantTypeSize(VariantType variant)
         return sizeof(Vector2);
     case VAR_VECTOR3:
         return sizeof(Vector3);
+    case VAR_DOUBLEVECTOR2:
+        return sizeof(DoubleVector2);
+    case VAR_DOUBLEVECTOR3:
+        return sizeof(DoubleVector3);
     case VAR_VECTOR4:
         return sizeof(Vector4);
     case VAR_QUATERNION:

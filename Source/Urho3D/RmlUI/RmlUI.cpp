@@ -49,7 +49,6 @@
 #include "../RmlUI/RmlFile.h"
 #include "../RmlUI/RmlEventListeners.h"
 #include "../RmlUI/RmlCanvasComponent.h"
-#include "../RmlUI/RmlNavigable.h"
 #include "../RmlUI/RmlSerializableInspector.h"
 #include "../RmlUI/RmlUIComponent.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
@@ -64,6 +63,17 @@
 
 namespace Urho3D
 {
+
+namespace Detail
+{
+
+void InsertVariablePlaceholders(ea::string& content, void* dataModelId)
+{
+    // Replace special placeholders in .rml file contents and model names to allow deriving unique model names
+    content.replace("{{__data_model_id}}", Format("{}", dataModelId));
+}
+
+} // namespace Detail
 
 static MouseButton MakeTouchIDMask(int id)
 {
@@ -415,8 +425,6 @@ RmlUI::RmlUI(Context* context, const char* name)
         Rml::Factory::RegisterEventListenerInstancer(&RmlEventListenerInstancerInstance);
         Rml::Factory::RegisterContextInstancer(&RmlContextInstancerInstance);
         Rml::RegisterPlugin(&RmlPluginInstance);
-
-        RmlNavigable::Register();
     }
     rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), ToRmlUi(GetDesiredCanvasSize())));
     rmlContext_->SetOwnerSubsystem(this);
@@ -472,9 +480,24 @@ RmlUI::~RmlUI()
     }
 }
 
-Rml::ElementDocument* RmlUI::LoadDocument(const ea::string& path)
+Rml::ElementDocument* RmlUI::LoadDocument(const ea::string& path, void* dataModelId)
 {
-    return rmlContext_->LoadDocument(path);
+    // Load .rml file contents and update placeholders.
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto file = cache->GetFile(path);
+    if (!file)
+        return nullptr;
+
+    auto fileContents = file->ReadString();
+    if (dataModelId)
+        Detail::InsertVariablePlaceholders(fileContents, dataModelId);
+
+    // Mark resource as loaded in RmlFile interface to ensure auto-reload works.
+    auto* fileInterface = static_cast<Detail::RmlFile*>(Rml::GetFileInterface());
+    fileInterface->AddResourceLoaded(path);
+
+    // Load document from memory.
+    return rmlContext_->LoadDocumentFromMemory(fileContents, path);
 }
 
 void RmlUI::SetDebuggerVisible(bool visible)
@@ -521,7 +544,7 @@ void RmlUI::HandleScreenMode(StringHash, VariantMap& eventData)
     args.oldSize_ = ToIntVector2(rmlContext_->GetDimensions());
     args.newSize_ = GetDesiredCanvasSize();
     rmlContext_->SetDimensions(ToRmlUi(args.newSize_));
-    canvasResizedEvent_(this, args);
+    OnCanvasResizedEvent(this, args);
 }
 
 void RmlUI::HandleMouseButtonDown(StringHash, VariantMap& eventData)
@@ -560,7 +583,7 @@ void RmlUI::HandleMouseMove(StringHash, VariantMap& eventData)
     using namespace MouseMove;
     int modifiers = ModifiersUrho3DToRml(static_cast<QualifierFlags>(eventData[P_QUALIFIERS].GetInt()));
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
-    mouseMoveEvent_(this, pos);
+    OnMouseMoveEvent(this, pos);
     if (pos.x_ >= 0 && pos.y_ >= 0)
         rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
 }
@@ -585,7 +608,7 @@ void RmlUI::HandleTouchBegin(StringHash, VariantMap& eventData)
     int modifiers = ModifiersUrho3DToRml(input->GetQualifiers());
     int button = MouseButtonUrho3DToRml(touchId);
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
-    mouseMoveEvent_(this, pos);
+    OnMouseMoveEvent(this, pos);
     if (pos.x_ >= 0 && pos.y_ >= 0)
         rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
     rmlContext_->ProcessMouseButtonDown(button, modifiers);
@@ -609,7 +632,7 @@ void RmlUI::HandleTouchMove(StringHash, VariantMap& eventData)
     // const MouseButton touchId = MakeTouchIDMask(eventData[P_TOUCHID].GetInt());
     int modifiers = ModifiersUrho3DToRml(input->GetQualifiers());
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
-    mouseMoveEvent_(this, pos);
+    OnMouseMoveEvent(this, pos);
     if (pos.x_ >= 0 && pos.y_ >= 0)
         rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
 }
@@ -690,7 +713,7 @@ void RmlUI::SetRenderTarget(RenderSurface* target, const Color& clearColor)
     args.oldSize_ = ToIntVector2(rmlContext_->GetDimensions());
     args.newSize_ = GetDesiredCanvasSize();
     rmlContext_->SetDimensions(ToRmlUi(args.newSize_));
-    canvasResizedEvent_(this, args);
+    OnCanvasResizedEvent(this, args);
 }
 
 void RmlUI::SetRenderTarget(Texture2D* target, const Color& clearColor)
@@ -784,6 +807,8 @@ bool ToRmlUi(const Variant& src, Rml::Variant& dst)
     case VAR_CUSTOM: break;
     case VAR_VARIANTCURVE: break;
     case VAR_STRINGVARIANTMAP: break;
+    case MAX_VAR_MASK: break;
+    case MAX_VAR_TYPES: break;
     }
     auto string = src.ToString();
     if (string.empty())
@@ -810,7 +835,17 @@ IntVector2 RmlUI::GetDesiredCanvasSize() const
 bool RmlUI::IsHovered() const
 {
     Rml::Element* hover = rmlContext_->GetHoverElement();
-    return hover != nullptr && hover != rmlContext_->GetRootElement();
+
+    if (hover == nullptr)
+        return false;
+
+    if (hover == rmlContext_->GetRootElement())
+        return false;
+
+    if (hover->GetAttribute<bool>("mouse-passthrough", false))
+        return false;
+
+    return true;
 }
 
 bool RmlUI::IsInputCaptured() const
@@ -867,7 +902,7 @@ void RmlUI::Render()
 
 void RmlUI::OnDocumentUnload(Rml::ElementDocument* document)
 {
-    documentClosedEvent_(this, document);
+    OnDocumentClosedEvent(this, document);
 }
 
 void RmlUI::Update(float timeStep)
@@ -877,6 +912,8 @@ void RmlUI::Update(float timeStep)
 
     if (rmlContext_)
         rmlContext_->Update();
+
+    OnUpdated(this);
 }
 
 void RmlUI::HandleResourceReloaded(StringHash eventType, VariantMap& eventData)
@@ -926,8 +963,13 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     const Rml::Property* oldWidthProperty = document->GetProperty(Rml::PropertyId::Width);
     const Rml::Property* oldHeightProperty = document->GetProperty(Rml::PropertyId::Height);
 
+    // Retrieve placeholder context from original document
+    void* placeholderContext = nullptr;
+    if (const Rml::Variant* value = document->GetAttribute(Detail::ComponentPtrAttribute))
+        placeholderContext = value->Get<void*>();
+
     // Try to reload document
-    Rml::ElementDocument* newDocument = rmlContext_->LoadDocument(document->GetSourceURL());
+    Rml::ElementDocument* newDocument = LoadDocument(document->GetSourceURL(), placeholderContext);
     if (!newDocument)
         return nullptr;
 
@@ -948,7 +990,7 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     RmlDocumentReloadedArgs args;
     args.unloadedDocument_ = document;
     args.loadedDocument_ = newDocument;
-    documentReloaded_(this, args);
+    OnDocumentReloaded(this, args);
 
     document->Close();
 

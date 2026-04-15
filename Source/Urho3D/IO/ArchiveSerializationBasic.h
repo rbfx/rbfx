@@ -44,8 +44,10 @@ namespace Detail
 {
 
 URHO3D_API ea::string NumberArrayToString(float* values, unsigned size);
+URHO3D_API ea::string NumberArrayToString(double* values, unsigned size);
 URHO3D_API ea::string NumberArrayToString(int* values, unsigned size);
 URHO3D_API unsigned StringToNumberArray(const ea::string& string, float* values, unsigned maxSize);
+URHO3D_API unsigned StringToNumberArray(const ea::string& string, double* values, unsigned maxSize);
 URHO3D_API unsigned StringToNumberArray(const ea::string& string, int* values, unsigned maxSize);
 
 /// Serialize primitive array type as bytes or as formatted string.
@@ -154,7 +156,7 @@ template <class T> struct EnumStringSafeCaster
     ea::string ToArchive(Archive& archive, const char* name, const T& value) const
     {
         UnderlyingInteger index = static_cast<UnderlyingInteger>(value);
-        if (index < 0 || index >= enumConstants_.size())
+        if (index < 0 || static_cast<eastl_size_t>(index) >= enumConstants_.size())
             return ea::to_string(index);
         return ea::string{enumConstants_[index]};
     }
@@ -255,7 +257,9 @@ inline void SerializeValue(Archive& archive, const char* name, StringHash& value
 /// @name Serialize primitive array types
 /// @{
 inline void SerializeValue(Archive& archive, const char* name, Vector2& value) { Detail::SerializePrimitiveArray<2>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, DoubleVector2& value) { Detail::SerializePrimitiveArray<2>(archive, name, value); }
 inline void SerializeValue(Archive& archive, const char* name, Vector3& value) { Detail::SerializePrimitiveArray<3>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, DoubleVector3& value) { Detail::SerializePrimitiveArray<3>(archive, name, value); }
 inline void SerializeValue(Archive& archive, const char* name, Vector4& value) { Detail::SerializePrimitiveArray<4>(archive, name, value); }
 inline void SerializeValue(Archive& archive, const char* name, Matrix3& value) { Detail::SerializePrimitiveArray<9>(archive, name, value); }
 inline void SerializeValue(Archive& archive, const char* name, Matrix3x4& value) { Detail::SerializePrimitiveArray<12>(archive, name, value); }
@@ -383,9 +387,8 @@ void SerializeOptionalValue(Archive& archive, const char* name, T& value, const 
         serializeValue(archive, name, value);
     else if (loading)
     {
-        // Don't try to cast from AlwaysSerialize
-        if constexpr(!std::is_base_of_v<AlwaysSerialize, U>)
-            value = static_cast<T>(defaultValue);
+        if constexpr (std::is_constructible_v<T, U>)
+            value = T{defaultValue};
     }
 }
 

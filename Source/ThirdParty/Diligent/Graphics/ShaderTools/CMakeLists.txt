@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.6)
+cmake_minimum_required (VERSION 3.6...3.25)
 
 project(Diligent-ShaderTools CXX)
 
@@ -197,8 +197,8 @@ if(ENABLE_WGSL)
     PRIVATE
         libtint
         # We include this library because when building for Emscripten, libtint does not include this library in the dependency list
-        tint_lang_wgsl_inspector 
-    ) 
+        tint_lang_wgsl_inspector
+    )
 endif()
 
 set(HLSL_DEFINITIONS include/HLSLDefinitions.fxh)

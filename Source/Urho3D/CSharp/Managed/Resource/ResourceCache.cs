@@ -26,11 +26,15 @@ namespace Urho3DNet
     {
         public T GetResource<T>(string name, bool sendEventOnFailure = true) where T: Resource
         {
+            if (string.IsNullOrEmpty(name))
+                return null;
             return (T) GetResource(ObjectReflection<T>.TypeId, name, sendEventOnFailure);
         }
 
         public T GetTempResource<T>(string name, bool sendEventOnFailure = true) where T : Resource
         {
+            if (string.IsNullOrEmpty(name))
+                return null;
             return (T)GetTempResource(ObjectReflection<T>.TypeId, name, sendEventOnFailure);
         }
     }

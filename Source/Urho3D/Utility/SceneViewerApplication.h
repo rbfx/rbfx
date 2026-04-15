@@ -39,6 +39,11 @@ public:
     explicit SceneViewerApplication(Context* context);
     ~SceneViewerApplication() override;
 
+    /// Implement MainPluginApplication
+    /// @{
+    bool IsSuspendSupported() const override { return true; }
+    /// @}
+
 protected:
     /// Implement MainPluginApplication
     /// @{

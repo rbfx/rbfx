@@ -27,14 +27,19 @@ public:
     bool Initialize(IKNodeCache& nodeCache);
     void NotifyPositionsReady();
     void Solve(const IKSettings& settings, float timeStep);
+    void UpdateWorldOrigin(const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta);
 
     /// Internal. Marks chain tree as dirty.
     void OnTreeDirty();
 
+    /// Utility to calculate Node transform relative to parent Node without relying on world transforms.
+    static Matrix3x4 GetParentTransform(Node* node, Node* parent);
+
 protected:
     virtual bool InitializeNodes(IKNodeCache& nodeCache) = 0;
-    virtual void UpdateChainLengths(const Transform& inverseFrameOfReference) = 0;
+    virtual void UpdateChainLengths(const Transform& inverseLocalFrameOfReference) = 0;
     virtual void SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep) = 0;
+    virtual void UpdateWorldOriginInternal(const Vector3& delta) {}
 
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
 
@@ -83,6 +88,7 @@ protected:
 
 private:
     Transform GetFrameOfReferenceTransform() const;
+    Transform GetLocalFrameOfReferenceTransform() const;
 
     ea::vector<ea::pair<Node*, IKNode*>> solverNodes_;
     WeakPtr<Node> frameOfReferenceNode_;
