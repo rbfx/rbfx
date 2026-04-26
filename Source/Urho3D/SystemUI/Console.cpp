@@ -157,6 +157,17 @@ void Console::HandleLogMessage(StringHash eventType, VariantMap& eventData)
 
 void Console::RenderContent()
 {
+    // Force more verbose logging if it is required by the Console.
+    const auto log = GetSubsystem<Log>();
+    for (unsigned level = LOG_TRACE; level < log->GetLevel(); ++level)
+    {
+        if (levelVisible_[level])
+        {
+            log->SetLevel(static_cast<LogLevel>(level));
+            break;
+        }
+    }
+
     ImVec2 region = ui::GetContentRegionAvail();
     bool showCommandInput = !interpretersPointers_.empty();
     bool copying = (ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL)) && ui::IsKeyPressed(KEY_C);
