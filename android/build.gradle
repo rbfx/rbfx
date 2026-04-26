@@ -48,7 +48,7 @@ android {
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21', '-DANDROID=1',
-                          '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_SAMPLES=ON', '-DURHO3D_PLAYER=OFF',
+                          '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_SAMPLES=ON', '-DURHO3D_PLAYER=ON',
                           '-DCMAKE_POLICY_VERSION_MINIMUM=3.5'
 
                 def cmakePrefixPath = System.getenv('CMAKE_PREFIX_PATH')
