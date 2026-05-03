@@ -96,6 +96,8 @@ struct MeshProcess : public dtTileCacheMeshProcess
 
     void process(struct dtNavMeshCreateParams* params, unsigned char* polyAreas, unsigned short* polyFlags) override
     {
+        params->portalLinksCount = owner_->GetMaxPortalLinks();
+
         // Update poly flags from areas.
         // \todo Assignment of flags from areas?
         for (int i = 0; i < params->polyCount; ++i)

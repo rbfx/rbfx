@@ -281,6 +281,12 @@ public:
     /// @property
     float GetDetailSampleMaxError() const { return detailSampleMaxError_; }
 
+    /// Set the maximum number of links per portal when generating navigation mesh tiles.
+    void SetMaxPortalLinks(int count);
+
+    /// Return the maximum number of links per portal used in navigation mesh creation.
+    int GetMaxPortalLinks() const { return maxPortalLinks_; }
+
     /// Return navigation mesh bounding box padding.
     /// @property
     const Vector3& GetPadding() const { return padding_; }
@@ -421,6 +427,8 @@ protected:
     float agentMaxClimb_;
     /// Navigation agent max slope.
     float agentMaxSlope_;
+    /// Maximum number of links per portal used in navigation mesh creation.
+    int maxPortalLinks_;
     /// Region minimum size.
     float regionMinSize_;
     /// Region merge size.

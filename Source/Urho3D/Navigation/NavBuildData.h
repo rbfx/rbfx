@@ -89,6 +89,8 @@ struct URHO3D_API NavBuildData : public NonCopyable
     float agentRadius_{};
     /// Navigation agent max vertical climb.
     float agentMaxClimb_{};
+    /// Maximum number of links per portal when creating nav mesh tiles.
+    int portalLinksCount_{};
 
     /// Recast configuration for building.
     rcConfig recastConfig_{};

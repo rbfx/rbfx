@@ -84,6 +84,7 @@ static const float DEFAULT_EDGE_MAX_LENGTH = 12.0f;
 static const float DEFAULT_EDGE_MAX_ERROR = 1.3f;
 static const float DEFAULT_DETAIL_SAMPLE_DISTANCE = 6.0f;
 static const float DEFAULT_DETAIL_SAMPLE_MAX_ERROR = 1.0f;
+static const int DEFAULT_MAX_PORTAL_LINKS = 2;
 
 static const int MAX_POLYS = 2048;
 
@@ -137,6 +138,7 @@ NavigationMesh::NavigationMesh(Context* context) :
     edgeMaxError_(DEFAULT_EDGE_MAX_ERROR),
     detailSampleDistance_(DEFAULT_DETAIL_SAMPLE_DISTANCE),
     detailSampleMaxError_(DEFAULT_DETAIL_SAMPLE_MAX_ERROR),
+    maxPortalLinks_(DEFAULT_MAX_PORTAL_LINKS),
     padding_(Vector3::ONE),
     partitionType_(NAVMESH_PARTITION_WATERSHED),
     keepInterResults_(false),
@@ -171,6 +173,7 @@ void NavigationMesh::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Region Merge Size", GetRegionMergeSize, SetRegionMergeSize, float, DEFAULT_REGION_MERGE_SIZE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Edge Max Length", GetEdgeMaxLength, SetEdgeMaxLength, float, DEFAULT_EDGE_MAX_LENGTH, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Edge Max Error", GetEdgeMaxError, SetEdgeMaxError, float, DEFAULT_EDGE_MAX_ERROR, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Portal Links Count", GetMaxPortalLinks, SetMaxPortalLinks, int, DEFAULT_MAX_PORTAL_LINKS, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Detail Sample Distance", GetDetailSampleDistance, SetDetailSampleDistance, float,
         DEFAULT_DETAIL_SAMPLE_DISTANCE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Detail Sample Max Error", GetDetailSampleMaxError, SetDetailSampleMaxError, float,
@@ -330,6 +333,11 @@ void NavigationMesh::SetDetailSampleDistance(float distance)
 void NavigationMesh::SetDetailSampleMaxError(float error)
 {
     detailSampleMaxError_ = Max(error, M_EPSILON);
+}
+
+void NavigationMesh::SetMaxPortalLinks(int count)
+{
+    maxPortalLinks_ = Max(count, 1);
 }
 
 void NavigationMesh::SetPadding(const Vector3& padding)
@@ -1432,6 +1440,7 @@ void NavigationMesh::InitializeBuildData(
     build.agentHeight_ = agentHeight_;
     build.agentRadius_ = agentRadius_;
     build.agentMaxClimb_ = agentMaxClimb_;
+    build.portalLinksCount_ = maxPortalLinks_;
 
     rcConfig& cfg = build.recastConfig_;
     cfg.cs = cellSize_;
@@ -1613,6 +1622,7 @@ bool NavigationMesh::BuildSimpleTileData(SimpleNavBuildData& build)
     rcVcopy(params.bmax, build.polyMesh_->bmax);
     params.cs = cfg.cs;
     params.ch = cfg.ch;
+    params.portalLinksCount = build.portalLinksCount_;
     params.buildBvTree = true;
 
     // Add off-mesh connections if have them
