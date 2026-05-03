@@ -18,7 +18,6 @@
 
 // Modified by Lasse Oorni, Yao Wei Tjong, 1vanK and cosmy1 for Urho3D
 
-#define _USE_MATH_DEFINES
 #include <string.h>
 #include <float.h>
 #include <stdlib.h>
@@ -204,7 +203,7 @@ static int getNeighbours(const float* pos, const float height, const float range
 		const dtCrowdAgent* ag = agents[ids[i]];
 		
 		if (ag == skip) continue;
-		if (skip->params.layer && !(skip->params.mask & ag->params.layer)) continue; // Urho3D
+		if (skip->params.layer && !(skip->params.mask & ag->params.layer)) continue;
 		
 		// Check for overlap.
 		float diff[3];

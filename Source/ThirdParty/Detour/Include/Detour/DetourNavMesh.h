@@ -22,7 +22,7 @@
 #include "DetourAlloc.h"
 #include "DetourStatus.h"
 
-// Undefine (or define in a build cofnig) the following line to use 64bit polyref.
+// Undefine (or define in a build config) the following line to use 64bit polyref.
 // Generally not needed, useful for very large worlds.
 // Note: tiles build using 32bit refs are not compatible with 64bit refs!
 //#define DT_POLYREF64 1
@@ -83,6 +83,9 @@ static const int DT_NAVMESH_STATE_VERSION = 1;
 /// A flag that indicates that an entity links to an external entity.
 /// (E.g. A polygon edge is a portal that links to another polygon.)
 static const unsigned short DT_EXT_LINK = 0x8000;
+
+/// Maximum number of external links per edge.
+static const unsigned short DT_EXT_LINKS_PER_EDGE = 32;
 
 /// A value that indicates the entity does not link to anything.
 static const unsigned int DT_NULL_LINK = 0xffffffff;
@@ -171,7 +174,7 @@ struct dtPoly
 	unsigned char vertCount;
 
 	/// The bit packed area id and polygon type.
-	/// @note Use the structure's set and get methods to acess this value.
+	/// @note Use the structure's set and get methods to access this value.
 	unsigned char areaAndtype;
 
 	/// Sets the user defined area id. [Limit: < #DT_MAX_AREAS]
@@ -306,9 +309,6 @@ struct dtMeshTile
 	int dataSize;							///< Size of the tile data.
 	int flags;								///< Tile flags. (See: #dtTileFlags)
 	dtMeshTile* next;						///< The next free tile, or the next tile in the spatial grid.
-private:
-	dtMeshTile(const dtMeshTile&);
-	dtMeshTile& operator=(const dtMeshTile&);
 };
 
 /// Get flags for edge in detail triangle.
