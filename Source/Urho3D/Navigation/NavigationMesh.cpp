@@ -191,6 +191,7 @@ void NavigationMesh::DrawDebugTileGeometry(DebugRenderer* debug, bool depthTest,
 {
     static const Color polygonEdgeColor = 0x7fffff00_argb;
     static const Color polygonLinkColor = 0x7f00ff00_argb;
+    static const Color polygonBadLinkColor = 0x7fff0000_argb;
 
     if (tileIndex >= navMesh_->getMaxTiles())
         return;
@@ -205,6 +206,7 @@ void NavigationMesh::DrawDebugTileGeometry(DebugRenderer* debug, bool depthTest,
     {
         const dtPoly& poly = tile.polys[polyIndex];
         const auto [polyVertices, polyCenter] = GetPolygonVerticesAndCenter(tile, poly);
+        const dtPolyRef polyRef = navMesh.encodePolyId(tile.salt, tileIndex, polyIndex);
 
         for (unsigned i = 0; i < poly.vertCount; ++i)
         {
@@ -222,8 +224,21 @@ void NavigationMesh::DrawDebugTileGeometry(DebugRenderer* debug, bool depthTest,
             if (!dtStatusSucceed(navMesh.getTileAndPolyByRef(linkData.ref, &otherTile, &otherPoly)))
                 continue;
 
+            bool isBadLink = true;
+            for (unsigned otherLink = otherPoly->firstLink; otherLink != DT_NULL_LINK;
+                otherLink = otherTile->links[otherLink].next)
+            {
+                const dtLink& otherLinkData = otherTile->links[otherLink];
+                if (otherLinkData.ref == polyRef)
+                {
+                    isBadLink = false;
+                    break;
+                }
+            }
+
             const auto [_, otherPolyCenter] = GetPolygonVerticesAndCenter(*otherTile, *otherPoly);
-            debug->AddLine(worldTransform * polyCenter, worldTransform * otherPolyCenter, polygonLinkColor, depthTest);
+            const Color& color = !isBadLink ? polygonLinkColor : polygonBadLinkColor;
+            debug->AddLine(worldTransform * polyCenter, worldTransform * otherPolyCenter, color, depthTest);
         }
     }
 }
