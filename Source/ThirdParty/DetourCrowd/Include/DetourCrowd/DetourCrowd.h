@@ -98,14 +98,14 @@ struct dtCrowdAgentParams
 	/// The index of the query filter used by this agent.
 	unsigned char queryFilterType;
 
-	/// User defined data attached to the agent.
-	void* userData;
-
-	/// Urho3D: Layer and mask bitmasks for filtering agent interactions.
+	/// Layer and mask bitmasks for filtering agent interactions.
 	/// The agent is only affected by neighbor agents when (ag->mask & nei->layer) is non-zero.
 	/// If layer is 0, filtering is disabled.
 	unsigned int layer;
 	unsigned int mask;
+
+	/// User defined data attached to the agent.
+	void* userData;
 };
 
 enum MoveRequestState
@@ -294,7 +294,7 @@ public:
 	
 	/// Adds a new agent to the crowd.
 	///  @param[in]		pos		The requested position of the agent. [(x, y, z)]
-	///  @param[in]		params	The configutation of the agent.
+	///  @param[in]		params	The configuration of the agent.
 	/// @return The index of the agent in the agent pool. Or -1 if the agent could not be added.
 	int addAgent(const float* pos, const dtCrowdAgentParams* params);
 
@@ -463,7 +463,7 @@ This value is often based on the agent radius and/or maximum speed. E.g. radius 
 @var dtCrowdAgentParams::pathOptimizationRange
 @par
 
-Only applicalbe if #updateFlags includes the #DT_CROWD_OPTIMIZE_VIS flag.
+Only applicable if #updateFlags includes the #DT_CROWD_OPTIMIZE_VIS flag.
 
 This value is often based on the agent radius. E.g. radius * 30
 

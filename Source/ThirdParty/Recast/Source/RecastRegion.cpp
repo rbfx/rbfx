@@ -17,7 +17,6 @@
 //
 
 #include <float.h>
-#define _USE_MATH_DEFINES
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
@@ -541,8 +540,8 @@ struct rcRegion
 	bool overlap;
 	bool connectsToBorder;
 	unsigned short ymin, ymax;
-	rcIntArray connections;
-	rcIntArray floors;
+	rcTempVector<int> connections;
+	rcTempVector<int> floors;
 };
 
 static void removeAdjacentNeighbours(rcRegion& reg)
@@ -556,7 +555,7 @@ static void removeAdjacentNeighbours(rcRegion& reg)
 			// Remove duplicate
 			for (int j = i; j < reg.connections.size()-1; ++j)
 				reg.connections[j] = reg.connections[j+1];
-			reg.connections.pop();
+			reg.connections.pop_back();
 		}
 		else
 			++i;
@@ -608,7 +607,7 @@ static void addUniqueFloorRegion(rcRegion& reg, int n)
 	for (int i = 0; i < reg.floors.size(); ++i)
 		if (reg.floors[i] == n)
 			return;
-	reg.floors.push(n);
+	reg.floors.push_back(n);
 }
 
 static bool mergeRegions(rcRegion& rega, rcRegion& regb)
@@ -617,11 +616,11 @@ static bool mergeRegions(rcRegion& rega, rcRegion& regb)
 	unsigned short bid = regb.id;
 	
 	// Duplicate current neighbourhood.
-	rcIntArray acon;
+	rcTempVector<int> acon;
 	acon.resize(rega.connections.size());
 	for (int i = 0; i < rega.connections.size(); ++i)
 		acon[i] = rega.connections[i];
-	rcIntArray& bcon = regb.connections;
+	rcTempVector<int>& bcon = regb.connections;
 	
 	// Find insertion point on A.
 	int insa = -1;
@@ -651,11 +650,15 @@ static bool mergeRegions(rcRegion& rega, rcRegion& regb)
 	
 	// Merge neighbours.
 	rega.connections.clear();
-	for (int i = 0, ni = acon.size(); i < ni-1; ++i)
-		rega.connections.push(acon[(insa+1+i) % ni]);
+	for (int i = 0, ni = static_cast<int>(acon.size()); i < ni-1; ++i)
+	{
+		rega.connections.push_back(acon[(insa+1+i) % ni]);
+	}
 		
-	for (int i = 0, ni = bcon.size(); i < ni-1; ++i)
-		rega.connections.push(bcon[(insb+1+i) % ni]);
+	for (int i = 0, ni = static_cast<int>(bcon.size()); i < ni-1; ++i)
+	{
+		rega.connections.push_back(bcon[(insb+1+i) % ni]);
+	}
 	
 	removeAdjacentNeighbours(rega);
 	
@@ -700,7 +703,7 @@ static bool isSolidEdge(rcCompactHeightfield& chf, const unsigned short* srcReg,
 static void walkContour(int x, int y, int i, int dir,
 						rcCompactHeightfield& chf,
 						const unsigned short* srcReg,
-						rcIntArray& cont)
+						rcTempVector<int>& cont)
 {
 	int startDir = dir;
 	int starti = i;
@@ -714,7 +717,7 @@ static void walkContour(int x, int y, int i, int dir,
 		const int ai = (int)chf.cells[ax+ay*chf.width].index + rcGetCon(ss, dir);
 		curReg = srcReg[ai];
 	}
-	cont.push(curReg);
+	cont.push_back(curReg);
 			
 	int iter = 0;
 	while (++iter < 40000)
@@ -735,7 +738,7 @@ static void walkContour(int x, int y, int i, int dir,
 			if (r != curReg)
 			{
 				curReg = r;
-				cont.push(curReg);
+				cont.push_back(curReg);
 			}
 			
 			dir = (dir+1) & 0x3;  // Rotate CW
@@ -777,7 +780,7 @@ static void walkContour(int x, int y, int i, int dir,
 			{
 				for (int k = j; k < cont.size()-1; ++k)
 					cont[k] = cont[k+1];
-				cont.pop();
+				cont.pop_back();
 			}
 			else
 				++j;
@@ -789,7 +792,7 @@ static void walkContour(int x, int y, int i, int dir,
 static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRegionSize,
 								  unsigned short& maxRegionId,
 								  rcCompactHeightfield& chf,
-								  unsigned short* srcReg, rcIntArray& overlaps)
+								  unsigned short* srcReg, rcTempVector<int>& overlaps)
 {
 	const int w = chf.width;
 	const int h = chf.height;
@@ -860,8 +863,8 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 	}
 
 	// Remove too small regions.
-	rcIntArray stack(32);
-	rcIntArray trace(32);
+	rcTempVector<int> stack(32);
+	rcTempVector<int> trace(32);
 	for (int i = 0; i < nreg; ++i)
 	{
 		rcRegion& reg = regions[i];
@@ -880,17 +883,17 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 		trace.clear();
 
 		reg.visited = true;
-		stack.push(i);
+		stack.push_back(i);
 		
 		while (stack.size())
 		{
 			// Pop
-			int ri = stack.pop();
+			int ri = stack.back(); stack.pop_back();
 			
 			rcRegion& creg = regions[ri];
 
 			spanCount += creg.spanCount;
-			trace.push(ri);
+			trace.push_back(ri);
 
 			for (int j = 0; j < creg.connections.size(); ++j)
 			{
@@ -905,7 +908,7 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 				if (neireg.id == 0 || (neireg.id & RC_BORDER_REG))
 					continue;
 				// Visit
-				stack.push(neireg.id);
+				stack.push_back(neireg.id);
 				neireg.visited = true;
 			}
 		}
@@ -1027,7 +1030,7 @@ static bool mergeAndFilterRegions(rcContext* ctx, int minRegionArea, int mergeRe
 	// Return regions that we found to be overlapping.
 	for (int i = 0; i < nreg; ++i)
 		if (regions[i].overlap)
-			overlaps.push(regions[i].id);
+			overlaps.push_back(regions[i].id);
 
 	return true;
 }
@@ -1038,7 +1041,7 @@ static void addUniqueConnection(rcRegion& reg, int n)
 	for (int i = 0; i < reg.connections.size(); ++i)
 		if (reg.connections[i] == n)
 			return;
-	reg.connections.push(n);
+	reg.connections.push_back(n);
 }
 
 static bool mergeAndFilterLayerRegions(rcContext* ctx, int minRegionArea,
@@ -1061,7 +1064,7 @@ static bool mergeAndFilterLayerRegions(rcContext* ctx, int minRegionArea,
 		regions.push_back(rcRegion((unsigned short) i));
 	
 	// Find region neighbours and overlapping regions.
-	rcIntArray lregs(32);
+	rcTempVector<int> lregs(32);
 	for (int y = 0; y < h; ++y)
 	{
 		for (int x = 0; x < w; ++x)
@@ -1073,17 +1076,19 @@ static bool mergeAndFilterLayerRegions(rcContext* ctx, int minRegionArea,
 			for (int i = (int)c.index, ni = (int)(c.index+c.count); i < ni; ++i)
 			{
 				const rcCompactSpan& s = chf.spans[i];
+				const unsigned char area = chf.areas[i];
 				const unsigned short ri = srcReg[i];
 				if (ri == 0 || ri >= nreg) continue;
 				rcRegion& reg = regions[ri];
 				
 				reg.spanCount++;
-				
+				reg.areaType = area;
+
 				reg.ymin = rcMin(reg.ymin, s.y);
 				reg.ymax = rcMax(reg.ymax, s.y);
 				
 				// Collect all region layers.
-				lregs.push(ri);
+				lregs.push_back(ri);
 				
 				// Update neighbours
 				for (int dir = 0; dir < 4; ++dir)
@@ -1128,7 +1133,7 @@ static bool mergeAndFilterLayerRegions(rcContext* ctx, int minRegionArea,
 		regions[i].id = 0;
 
 	// Merge montone regions to create non-overlapping areas.
-	rcIntArray stack(32);
+	rcTempVector<int> stack(32);
 	for (int i = 1; i < nreg; ++i)
 	{
 		rcRegion& root = regions[i];
@@ -1140,7 +1145,7 @@ static bool mergeAndFilterLayerRegions(rcContext* ctx, int minRegionArea,
 		root.id = layerId;
 
 		stack.clear();
-		stack.push(i);
+		stack.push_back(i);
 		
 		while (stack.size() > 0)
 		{
@@ -1158,6 +1163,9 @@ static bool mergeAndFilterLayerRegions(rcContext* ctx, int minRegionArea,
 				// Skip already visited.
 				if (regn.id != 0)
 					continue;
+				// Skip if different area type, do not connect regions with different area type.
+				if (reg.areaType != regn.areaType)
+					continue;
 				// Skip if the neighbour is overlapping root region.
 				bool overlap = false;
 				for (int k = 0; k < root.floors.size(); k++)
@@ -1172,7 +1180,7 @@ static bool mergeAndFilterLayerRegions(rcContext* ctx, int minRegionArea,
 					continue;
 					
 				// Deepen
-				stack.push(nei);
+				stack.push_back(nei);
 					
 				// Mark layer id
 				regn.id = layerId;
@@ -1340,7 +1348,7 @@ struct rcSweepSpan
 /// re-assigned to the zero (null) region.
 /// 
 /// Partitioning can result in smaller than necessary regions. @p mergeRegionArea helps 
-/// reduce unecessarily small regions.
+/// reduce unnecessarily small regions.
 /// 
 /// See the #rcConfig documentation for more information on the configuration parameters.
 /// 
@@ -1393,7 +1401,7 @@ bool rcBuildRegionsMonotone(rcContext* ctx, rcCompactHeightfield& chf,
 
 	chf.borderSize = borderSize;
 	
-	rcIntArray prev(256);
+	rcTempVector<int> prev(256);
 
 	// Sweep one line at a time.
 	for (int y = borderSize; y < h-borderSize; ++y)
@@ -1489,7 +1497,7 @@ bool rcBuildRegionsMonotone(rcContext* ctx, rcCompactHeightfield& chf,
 		rcScopedTimer timerFilter(ctx, RC_TIMER_BUILD_REGIONS_FILTER);
 
 		// Merge regions and filter out small regions.
-		rcIntArray overlaps;
+		rcTempVector<int> overlaps;
 		chf.maxRegions = id;
 		if (!mergeAndFilterRegions(ctx, minRegionArea, mergeRegionArea, chf.maxRegions, chf, srcReg, overlaps))
 			return false;
@@ -1513,7 +1521,7 @@ bool rcBuildRegionsMonotone(rcContext* ctx, rcCompactHeightfield& chf,
 /// re-assigned to the zero (null) region.
 /// 
 /// Watershed partitioning can result in smaller than necessary regions, especially in diagonal corridors. 
-/// @p mergeRegionArea helps reduce unecessarily small regions.
+/// @p mergeRegionArea helps reduce unnecessarily small regions.
 /// 
 /// See the #rcConfig documentation for more information on the configuration parameters.
 /// 
@@ -1638,8 +1646,8 @@ bool rcBuildRegions(rcContext* ctx, rcCompactHeightfield& chf,
 	{
 		rcScopedTimer timerFilter(ctx, RC_TIMER_BUILD_REGIONS_FILTER);
 
-		// Merge regions and filter out smalle regions.
-		rcIntArray overlaps;
+		// Merge regions and filter out small regions.
+		rcTempVector<int> overlaps;
 		chf.maxRegions = regionId;
 		if (!mergeAndFilterRegions(ctx, minRegionArea, mergeRegionArea, chf.maxRegions, chf, srcReg, overlaps))
 			return false;
@@ -1702,7 +1710,7 @@ bool rcBuildLayerRegions(rcContext* ctx, rcCompactHeightfield& chf,
 
 	chf.borderSize = borderSize;
 	
-	rcIntArray prev(256);
+	rcTempVector<int> prev(256);
 	
 	// Sweep one line at a time.
 	for (int y = borderSize; y < h-borderSize; ++y)
