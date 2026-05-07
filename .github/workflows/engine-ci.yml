@@ -1,0 +1,323 @@
+name: Build
+on:
+  push:
+    branches-ignore:
+      - 'no-ci-**'
+      - 'skip-ci-**'
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # common settings
+  URHO3D_ENABLE_ALL: ON
+  URHO3D_SAMPLES: ON
+  URHO3D_TESTING: ON
+  URHO3D_PROFILING_FALLBACK: ON
+  URHO3D_PRISTINE_FULL_BUILDS: ON
+  DOTNET_VERSION: '8.0'
+  CMAKE_VERSION: 4.3.x
+  # ccache configuration
+  ccache_prefix: ${{ secrets.CACHE_VERSION }}-master
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_COMPRESS: true
+  CCACHE_COMPRESSLEVEL: 9
+  CCACHE_DEPEND: true
+  CCACHE_HARDLINK: true
+  CCACHE_SLOPPINESS: pch_defines,time_macros,include_file_mtime,include_file_ctime
+  CCACHE_NOHASHDIR: true
+  #CCACHE_MAXSIZE: 580M
+  CCACHE_LIMIT_MULTIPLE: 0.6
+  #CCACHE_DEBUG: 'true'
+  #CCACHE_DEBUGDIR: ${{ github.workspace }}/ccache-debug
+  # paths
+  ci_workspace_dir: ${{ github.workspace }}
+  # Publish gates. Step-level conditions can use ci_publish directly.
+  # ci_artifacts is derived in PrepareFlags because jobs.<job_id>.if cannot
+  # access env, and the artifact gate now depends on CI_ARTIFACTS_BRANCHES.
+  ci_publish: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
+  # CI workers have limited capabilities, allow tracy to fall back to less accurate timers.
+  TRACY_TIMER_FALLBACK: 1
+  SOURCE_REF: ${{ github.head_ref || github.ref_name }}
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  PrepareFlags:
+    name: Prepare Flags
+    runs-on: ubuntu-latest
+    outputs:
+      ci_publish: ${{ steps.flags.outputs.ci_publish }}
+      ci_artifacts: ${{ steps.flags.outputs.ci_artifacts }}
+    steps:
+      - name: Export workflow flags
+        id: flags
+        env:
+          CI_ARTIFACTS_BRANCHES: ${{ vars.CI_ARTIFACTS_BRANCHES || '' }}
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message || '' }}
+        run: |
+          ci_artifacts=false
+          if [[ "$GITHUB_EVENT_NAME" != 'pull_request' ]] && {
+            [[ "$HEAD_COMMIT_MESSAGE" == *'#ci-artifacts'* ]] ||
+            [[ "$CI_ARTIFACTS_BRANCHES" == 'all' ]] ||
+            [[ "$CI_ARTIFACTS_BRANCHES" == *"$GITHUB_REF_NAME"* ]]
+          }; then
+            ci_artifacts=true
+          fi
+
+          printf 'ci_publish=%s\n' "$ci_publish" >> "$GITHUB_OUTPUT"
+          printf 'ci_artifacts=%s\n' "$ci_artifacts" >> "$GITHUB_OUTPUT"
+
+  WebHooks:
+    name: Web Hooks
+    needs: [PrepareFlags]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    if: ${{ needs.PrepareFlags.outputs.ci_publish == 'true' }}
+    steps:
+      - name: Discord Commits
+        uses: rbfx/github_discord_notifier@latest
+        with:
+          discord-webhook: ${{ secrets.DISCORD_WEBHOOK_COMMITS }}
+          github-token: ${{ github.token }}
+          action-task: discord-commits
+          discord-username: GitHub
+
+  Release-Latest:
+    name: Release 'latest'
+    needs: [PrepareFlags]
+    runs-on: ubuntu-latest
+    if: ${{ needs.PrepareFlags.outputs.ci_artifacts == 'true' }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+
+      - name: Create and Push Tag
+        run: ./script/ci_build.sh refresh-latest-tag
+
+  PrepareMatrix:
+    name: Prepare Matrix
+    runs-on: ubuntu-latest
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'rbfx/rbfx') && github.event.pull_request.draft == false }}
+    outputs:
+      platform_tags: ${{ steps.prepare.outputs.platform_tags }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Validate engine matrix
+        id: prepare
+        env:
+          INPUT_WORKFLOW_PROFILE: engine
+          INPUT_PLATFORM_TAGS: all
+          INPUT_DEPLOY_ARTIFACTS: 'false'
+          INPUT_RBFX_MODE: sdk
+          INPUT_RBFX_SOURCE_STRATEGY: source
+          INPUT_RBFX_SOURCE_SDK_CMAKE_ARGS: ''
+          INPUT_ANDROID_GRADLE_DIR: ''
+        run: python3 ./script/ci_prepare_matrix.py
+
+  Build:
+    needs: [PrepareFlags, PrepareMatrix]
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'rbfx/rbfx') && github.event.pull_request.draft == false }}
+    runs-on: ${{ (startsWith(matrix.ci_platform_tag, 'windows-') || startsWith(matrix.ci_platform_tag, 'uwp-')) && 'windows-latest' || ((startsWith(matrix.ci_platform_tag, 'macos-') || startsWith(matrix.ci_platform_tag, 'ios-')) && 'macos-latest' || 'ubuntu-latest') }}
+    permissions:
+      contents: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ci_platform_tag: ${{ fromJSON(needs.PrepareMatrix.outputs.platform_tags) }}
+
+    env:
+      ci_platform_tag: ${{ matrix.ci_platform_tag }}
+      ci_artifacts: ${{ needs.PrepareFlags.outputs.ci_artifacts }}
+      BINARYEN_CORES: 1
+      TRACY_TIMER_FALLBACK: 1
+      SOURCE_REF: ${{ github.head_ref || github.ref_name }}
+      ci_workspace_dir: ${{ github.workspace }}
+      ci_platform: ''
+      ci_arch: ''
+      ci_compiler: ''
+      ci_lib_type: ''
+      ci_platform_group: ''
+      ci_hash_thirdparty: ''
+      ci_short_sha: ''
+      ci_cache_id: ''
+      ci_source_path: .
+      ci_source_dir: ${{ github.workspace }}
+      ci_build_script: ./script/ci_build.sh
+      ci_build_dir: ${{ github.workspace }}/cmake-build
+      ci_sdk_dir: ${{ github.workspace }}/SDK
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Prepare shared build context
+        id: common
+        uses: ./.github/actions/ci-prepare-platform
+        with:
+          profile: engine
+          checkout_engine_source: 'false'
+
+      - name: Set up butler
+        if: ${{ (env.ci_publish == 'true') && (vars.DISABLE_ITCH != 'true') }}
+        uses: jdno/setup-butler@v1
+
+      - name: Build Debug
+        run: ${{ env.ci_build_script }} build --build-type dbg
+
+      - name: Build Release
+        run: ${{ env.ci_build_script }} build --build-type rel
+
+      - name: Test Debug (Native)
+        if: env.ci_compiler == 'msvc' || env.ci_platform == 'linux'
+        run: ${{ env.ci_build_script }} test --build-type dbg
+
+      - name: Test Debug (Managed)
+        if: env.ci_platform == 'windows' && env.ci_compiler == 'msvc' && env.ci_lib_type == 'dll' && env.ci_arch == 'x64'
+        run: ${{ env.ci_build_script }} cstest --build-type dbg
+
+      - name: Test Release (Native)
+        if: env.ci_compiler == 'msvc' || env.ci_platform == 'linux'
+        run: ${{ env.ci_build_script }} test --build-type rel
+
+      - name: Test Release (Managed)
+        if: env.ci_platform == 'windows' && env.ci_compiler == 'msvc' && env.ci_lib_type == 'dll' && env.ci_arch == 'x64'
+        run: ${{ env.ci_build_script }} cstest --build-type rel
+
+      - name: Copy cached SDK (ThirdParty component)
+        if: steps.common.outputs.sdk_cached == 'true' && steps.common.outputs.engine_thirdparty_used == 'true'
+        run: ${{ env.ci_build_script }} copy-cached-sdk '${{ github.workspace }}/cached-sdk' '${{ env.ci_sdk_dir }}'
+
+      - name: Install
+        run: ${{ env.ci_build_script }} install --sdk-layout true
+
+      - name: Save Build Cache
+        if: env.ci_artifacts == 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.ci_cache_id }}-${{ env.ci_short_sha }}
+
+      - name: Deploy to GitHub Pages
+        if: env.ci_platform == 'web' && env.ci_publish == 'true'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
+          external_repository: rbfx/rbfx.github.io
+          destination_dir: samples
+          cname: rebelfork.io
+          publish_dir: ${{ env.ci_sdk_dir }}/deploy
+          publish_branch: master
+
+      - name: Build APK
+        if: env.ci_platform == 'android'
+        run: ${{ env.ci_build_script }} apk --build-type rel
+
+      - name: Release Mobile Artifacts
+        if: env.ci_platform_group == 'mobile' && env.ci_artifacts == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: ${{ env.ci_build_script }} release-mobile-artifacts
+
+      - name: Checkout empty-project
+        if: env.ci_platform_group != 'mobile'
+        id: empty_project_checkout
+        continue-on-error: true
+        uses: actions/checkout@v5
+        with:
+          repository: rbfx/empty-project
+          path: empty-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      - name: Checkout empty-project fallback
+        if: env.ci_platform_group != 'mobile' && steps.empty_project_checkout.outcome != 'success'
+        uses: actions/checkout@v5
+        with:
+          repository: rbfx/empty-project
+          path: empty-project
+          ref: refs/heads/master
+          fetch-depth: 1
+          submodules: true
+
+      - name: Checkout sample-project
+        if: env.ci_platform_group != 'mobile'
+        id: sample_project_checkout
+        continue-on-error: true
+        uses: actions/checkout@v5
+        with:
+          repository: rbfx/sample-project
+          path: sample-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      - name: Checkout sample-project fallback
+        if: env.ci_platform_group != 'mobile' && steps.sample_project_checkout.outcome != 'success'
+        uses: actions/checkout@v5
+        with:
+          repository: rbfx/sample-project
+          path: sample-project
+          ref: refs/heads/master
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test empty-project with SDK
+        if: env.ci_platform_group != 'mobile'
+        run: ${{ env.ci_build_script }} test-project empty-project sdk
+
+      - name: Test empty-project with engine source
+        if: env.ci_platform_group != 'mobile'
+        run: ${{ env.ci_build_script }} test-project empty-project source
+
+      - name: Test sample-project with SDK
+        if: env.ci_platform_group != 'mobile'
+        run: ${{ env.ci_build_script }} test-project sample-project sdk
+
+      - name: Test sample-project with engine source
+        if: env.ci_platform_group != 'mobile'
+        run: ${{ env.ci_build_script }} test-project sample-project source
+
+      - name: Release SDK
+        if: env.ci_artifacts == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: latest
+        run: ${{ env.ci_build_script }} release-sdk
+
+      - name: Publish to itch.io
+        if: ${{ (env.ci_publish == 'true') && (vars.DISABLE_ITCH != 'true') }}
+        run: ${{ env.ci_build_script }} publish-to-itch
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ env.CCACHE_DEBUG == 'true' }}
+        with:
+          name: ccache-debug-build-${{ env.ci_platform_tag }}-${{ github.run_id }}
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
+  Docs:
+    runs-on: ubuntu-latest
+    needs: [PrepareFlags, Build]
+    if: ${{ needs.PrepareFlags.outputs.ci_publish == 'true' }}
+    env:
+      GH_TOKEN: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
+
+    steps:
+      - name: Trigger
+        run: gh workflow run --repo rbfx/rbfx-docs Documentation

@@ -1,0 +1,288 @@
+name: Downstream Project CI
+
+on:
+  workflow_call:
+    inputs:
+      project_path:
+        description: >-
+          Path to the downstream project root, relative to the caller repository. Leave empty
+          to use the caller repository root.
+        required: false
+        type: string
+        default: ''
+      project_submodules:
+        description: Submodule checkout mode for the downstream project repository.
+        required: false
+        type: string
+        default: recursive
+      rbfx_mode:
+        description: Use prebuilt SDK releases or build rbfx in-place from source.
+        required: false
+        type: string
+        default: sdk
+      rbfx_sdk_repository:
+        description: Repository that publishes rebelfork-sdk-* latest release artifacts.
+        required: false
+        type: string
+        default: rbfx/rbfx
+      rbfx_source_repository:
+        description: Repository to checkout for in-place rbfx source builds.
+        required: false
+        type: string
+        default: rbfx/rbfx
+      rbfx_source_ref:
+        description: Branch, tag, or revision for rbfx_source_repository.
+        required: false
+        type: string
+        default: master
+      rbfx_source_strategy:
+        description: >-
+          When rbfx_mode is source, either use rbfx/CMake directly (source) or build a
+          local SDK first (sdk).
+        required: false
+        type: string
+        default: source
+      rbfx_source_sdk_cmake_args:
+        description: >-
+          Comma-separated list of extra CMake arguments for local SDK configure when
+          rbfx_mode is source and rbfx_source_strategy is sdk.
+        required: false
+        type: string
+        default: ''
+      use_cached_thirdparty:
+        description: Reuse ThirdParty from the latest SDK when building rbfx from source.
+        required: false
+        type: boolean
+        default: true
+      platform_tags:
+        description: >-
+          Comma-separated list of rbfx CI platform tags. Use all to start from every supported
+          tag. Any non-all token is split on -, then matched against supported tags that contain
+          all of those parts. Prefix a token with - to omit matching tags from the final matrix.
+          For example, dll,-linux keeps all dll tags except Linux.
+          Android tags are included only when explicitly requested, or when all is used and
+          android_gradle_dir is provided.
+        required: false
+        type: string
+        default: all
+      android_gradle_dir:
+        description: >-
+          Path to the downstream Android Gradle project, relative to project_path. Leave empty
+          to disable Android builds.
+        required: false
+        type: string
+        default: ''
+      android_gradle_task:
+        description: Gradle task to execute inside android_gradle_dir.
+        required: false
+        type: string
+        default: assembleRelease
+      deploy_artifacts:
+        description: >-
+          Upload built project outputs as GitHub Actions artifacts. Use true to upload
+          artifacts for every selected platform, false to disable uploads, or a selector using
+          the same syntax as platform_tags to upload artifacts only for matching builds.
+        required: false
+        type: string
+        default: 'false'
+      exclude_pdbs:
+        description: Exclude Windows PDB files from packaged downstream project artifacts.
+        required: false
+        type: boolean
+        default: true
+      deploy_release_assets:
+        description: Upload packaged build outputs to a GitHub release.
+        required: false
+        type: boolean
+        default: false
+      release_repository:
+        description: Repository that receives release assets. Defaults to the caller repository.
+        required: false
+        type: string
+        default: ''
+      release_tag:
+        description: Release tag that receives uploaded assets.
+        required: false
+        type: string
+        default: latest
+      artifact_name_prefix:
+        description: Optional prefix for uploaded artifact names.
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: downstream-ci-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: '8.0'
+  CMAKE_VERSION: 4.3.x
+  ccache_prefix: downstream-${{ github.repository_id }}
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_COMPRESS: true
+  CCACHE_COMPRESSLEVEL: 9
+  CCACHE_DEPEND: true
+  CCACHE_HARDLINK: true
+  CCACHE_SLOPPINESS: pch_defines,time_macros,include_file_mtime,include_file_ctime
+  CCACHE_NOHASHDIR: true
+  CCACHE_LIMIT_MULTIPLE: 0.6
+
+jobs:
+  PrepareMatrix:
+    name: Prepare Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      platform_tags: ${{ steps.prepare.outputs.platform_tags }}
+      deploy_artifact_tags: ${{ steps.prepare.outputs.deploy_artifact_tags }}
+
+    steps:
+      - name: Checkout rbfx helpers
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ inputs.rbfx_source_repository }}
+          ref: ${{ inputs.rbfx_source_ref }}
+          path: rbfx
+          fetch-depth: 1
+
+      - name: Validate inputs and filter matrix
+        id: prepare
+        env:
+          INPUT_WORKFLOW_PROFILE: downstream
+          INPUT_PLATFORM_TAGS: ${{ inputs.platform_tags }}
+          INPUT_DEPLOY_ARTIFACTS: ${{ inputs.deploy_artifacts }}
+          INPUT_RBFX_MODE: ${{ inputs.rbfx_mode }}
+          INPUT_RBFX_SOURCE_STRATEGY: ${{ inputs.rbfx_source_strategy }}
+          INPUT_RBFX_SOURCE_SDK_CMAKE_ARGS: ${{ inputs.rbfx_source_sdk_cmake_args }}
+          INPUT_ANDROID_GRADLE_DIR: ${{ inputs.android_gradle_dir }}
+        run: python3 ./rbfx/script/ci_prepare_matrix.py
+
+  Build:
+    name: ${{ matrix.ci_platform_tag }}
+    needs: PrepareMatrix
+    runs-on: ${{ (startsWith(matrix.ci_platform_tag, 'windows-') || startsWith(matrix.ci_platform_tag, 'uwp-')) && 'windows-latest' || ((startsWith(matrix.ci_platform_tag, 'macos-') || startsWith(matrix.ci_platform_tag, 'ios-')) && 'macos-latest' || 'ubuntu-latest') }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ci_platform_tag: ${{ fromJSON(needs.PrepareMatrix.outputs.platform_tags) }}
+
+    env:
+      ci_platform_tag: ${{ matrix.ci_platform_tag }}
+      BINARYEN_CORES: 1
+      TRACY_TIMER_FALLBACK: 1
+      ci_workspace_dir: ${{ github.workspace }}
+      ci_platform: ''
+      ci_arch: ''
+      ci_compiler: ''
+      ci_lib_type: ''
+      ci_platform_group: ''
+      ci_hash_thirdparty: ''
+      ci_short_sha: ''
+      ci_cache_id: ''
+      ci_source_path: rbfx
+      ci_source_dir: ${{ github.workspace }}/rbfx
+      ci_build_script: ./rbfx/script/ci_build.sh
+      ci_build_dir: ${{ github.workspace }}/rbfx-build/${{ matrix.ci_platform_tag }}
+      ci_sdk_dir: ${{ github.workspace }}/SDK/${{ matrix.ci_platform_tag }}
+      project_source_dir: ${{ inputs.project_path != '' && format('{0}/{1}', github.workspace, inputs.project_path) || github.workspace }}
+      project_build_dir: ${{ github.workspace }}/project-build/${{ matrix.ci_platform_tag }}
+
+    steps:
+      - name: Prepare shared build context
+        id: common
+        uses: rokups/rbfx-temp/.github/actions/ci-prepare-platform@rk/ci-reusable-workflow
+        with:
+          profile: downstream
+          project_submodules: ${{ inputs.project_submodules }}
+          rbfx_mode: ${{ inputs.rbfx_mode }}
+          rbfx_sdk_repository: ${{ inputs.rbfx_sdk_repository }}
+          rbfx_source_repository: ${{ inputs.rbfx_source_repository }}
+          rbfx_source_ref: ${{ inputs.rbfx_source_ref }}
+          rbfx_source_strategy: ${{ inputs.rbfx_source_strategy }}
+          rbfx_source_sdk_cmake_args: ${{ inputs.rbfx_source_sdk_cmake_args }}
+          use_cached_thirdparty: ${{ inputs.use_cached_thirdparty }}
+
+      - name: Build local rbfx SDK Debug
+        if: inputs.rbfx_mode == 'source' && inputs.rbfx_source_strategy == 'sdk'
+        run: ${{ env.ci_build_script }} build --build-type dbg
+
+      - name: Build local rbfx SDK Release
+        if: inputs.rbfx_mode == 'source' && inputs.rbfx_source_strategy == 'sdk'
+        run: ${{ env.ci_build_script }} build --build-type rel
+
+      - name: Copy cached ThirdParty into local SDK
+        if: >-
+          inputs.rbfx_mode == 'source' &&
+          inputs.rbfx_source_strategy == 'sdk' &&
+          steps.common.outputs.sdk_cached == 'true' &&
+          (env.ci_platform == 'android' || steps.common.outputs.source_sdk_thirdparty_used == 'true')
+        run: ${{ env.ci_build_script }} copy-cached-sdk '${{ github.workspace }}/cached-sdk' '${{ env.ci_sdk_dir }}'
+
+      - name: Install local rbfx SDK
+        if: inputs.rbfx_mode == 'source' && inputs.rbfx_source_strategy == 'sdk'
+        run: ${{ env.ci_build_script }} install --sdk-layout true
+
+      - name: Build downstream project against SDK
+        if: env.ci_platform != 'android' && (inputs.rbfx_mode == 'sdk' || (inputs.rbfx_mode == 'source' && inputs.rbfx_source_strategy == 'sdk'))
+        run: ${{ env.ci_build_script }} build-project '${{ env.project_source_dir }}' sdk
+
+      - name: Build downstream project against source tree
+        if: env.ci_platform != 'android' && inputs.rbfx_mode == 'source' && inputs.rbfx_source_strategy == 'source'
+        run: ${{ env.ci_build_script }} build-project '${{ env.project_source_dir }}' source
+
+      - name: Build downstream Android project against SDK
+        if: env.ci_platform == 'android' && (inputs.rbfx_mode == 'sdk' || (inputs.rbfx_mode == 'source' && inputs.rbfx_source_strategy == 'sdk'))
+        run: >-
+          ${{ env.ci_build_script }} build-android-project
+          --gradle-task '${{ inputs.android_gradle_task }}'
+          '${{ env.project_source_dir }}/${{ inputs.android_gradle_dir }}'
+          sdk
+
+      - name: Build downstream Android project against source tree
+        if: env.ci_platform == 'android' && inputs.rbfx_mode == 'source' && inputs.rbfx_source_strategy == 'source'
+        run: >-
+          ${{ env.ci_build_script }} build-android-project
+          --gradle-task '${{ inputs.android_gradle_task }}'
+          '${{ env.project_source_dir }}/${{ inputs.android_gradle_dir }}'
+          source
+
+      - name: Save build cache
+        if: ${{ !cancelled() && steps.common.outputs.build_cache_hit != 'true' }}
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.ci_cache_id }}-${{ github.sha }}
+
+      - name: Stage build artifacts
+        if: contains(fromJSON(needs.PrepareMatrix.outputs.deploy_artifact_tags), matrix.ci_platform_tag) || inputs.deploy_release_assets
+        env:
+          ARTIFACT_STAGING_DIR: ${{ runner.temp }}/project-artifacts/${{ matrix.ci_platform_tag }}
+          ANDROID_OUTPUT_ROOT: ${{ inputs.android_gradle_dir != '' && format('{0}/{1}/build/outputs', env.project_source_dir, inputs.android_gradle_dir) || '' }}
+          EXCLUDE_PDBS: ${{ inputs.exclude_pdbs && 'true' || 'false' }}
+        run: ${{ env.ci_build_script }} stage-project-artifacts
+
+      - name: Upload build artifacts
+        if: contains(fromJSON(needs.PrepareMatrix.outputs.deploy_artifact_tags), matrix.ci_platform_tag)
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.artifact_name_prefix != '' && format('{0}-{1}', inputs.artifact_name_prefix, matrix.ci_platform_tag) || matrix.ci_platform_tag }}
+          path: ${{ runner.temp }}/project-artifacts/${{ matrix.ci_platform_tag }}
+          if-no-files-found: error
+
+      - name: Upload release assets
+        if: inputs.deploy_release_assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_REPOSITORY: ${{ inputs.release_repository != '' && inputs.release_repository || github.repository }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_ASSET_NAME: ${{ inputs.artifact_name_prefix != '' && format('{0}-{1}', inputs.artifact_name_prefix, matrix.ci_platform_tag) || matrix.ci_platform_tag }}
+          ARTIFACT_STAGING_DIR: ${{ runner.temp }}/project-artifacts/${{ matrix.ci_platform_tag }}
+        run: ${{ env.ci_build_script }} upload-release-archive
