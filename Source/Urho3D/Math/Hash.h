@@ -27,6 +27,26 @@ inline void CombineHash(T& result, unsigned long long hash, ea::enable_if_t<size
     result ^= hash + 0x9e3779b97f4a7c15ull + (result << 6) + (result >> 2);
 }
 
+/// Finalize hash to make hash distribution more uniform and destroy linearity.
+/// https://github.com/aappleby/smhasher/blob/master/src/MurmurHash3.cpp
+inline void FinalizeHash(unsigned& value)
+{
+    value ^= value >> 16;
+    value *= 0x85ebca6b;
+    value ^= value >> 13;
+    value *= 0xc2b2ae35;
+    value ^= value >> 16;
+}
+
+inline void FinalizeHash(unsigned long long& value)
+{
+    value ^= value >> 33;
+    value *= 0xff51afd7ed558ccdull;
+    value ^= value >> 33;
+    value *= 0xc4ceb9fe1a85ec53ull;
+    value ^= value >> 33;
+}
+
 /// Fold 64-bit hash to 32-bit.
 inline unsigned FoldHash(unsigned long long value)
 {
@@ -48,7 +68,7 @@ inline unsigned MakeHash(float value)
     return uintValue;
 }
 
-/// Make hash for `double` variable with zero error tolerance.
+/// Make hash for `double` with zero error tolerance.
 inline unsigned MakeHash(double value)
 {
     unsigned long long ulongValue{};
