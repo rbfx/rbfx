@@ -428,7 +428,7 @@ function action-test-project() {
     if [[ "$ci_platform" == "windows" || "$ci_platform" == "uwp" ]];
     then
         local arch=$([[ "$ci_arch" == "x86" ]] && echo Win32 || echo x64)
-        cmake_args+=(-G 'Visual Studio 17 2022' -A "$arch")
+        cmake_args+=(-G 'Visual Studio 18 2026' -A "$arch")
         sdk_suffix='/share'
         if [[ "$ci_platform" == "uwp" ]];
         then

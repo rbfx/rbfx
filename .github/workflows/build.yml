@@ -15,7 +15,7 @@ env:
   URHO3D_PROFILING_FALLBACK: ON
   URHO3D_PRISTINE_FULL_BUILDS: ON
   DOTNET_VERSION: '8.0'
-  CMAKE_VERSION: 3.25.x
+  CMAKE_VERSION: 4.3.x
   # ccache configuration
   ccache_prefix: ${{ secrets.CACHE_VERSION }}-master
   CCACHE_DIR: ${{ github.workspace }}/.ccache
