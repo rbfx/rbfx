@@ -663,13 +663,17 @@ endfunction ()
 function (install_tools)
     foreach (TARGET ${ARGV})
         if (TARGET ${TARGET})
-            install (TARGETS ${TARGET}
-                EXPORT Urho3DTools
-                COMPONENT Tools
-                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-                LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
-                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                PERMISSIONS ${PERMISSIONS_755})
+            # Only executables are installed to Urho3DTools
+            get_target_property(TARGET_TYPE ${TARGET} TYPE)
+            if (TARGET_TYPE STREQUAL "EXECUTABLE")
+                install (TARGETS ${TARGET}
+                    EXPORT Urho3DTools
+                    COMPONENT Tools
+                    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                    LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+                    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                    PERMISSIONS ${PERMISSIONS_755})
+            endif ()
             # Also add to main Urho3D export for backward compatibility
             install (TARGETS ${TARGET}
                 EXPORT Urho3D
