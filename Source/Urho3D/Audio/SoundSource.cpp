@@ -451,11 +451,11 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
                 break;
             case SPK_MONO:
                 if (!lowFrequency_)
-                    MixMonoToStereo(sound, dest, samples, mixRate, effectiveFrequency);
+                    MixMonoToMono(sound, dest, samples, mixRate, effectiveFrequency);
                 break;
             case SPK_STEREO:
                 if (!lowFrequency_)
-                    MixMonoToMono(sound, dest, samples, mixRate, effectiveFrequency);
+                    MixMonoToStereo(sound, dest, samples, mixRate, effectiveFrequency);
                 break;
             case SPK_QUADROPHONIC:
                 if (!lowFrequency_)
