@@ -6,6 +6,12 @@ on:
       - 'skip-ci-**'
   pull_request:
   workflow_dispatch:
+    inputs:
+      full_build:
+        description: 'Run full build'
+        required: false
+        default: false
+        type: boolean
 
 env:
   # common settings
@@ -187,7 +193,7 @@ jobs:
 
       - name: Download release SDK
         id: cached_sdk
-        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') && !(github.event_name == 'workflow_dispatch' && github.event.inputs.full_build == 'true') }}
         continue-on-error: true
         run: |
           if ${{ env.ci_build_script }} download-release -- \
