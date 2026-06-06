@@ -138,7 +138,7 @@ unsigned GetNumPthreadWorkers()
         return 0;
 
     const int numUnusedWorkers = varPThread["unusedWorkers"]["length"].as<int>();
-    const int numRunningWorkers = varPThread["runningWorkers"]["length"].as<int>();
+    const int numRunningWorkers = varPThread["pthreads"]["length"].as<int>();
     return static_cast<unsigned>(numUnusedWorkers + numRunningWorkers);
 }
 #endif
