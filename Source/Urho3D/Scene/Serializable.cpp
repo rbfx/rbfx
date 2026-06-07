@@ -626,19 +626,31 @@ void Serializable::CopyAttributes(const Serializable* source, bool resetToDefaul
     if (!sourceAttributes || !destAttributes)
         return;
 
-    if (sourceAttributes != destAttributes)
+    if (sourceAttributes == destAttributes)
     {
-        URHO3D_LOGERROR("Source and destination objects have different types");
-        return;
+        for (unsigned i = 0; i < sourceAttributes->size(); ++i)
+        {
+            const AttributeInfo& attr = sourceAttributes->at(i);
+
+            Variant value;
+            source->OnGetAttribute(attr, value);
+            OnSetAttribute(attr, value);
+        }
     }
-
-    for (unsigned i = 0; i < sourceAttributes->size(); ++i)
+    else
     {
-        const AttributeInfo& attr = sourceAttributes->at(i);
-
-        Variant value;
-        source->OnGetAttribute(attr, value);
-        OnSetAttribute(attr, value);
+        // Slow fallback when types mismatch
+        for (const AttributeInfo& attr : *destAttributes)
+        {
+            const auto isSameAttribute = [&](const AttributeInfo& other) { return attr.nameHash_ == other.nameHash_; };
+            const auto iter = ea::find_if(sourceAttributes->begin(), sourceAttributes->end(), isSameAttribute);
+            if (iter != sourceAttributes->end())
+            {
+                Variant value;
+                source->OnGetAttribute(*iter, value);
+                OnSetAttribute(attr, value);
+            }
+        }
     }
 }
 

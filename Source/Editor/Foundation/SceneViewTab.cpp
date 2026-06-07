@@ -333,6 +333,20 @@ void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
         ui::Separator();
         OnSelectionEditMenu(this, *activePage, scene, selection);
     }
+
+    const bool hasComponentSelection = !selection.GetComponents().empty();
+    if (hasComponentSelection)
+    {
+        ui::Separator();
+
+        if (ui::BeginMenu("Replace Component"))
+        {
+            if (const auto componentType = RenderCreateComponentMenu(context_))
+                ReplaceSelectedComponents(selection, componentType->GetTypeNameHash());
+
+            ui::EndMenu();
+        }
+    }
 }
 
 void SceneViewTab::RenderCreateMenu(Scene* scene, SceneSelection& selection)
@@ -710,6 +724,49 @@ void SceneViewTab::MakePersistent(SceneSelection& selection)
         if (component)
             component->SetTemporary(false);
     }
+}
+
+void SceneViewTab::ReplaceSelectedComponents(SceneSelection& selection, StringHash componentType)
+{
+    // Copy selection because it is modified during replacement
+    const auto selectedComponents = selection.GetComponents();
+    selection.Clear();
+
+    auto action = MakeShared<CompositeEditorAction>();
+    for (Component* oldComponent : selectedComponents)
+    {
+        if (!oldComponent)
+            continue;
+
+        Node* node = oldComponent->GetNode();
+        const unsigned componentIndex = node->GetComponentIndex(oldComponent);
+
+        // Create new component
+        {
+            const CreateComponentActionBuilder createBuilder(node, componentType);
+            Component* newComponent = node->CreateComponent(componentType);
+            if (!newComponent)
+                continue;
+
+            newComponent->CopyAttributes(oldComponent);
+            newComponent->ApplyAttributes();
+            node->ReorderComponent(newComponent, componentIndex);
+
+            action->AddAction(createBuilder.Build(newComponent));
+
+            selection.SetSelected(newComponent, true);
+        }
+
+        // Remove old component
+        {
+            const RemoveComponentActionBuilder removeBuilder(oldComponent);
+            oldComponent->Remove();
+            action->AddAction(removeBuilder.Build());
+        }
+    }
+
+    // Push composite action to undo stack
+    PushAction(action);
 }
 
 void SceneViewTab::CutSelection()

@@ -219,6 +219,7 @@ public:
     void MoveSelectionRotationToLatest(SceneSelection& selection);
     void MoveSelectionScaleToLatest(SceneSelection& selection);
     void MakePersistent(SceneSelection& selection);
+    void ReplaceSelectedComponents(SceneSelection& selection, StringHash componentType);
 
     void CutSelection();
     void CopySelection();
