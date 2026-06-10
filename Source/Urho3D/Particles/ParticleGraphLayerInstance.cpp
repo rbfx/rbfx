@@ -32,6 +32,16 @@
 namespace Urho3D
 {
 
+bool ParicleGraphUniform::Serialize(Archive& archive)
+{
+    const bool loading = archive.IsInput();
+    SerializeValue(archive, "name", name_);
+    SerializeValue(archive, "value", value_);
+    if (loading)
+        nameHash_ = name_;
+    return true;
+}
+
 ParticleGraphLayerInstance::ParticleGraphLayerInstance()
     : activeParticles_(0)
     , destructionQueueSize_(0)
