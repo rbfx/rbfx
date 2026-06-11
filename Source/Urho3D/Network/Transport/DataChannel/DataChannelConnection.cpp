@@ -95,10 +95,10 @@ bool DataChannelConnection::SendData(const MemoryBuffer& data, PacketTypeFlags t
     }
 
     const unsigned dataSize = data.GetSize() - data.GetPosition();
-    if (dataSize > GetMaxMessageSize())
+    if (dataSize > GetMaxMessageSize() + NetworkMessageHeaderSize)
     {
         URHO3D_LOGERROR("DataChannel tried to send {} bytes of data, which is more than max allowed {} bytes of data per message.",
-            dataSize, GetMaxMessageSize());
+            dataSize, GetMaxMessageSize() + NetworkMessageHeaderSize);
         return false;
     }
 
@@ -129,9 +129,9 @@ unsigned DataChannelConnection::GetMaxMessageSize() const
         return 0;
 
 #if URHO3D_PLATFORM_WEB
-    return MaxNetworkPacketSize;
+    return MaxNetworkPacketSize - NetworkMessageHeaderSize;
 #else
-    return static_cast<unsigned>(dataChannels_[0]->maxMessageSize());
+    return static_cast<unsigned>(dataChannels_[0]->maxMessageSize()) - NetworkMessageHeaderSize;
 #endif
 }
 
