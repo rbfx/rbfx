@@ -123,8 +123,8 @@ void NetworkLoadableScene::SetScene(const SharedPtr<Scene>& scene)
     expectedSceneName_.clear();
     UnsubscribeFromEvent(E_ASYNCLOADFINISHED);
 
-    if (!IsServerSideConnection())
-        AssignConnectionReplicationManager(replicationConnection_, scene_);
+//    if (!IsServerSideConnection())
+//        AssignConnectionReplicationManager(replicationConnection_, scene_);
 
     if (IsServerSideConnection())
         RequestRemoteLoadScene();
@@ -161,11 +161,11 @@ void NetworkLoadableScene::RequestRemoteLoadScene()
     }
 
     const ea::string& sceneFileName = scene_->GetFileName();
-    if (sceneFileName.empty())
-    {
-        URHO3D_LOGWARNING("Failed to request remote scene loading: scene file name is empty");
-        return;
-    }
+    //if (sceneFileName.empty())
+    //{
+    //    URHO3D_LOGWARNING("Failed to request remote scene loading: scene file name is empty");
+    //    return;
+    //}
 
     VectorBuffer request;
     request.WriteString(sceneFileName);
@@ -217,11 +217,11 @@ void NetworkLoadableScene::ProcessLoadSceneRequest(MemoryBuffer& message)
     }
 
     const ea::string sceneFileName = message.ReadString();
-    if (sceneFileName.empty())
-    {
-        HandleProtocolError("MSG_LOAD_SCENE payload is invalid: empty scene file name");
-        return;
-    }
+    //if (sceneFileName.empty())
+    //{
+    //    HandleProtocolError("MSG_LOAD_SCENE payload is invalid: empty scene file name");
+    //    return;
+    //}
 
     bool accept = true;
     OnLoadSceneRequestReceived(sceneFileName, message, accept);
@@ -294,10 +294,11 @@ bool NetworkLoadableScene::StartLocalLoad(const ea::string& sceneFileName)
         return false;
     }
 
-
     const ea::string extension = GetExtension(sceneFileName);
     bool success = false;
 
+    if (!sceneFileName.empty())
+    {
     if (extension == ".xml")
     {
         auto* resource = cache->GetResource<XMLFile>(sceneFileName, false);
@@ -320,6 +321,8 @@ bool NetworkLoadableScene::StartLocalLoad(const ea::string& sceneFileName)
             success = scene_->Load(source);
         }
     }
+    }
+    else success = true;
 
     if (!success)
     {
@@ -333,7 +336,7 @@ bool NetworkLoadableScene::StartLocalLoad(const ea::string& sceneFileName)
 
 void NetworkLoadableScene::FinishLocalLoad(bool success)
 {
-    if (loadState_ != LoadState::LoadingLocalScene || loadingSceneName_.empty())
+    if (loadState_ != LoadState::LoadingLocalScene)
         return;
 
     UnsubscribeFromEvent(E_ASYNCLOADFINISHED);
