@@ -317,7 +317,7 @@ void ClientReplicationState::SendMessages(NetworkFrame currentFrame, const Share
 
     ClientSynchronizationState::SendMessages();
 
-    if (IsSynchronized())
+    if (IsSynchronized() && peer_->GetConnection()->IsConnected())
     {
         SendRemoveObjects();
         SendAddObjects();

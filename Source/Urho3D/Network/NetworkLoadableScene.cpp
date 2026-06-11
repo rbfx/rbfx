@@ -123,9 +123,6 @@ void NetworkLoadableScene::SetScene(const SharedPtr<Scene>& scene)
     expectedSceneName_.clear();
     UnsubscribeFromEvent(E_ASYNCLOADFINISHED);
 
-    if (!IsServerSideConnection())
-        AssignConnectionReplicationManager(replicationConnection_, scene_);
-
     if (IsServerSideConnection())
         RequestRemoteLoadScene();
 }
@@ -161,11 +158,6 @@ void NetworkLoadableScene::RequestRemoteLoadScene()
     }
 
     const ea::string& sceneFileName = scene_->GetFileName();
-    if (sceneFileName.empty())
-    {
-        URHO3D_LOGWARNING("Failed to request remote scene loading: scene file name is empty");
-        return;
-    }
 
     VectorBuffer request;
     request.WriteString(sceneFileName);
@@ -217,11 +209,6 @@ void NetworkLoadableScene::ProcessLoadSceneRequest(MemoryBuffer& message)
     }
 
     const ea::string sceneFileName = message.ReadString();
-    if (sceneFileName.empty())
-    {
-        HandleProtocolError("MSG_LOAD_SCENE payload is invalid: empty scene file name");
-        return;
-    }
 
     bool accept = true;
     OnLoadSceneRequestReceived(sceneFileName, message, accept);
@@ -294,9 +281,9 @@ bool NetworkLoadableScene::StartLocalLoad(const ea::string& sceneFileName)
         return false;
     }
 
-
+    // TODO: Use SceneResource instead
     const ea::string extension = GetExtension(sceneFileName);
-    bool success = false;
+    bool success = sceneFileName.empty();
 
     if (extension == ".xml")
     {
@@ -310,7 +297,7 @@ bool NetworkLoadableScene::StartLocalLoad(const ea::string& sceneFileName)
         if (resource)
             success = scene_->LoadJSON(resource->GetRoot());
     }
-    else
+    else if (!sceneFileName.empty())
     {
         auto* resource = cache->GetResource<BinaryFile>(sceneFileName, false);
         if (resource)
@@ -333,7 +320,7 @@ bool NetworkLoadableScene::StartLocalLoad(const ea::string& sceneFileName)
 
 void NetworkLoadableScene::FinishLocalLoad(bool success)
 {
-    if (loadState_ != LoadState::LoadingLocalScene || loadingSceneName_.empty())
+    if (loadState_ != LoadState::LoadingLocalScene)
         return;
 
     UnsubscribeFromEvent(E_ASYNCLOADFINISHED);

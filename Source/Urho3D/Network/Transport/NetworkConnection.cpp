@@ -13,30 +13,6 @@
 namespace Urho3D
 {
 
-NetworkMessageBuilder::NetworkMessageBuilder(
-    NetworkConnection* connection, PacketTypeFlags type, VectorBuffer& buffer, unsigned offset)
-    : buffer_(buffer)
-    , offset_(offset)
-    , finished_(false)
-    , connection_(connection)
-    , type_(type)
-{
-}
-
-NetworkMessageBuilder::~NetworkMessageBuilder()
-{
-    EndMessage();
-}
-
-void NetworkMessageBuilder::EndMessage()
-{
-    if (finished_ || !IsValid())
-        return;
-
-    connection_->EndMessage(*this);
-    finished_ = true;
-}
-
 NetworkConnection::NetworkConnection(Context* context)
     : Object(context)
     , workQueue_(context->GetSubsystem<WorkQueue>())
@@ -136,21 +112,18 @@ bool NetworkConnection::SendMessage(
     return sent;
 }
 
-NetworkMessageBuilder NetworkConnection::BeginMessage(
-    NetworkMessageId messageId, PacketTypeFlags type, ea::string_view debugInfo)
+VectorBuffer& NetworkConnection::BeginMessage(NetworkMessageId messageId, ea::string_view debugInfo)
 {
     debugInfo_ = debugInfo;
     auto& buffer = outgoing_;
     buffer.WriteVLE(messageId);
-
-    NetworkMessageBuilder builder{this, type, buffer, buffer.Tell()};
-    return builder;
+    return buffer;
 }
 
-void NetworkConnection::EndMessage(NetworkMessageBuilder& builder)
+void NetworkConnection::EndMessage(PacketTypeFlags type)
 {
-    auto& buffer = builder.buffer_;
-    SendData(buffer, builder.type_);
+    auto& buffer = outgoing_;
+    SendData(buffer, type);
     buffer.Clear();
 }
 

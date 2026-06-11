@@ -23,36 +23,9 @@
 namespace Urho3D
 {
 
-class NetworkConnection;
 class WorkQueue;
 class ReplicatedPeer;
 class NetworkServer;
-
-#ifndef SWIG
-/// RAII wrapper for building network messages. Automatically calls NetworkConnection::EndMessage() if not already called.
-struct URHO3D_API NetworkMessageBuilder
-{
-    ~NetworkMessageBuilder();
-
-    /// Check if the builder is valid.
-    bool IsValid() const { return connection_ != nullptr; }
-    /// Complete the message and send it immediately.
-    void EndMessage();
-
-    VectorBuffer& buffer_;
-    unsigned offset_;
-    bool finished_;
-
-protected:
-    NetworkMessageBuilder(NetworkConnection* connection, PacketTypeFlags type, VectorBuffer& buffer, unsigned offset);
-
-private:
-    NetworkConnection* connection_ = nullptr;
-    PacketTypeFlags type_ = PacketType::ReliableOrdered;
-
-    friend class NetworkConnection;
-};
-#endif
 
 class URHO3D_API NetworkConnection : public Object
 {
@@ -82,14 +55,11 @@ public:
     virtual bool SendMessage(NetworkMessageId messageId, const MemoryBuffer& data, PacketTypeFlags type = PacketType::ReliableOrdered, ea::string_view debugInfo = {});
     /// Return maximum size of network message.
     virtual unsigned GetMaxMessageSize() const;
-#ifndef SWIG
-    /// Begins a message by returning a builder that writes into the outgoing buffer.
-    /// The builder automatically calls EndMessage() if not explicitly called, providing RAII semantics.
-    virtual NetworkMessageBuilder BeginMessage(NetworkMessageId messageId, PacketTypeFlags type = PacketType::ReliableOrdered, ea::string_view debugInfo = {});
-    /// Complete a message begun with BeginMessage(). Called by NetworkMessageBuilder destructor or explicitly.
-    /// Customizable in subclasses to modify message structure.
-    virtual void EndMessage(NetworkMessageBuilder& builder);
-#endif
+    /// Begins a message to be sent. Payload should be added to the returned buffer.
+    /// EndMessage() should be called before any other calls to NetworkConnection.
+    virtual VectorBuffer& BeginMessage(NetworkMessageId messageId, ea::string_view debugInfo = {});
+    /// Complete and send the message started with prior call to BeginMessage().
+    virtual void EndMessage(PacketTypeFlags type = PacketType::ReliableOrdered);
     /// Result may be empty, when connection is not %State::Connected.
     const ea::string& GetAddress() const { return address_; }
     /// Result may be 0, when connection is not %State::Connected or when result is not applicable to the underlying transport.

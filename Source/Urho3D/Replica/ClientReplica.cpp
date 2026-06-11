@@ -159,12 +159,12 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
     case MSG_ADD_OBJECTS:
     case MSG_ADD_OBJECTS_INCOMPLETE:
     {
-        LargeMessageReader reader{buffer_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
+        LargeMessageReader reader{inputBuffer_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
         reader.OnMessage(messageId, messageData, //
             [this](MemoryBuffer& fullMessageData)
         {
             ProcessAddObjects(fullMessageData);
-            buffer_.Clear();
+            inputBuffer_.Clear();
         });
 
         return true;
@@ -173,12 +173,12 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
     case MSG_UPDATE_OBJECTS_RELIABLE:
     case MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE:
     {
-        LargeMessageReader reader{buffer_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
+        LargeMessageReader reader{inputBuffer_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
         reader.OnMessage(messageId, messageData, //
             [this](MemoryBuffer& fullMessageData)
         {
             ProcessUpdateObjectsReliable(fullMessageData);
-            buffer_.Clear();
+            inputBuffer_.Clear();
         });
 
         return true;
@@ -410,7 +410,7 @@ void ClientReplica::OnNetworkUpdate()
 void ClientReplica::SendObjectsFeedbackUnreliable(NetworkFrame feedbackFrame)
 {
     MultiMessageWriter writer{
-        *peer_->GetConnection(), buffer_, MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered};
+        *peer_->GetConnection(), outputBuffer_, MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();

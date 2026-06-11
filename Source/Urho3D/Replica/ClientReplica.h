@@ -161,7 +161,8 @@ private:
     ea::unordered_set<WeakPtr<NetworkObject>> ownedObjects_;
 
     VectorBuffer componentBuffer_;
-    VectorBuffer buffer_;
+    VectorBuffer inputBuffer_;
+    VectorBuffer outputBuffer_;
 };
 
 }

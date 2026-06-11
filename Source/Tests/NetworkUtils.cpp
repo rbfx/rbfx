@@ -141,6 +141,7 @@ ManualConnection::ManualConnection(Context* context, ReplicationManager* sink, u
     , random_(seed)
 {
     SetMaxPacketSize(MaxNetworkPacketSize);
+    state_ = State::Connected; // Always connected
 }
 
 void ManualConnection::IncrementTime(unsigned delta)

@@ -106,9 +106,9 @@ void WriteSerializedMessage(NetworkConnection& connection, NetworkMessageId mess
     const ea::string& debugInfo = EMPTY_STRING;
 #endif
 
-    auto builder = connection.BeginMessage(messageId, messageType, debugInfo);
-    message.Save(builder.buffer_);
-    connection.EndMessage(builder);
+    auto& buffer = connection.BeginMessage(messageId, debugInfo);
+    message.Save(buffer);
+    connection.EndMessage(messageType);
 }
 
 } // namespace Urho3D

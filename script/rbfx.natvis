@@ -162,10 +162,10 @@
   <Type Name="Urho3D::MemoryBuffer">
     <DisplayString>size={size_} pos={position_} readOnly={readOnly_} data={buffer_}</DisplayString>
     <Expand>
-      <Item Name="size_">size_</Item>
-      <Item Name="position_">position_</Item>
-      <Item Name="readOnly_">readOnly_</Item>
-      <Item Name="buffer_">buffer_</Item>
+      <Item Name="[size]">size_</Item>
+      <Item Name="[position]">position_</Item>
+      <Item Name="[readOnly]">readOnly_</Item>
+      <Item Name="[buffer]">buffer_</Item>
     </Expand>
   </Type>
 
@@ -173,9 +173,9 @@
   <Type Name="Urho3D::VectorBuffer">
     <DisplayString>size={size_} pos={position_}</DisplayString>
     <Expand>
-      <Item Name="size_">size_</Item>
-      <Item Name="position_">position_</Item>
-      <ExpandedItem Name="buffer_">buffer_</ExpandedItem>
+      <Item Name="[size]">size_</Item>
+      <Item Name="[position]">position_</Item>
+      <Item Name="[buffer]">buffer_</Item>
     </Expand>
   </Type>
 
