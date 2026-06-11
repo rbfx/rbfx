@@ -162,6 +162,7 @@ private:
 
     VectorBuffer componentBuffer_;
     VectorBuffer buffer_;
+    VectorBuffer buffer2_;
 };
 
 }

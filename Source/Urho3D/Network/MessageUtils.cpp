@@ -70,7 +70,6 @@ LargeMessageReader::LargeMessageReader(
     , incompleteMessageId_(incompleteMessageId)
     , lastMessageId_(lastMessageId)
 {
-    buffer_.Clear();
 }
 
 void LargeMessageReader::OnMessage(NetworkMessageId messageId, MemoryBuffer& messageData, Callback onMessageReceived)
@@ -84,7 +83,7 @@ void LargeMessageReader::OnMessage(NetworkMessageId messageId, MemoryBuffer& mes
     else
     {
         buffer_.Seek(buffer_.GetSize());
-        buffer_.Write(messageData.GetData(), messageData.GetSize());
+        buffer_.Write(messageData.GetData() + messageData.Tell(), messageData.GetSize() - messageData.Tell());
         if (messageId == lastMessageId_)
         {
             MemoryBuffer memoryBuffer{buffer_};

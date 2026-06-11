@@ -75,6 +75,6 @@ static constexpr unsigned MaxNetworkPacketSize = 1024;
 static constexpr unsigned MaxNetworkMessageSize = 0xFFFF;
 
 /// Max size of the message header (message id only).
-static constexpr unsigned NetworkMessageHeaderSize = 5;
+static constexpr unsigned NetworkMessageHeaderSize = 4;
 
 } // namespace Urho3D
