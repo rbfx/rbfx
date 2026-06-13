@@ -9,6 +9,7 @@
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/Thread.h"
 #include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Network/NetworkEvents.h"
 
 #include <EASTL/algorithm.h>
 
@@ -22,6 +23,52 @@ NetworkServer::NetworkServer(Context* context)
     , workQueue_(context->GetSubsystem<WorkQueue>())
 {
     URHO3D_ASSERT(workQueue_);
+}
+
+void NetworkServer::OnConnected(NetworkConnection* connection)
+{
+    onConnected_(this, connection);
+
+    using namespace ServerClientConnected;
+    auto& eventData = GetEventDataMap();
+    eventData[P_SERVER] = this;
+    eventData[P_CONNECTION] = connection;
+    eventData[P_ADDRESS] = connection->GetAddress();
+    eventData[P_PORT] = connection->GetPort();
+    SendEvent(E_SERVERCLIENTCONNECTED, eventData);
+}
+
+void NetworkServer::OnDisconnected(NetworkConnection* connection)
+{
+    onDisconnected_(this, connection);
+
+    using namespace ServerClientDisconnected;
+    auto& eventData = GetEventDataMap();
+    eventData[P_SERVER] = this;
+    eventData[P_CONNECTION] = connection;
+    eventData[P_ADDRESS] = connection->GetAddress();
+    eventData[P_PORT] = connection->GetPort();
+    SendEvent(E_SERVERCLIENTDISCONNECTED, eventData);
+}
+
+void NetworkServer::OnListenStart()
+{
+    onListenStart_(this);
+
+    using namespace ServerListenStart;
+    auto& eventData = GetEventDataMap();
+    eventData[P_SERVER] = this;
+    SendEvent(E_SERVERLISTENSTART, eventData);
+}
+
+void NetworkServer::OnListenStop()
+{
+    onListenStop_(this);
+
+    using namespace ServerListenStop;
+    auto& eventData = GetEventDataMap();
+    eventData[P_SERVER] = this;
+    SendEvent(E_SERVERLISTENSTOP, eventData);
 }
 
 void NetworkServer::DoOnConnected(NetworkConnection* connection)

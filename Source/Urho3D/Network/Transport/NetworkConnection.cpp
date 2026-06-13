@@ -5,6 +5,7 @@
 #include "Urho3D/Core/Thread.h"
 #include "Urho3D/Core/WorkQueue.h"
 #include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Network/NetworkEvents.h"
 #include "Urho3D/Network/Transport/NetworkServer.h"
 
 #include "Urho3D/DebugNew.h"
@@ -43,6 +44,32 @@ NetworkConnection::NetworkConnection(Context* context)
     URHO3D_ASSERT(workQueue_);
 }
 
+void NetworkConnection::OnConnected()
+{
+    onConnected_(this);
+
+    using namespace ClientConnected;
+    auto& eventData = GetEventDataMap();
+    eventData[P_CONNECTION] = this;
+    eventData[P_ADDRESS] = address_;
+    eventData[P_PORT] = port_;
+    SendEvent(E_CLIENTCONNECTED, eventData);
+}
+
+void NetworkConnection::OnDisconnected()
+{
+    onDisconnected_(this);
+
+    using namespace ClientDisconnected;
+    auto& eventData = GetEventDataMap();
+    eventData[P_CONNECTION] = this;
+    eventData[P_ADDRESS] = address_;
+    eventData[P_PORT] = port_;
+    SendEvent(E_CLIENTDISCONNECTED, eventData);
+
+    selfRef_ = nullptr;
+}
+
 unsigned NetworkConnection::GetMaxMessageSize() const
 {
     return ea::min(MaxNetworkMessageSize, maxPacketSize_ - NetworkMessageHeaderSize);
@@ -50,8 +77,19 @@ unsigned NetworkConnection::GetMaxMessageSize() const
 
 bool NetworkConnection::SendData(const MemoryBuffer& data, PacketTypeFlags type)
 {
-    bool outHandled = false;
-    onSendData_(this, data, type, outHandled);
+    using namespace ClientSendData;
+    auto& eventData = GetEventDataMap();
+    eventData[P_CONNECTION] = this;
+    eventData[P_TYPE] = type.AsInteger();
+    eventData[P_SIZE] = static_cast<int>(data.GetSize());
+    eventData[P_DATA] = data.GetData();
+    eventData[P_HANDLED] = false;
+    SendEvent(E_CLIENTSENDDATA, eventData);
+
+    bool outHandled = eventData[P_HANDLED].GetBool();
+    if (!outHandled)
+        onSendData_(this, data, type, outHandled);
+
     return !outHandled;
 }
 
@@ -59,8 +97,22 @@ bool NetworkConnection::SendMessage(
     NetworkMessageId messageId, const MemoryBuffer& data, PacketTypeFlags type, ea::string_view debugInfo)
 {
     debugInfo_ = debugInfo;
-    bool outHandled = false;
-    onSendMessage_(this, messageId, data, type, outHandled);
+
+    using namespace ClientSendMessage;
+    auto& eventData = GetEventDataMap();
+    eventData[P_CONNECTION] = this;
+    eventData[P_MESSAGEID] = static_cast<int>(messageId);
+    eventData[P_TYPE] = type.AsInteger();
+    eventData[P_SIZE] = static_cast<int>(data.GetSize());
+    eventData[P_DATA] = data.GetData();
+    eventData[P_HANDLED] = false;
+    SendEvent(E_CLIENTSENDMESSAGE, eventData);
+
+    bool outHandled = eventData[P_HANDLED].GetBool();
+
+    if (!outHandled)
+        onSendMessage_(this, messageId, data, type, outHandled);
+
     if (outHandled)
         return false;
 
@@ -125,8 +177,19 @@ void NetworkConnection::DoOnData(MemoryBuffer& message)
 {
     if (!processDataOnMainThread_ || Thread::IsMainThread())
     {
-        bool outHandled = false;
-        onData_(this, message, outHandled);
+        using namespace ClientData;
+        auto& eventData = GetEventDataMap();
+        eventData[P_CONNECTION] = this;
+        eventData[P_SIZE] = static_cast<int>(message.GetSize());
+        eventData[P_DATA] = message.GetData();
+        eventData[P_HANDLED] = false;
+        SendEvent(E_CLIENTDATA, eventData);
+
+        bool outHandled = eventData[P_HANDLED].GetBool();
+
+        if (!outHandled)
+            onData_(this, message, outHandled);
+
         if (!outHandled)
             OnData(message);
     }
@@ -137,10 +200,24 @@ void NetworkConnection::DoOnData(MemoryBuffer& message)
 bool NetworkConnection::OnData(MemoryBuffer& message)
 {
     const auto msgId = static_cast<NetworkMessageId>(message.ReadVLE());
-    bool outHandled = false;
-    onMessage_(this, msgId, message, outHandled);
+
+    using namespace ClientMessage;
+    auto& eventData = GetEventDataMap();
+    eventData[P_CONNECTION] = this;
+    eventData[P_MESSAGEID] = static_cast<int>(msgId);
+    eventData[P_SIZE] = static_cast<int>(message.GetSize() - message.GetPosition());
+    eventData[P_DATA] = message.GetData() + message.GetPosition();
+    eventData[P_HANDLED] = false;
+    SendEvent(E_CLIENTMESSAGE, eventData);
+
+    bool outHandled = eventData[P_HANDLED].GetBool();
+
+    if (!outHandled)
+        onMessage_(this, msgId, message, outHandled);
+
     if (outHandled)
         return true;
+
     return OnMessage(msgId, message);
 }
 
@@ -183,10 +260,7 @@ void NetworkConnection::ProcessQueuedPackets()
     for (auto& packet : incomingBack_)
     {
         MemoryBuffer message(packet);
-        bool outHandled = false;
-        onData_(this, message, outHandled);
-        if (!outHandled)
-            OnData(message);
+        DoOnData(message);
     }
 
     // Recycle back buffer vectors
