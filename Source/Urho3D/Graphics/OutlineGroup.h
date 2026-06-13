@@ -55,6 +55,8 @@ public:
     bool IsDebug() const { return isDebug_; }
     void SetDrawablesAttr(const VariantVector& drawables);
     const VariantVector& GetDrawablesAttr() const;
+    void SetBinderTag(const ea::string& tag) { binderTag_ = tag; }
+    const ea::string& GetBinderTag() const { return binderTag_; }
     /// @}
 
     /// Return cached artificial material with only resources and shader parameters set.
@@ -97,6 +99,8 @@ private:
 
     /// Cache of materials.
     ea::unordered_map<MaterialKey, SharedPtr<Material>> materials_;
+
+    ea::string binderTag_;
 };
 
 }
