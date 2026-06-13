@@ -193,7 +193,7 @@ option                (URHO3D_SHADER_OPTIMIZER   "Enable shader optimization via
 # See https://developer.oculus.com/documentation/native/android/mobile-openxr/ for details.
 cmake_dependent_option(URHO3D_OCULUS_QUEST       "Enable experimental native build for Oculus Quest. See notes in UrhoOptions.cmake!" OFF "ANDROID" OFF)
 # TODO: Extend platform support.
-cmake_dependent_option(URHO3D_XR                 "Enable OpenXR support"                                 ${URHO3D_ENABLE_ALL} "WIN32 OR URHO3D_OCULUS_QUEST;NOT MINGW;NOT UWP" OFF)
+cmake_dependent_option(URHO3D_XR                 "Enable OpenXR support"                                 ${URHO3D_ENABLE_ALL} "WIN32 OR LINUX OR URHO3D_OCULUS_QUEST;NOT MINGW;NOT UWP" OFF)
 
 # Features
 cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "(BUILD_SHARED_LIBS OR IOS);NOT MINGW"   OFF)
