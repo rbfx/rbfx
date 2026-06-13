@@ -1,0 +1,200 @@
+name: CI Prepare Platform
+description: Shared checkout and toolchain preparation for engine and downstream CI jobs.
+
+inputs:
+  profile:
+    description: Engine or downstream workflow profile.
+    required: true
+  checkout_engine_source:
+    description: Whether to checkout engine source as part of the shared preparation.
+    required: false
+    default: 'true'
+  project_submodules:
+    description: Submodule checkout mode for downstream project repositories.
+    required: false
+    default: recursive
+  rbfx_mode:
+    description: Use a released SDK or build rbfx from source.
+    required: false
+    default: sdk
+  rbfx_sdk_repository:
+    description: Repository that publishes SDK release artifacts.
+    required: false
+    default: rbfx/rbfx
+  rbfx_source_repository:
+    description: Repository to checkout for source builds.
+    required: false
+    default: rbfx/rbfx
+  rbfx_source_ref:
+    description: Ref for rbfx_source_repository.
+    required: false
+    default: master
+  rbfx_source_strategy:
+    description: Source build strategy for downstream builds.
+    required: false
+    default: source
+  rbfx_source_sdk_cmake_args:
+    description: Comma-separated extra CMake arguments for downstream local SDK generation.
+    required: false
+    default: ''
+  use_cached_thirdparty:
+    description: Reuse ThirdParty from the latest SDK when possible.
+    required: false
+    default: 'true'
+
+outputs:
+  build_cache_hit:
+    description: Cache hit state for downstream cache restore.
+    value: ${{ steps.build_cache.outputs.cache-hit }}
+  sdk_cached:
+    description: Whether the cached SDK download succeeded.
+    value: ${{ steps.cached_sdk.outputs.sdk_cached }}
+  engine_thirdparty_used:
+    description: Whether engine generate reused cached ThirdParty.
+    value: ${{ steps.generate.outputs.thirdparty_used }}
+  source_sdk_thirdparty_used:
+    description: Whether downstream local SDK generation reused cached ThirdParty.
+    value: ${{ steps.source_sdk_generate.outputs.thirdparty_used }}
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout engine source
+      if: inputs.profile == 'engine' && inputs.checkout_engine_source == 'true'
+      uses: actions/checkout@v5
+      with:
+        path: ${{ env.ci_source_path }}
+        fetch-depth: 1
+
+    - name: Checkout downstream project
+      if: inputs.profile == 'downstream'
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 1
+        submodules: ${{ inputs.project_submodules }}
+
+    - name: Checkout rbfx source
+      if: inputs.profile == 'downstream'
+      uses: actions/checkout@v5
+      with:
+        repository: ${{ inputs.rbfx_source_repository }}
+        ref: ${{ inputs.rbfx_source_ref }}
+        path: ${{ env.ci_source_path }}
+        fetch-depth: 1
+
+    - name: Setup environment
+      shell: bash
+      run: ${{ env.ci_build_script }} setup-environment
+
+    - name: Checkout emsdk
+      if: env.ci_platform == 'web'
+      uses: actions/checkout@v5
+      with:
+        repository: emscripten-core/emsdk
+        path: emsdk
+        fetch-depth: 1
+
+    - name: Setup emsdk
+      if: env.ci_platform == 'web'
+      shell: bash
+      run: ${{ env.ci_build_script }} setup-emsdk
+
+    - name: Restore build cache
+      if: inputs.profile == 'engine'
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ env.CCACHE_DIR }}
+        key: ${{ env.ci_cache_id }}-${{ env.ci_short_sha }}
+        restore-keys: |
+          ${{ env.ci_cache_id }}
+
+    - name: Restore build cache
+      if: inputs.profile == 'downstream'
+      id: build_cache
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ env.CCACHE_DIR }}
+        key: ${{ env.ci_cache_id }}-${{ github.sha }}
+        restore-keys: |
+          ${{ env.ci_cache_id }}-
+          downstream-${{ github.repository_id }}-${{ env.ci_platform_tag }}-
+
+    - name: Setup dotnet
+      if: env.ci_lib_type == 'dll' || env.ci_platform == 'android'
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Setup Gradle
+      if: env.ci_platform == 'android'
+      uses: gradle/actions/setup-gradle@v6
+      with:
+        gradle-version: '8.14.3'
+        add-job-summary: 'never'
+
+    - name: Setup cmake
+      if: env.ci_platform != 'android'
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '${{ env.CMAKE_VERSION }}'
+
+    - name: Dependencies
+      shell: bash
+      run: ${{ env.ci_build_script }} dependencies
+
+    - name: Download release SDK
+      if: inputs.profile == 'downstream' && inputs.rbfx_mode == 'sdk'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: >-
+        ${{ env.ci_build_script }} download-release --
+        'https://github.com/${{ inputs.rbfx_sdk_repository }}/releases/download/latest/rebelfork-sdk-${{ env.ci_platform_tag }}-latest.7z'
+        '${{ env.ci_sdk_dir }}'
+
+    - name: Download cached ThirdParty SDK
+      id: cached_sdk
+      if: >-
+        (inputs.profile == 'engine' && !contains(github.event.head_commit.message, '#full-build')) ||
+        (inputs.profile == 'downstream' && inputs.rbfx_mode == 'source' && inputs.use_cached_thirdparty == 'true')
+      continue-on-error: true
+      shell: bash
+      env:
+        DOWNLOAD_SDK_REPOSITORY: ${{ inputs.profile == 'engine' && github.repository || inputs.rbfx_sdk_repository }}
+      run: ${{ env.ci_build_script }} download-cached-sdk
+
+    - name: Sanitize cached ThirdParty SDK
+      if: steps.cached_sdk.outputs.sdk_cached == 'true'
+      shell: bash
+      run: ${{ env.ci_build_script }} sanitize-cached-sdk '${{ github.workspace }}/cached-sdk'
+
+    - name: Build swig
+      if: >-
+        (inputs.profile == 'engine' || inputs.rbfx_mode == 'source') &&
+        ((env.ci_lib_type == 'dll' && env.ci_platform_group != 'desktop') || (env.ci_platform == 'ios'))
+      shell: bash
+      run: ${{ env.ci_build_script }} build-swig
+
+    - name: Setup PackageTool
+      if: env.ci_platform_group != 'desktop'
+      shell: bash
+      run: ${{ env.ci_build_script }} setup-package-tool
+
+    - name: Generate
+      id: generate
+      if: inputs.profile == 'engine' && env.ci_platform != 'android'
+      shell: bash
+      run: ${{ env.ci_build_script }} generate-detect-thirdparty --auto-pch true
+
+    - name: Configure local rbfx SDK
+      id: source_sdk_generate
+      if: inputs.profile == 'downstream' && inputs.rbfx_mode == 'source' && inputs.rbfx_source_strategy == 'sdk' && env.ci_platform != 'android'
+      shell: bash
+      env:
+        INPUT_RBFX_SOURCE_SDK_CMAKE_ARGS: ${{ inputs.rbfx_source_sdk_cmake_args }}
+      run: ${{ env.ci_build_script }} generate-detect-thirdparty
+
+    - name: Export cached ThirdParty prefix for Android local SDK build
+      if: inputs.profile == 'downstream' && inputs.rbfx_mode == 'source' && inputs.rbfx_source_strategy == 'sdk' && env.ci_platform == 'android' && steps.cached_sdk.outputs.sdk_cached == 'true'
+      shell: bash
+      run: printf 'CMAKE_PREFIX_PATH=%s\n' "${{ github.workspace }}/cached-sdk" >> "$GITHUB_ENV"

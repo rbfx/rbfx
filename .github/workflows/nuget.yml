@@ -60,7 +60,7 @@ jobs:
           echo "Tag $tag_name does not exist, proceeding with release."
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -110,7 +110,7 @@ jobs:
           echo "Created and pushed tag: $tag_name"
 
       - name: Upload NuGet Packages as Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages-${{ steps.version.outputs.version }}
           path: packaging/nuget/out/*.nupkg
