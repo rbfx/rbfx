@@ -115,9 +115,9 @@ public:
     /// Set whether callbacks are invoked on the main thread.
     void SetProcessDataOnMainThread(bool enable) { processDataOnMainThread_ = enable; }
     /// Called once, when connection is fully set up and data is ready to be sent and received. Is called from the main thread.
-    virtual void OnConnected() { onConnected_(this); }
+    virtual void OnConnected();
     /// Called once, when connection disconnect was initiated (only if onConnected_ was also called). Is called from the main thread.
-    virtual void OnDisconnected() { onDisconnected_(this); selfRef_ = nullptr; }
+    virtual void OnDisconnected();
     /// Called when a new data is received. May be called from non-main thread depending on configuration.
     /// Returns true when the message was processed and should not be passed to other handlers.
     virtual bool OnData(MemoryBuffer& message);

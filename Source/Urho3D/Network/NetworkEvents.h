@@ -79,4 +79,90 @@ URHO3D_EVENT(E_NETWORKHOSTDISCOVERED, NetworkHostDiscovered)
     URHO3D_PARAM(P_BEACON, Beacon);     // VariantMap
 }
 
+/// Client connection successfully established to a remote server.
+URHO3D_EVENT(E_CLIENTCONNECTED, ClientConnected)
+{
+    URHO3D_PARAM(P_ADDRESS, Address);           // String
+    URHO3D_PARAM(P_PORT, Port);                 // int
+    URHO3D_PARAM(P_CONNECTION, Connection);     // NetworkConnection ptr
+}
+
+/// Client connection to a remote server has been terminated.
+URHO3D_EVENT(E_CLIENTDISCONNECTED, ClientDisconnected)
+{
+    URHO3D_PARAM(P_ADDRESS, Address);           // String
+    URHO3D_PARAM(P_PORT, Port);                 // int
+    URHO3D_PARAM(P_CONNECTION, Connection);     // NetworkConnection ptr
+}
+
+/// A new client connection has been accepted by the server.
+URHO3D_EVENT(E_SERVERCLIENTCONNECTED, ServerClientConnected)
+{
+    URHO3D_PARAM(P_SERVER, Server);             // NetworkServer ptr
+    URHO3D_PARAM(P_CONNECTION, Connection);     // NetworkConnection ptr
+    URHO3D_PARAM(P_ADDRESS, Address);           // String
+    URHO3D_PARAM(P_PORT, Port);                 // int
+}
+
+/// A client connection has been disconnected from the server.
+URHO3D_EVENT(E_SERVERCLIENTDISCONNECTED, ServerClientDisconnected)
+{
+    URHO3D_PARAM(P_SERVER, Server);             // NetworkServer ptr
+    URHO3D_PARAM(P_CONNECTION, Connection);     // NetworkConnection ptr
+    URHO3D_PARAM(P_ADDRESS, Address);           // String
+    URHO3D_PARAM(P_PORT, Port);                 // int
+}
+
+/// Server has started listening for incoming connections.
+URHO3D_EVENT(E_SERVERLISTENSTART, ServerListenStart)
+{
+    URHO3D_PARAM(P_SERVER, Server);             // NetworkServer ptr
+}
+
+/// Server has stopped listening for incoming connections.
+URHO3D_EVENT(E_SERVERLISTENSTOP, ServerListenStop)
+{
+    URHO3D_PARAM(P_SERVER, Server);             // NetworkServer ptr
+}
+
+/// Raw data has been received on a network connection.
+URHO3D_EVENT(E_CLIENTDATA, ClientData)
+{
+    URHO3D_PARAM(P_CONNECTION, Connection);     // NetworkConnection ptr
+    URHO3D_PARAM(P_SIZE, Size);                 // int
+    URHO3D_PARAM(P_DATA, Data);                 // const void*
+    URHO3D_PARAM(P_HANDLED, Handled);           // bool
+}
+
+/// A network message has been received on a network connection.
+URHO3D_EVENT(E_CLIENTMESSAGE, ClientMessage)
+{
+    URHO3D_PARAM(P_CONNECTION, Connection);     // NetworkConnection ptr
+    URHO3D_PARAM(P_MESSAGEID, MessageID);       // int (NetworkMessageId)
+    URHO3D_PARAM(P_SIZE, Size);                 // int
+    URHO3D_PARAM(P_DATA, Data);                 // const void*
+    URHO3D_PARAM(P_HANDLED, Handled);           // bool
+}
+
+/// Raw data is about to be sent on a network connection.
+URHO3D_EVENT(E_CLIENTSENDDATA, ClientSendData)
+{
+    URHO3D_PARAM(P_CONNECTION, Connection);     // NetworkConnection ptr
+    URHO3D_PARAM(P_TYPE, Type);                 // int (PacketTypeFlags)
+    URHO3D_PARAM(P_SIZE, Size);                 // int
+    URHO3D_PARAM(P_DATA, Data);                 // const void*
+    URHO3D_PARAM(P_HANDLED, Handled);           // bool
+}
+
+/// A network message is about to be sent on a network connection.
+URHO3D_EVENT(E_CLIENTSENDMESSAGE, ClientSendMessage)
+{
+    URHO3D_PARAM(P_CONNECTION, Connection);     // NetworkConnection ptr
+    URHO3D_PARAM(P_MESSAGEID, MessageID);       // int (NetworkMessageId)
+    URHO3D_PARAM(P_TYPE, Type);                 // int (PacketTypeFlags)
+    URHO3D_PARAM(P_SIZE, Size);                 // int
+    URHO3D_PARAM(P_DATA, Data);                 // const void*
+    URHO3D_PARAM(P_HANDLED, Handled);           // bool
+}
+
 }

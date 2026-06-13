@@ -64,13 +64,13 @@ public:
 
 protected:
     /// Called once, when new connection is established and ready to be used. Is called from the main thread.
-    virtual void OnConnected(NetworkConnection* connection) { onConnected_(this, connection); }
+    virtual void OnConnected(NetworkConnection* connection);
     /// Called once, when a fully established connection disconnects gracefully or is aborted abruptly. Is called from the main thread.
-    virtual void OnDisconnected(NetworkConnection* connection) { onDisconnected_(this, connection); }
+    virtual void OnDisconnected(NetworkConnection* connection);
     /// Called once, when server starts listening. Is called from the main thread.
-    virtual void OnListenStart() { onListenStart_(this); }
+    virtual void OnListenStart();
     /// Called once, when server stops listening. Is called from the main thread.
-    virtual void OnListenStop() { onListenStop_(this); }
+    virtual void OnListenStop();
 
     template<typename Callback, bool Add>
     void ExecuteCallbackHelper(NetworkConnection* connection);
