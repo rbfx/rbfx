@@ -37,8 +37,6 @@ using ParticleGraphPinFlags = Urho3D::ParticleGraphPinFlag;
 %csattribute(Urho3D::ParticleGraphEmitter, %arg(unsigned int), LightMask, GetLightMask, SetLightMask);
 %csattribute(Urho3D::ParticleGraphEmitter, %arg(unsigned int), ShadowMask, GetShadowMask, SetShadowMask);
 %csattribute(Urho3D::ParticleGraphEmitter, %arg(unsigned int), ZoneMask, GetZoneMask, SetZoneMask);
-%csattribute(Urho3D::ParicleGraphUniform, %arg(ea::string), Name, GetName);
-%csattribute(Urho3D::ParicleGraphUniform, %arg(Urho3D::StringHash), NameHash, GetNameHash);
 %csattribute(Urho3D::ParticleGraphLayerInstance, %arg(unsigned int), NumActiveParticles, GetNumActiveParticles);
 %csattribute(Urho3D::ParticleGraphLayerInstance, %arg(unsigned int), NumAttributes, GetNumAttributes);
 %csattribute(Urho3D::ParticleGraphLayerInstance, %arg(Urho3D::ParticleGraphEmitter *), Emitter, GetEmitter);

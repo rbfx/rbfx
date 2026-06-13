@@ -29,35 +29,6 @@
 namespace Urho3D
 {
 
-class URHO3D_API ParicleGraphUniform
-{
-public:
-    /// Uniform value.
-    Variant value_;
-
-    /// Get uniform name.
-    const ea::string& GetName() const { return name_; }
-
-    /// Get uniform name hash.
-    StringHash GetNameHash() const { return nameHash_; }
-
-    /// Set property name.
-    void SetName(const ea::string_view name)
-    {
-        name_ = name;
-        nameHash_ = name;
-    }
-
-    /// Serialize from/to archive. Return true if successful.
-    bool Serialize(Archive& archive);
-
-private:
-    /// Property name.
-    ea::string name_;
-    /// Property name hash.
-    StringHash nameHash_;
-};
-
 /// Instance of particle graph layer in emitter.
 class URHO3D_API ParticleGraphLayerInstance
 {
