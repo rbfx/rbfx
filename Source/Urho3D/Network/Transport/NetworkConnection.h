@@ -75,7 +75,7 @@ public:
     /// Returns true, if connection initialization has started. Connection may still be unusable at the time this method returns.
     virtual bool Connect(const URL& url) = 0;
     /// Initializes a disconnection. Connection is no longer usable when this method returns, even though it may still remain connected for a short while.
-    virtual void Disconnect() { selfRef_ = this; }
+    virtual void Disconnect();
     /// Copies data and queues it for sending.
     virtual bool SendData(const MemoryBuffer& data, PacketTypeFlags type = PacketType::ReliableOrdered);
     /// Copies data and queues it for sending.
@@ -135,6 +135,9 @@ public:
     Signal<void(NetworkMessageId, const MemoryBuffer&, PacketTypeFlags, bool&), NetworkConnection> onSendMessage_;
 
 protected:
+    /// Notify Network subsystem that teardown has started.
+    void NotifyDisconnecting();
+
     /// Set server that owns this connection.
     void SetServer(NetworkServer* server);
     /// Dispatch connection callback from transport implementation.
@@ -146,7 +149,6 @@ protected:
     /// Dispatch message callback from transport implementation.
     void DoOnMessage(NetworkMessageId messageId, MemoryBuffer& message);
 
-    SharedPtr<NetworkConnection> selfRef_;
     State state_ = State::Disconnected;
     ea::string address_ = "";
     unsigned maxPacketSize_ = MaxNetworkPacketSize;

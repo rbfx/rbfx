@@ -202,6 +202,8 @@ private:
     bool headless_;
     /// Audio paused flag.
     bool audioPaused_;
+    /// Timer tracking how long exit has been delayed.
+    Timer exitDelayTimer_;
 };
 
 }

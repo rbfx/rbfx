@@ -66,8 +66,17 @@ void NetworkConnection::OnDisconnected()
     eventData[P_ADDRESS] = address_;
     eventData[P_PORT] = port_;
     SendEvent(E_CLIENTDISCONNECTED, eventData);
+}
 
-    selfRef_ = nullptr;
+void NetworkConnection::NotifyDisconnecting()
+{
+    if (auto* network = GetSubsystem<Network>())
+        network->OnConnectionDisconnecting(this);
+}
+
+void NetworkConnection::Disconnect()
+{
+    NotifyDisconnecting();
 }
 
 unsigned NetworkConnection::GetMaxMessageSize() const
@@ -168,7 +177,6 @@ void NetworkConnection::DoOnDisconnected()
     {
         self->state_ = State::Disconnected;
         self->OnDisconnected();
-        self->selfRef_ = nullptr;
     };
     workQueue_->RunTaskOnMainThread(cb);
 }

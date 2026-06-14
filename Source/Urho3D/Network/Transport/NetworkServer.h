@@ -63,6 +63,9 @@ public:
     Signal<void(), NetworkServer> onListenStop_;
 
 protected:
+    /// Notify Network subsystem that teardown has started.
+    void NotifyStopping();
+
     /// Called once, when new connection is established and ready to be used. Is called from the main thread.
     virtual void OnConnected(NetworkConnection* connection);
     /// Called once, when a fully established connection disconnects gracefully or is aborted abruptly. Is called from the main thread.

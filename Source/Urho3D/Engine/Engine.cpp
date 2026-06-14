@@ -1340,6 +1340,7 @@ void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
     if (autoExit_)
     {
         exitRequired_ = true;
+        exitDelayTimer_.Reset();
     }
 }
 
@@ -1347,6 +1348,15 @@ void Engine::HandleEndFrame(StringHash eventType, VariantMap& eventData)
 {
     if (exitRequired_)
     {
+#ifdef URHO3D_NETWORK
+        auto* network = GetSubsystem<Network>();
+        if (network && network->HasActiveResources())
+        {
+            if (exitDelayTimer_.GetMSec(false) < 10000)
+                return;
+            URHO3D_LOGERROR("Closing application with active connections.");
+        }
+#endif
         // Do not call Exit() here, as it contains mobile platform -specific tests to not exit.
         // If we do receive an exit request from the system on those platforms, we must comply
         DoExit();
