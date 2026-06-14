@@ -38,3 +38,12 @@ To convert(const From& from)
 }
 
 }
+
+/// Blittable struct for marshalling SharedPtr<InterfaceType, RefCounted> across P/Invoke.
+/// Stores the interface pointer and the separate RefCounted pointer that manages its lifetime.
+struct PtrPair
+{
+    void* ptr;         ///< InterfaceType* (e.g. ReplicatedPeer*)
+    void* refCounted;  ///< RefCounted*
+};
+

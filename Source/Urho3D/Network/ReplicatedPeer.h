@@ -24,7 +24,11 @@ class URHO3D_API ReplicatedPeer
 {
 public:
     explicit ReplicatedPeer(NetworkConnection* connection, unsigned pingIntervalMs=250, unsigned maxPingMs=10000, unsigned clockBufferSize=40,
-        unsigned pingBufferSize=10, ea::function<unsigned()> getTimestamp = [] { return Time::GetSystemTime(); });
+        unsigned pingBufferSize=10
+#ifndef SWIG
+        , ea::function<unsigned()> getTimestamp = [] { return Time::GetSystemTime(); }
+#endif
+        );
     virtual ~ReplicatedPeer() = default;
 
     /// Return unique peer ID.
