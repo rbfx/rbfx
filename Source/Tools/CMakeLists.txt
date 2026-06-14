@@ -21,7 +21,7 @@
 #
 
 if (NOT DESKTOP)
-    # Tools are only useful on desktops. We will build win32 tools when targeting UWP.
+    install(FILES PackageTool/PackageTool.py DESTINATION ${CMAKE_INSTALL_BINDIR_BASE})
     return ()
 endif ()
 
