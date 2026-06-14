@@ -826,6 +826,10 @@ public:
 %interface_custom("%s", "I%s", Urho3D::ServerNetworkCallback);
 %interface_custom("%s", "I%s", Urho3D::NetworkCallback);
 
+URHO3D_REFCOUNTED_TWOPOINTER(Urho3D::ReplicatedPeer, Urho3D::RefCounted);
+%ignore Urho3D::ReplicatedPeer::Listener;
+%ignore Urho3D::ReplicatedPeer::AsSharedPtr;
+
 %include "generated/Urho3D/_pre_replica.i"
 %include "Urho3D/Replica/NetworkCallbacks.h"
 %include "Urho3D/Replica/ReplicationManager.h"
@@ -845,6 +849,7 @@ public:
 %include "Urho3D/Replica/ServerReplicator.h"
 %include "Urho3D/Replica/TickSynchronizer.h"
 %include "Urho3D/Replica/TrackedAnimatedModel.h"
+%include "Urho3D/Network/ReplicatedPeer.h"
 #endif
 
 //// --------------------------------------- Physics ---------------------------------------
