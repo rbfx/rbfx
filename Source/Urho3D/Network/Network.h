@@ -30,6 +30,8 @@ namespace Urho3D
 {
 
 class Scene;
+class NetworkConnection;
+class NetworkServer;
 
 /// %Network subsystem. Provides network update scheduling and replication events.
 class URHO3D_API Network : public Object
@@ -55,16 +57,30 @@ public:
     /// Return whether the network is updated on this frame.
     bool IsUpdateNow() const { return updateNow_; }
 
+    /// Return whether any server or connection teardown is in progress.
+    bool HasActiveResources() const { return !stoppingServers_.empty() || !disconnectingConnections_.empty(); }
+
     /// Process incoming messages from connections. Called by HandleBeginFrame.
     void Update(float timeStep);
     /// Send outgoing messages after frame logic. Called by HandleRenderUpdate.
     void PostUpdate(float timeStep);
+
+protected:
+    friend class NetworkConnection;
+    friend class NetworkServer;
+
+    /// Called by NetworkConnection::Disconnect to notify teardown has started.
+    void OnConnectionDisconnecting(NetworkConnection* connection);
+    /// Called by NetworkServer::Stop implementation to notify teardown has started.
+    void OnServerStopping(NetworkServer* server);
 
 private:
     /// Event handlers.
     /// @{
     void HandleBeginFrame(VariantMap& eventData);
     void HandleRenderUpdate(VariantMap& eventData);
+    void HandleClientDisconnected(VariantMap& eventData);
+    void HandleServerClientDisconnected(VariantMap& eventData);
     /// @}
 
     void SendNetworkUpdateEvent(StringHash eventType, bool isServer);
@@ -79,6 +95,11 @@ private:
     float updateAcc_ = 0.0f;
     /// Whether the network will be updated on this frame.
     bool updateNow_{};
+
+    /// Servers in teardown — held by shared ptr until all their connections disconnect.
+    ea::hash_set<SharedPtr<NetworkServer>> stoppingServers_;
+    /// Connections in teardown — held by shared ptr until fully disconnected.
+    ea::hash_set<SharedPtr<NetworkConnection>> disconnectingConnections_;
 };
 
 /// Register Network library objects.

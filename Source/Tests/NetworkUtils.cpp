@@ -53,6 +53,7 @@ bool TestNetworkServer::Listen(const URL& url)
 
 void TestNetworkServer::Stop()
 {
+    NotifyStopping();
     listening_ = false;
 }
 

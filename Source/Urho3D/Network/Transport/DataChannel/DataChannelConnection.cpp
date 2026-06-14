@@ -198,7 +198,6 @@ void DataChannelConnection::OnDataChannelDisconnected(int index, bool notifyCall
     }
     peer_ = nullptr;
     SetServer(nullptr);
-    selfRef_ = nullptr;
 }
 
 void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std::shared_ptr<rtc::WebSocket> websocket)
