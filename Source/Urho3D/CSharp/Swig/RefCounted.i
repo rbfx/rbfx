@@ -1,3 +1,14 @@
+// Blittable struct for marshalling SharedPtr<InterfaceType, RefCounted> across P/Invoke boundary.
+// Stores the interface pointer and the separate RefCounted pointer that manages its lifetime.
+%pragma(csharp) moduleimports=%{
+[System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+public struct PtrPair
+{
+    public System.IntPtr ptr;
+    public System.IntPtr refCounted;
+}
+%}
+
 // This could be optimized by modifying shared_ptr<> typemaps to store a raw pointer instead of new shared_ptr instance
 // and increment/decrement refcount manually.
 %define URHO3D_REFCOUNTED(TYPE)
@@ -254,6 +265,172 @@
         $1 = &$1Ref;
     %}
     %typemap(out) Urho3D::SharedPtr<TYPE, BASE> & %{ $result = $1->GetRefCounted(); %}             // cpp to c
+%enddef
+
+%define URHO3D_REFCOUNTED_TWOPOINTER(TYPE, BASE)
+    // csbody for TYPE.
+    // Wrapper stores a PtrPair (two pointers): ptr = TYPE*, refCounted = BASE* (for lifetime).
+    %typemap(csbody) TYPE %{
+      [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
+      internal PtrPair _pair;
+      [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
+      private bool _swigCMemOwn;
+
+      private global::System.Runtime.InteropServices.HandleRef swigCPtr
+      {
+          get { return new global::System.Runtime.InteropServices.HandleRef(this, _pair.ptr); }
+      }
+
+      /// Wrap from a PtrPair (SharedPtr path — has both interface and refCounted pointers).
+      internal static $csclassname wrap(PtrPair pair, bool cMemoryOwn) {
+          if (pair.ptr == global::System.IntPtr.Zero)
+              return null;
+          if (pair.refCounted != global::System.IntPtr.Zero) {
+              // Look up GCHandle stored on the native RefCounted object for identity preservation.
+              var handle = $imclassname.RefCounted_GetScriptObject(
+                  new global::System.Runtime.InteropServices.HandleRef(null, pair.refCounted));
+              if (handle != global::System.IntPtr.Zero) {
+                  var gchandle = global::System.Runtime.InteropServices.GCHandle.FromIntPtr(handle);
+                  return ($csclassname)gchandle.Target;
+              }
+          }
+          return new $csclassname(pair, cMemoryOwn);
+      }
+
+      /// Wrap from a raw pointer (only interface pointer — used for bare TYPE* returns).
+      internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
+          return wrap(new PtrPair { ptr = cPtr, refCounted = global::System.IntPtr.Zero }, cMemoryOwn);
+      }
+
+      /// Constructor for SWIG-generated factory methods (raw pointer from C wrapper).
+      public $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : this(new PtrPair { ptr = cPtr, refCounted = global::System.IntPtr.Zero }, cMemoryOwn) {}
+
+      public $csclassname(PtrPair pair, bool cMemoryOwn) {
+          _swigCMemOwn = cMemoryOwn;
+          _pair = pair;
+          if (cMemoryOwn && pair.refCounted != global::System.IntPtr.Zero) {
+              // Store GCHandle on the native RefCounted object. Always strong because
+              // SharedPtr implies strong ownership.
+              $imclassname.RefCounted_SetScriptObject(
+                  new global::System.Runtime.InteropServices.HandleRef(null, pair.refCounted),
+                  global::System.Runtime.InteropServices.GCHandle.ToIntPtr(
+                      global::System.Runtime.InteropServices.GCHandle.Alloc(this,
+                          global::System.Runtime.InteropServices.GCHandleType.Normal)),
+                  true);
+          }
+      }
+
+      public static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
+          return (obj == null) ? new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero) : obj.swigCPtr;
+      }
+
+      bool IsExpired => _pair.ptr == global::System.IntPtr.Zero;
+    %}
+
+    // csdisposing for TYPE. Release ownership via the RefCounted pointer (if available).
+    %typemap(csdisposing, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") TYPE {
+      lock(this) {
+          if (_pair.ptr != global::System.IntPtr.Zero) {
+              if (_swigCMemOwn && _pair.refCounted != global::System.IntPtr.Zero) {
+                  _swigCMemOwn = false;
+                  $imclassname.RefCounted_ReleaseRef(
+                      new global::System.Runtime.InteropServices.HandleRef(null, _pair.refCounted));
+              }
+              _pair.ptr = global::System.IntPtr.Zero;
+              _pair.refCounted = global::System.IntPtr.Zero;
+          }
+          if (disposing) {
+              global::System.GC.SuppressFinalize(this);
+          }
+      }
+    }
+
+    %typemap(csdispose) TYPE %{
+      ~$csclassname() {
+        if (!IsExpired)
+          Dispose(false);
+      }
+      public void Dispose() {
+        if (!IsExpired)
+          Dispose(true);
+      }
+    %}
+    %typemap(csdispose_derived) TYPE ""
+
+    // SharedPtr<TYPE, BASE> marshalling through PtrPair.
+    // C layer: PtrPair* for params, PtrPair for return value.
+    %typemap(ctype, out="PtrPair") SharedPtr<TYPE, BASE> "PtrPair*"
+    %typemap(imtype, out="PtrPair") SharedPtr<TYPE, BASE> "ref PtrPair"
+    %typemap(cstype) SharedPtr<TYPE, BASE> "$typemap(cstype, TYPE*)"
+
+    // cpp → c: extract both pointers and detach (preserve refcount).
+    %typemap(out) SharedPtr<TYPE, BASE> %{
+        PtrPair result;
+        result.ptr = $1.Get();
+        result.refCounted = $1.GetRefCounted();
+        $1.Detach();
+        $result = result;
+    %}
+
+    // c → cpp: reconstruct SharedPtr from pointer pair (AddRef on refCounted).
+    %typemap(in) SharedPtr<TYPE, BASE> %{
+        $1 = Urho3D::SharedPtr<TYPE, BASE>(static_cast<TYPE*>($input->ptr), static_cast<Urho3D::RefCounted*>($input->refCounted));
+    %}
+
+    // C# → pinvoke: pass the PtrPair by reference.
+    %typemap(csin) SharedPtr<TYPE, BASE> "ref $csinput._pair"
+
+    // pinvoke → C#: wrap the returned PtrPair into a managed wrapper.
+    %typemap(csout, excode=SWIGEXCODE) SharedPtr<TYPE, BASE> {
+        var ret = ($typemap(cstype, TYPE*))$typemap(cstype, TYPE*).wrap($imcall, true);$excode
+        return ret;
+    }
+
+    // SharedPtr<TYPE, BASE>&
+    %apply SharedPtr<TYPE, BASE> { SharedPtr<TYPE, BASE>& }
+
+    %typemap(in) SharedPtr<TYPE, BASE> & %{
+        $*1_ltype $1Ref(static_cast<TYPE*>($input->ptr), static_cast<Urho3D::RefCounted*>($input->refCounted));
+        $1 = &$1Ref;
+    %}
+    %typemap(out) SharedPtr<TYPE, BASE> & %{
+        PtrPair result;
+        result.ptr = $1->Get();
+        result.refCounted = $1->GetRefCounted();
+        $result = result;
+    %}
+
+    %typemap(csvarin, excode=SWIGEXCODE2) SharedPtr<TYPE, BASE> & %{
+    set {
+        $imcall;$excode
+    }
+    %}
+    %typemap(csvarout, excode=SWIGEXCODE2) SharedPtr<TYPE, BASE> & %{
+    get {
+        var ret = ($typemap(cstype, TYPE*))$typemap(cstype, TYPE*).wrap($imcall, true);$excode
+        return ret;
+    }
+    %}
+
+    // WeakPtr<TYPE, BASE> — reuse SharedPtr typemaps.
+    %apply SharedPtr<TYPE, BASE>  { WeakPtr<TYPE, BASE> }
+    %apply SharedPtr<TYPE, BASE>& { WeakPtr<TYPE, BASE>& }
+    %typemap(out) WeakPtr<TYPE, BASE> %{
+        PtrPair result;
+        result.ptr = $1.Get();
+        result.refCounted = nullptr;  // WeakPtr stores RefCount*, not RefCounted*
+        $result = result;
+    %}
+    %typemap(out) WeakPtr<TYPE, BASE> & %{
+        PtrPair result;
+        result.ptr = $1->Get();
+        result.refCounted = nullptr;  // WeakPtr stores RefCount*, not RefCounted*
+        $result = result;
+    %}
+    %typemap(in) WeakPtr<TYPE, BASE> & %{
+        $*1_ltype $1Ref(static_cast<TYPE*>($input->ptr), static_cast<Urho3D::RefCounted*>($input->refCounted));
+        $1 = &$1Ref;
+    %}
 %enddef
 
 // TODO: Fix autoswig script to output these as well.
