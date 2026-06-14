@@ -2,6 +2,7 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
+#include "Urho3D/Network/Network.h"
 #include "Urho3D/Network/Transport/NetworkServer.h"
 
 #include "Urho3D/Container/Ptr.h"
@@ -23,6 +24,12 @@ NetworkServer::NetworkServer(Context* context)
     , workQueue_(context->GetSubsystem<WorkQueue>())
 {
     URHO3D_ASSERT(workQueue_);
+}
+
+void NetworkServer::NotifyStopping()
+{
+    if (auto* network = GetSubsystem<Network>())
+        network->OnServerStopping(this);
 }
 
 void NetworkServer::OnConnected(NetworkConnection* connection)

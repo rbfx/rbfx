@@ -55,6 +55,9 @@ Network::Network(Context* context)
 
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Network, HandleBeginFrame));
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Network, HandleRenderUpdate));
+
+    SubscribeToEvent(E_CLIENTDISCONNECTED, URHO3D_HANDLER(Network, HandleClientDisconnected));
+    SubscribeToEvent(E_SERVERCLIENTDISCONNECTED, URHO3D_HANDLER(Network, HandleServerClientDisconnected));
 }
 
 Network::~Network()
@@ -114,6 +117,34 @@ void Network::HandleRenderUpdate(VariantMap& eventData)
     using namespace RenderUpdate;
 
     PostUpdate(eventData[P_TIMESTEP].GetFloat());
+}
+
+void Network::OnConnectionDisconnecting(NetworkConnection* connection)
+{
+    disconnectingConnections_.insert(SharedPtr<NetworkConnection>(connection));
+}
+
+void Network::OnServerStopping(NetworkServer* server)
+{
+    stoppingServers_.insert(SharedPtr<NetworkServer>(server));
+}
+
+void Network::HandleClientDisconnected(VariantMap& eventData)
+{
+    using namespace ClientDisconnected;
+    auto* connection = static_cast<NetworkConnection*>(eventData[P_CONNECTION].GetVoidPtr());
+    disconnectingConnections_.erase(SharedPtr<NetworkConnection>(connection));
+}
+
+void Network::HandleServerClientDisconnected(VariantMap& eventData)
+{
+    using namespace ServerClientDisconnected;
+    auto* connection = static_cast<NetworkConnection*>(eventData[P_CONNECTION].GetVoidPtr());
+    auto* server = static_cast<NetworkServer*>(eventData[P_SERVER].GetVoidPtr());
+    disconnectingConnections_.erase(SharedPtr<NetworkConnection>(connection));
+
+    if (server->GetConnections().size() <= 1)
+        stoppingServers_.erase(SharedPtr<NetworkServer>(server));
 }
 
 void Network::SendNetworkUpdateEvent(StringHash eventType, bool isServer)

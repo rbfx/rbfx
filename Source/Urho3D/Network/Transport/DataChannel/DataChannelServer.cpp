@@ -104,6 +104,12 @@ void DataChannelServer::Stop()
     if (!webSocketServer_)
         return;
 
+    NotifyStopping();
+
+    auto connections = GetConnections();
+    for (auto& connection : connections)
+        connection->Disconnect();
+
     auto webSocketServer = ea::move(webSocketServer_);
     webSocketServer->stop();
     DoOnListenStop();
