@@ -295,6 +295,7 @@ void Billboards::Update(float timeStep)
 {
     // Move the camera and animate the scene, scale movement with time step
     AnimateScene(timeStep);
+    MoveCamera(timeStep);
 }
 
 void Billboards::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
