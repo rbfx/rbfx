@@ -56,6 +56,15 @@ public:
     void Disconnect() override;
     bool SendData(const MemoryBuffer& data, PacketTypeFlags type = PacketType::ReliableOrdered) override;
     unsigned GetMaxMessageSize() const override;
+    /// Configure ICE servers (STUN/TURN) for NAT traversal.
+    /// Format: "stun:server:port" or "turn:user:pass@server:port"
+    void SetIceServers(ea::span<const ea::string_view> servers) { iceServers_.assign(servers.begin(), servers.end()); }
+    /// Access the underlying PeerConnection for advanced usage (ICE state, candidates, etc.).
+    /// Requires knowledge of the rtc:: library. See WebRTC documentation for PeerConnection API.
+    std::shared_ptr<rtc::PeerConnection> GetPeer() const { return peer_; }
+    /// Initialize with a pre-connected WebSocket (for relay/custom signaling).
+    /// Allows using external signaling servers instead of direct WebSocket connections.
+    void InitializeWithWebSocket(std::shared_ptr<rtc::WebSocket> ws) { InitializeFromSocket(nullptr, ws); }
 
 protected:
     void InitializeFromSocket(DataChannelServer* server, std::shared_ptr<rtc::WebSocket> websocket);
@@ -67,6 +76,7 @@ protected:
     std::shared_ptr<rtc::DataChannel> dataChannels_[4] = {};
     VectorBuffer buffer_;
     bool websocketWasOpened_ = false;
+    ea::vector<ea::string> iceServers_;
 };
 
 }   // namespace Urho3D

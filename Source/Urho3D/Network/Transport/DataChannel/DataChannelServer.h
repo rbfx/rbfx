@@ -53,12 +53,16 @@ public:
     void Stop() override;
     bool IsListening() const override;
     void SetTLSCertificate(ea::string_view certificatePemFile, ea::string_view keyPemFile, ea::string_view keyPassword);
+    /// Configure ICE servers (STUN/TURN) to use for NAT traversal on all new connections.
+    /// Format: "stun:server:port" or "turn:user:pass@server:port"
+    void SetIceServers(ea::span<const ea::string_view> servers);
 
 protected:
     ea::shared_ptr<rtc::WebSocketServer> webSocketServer_ = {};
     ea::string certificatePemFile_;
     ea::string keyPemFile_;
     ea::string keyPassword_;
+    ea::vector<ea::string> iceServers_;
 };
 
 }   // namespace Urho3D

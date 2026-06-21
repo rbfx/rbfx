@@ -158,6 +158,9 @@
 #endif
 #include "121_CameraOperator/CameraOperator.h"
 #include "122_TextureFormats/TextureFormats.h"
+#if URHO3D_NETWORK
+#include "119_WebRTCSTUN/WebRTCSTUN.h"
+#endif
 
 #include "Rotator.h"
 
@@ -416,6 +419,9 @@ void SamplesManager::Start()
     RegisterSample<PointerAdapterSample>();
 #endif
     RegisterSample<CameraShake>();
+#if URHO3D_NETWORK
+    RegisterSample<WebRTCSTUN>();
+#endif
 #if URHO3D_XR
     RegisterSample<HelloVR>();
 #endif
