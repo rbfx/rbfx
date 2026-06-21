@@ -67,6 +67,7 @@ void ReplicatedTransform::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Replicate Owner", bool, replicateOwner_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Position Track Only", bool, positionTrackOnly_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Rotation Track Only", bool, rotationTrackOnly_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Scale Track Only", bool, scaleTrackOnly_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Smoothing Constant", float, smoothingConstant_, DefaultSmoothingConstant, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Movement Threshold", float, movementThreshold_, DefaultMovementThreshold, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Snap Threshold", float, snapThreshold_, DefaultSnapThreshold, AM_DEFAULT);
@@ -75,6 +76,7 @@ void ReplicatedTransform::RegisterObject(Context* context)
     URHO3D_ENUM_ATTRIBUTE("Synchronize Rotation", synchronizeRotation_, replicatedRotationModeNames, DefaultSynchronizeRotation, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Extrapolate Position", bool, extrapolatePosition_, DefaultExtrapolatePosition, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Extrapolate Rotation", bool, extrapolateRotation_, DefaultExtrapolateRotation, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Synchronize Scale", bool, synchronizeScale_, DefaultSynchronizeScale, AM_DEFAULT);
 
     URHO3D_ENUM_ATTRIBUTE("Position Encoding", positionEncoding_, vectorEncodingNames, DefaultPositionEncoding, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Position Encoding Parameter", float, positionEncodingParameter_, DefaultPositionEncodingParameter, AM_DEFAULT);
@@ -93,6 +95,7 @@ void ReplicatedTransform::InitializeOnServer()
     server_.previousRotation_ = node_->GetWorldRotation();
     server_.latestSentPosition_ = server_.previousPosition_;
     server_.latestSentRotation_ = server_.previousRotation_;
+    server_.latestSentScale_ = node_->GetScale().x_;
 
     includePreviousFrame_ = numUploadAttempts_ != 0;
 
@@ -113,6 +116,7 @@ void ReplicatedTransform::WriteSnapshot(NetworkFrame frame, Serializer& dest)
     flags[2] = extrapolatePosition_;
     flags[3] = extrapolateRotation_;
     flags[4] = includePreviousFrame_;
+    flags[5] = synchronizeScale_;
     dest.WriteVLE(flags.to_uint32());
 }
 
@@ -126,6 +130,7 @@ void ReplicatedTransform::InitializeFromSnapshot(NetworkFrame frame, Deserialize
     extrapolatePosition_ = flags[2];
     extrapolateRotation_ = flags[3];
     includePreviousFrame_ = flags[4];
+    synchronizeScale_ = flags[5];
 
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
     const unsigned updateFrequency = replicationManager->GetUpdateFrequency();
@@ -133,9 +138,11 @@ void ReplicatedTransform::InitializeFromSnapshot(NetworkFrame frame, Deserialize
     const unsigned extrapolationInFrames = CeilToInt(extrapolationInSeconds * updateFrequency);
     client_.positionSampler_.Setup(extrapolatePosition_ ? extrapolationInFrames : 0, smoothingConstant_, snapThreshold_);
     client_.rotationSampler_.Setup(extrapolateRotation_ ? extrapolationInFrames : 0, smoothingConstant_, M_LARGE_VALUE);
+    client_.scaleSampler_.Setup(0 /*do not extrapolate*/, smoothingConstant_, snapThreshold_);
 
     positionTrace_.Set(frame, {GetScene()->ToAbsoluteWorldPosition(node_->GetWorldPosition()), DoubleVector3::ZERO});
     rotationTrace_.Set(frame, {node_->GetWorldRotation(), Vector3::ZERO});
+    scaleTrace_.Set(frame, {node_->GetScale().x_});
 }
 
 void ReplicatedTransform::UpdateTransformOnServer()
@@ -150,6 +157,7 @@ void ReplicatedTransform::InitializeCommon()
 
     positionTrace_.Resize(traceDuration);
     rotationTrace_.Resize(traceDuration);
+    scaleTrace_.Resize(traceDuration);
 }
 
 void ReplicatedTransform::OnServerFrameEnd(NetworkFrame frame)
@@ -159,6 +167,7 @@ void ReplicatedTransform::OnServerFrameEnd(NetworkFrame frame)
 
     server_.position_ = GetScene()->ToAbsoluteWorldPosition(node_->GetWorldPosition());
     server_.rotation_ = node_->GetWorldRotation();
+    server_.scale_ = node_->GetScale().x_;
 
     if (server_.movedDuringFrame_)
     {
@@ -173,6 +182,7 @@ void ReplicatedTransform::OnServerFrameEnd(NetworkFrame frame)
 
     positionTrace_.Set(frame, {server_.position_, server_.velocity_});
     rotationTrace_.Set(frame, {server_.rotation_, server_.angularVelocity_});
+    scaleTrace_.Set(frame, server_.scale_);
 
     if (server_.pendingUploadAttempts_ > 0)
         --server_.pendingUploadAttempts_;
@@ -184,11 +194,13 @@ void ReplicatedTransform::OnServerFrameEnd(NetworkFrame frame)
         const float positionErrorSquare = (server_.latestSentPosition_ - server_.position_).LengthSquared();
         const bool isPositionDirty = positionErrorSquare > movementThreshold_ * movementThreshold_;
         const bool isRotationDirty = !server_.latestSentRotation_.Equivalent(server_.rotation_, M_LARGE_EPSILON);
-        if (isPositionDirty || isRotationDirty)
+        const bool isScaleDirty = Abs(server_.latestSentScale_ - server_.scale_) > M_LARGE_EPSILON;
+        if (isPositionDirty || isRotationDirty || isScaleDirty)
         {
             server_.pendingUploadAttempts_ = numUploadAttempts_;
             server_.latestSentPosition_ = server_.position_;
             server_.latestSentRotation_ = server_.rotation_;
+            server_.latestSentScale_ = server_.scale_;
         }
     }
 }
@@ -200,6 +212,7 @@ void ReplicatedTransform::InterpolateState(float replicaTimeStep, float inputTim
 
     const bool maintainPosition = !positionTrackOnly_ && synchronizePosition_;
     const bool maintainRotation = !rotationTrackOnly_ && synchronizeRotation_ != ReplicatedRotationMode::None;
+    const bool maintainScale = !scaleTrackOnly_ && synchronizeScale_;
 
     if (maintainPosition)
     {
@@ -221,8 +234,17 @@ void ReplicatedTransform::InterpolateState(float replicaTimeStep, float inputTim
             node_->SetWorldRotation(*newRotation);
     }
 
+    if (maintainScale)
+    {
+        if (client_.previousScaleInvalid_)
+            client_.scaleSampler_.UpdatePreviousValue(replicaTime, node_->GetScale().x_);
+        if (auto newScale = client_.scaleSampler_.UpdateAndSample(scaleTrace_, replicaTime, replicaTimeStep))
+            node_->SetScale(*newScale);
+    }
+
     client_.previousPositionInvalid_ = !maintainPosition;
     client_.previousRotationInvalid_ = !maintainRotation;
+    client_.previousScaleInvalid_ = !maintainScale;
 }
 
 bool ReplicatedTransform::PrepareUnreliableDelta(NetworkFrame frame)
@@ -250,6 +272,14 @@ void ReplicatedTransform::WriteUnreliableDeltaForFrame(NetworkFrame frame, Seria
         dest.WritePackedVector3(rotationData.derivative_.Cast<DoubleVector3>(), angularVelocityEncoding_,
             angularVelocityEncodingParameter_);
     }
+
+    if (synchronizeScale_)
+    {
+        const float defaultScaleData = server_.scale_;
+        const auto scaleData = scaleTrace_.GetRaw(frame).value_or(defaultScaleData);
+
+        dest.WriteFloat(scaleData);
+    }
 }
 
 void ReplicatedTransform::ReadUnreliableDeltaForFrame(NetworkFrame frame, Deserializer& src)
@@ -269,6 +299,13 @@ void ReplicatedTransform::ReadUnreliableDeltaForFrame(NetworkFrame frame, Deseri
             src.ReadPackedVector3(angularVelocityEncoding_, angularVelocityEncodingParameter_).Cast<Vector3>();
 
         rotationTrace_.Set(frame, {rotation, angularVelocity});
+    }
+
+    if (synchronizeScale_)
+    {
+        const float scale = src.ReadFloat();
+
+        scaleTrace_.Set(frame, scale);
     }
 }
 
@@ -296,6 +333,11 @@ RotationAndVelocity ReplicatedTransform::SampleTemporalRotation(const NetworkTim
     return rotationTrace_.SampleValid(time);
 }
 
+float ReplicatedTransform::SampleTemporalScale(const NetworkTime& time) const
+{
+    return scaleTrace_.SampleValid(time);
+}
+
 ea::optional<PositionAndVelocity> ReplicatedTransform::GetTemporalPosition(NetworkFrame frame) const
 {
     return positionTrace_.GetRaw(frame);
@@ -304,6 +346,11 @@ ea::optional<PositionAndVelocity> ReplicatedTransform::GetTemporalPosition(Netwo
 ea::optional<RotationAndVelocity> ReplicatedTransform::GetTemporalRotation(NetworkFrame frame) const
 {
     return rotationTrace_.GetRaw(frame);
+}
+
+ea::optional<float> ReplicatedTransform::GetTemporalScale(NetworkFrame frame) const
+{
+    return scaleTrace_.GetRaw(frame);
 }
 
 ea::optional<NetworkFrame> ReplicatedTransform::GetLatestFrame() const

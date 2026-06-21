@@ -61,6 +61,7 @@ public:
     static constexpr ReplicatedRotationMode DefaultSynchronizeRotation = ReplicatedRotationMode::XYZ;
     static constexpr bool DefaultExtrapolatePosition = true;
     static constexpr bool DefaultExtrapolateRotation = false;
+    static constexpr bool DefaultSynchronizeScale = false;
 
     static constexpr VectorBinaryEncoding DefaultPositionEncoding = VectorBinaryEncoding::Float;
     static constexpr VectorBinaryEncoding DefaultRotationEncoding = VectorBinaryEncoding::Float;
@@ -89,6 +90,8 @@ public:
     bool GetPositionTrackOnly() const { return positionTrackOnly_; }
     void SetRotationTrackOnly(bool value) { rotationTrackOnly_ = value; }
     bool GetRotationTrackOnly() const { return rotationTrackOnly_; }
+    void SetScaleTrackOnly(bool value) { scaleTrackOnly_ = value; }
+    bool GetScaleTrackOnly() const { return scaleTrackOnly_; }
     void SetSmoothingConstant(float value) { smoothingConstant_ = value; }
     float GetSmoothingConstant() const { return smoothingConstant_; }
     void SetMovementThreshold(float value) { movementThreshold_ = value; }
@@ -104,6 +107,8 @@ public:
     bool GetExtrapolatePosition() const { return extrapolatePosition_; }
     void SetExtrapolateRotation(bool value) { extrapolateRotation_ = value; }
     bool GetExtrapolateRotation() const { return extrapolateRotation_; }
+    void SetSynchronizeScale(bool value) { synchronizeScale_ = value; }
+    bool GetSynchronizeScale() const { return synchronizeScale_; }
 
     void SetPositionEncoding(VectorBinaryEncoding encoding) { positionEncoding_ = encoding; }
     VectorBinaryEncoding GetPositionEncoding() const { return positionEncoding_; }
@@ -140,8 +145,10 @@ public:
     /// @{
     PositionAndVelocity SampleTemporalPosition(const NetworkTime& time) const;
     RotationAndVelocity SampleTemporalRotation(const NetworkTime& time) const;
+    float SampleTemporalScale(const NetworkTime& time) const;
     ea::optional<PositionAndVelocity> GetTemporalPosition(NetworkFrame frame) const;
     ea::optional<RotationAndVelocity> GetTemporalRotation(NetworkFrame frame) const;
+    ea::optional<float> GetTemporalScale(NetworkFrame frame) const;
     ea::optional<NetworkFrame> GetLatestFrame() const;
     /// @}
 
@@ -158,6 +165,7 @@ private:
     bool replicateOwner_{};
     bool positionTrackOnly_{};
     bool rotationTrackOnly_{};
+    bool scaleTrackOnly_{};
     float smoothingConstant_{DefaultSmoothingConstant};
     float movementThreshold_{DefaultMovementThreshold};
     float snapThreshold_{DefaultSnapThreshold};
@@ -169,6 +177,7 @@ private:
     ReplicatedRotationMode synchronizeRotation_{DefaultSynchronizeRotation};
     bool extrapolatePosition_{DefaultExtrapolatePosition};
     bool extrapolateRotation_{DefaultExtrapolateRotation};
+    bool synchronizeScale_{DefaultSynchronizeScale};
     bool includePreviousFrame_{}; // Deduced from numUploadAttempts_
     /// @}
 
@@ -187,6 +196,7 @@ private:
 
     NetworkValue<PositionAndVelocity> positionTrace_;
     NetworkValue<RotationAndVelocity> rotationTrace_;
+    NetworkValue<float> scaleTrace_;
 
     struct ServerData
     {
@@ -199,19 +209,23 @@ private:
         Quaternion rotation_;
         DoubleVector3 velocity_;
         Vector3 angularVelocity_;
+        float scale_{};
 
         bool movedDuringFrame_{};
         DoubleVector3 latestSentPosition_;
         Quaternion latestSentRotation_;
+        float latestSentScale_{};
     } server_;
 
     struct ClientData
     {
         NetworkValueSampler<PositionAndVelocity> positionSampler_;
         NetworkValueSampler<RotationAndVelocity> rotationSampler_;
+        NetworkValueSampler<float> scaleSampler_;
 
         bool previousPositionInvalid_{};
         bool previousRotationInvalid_{};
+        bool previousScaleInvalid_{};
     } client_;
 };
 
