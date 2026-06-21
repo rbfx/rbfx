@@ -72,6 +72,7 @@ void SoundSynthesis::CreateSound()
     // Sound source needs a node so that it is considered enabled
     node_ = new Node(context_);
     auto* source = node_->CreateComponent<SoundSource>();
+    source->SetIgnoreSceneTimeScale(true);
 
     soundStream_ = new BufferedSoundStream();
     // Set format: 44100 Hz, sixteen bit, mono
