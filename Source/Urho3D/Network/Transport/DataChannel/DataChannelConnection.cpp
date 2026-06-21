@@ -207,7 +207,10 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
     websocket_ = websocket;
     websocketWasOpened_ = server != nullptr;
 
+    // Configure WebRTC peer connection with ICE servers for NAT traversal
     rtc::Configuration config = {};
+    for (const auto& url : iceServers_)
+        config.iceServers.emplace_back(std::string(url.c_str()));
     peer_ = std::make_shared<rtc::PeerConnection>(config);
     peer_->onLocalDescription([this](rtc::Description desc)
     {
