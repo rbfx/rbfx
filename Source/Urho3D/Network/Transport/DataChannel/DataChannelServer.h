@@ -26,6 +26,8 @@
 #include <Urho3D/Core/Signal.h>
 #include <Urho3D/Network/Transport/NetworkServer.h>
 
+#include <rtc/configuration.hpp>
+
 struct juice_server;
 
 namespace rtc
@@ -53,12 +55,39 @@ public:
     void Stop() override;
     bool IsListening() const override;
     void SetTLSCertificate(ea::string_view certificatePemFile, ea::string_view keyPemFile, ea::string_view keyPassword);
+    /// Configure ICE servers (STUN/TURN) to use for NAT traversal on all new connections.
+    /// Format: "stun:server:port" or "turn:user:pass@server:port"
+    void SetIceServers(ea::span<const ea::string_view> servers);
+#ifndef URHO3D_PLATFORM_WEB
+    /// Restrict WebRTC to a specific UDP port range for all new connections (default: 1024-65535).
+    /// Useful for port-forwarded direct connections where predictable ports are needed.
+    void SetPortRange(uint16_t begin, uint16_t end) { portRangeBegin_ = begin; portRangeEnd_ = end; }
+    /// Multiplex all peer connections onto a single UDP port (libjuice only).
+    /// The clean solution for dedicated servers — only one port to forward.
+    void SetIceUdpMux(bool enable) { enableIceUdpMux_ = enable; }
+    /// Force TURN-relay-only mode for all new connections where direct connections are impossible.
+    /// When enabled, all media traffic goes through the TURN server.
+    void SetIceTransportPolicy(rtc::TransportPolicy policy) { iceTransportPolicy_ = policy; }
+    /// Bind to a specific local address for all new connections (multi-homed servers).
+    void SetBindAddress(ea::string_view address) { bindAddress_ = address; }
+    /// Override network MTU for all new connections (0 = use default).
+    void SetMtu(size_t mtu) { mtu_ = mtu; }
+#endif
 
 protected:
     ea::shared_ptr<rtc::WebSocketServer> webSocketServer_ = {};
     ea::string certificatePemFile_;
     ea::string keyPemFile_;
     ea::string keyPassword_;
+    ea::vector<ea::string> iceServers_;
+#ifndef URHO3D_PLATFORM_WEB
+    uint16_t portRangeBegin_ = 1024;
+    uint16_t portRangeEnd_ = 65535;
+    bool enableIceUdpMux_ = false;
+    rtc::TransportPolicy iceTransportPolicy_ = rtc::TransportPolicy::All;
+    ea::string bindAddress_;
+    size_t mtu_ = 0;
+#endif
 };
 
 }   // namespace Urho3D
