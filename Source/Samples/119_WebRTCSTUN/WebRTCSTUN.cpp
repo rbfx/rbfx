@@ -47,11 +47,11 @@ namespace
 {
 
 static const ea::vector<ea::string> IceServers = {
-    "stun.l.google.com : 19302",
-    "stun1.l.google.com : 19302",
-    "stun2.l.google.com : 19302",
-    "stun3.l.google.com : 19302",
-    "stun4.l.google.com : 19302",
+    "stun:stun.l.google.com:19302",
+    "stun:stun1.l.google.com:19302",
+    "stun:stun2.l.google.com:19302",
+    "stun:stun3.l.google.com:19302",
+    "stun:stun4.l.google.com:19302",
 };
 static const unsigned short DefaultPort = 2345;
 static const auto MSG_CHAT = static_cast<NetworkMessageId>(MSG_USER + 0);
