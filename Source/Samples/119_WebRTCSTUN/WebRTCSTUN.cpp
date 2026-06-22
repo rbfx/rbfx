@@ -1,10 +1,10 @@
-﻿// Copyright (c) 2026 the rbfx project.
+// Copyright (c) 2026 the rbfx project.
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 // WebRTC STUN/TURN connectivity test demonstrating NAT traversal fallback options:
 // 1. Direct connection (requires port forwarding or local network)
-// 2. UPnP port mapping (Windows-only, deprecated API, may not work on modern systems)
+// 2. UPnP port mapping (requires a cross platform upnp library like miniupnp)
 // 3. Relay + STUN (requires VPS with relay server)
 // 4. Relay + TURN (requires VPS with relay and TURN servers)
 
@@ -15,8 +15,6 @@
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Zone.h>
-#include <Urho3D/IO/File.h>
-#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/IOEvents.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/MemoryBuffer.h>
@@ -38,13 +36,6 @@
 #include <rtc/peerconnection.hpp>
 #include <rtc/websocket.hpp>
 
-#ifdef _WIN32
-    #include <comdef.h>
-    #include <natupnp.h>
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-#endif
-
 #include <Urho3D/DebugNew.h>
 
 namespace Urho3D
@@ -55,167 +46,22 @@ const float WebRTCSTUN::RetryDelay = 2.0f;
 namespace
 {
 
-static const ea::vector<ea::string> FallbackIceServers = {
-    "stun:stun.l.google.com:19302",
-    "stun:stun1.l.google.com:19302",
+static const ea::vector<ea::string> IceServers = {
+    "stun.l.google.com : 19302",
+    "stun1.l.google.com : 19302",
+    "stun2.l.google.com : 19302",
+    "stun3.l.google.com : 19302",
+    "stun4.l.google.com : 19302",
 };
 static const unsigned short DefaultPort = 2345;
 static const auto MSG_CHAT = static_cast<NetworkMessageId>(MSG_USER + 0);
 static const auto MSG_SYS = static_cast<NetworkMessageId>(MSG_USER + 1);
 static const char* RelayUrl = "ws://localhost:9876";
 
-// ---- UPnP helpers ----
-// NOTE: This uses the deprecated Windows natupnp.h API for educational purposes.
-// Modern applications should use a proper UPnP library like miniupnpc.
-// This implementation is Windows-only and may not work on modern Windows systems.
-static bool upnpMappingSucceeded = false;
-
-static bool UPnPMapPort(unsigned short port)
-{
-#ifdef _WIN32
-    // Initialize COM once per thread
-    HRESULT hrInit = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    bool comInitialized = SUCCEEDED(hrInit) || hrInit == RPC_E_CHANGED_MODE;
-
-    IUPnPNAT* nat = nullptr;
-    if (FAILED(CoCreateInstance(__uuidof(UPnPNAT), nullptr, CLSCTX_ALL, __uuidof(IUPnPNAT), (void**)&nat)) || !nat)
-    {
-        URHO3D_LOGWARNING("UPnP: Failed to create UPnPNAT instance");
-        if (comInitialized)
-            CoUninitialize();
-        return false;
-    }
-
-    IStaticPortMappingCollection* mappings = nullptr;
-    if (FAILED(nat->get_StaticPortMappingCollection(&mappings)) || !mappings)
-    {
-        URHO3D_LOGWARNING("UPnP: Failed to get port mapping collection");
-        nat->Release();
-        if (comInitialized)
-            CoUninitialize();
-        return false;
-    }
-
-    // Use getaddrinfo instead of deprecated gethostbyname
-    char hn[256];
-    if (gethostname(hn, sizeof(hn)) != 0)
-    {
-        URHO3D_LOGWARNING("UPnP: Failed to get hostname");
-        mappings->Release();
-        nat->Release();
-        if (comInitialized)
-            CoUninitialize();
-        return false;
-    }
-
-    addrinfo hints = {};
-    hints.ai_family = AF_INET; // IPv4 only for UPnP
-    hints.ai_socktype = SOCK_STREAM;
-
-    addrinfo* result = nullptr;
-    if (getaddrinfo(hn, nullptr, &hints, &result) != 0 || !result)
-    {
-        URHO3D_LOGWARNING("UPnP: Failed to resolve hostname");
-        mappings->Release();
-        nat->Release();
-        if (comInitialized)
-            CoUninitialize();
-        return false;
-    }
-
-    sockaddr_in* addr = (sockaddr_in*)result->ai_addr;
-    const char* ip = inet_ntoa(addr->sin_addr);
-
-    HRESULT hr = mappings->Add(port, _bstr_t("TCP"), port, _bstr_t(ip), VARIANT_TRUE, _bstr_t("rbfx WebRTC"), nullptr);
-
-    freeaddrinfo(result);
-    mappings->Release();
-    nat->Release();
-
-    if (comInitialized)
-        CoUninitialize();
-
-    if (SUCCEEDED(hr))
-    {
-        URHO3D_LOGINFO("UPnP: Mapped TCP {} -> {}:{}", port, ip, port);
-        upnpMappingSucceeded = true;
-        return true;
-    }
-    else
-    {
-        URHO3D_LOGWARNING("UPnP: Failed to map port (HRESULT: 0x{:08X})", static_cast<unsigned>(hr));
-        return false;
-    }
-#else
-    URHO3D_LOGINFO("UPnP: Not supported on this platform (Windows-only)");
-    return false;
-#endif
-}
-
-static void UPnPUnmapPort(unsigned short port)
-{
-#ifdef _WIN32
-    if (!upnpMappingSucceeded)
-    {
-        URHO3D_LOGINFO("UPnP: Skipping unmap (no successful mapping)");
-        return;
-    }
-
-    HRESULT hrInit = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-    bool comInitialized = SUCCEEDED(hrInit) || hrInit == RPC_E_CHANGED_MODE;
-
-    IUPnPNAT* nat = nullptr;
-    if (FAILED(CoCreateInstance(__uuidof(UPnPNAT), nullptr, CLSCTX_ALL, __uuidof(IUPnPNAT), (void**)&nat)) || !nat)
-    {
-        URHO3D_LOGWARNING("UPnP: Failed to create UPnPNAT instance for unmap");
-        if (comInitialized)
-            CoUninitialize();
-        return;
-    }
-
-    IStaticPortMappingCollection* mappings = nullptr;
-    if (SUCCEEDED(nat->get_StaticPortMappingCollection(&mappings)) && mappings)
-    {
-        HRESULT hr = mappings->Remove(port, _bstr_t("TCP"));
-        if (SUCCEEDED(hr))
-            URHO3D_LOGINFO("UPnP: Unmapped TCP port {}", port);
-        else
-            URHO3D_LOGWARNING("UPnP: Failed to unmap port (HRESULT: 0x{:08X})", static_cast<unsigned>(hr));
-        mappings->Release();
-    }
-    else
-    {
-        URHO3D_LOGWARNING("UPnP: Failed to get port mapping collection for unmap");
-    }
-
-    nat->Release();
-    if (comInitialized)
-        CoUninitialize();
-
-    upnpMappingSucceeded = false;
-#endif
-}
-
 // ---- ICE server loading ----
 static ea::vector<ea::string> LoadIceServers(Context* ctx)
 {
-    const ea::string path = ctx->GetSubsystem<FileSystem>()->GetProgramDir() + "webrtc_ice_servers.txt";
-    File file(ctx, path);
-    if (!file.IsOpen())
-        return FallbackIceServers;
-    ea::vector<ea::string> s;
-    while (!file.IsEof())
-    {
-        auto l = file.ReadLine().trimmed();
-        if (!l.empty() && !l.starts_with("#"))
-            s.push_back(l);
-    }
-    if (s.empty())
-        return FallbackIceServers;
-    URHO3D_LOGINFO("Loaded {} ICE server(s) from file:", s.size());
-    for (const auto& server : s)
-        URHO3D_LOGINFO("  {}", server.c_str());
-    return s;
+    return IceServers;
 }
 
 // ---- ICE enum descriptions ----
@@ -494,8 +340,8 @@ void WebRTCSTUN::HandleStartServer(StringHash, VariantMap&)
     const URL listenUrl(Format("ws://0.0.0.0:{}", DefaultPort));
     URHO3D_LOGINFO("Starting server on {} ...", listenUrl.ToString());
     server_->Listen(listenUrl);
-    // Attempt UPnP port mapping as a fallback for NAT traversal
-    UPnPMapPort(DefaultPort);
+    // This is where you would attempt UPnP port mapping as a fallback for NAT traversal
+    // UPnPMapPort(DefaultPort);
     UpdateButtons();
 }
 
@@ -639,7 +485,8 @@ void WebRTCSTUN::HandleDisconnect(StringHash, VariantMap&)
     if (server_ && server_->IsListening())
     {
         URHO3D_LOGINFO("Stopping server...");
-        UPnPUnmapPort(DefaultPort);
+        // This is where you would attempt unmapping the port
+        // UPnPUnmapPort(DefaultPort);
         for (const auto& weakConn : serverConnections_)
         {
             if (auto conn = weakConn.Lock())
