@@ -188,28 +188,28 @@ namespace Urho3DNet
         public int Z;
 
         /// Zero vector.
-        static IntVector3 Zero = new IntVector3(0, 0, 0);
+        public static readonly IntVector3 Zero = new IntVector3(0, 0, 0);
 
         /// (-1,0,0) vector.
-        static IntVector3 Left = new IntVector3(-1, 0, 0);
+        public static readonly IntVector3 Left = new IntVector3(-1, 0, 0);
 
         /// (1,0,0) vector.
-        static IntVector3 Right = new IntVector3(1, 0, 0);
+        public static readonly IntVector3 Right = new IntVector3(1, 0, 0);
 
         /// (0,1,0) vector.
-        static IntVector3 Up = new IntVector3(0, 1, 0);
+        public static readonly IntVector3 Up = new IntVector3(0, 1, 0);
 
         /// (0,-1,0) vector.
-        static IntVector3 Down = new IntVector3(0, -1, 0);
+        public static readonly IntVector3 Down = new IntVector3(0, -1, 0);
 
         /// (0,0,1) vector.
-        static IntVector3 Forward = new IntVector3(0, 0, 1);
+        public static readonly IntVector3 Forward = new IntVector3(0, 0, 1);
 
         /// (0,0,-1) vector.
-        static IntVector3 Back = new IntVector3(0, 0, -1);
+        public static readonly IntVector3 Back = new IntVector3(0, 0, -1);
 
         /// (1,1,1) vector.
-        static IntVector3 One = new IntVector3(1, 1, 1);
+        public static readonly IntVector3 One = new IntVector3(1, 1, 1);
 
         public bool Equals(IntVector3 other)
         {
