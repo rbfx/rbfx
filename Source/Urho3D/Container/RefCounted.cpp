@@ -69,10 +69,11 @@ RefCounted::~RefCounted()
     if (scriptObject_)
     {
         // API may be null when application when finalizers run on application exit.
-        ScriptRuntimeApi* api = Script::GetRuntimeApi();
-        assert(api != nullptr);
-        SetScriptObject(nullptr, false);
-        assert(scriptObject_ == nullptr);
+        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
+        {
+            SetScriptObject(nullptr, false);
+            assert(scriptObject_ == nullptr);
+        }
     }
 #endif
 
@@ -94,10 +95,11 @@ int RefCounted::AddRef()
     {
         // More than one native reference exists. Ensure strong GC handle to prevent garbage collection of managed
         // wrapper object.
-        ScriptRuntimeApi* api = Script::GetRuntimeApi();
-        assert(api != nullptr);
-        isScriptStrongRef_ = true;
-        scriptObject_ = api->RecreateGCHandle(scriptObject_, true);
+        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
+        {
+            isScriptStrongRef_ = true;
+            scriptObject_ = api->RecreateGCHandle(scriptObject_, true);
+        }
     }
 #endif
     return refs;
@@ -116,9 +118,11 @@ int RefCounted::ReleaseRef()
         if (scriptObject_)
         {
             // API may be null when application when finalizers run on application exit.
-            ScriptRuntimeApi* api = Script::GetRuntimeApi();
-            assert(api != nullptr);
-            api->Dispose(this);
+            if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
+            {
+                assert(api != nullptr);
+                api->Dispose(this);
+            }
         }
         delete this;
     }
@@ -144,9 +148,8 @@ void RefCounted::SetScriptObject(void* handle, bool isStrong)
 {
     if (scriptObject_ != nullptr)
     {
-        auto api = Script::GetRuntimeApi();
-        assert(api != nullptr);
-        api->FreeGCHandle(scriptObject_);
+        if (auto api = Script::GetRuntimeApi())
+            api->FreeGCHandle(scriptObject_);
     }
     scriptObject_ = handle;
     isScriptStrongRef_ = isStrong;
