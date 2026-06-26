@@ -54,6 +54,7 @@ static const ea::vector<ea::string> IceServers = {
     "stun:stun4.l.google.com:19302",
 };
 static const unsigned short DefaultPort = 2345;
+static const unsigned short DataPort = 2346;
 static const auto MSG_CHAT = static_cast<NetworkMessageId>(MSG_USER + 0);
 static const auto MSG_SYS = static_cast<NetworkMessageId>(MSG_USER + 1);
 static const char* RelayUrl = "ws://localhost:9876";
@@ -203,8 +204,9 @@ void WebRTCSTUN::CreateUI()
     GetSubsystem<Renderer>()->GetDefaultZone()->SetFogColor(Color(0.0f, 0.0f, 0.1f));
 
     URHO3D_LOGINFO("=== WebRTC STUN/TURN Test ===");
-    URHO3D_LOGINFO("Direct: IP -> Connect | Relay: room ID -> Start/Connect Relay");
-    URHO3D_LOGINFO("Relay URL: {}  |  Port: {}", RelayUrl, DefaultPort);
+    URHO3D_LOGINFO("Signaling port: {} (TCP) | Data port: {} (UDP, muxed)", DefaultPort, DataPort);
+    URHO3D_LOGINFO("Direct: type IP[:port] -> Connect | Start Server [port]");
+    URHO3D_LOGINFO("Relay: room ID -> Start/Connect Relay | URL: {}", RelayUrl);
 }
 
 void WebRTCSTUN::SubscribeToEvents()
@@ -318,7 +320,17 @@ void WebRTCSTUN::TryConnect(const ea::string& addr)
         clientConnection_->onMessage_.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
     }
 
-    const ea::string url = Format("ws://{}:{}", addr, DefaultPort);
+    // Allow "host:port" syntax, default to DefaultPort
+    ea::string host = addr;
+    unsigned short port = DefaultPort;
+    const auto colonPos = addr.find(':');
+    if (colonPos != ea::string::npos)
+    {
+        host = addr.substr(0, colonPos);
+        port = static_cast<unsigned short>(ToInt(addr.substr(colonPos + 1)));
+    }
+
+    const ea::string url = Format("ws://{}:{}", host, port);
     URHO3D_LOGINFO("Connecting to {} ... (attempt {})", url, retryCount_ + 1);
     clientConnection_->Connect(URL(url));
     HookIceLogging(clientConnection_);
@@ -337,8 +349,28 @@ void WebRTCSTUN::HandleStartServer(StringHash, VariantMap&)
         server_->onDisconnected_.Subscribe(this, &WebRTCSTUN::HandleServerDisconnected);
     }
 
-    const URL listenUrl(Format("ws://0.0.0.0:{}", DefaultPort));
-    URHO3D_LOGINFO("Starting server on {} ...", listenUrl.ToString());
+    // Allow optional port override from text field
+    unsigned short signalingPort = DefaultPort;
+    unsigned short dataPort = DataPort;
+    ea::string input = textEdit_->GetText().trimmed();
+    if (!input.empty())
+    {
+        int port = ToInt(input);
+        if (port > 0 && port < 65536)
+        {
+            signalingPort = static_cast<unsigned short>(port);
+            dataPort = signalingPort + 1;
+        }
+    }
+    textEdit_->SetText(EMPTY_STRING);
+
+    // Single UDP port for all WebRTC data traffic — only one port to forward
+    server_->SetIceUdpMux(true);
+    server_->SetPortRange(dataPort, dataPort);
+
+    const URL listenUrl(Format("ws://0.0.0.0:{}", signalingPort));
+    URHO3D_LOGINFO("Signaling: {} | WebRTC data: UDP :{} (single port, muxed)", listenUrl.ToString(), dataPort);
+    URHO3D_LOGINFO("Port-forward TCP {} and UDP {} for direct connections.", signalingPort, dataPort);
     server_->Listen(listenUrl);
     // This is where you would attempt UPnP port mapping as a fallback for NAT traversal
     // UPnPMapPort(DefaultPort);
@@ -500,8 +532,8 @@ void WebRTCSTUN::HandleDisconnect(StringHash, VariantMap&)
 
 void WebRTCSTUN::HandleServerListenStart()
 {
-    URHO3D_LOGINFO("Server is now listening on port {}", DefaultPort);
-    URHO3D_LOGINFO("Give this machine's IP address to the client.");
+    URHO3D_LOGINFO("Server is listening. Give this machine's IP to the client.");
+    URHO3D_LOGINFO("For direct connections, forward TCP signaling port and UDP data port.");
 }
 
 void WebRTCSTUN::HandleServerListenStop()
