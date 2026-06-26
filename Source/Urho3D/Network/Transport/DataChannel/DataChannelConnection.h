@@ -28,6 +28,8 @@
 #include <Urho3D/Network/Transport/NetworkConnection.h>
 #include <Urho3D/Network/URL.h>
 
+#include <rtc/configuration.hpp>
+
 namespace rtc
 {
 
@@ -59,12 +61,23 @@ public:
     /// Configure ICE servers (STUN/TURN) for NAT traversal.
     /// Format: "stun:server:port" or "turn:user:pass@server:port"
     void SetIceServers(ea::span<const ea::string_view> servers) { iceServers_.assign(servers.begin(), servers.end()); }
+    /// Restrict WebRTC to a specific UDP port range (default: 1024-65535).
+    /// Useful for port-forwarded direct connections where predictable ports are needed.
+    void SetPortRange(uint16_t begin, uint16_t end) { portRangeBegin_ = begin; portRangeEnd_ = end; }
+    /// Multiplex all peer connections onto a single UDP port (libjuice only).
+    /// The clean solution for dedicated servers — only one port to forward.
+    void SetIceUdpMux(bool enable) { enableIceUdpMux_ = enable; }
+    /// Force TURN-relay-only mode for strict firewalls where direct connections are impossible.
+    /// When enabled, all media traffic goes through the TURN server.
+    void SetIceTransportPolicy(rtc::TransportPolicy policy) { iceTransportPolicy_ = policy; }
+    /// Bind to a specific local address (multi-homed servers with multiple NICs).
+    void SetBindAddress(ea::string_view address) { bindAddress_ = address; }
     /// Access the underlying PeerConnection for advanced usage (ICE state, candidates, etc.).
     /// Requires knowledge of the rtc:: library. See WebRTC documentation for PeerConnection API.
     std::shared_ptr<rtc::PeerConnection> GetPeer() const { return peer_; }
     /// Initialize with a pre-connected WebSocket (for relay/custom signaling).
     /// Allows using external signaling servers instead of direct WebSocket connections.
-    void InitializeWithWebSocket(std::shared_ptr<rtc::WebSocket> ws) { InitializeFromSocket(nullptr, ws); }
+    void InitializeWithWebSocket(std::shared_ptr<rtc::WebSocket> ws) { InitializeFromSocket(nullptr, ws); websocketWasOpened_ = true; }
 
 protected:
     void InitializeFromSocket(DataChannelServer* server, std::shared_ptr<rtc::WebSocket> websocket);
@@ -77,6 +90,11 @@ protected:
     VectorBuffer buffer_;
     bool websocketWasOpened_ = false;
     ea::vector<ea::string> iceServers_;
+    uint16_t portRangeBegin_ = 1024;
+    uint16_t portRangeEnd_ = 65535;
+    bool enableIceUdpMux_ = false;
+    rtc::TransportPolicy iceTransportPolicy_ = rtc::TransportPolicy::All;
+    ea::string bindAddress_;
 };
 
 }   // namespace Urho3D
