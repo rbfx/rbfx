@@ -79,11 +79,16 @@ bool DataChannelServer::Listen(const URL& url)
         SharedPtr<DataChannelConnection> dcConnection;
         dcConnection.DynamicCast(connection);
         URHO3D_ASSERT(dcConnection);
-        // Apply ICE server configuration to new connection
+        // Apply ICE configuration to new connection
         {
             const ea::vector<ea::string_view> views(iceServers_.begin(), iceServers_.end());
             dcConnection->SetIceServers(views);
         }
+        dcConnection->SetPortRange(portRangeBegin_, portRangeEnd_);
+        dcConnection->SetIceUdpMux(enableIceUdpMux_);
+        dcConnection->SetIceTransportPolicy(iceTransportPolicy_);
+        if (!bindAddress_.empty())
+            dcConnection->SetBindAddress(bindAddress_);
         dcConnection->InitializeFromSocket(this, ws);
     });
 

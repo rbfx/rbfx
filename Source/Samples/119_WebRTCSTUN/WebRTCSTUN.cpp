@@ -377,17 +377,15 @@ void WebRTCSTUN::HandleStartRelay(StringHash, VariantMap&)
         if (json.find("\"paired\"") != ea::string::npos)
         {
             URHO3D_LOGINFO("Relay: Paired!");
-            server_->onListenStart_(server_);
             auto dc = MakeShared<DataChannelConnection>(context_);
             dc->SetIceServers(AsViews(LoadIceServers(context_)));
+            dc->onMessage_.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
             dc->InitializeWithWebSocket(ws);
+            serverConnections_.push_back(WeakPtr<NetworkConnection>(dc));
+            serverClientIds_.push_back(nextClientId_++);
+            UpdateButtons();
         }
     }, [](rtc::string) {});
-    ws->onClosed([this]()
-    {
-        if (server_ && server_->IsListening())
-            server_->onListenStop_(server_);
-    });
     ws->open(RelayUrl);
     UpdateButtons();
 }
@@ -671,8 +669,6 @@ void WebRTCSTUN::HookIceLogging(const SharedPtr<DataChannelConnection>& conn)
         { URHO3D_LOGINFO("ICE state: {} ({})", IceStateStr(s), static_cast<int>(s)); });
         peer->onGatheringStateChange([](rtc::PeerConnection::GatheringState s)
         { URHO3D_LOGINFO("ICE gathering: {} ({})", GatherStr(s), static_cast<int>(s)); });
-        peer->onLocalCandidate([](rtc::Candidate c)
-        { URHO3D_LOGINFO("ICE local candidate: {} ({})", CandStr(c.type()), static_cast<int>(c.type())); });
     }
 }
 
