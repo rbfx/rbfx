@@ -53,7 +53,7 @@ private:
     void HandleNetworkMessage(NetworkConnection*, NetworkMessageId, MemoryBuffer&, bool&);
 
     void TryConnect(const ea::string& address);
-    void TryConnectRelay(const ea::string& roomId);
+    void TryConnectRelay(const ea::string& roomId, const ea::string& relayUrl);
     void ScheduleRetry();
     void HandleRetryUpdate(VariantMap&);
 
@@ -69,10 +69,12 @@ private:
     SharedPtr<DataChannelServer> server_;
     SharedPtr<DataChannelConnection> clientConnection_;
     ea::vector<WeakPtr<NetworkConnection>> serverConnections_;
+    ea::vector<SharedPtr<DataChannelConnection>> relayConnections_;
     ea::vector<unsigned> serverClientIds_;
     unsigned nextClientId_ = 1;
 
     ea::string retryAddress_;
+    ea::string retryRelayUrl_;
     int retryCount_ = 0;
     bool wasEverConnected_ = false;
     bool retrying_ = false;

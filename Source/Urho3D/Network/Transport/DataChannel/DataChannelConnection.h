@@ -72,12 +72,15 @@ public:
     void SetIceTransportPolicy(rtc::TransportPolicy policy) { iceTransportPolicy_ = policy; }
     /// Bind to a specific local address (multi-homed servers with multiple NICs).
     void SetBindAddress(ea::string_view address) { bindAddress_ = address; }
+    /// Override network MTU for WebRTC data channels (0 = use default).
+    /// Useful for VPNs or tunnels with reduced path MTU to avoid UDP fragmentation.
+    void SetMtu(size_t mtu) { mtu_ = mtu; }
     /// Access the underlying PeerConnection for advanced usage (ICE state, candidates, etc.).
     /// Requires knowledge of the rtc:: library. See WebRTC documentation for PeerConnection API.
     std::shared_ptr<rtc::PeerConnection> GetPeer() const { return peer_; }
     /// Initialize with a pre-connected WebSocket (for relay/custom signaling).
     /// Allows using external signaling servers instead of direct WebSocket connections.
-    void InitializeWithWebSocket(std::shared_ptr<rtc::WebSocket> ws) { InitializeFromSocket(nullptr, ws); websocketWasOpened_ = true; }
+    void InitializeWithWebSocket(std::shared_ptr<rtc::WebSocket> ws, DataChannelServer* server = nullptr) { InitializeFromSocket(server, ws); websocketWasOpened_ = true; }
 
 protected:
     void InitializeFromSocket(DataChannelServer* server, std::shared_ptr<rtc::WebSocket> websocket);
@@ -95,6 +98,7 @@ protected:
     bool enableIceUdpMux_ = false;
     rtc::TransportPolicy iceTransportPolicy_ = rtc::TransportPolicy::All;
     ea::string bindAddress_;
+    size_t mtu_ = 0;
 };
 
 }   // namespace Urho3D
