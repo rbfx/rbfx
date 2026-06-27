@@ -89,6 +89,8 @@ bool DataChannelServer::Listen(const URL& url)
         dcConnection->SetIceTransportPolicy(iceTransportPolicy_);
         if (!bindAddress_.empty())
             dcConnection->SetBindAddress(bindAddress_);
+        if (mtu_ > 0)
+            dcConnection->SetMtu(mtu_);
         dcConnection->InitializeFromSocket(this, ws);
     });
 

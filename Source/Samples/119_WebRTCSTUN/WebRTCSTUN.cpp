@@ -25,6 +25,7 @@
 #include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
 #include <Urho3D/Network/Transport/NetworkConnection.h>
 #include <Urho3D/Network/URL.h>
+#include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/UI/Button.h>
 #include <Urho3D/UI/Font.h>
@@ -206,7 +207,7 @@ void WebRTCSTUN::CreateUI()
     URHO3D_LOGINFO("=== WebRTC STUN/TURN Test ===");
     URHO3D_LOGINFO("Signaling port: {} (TCP) | Data port: {} (UDP, muxed)", DefaultPort, DataPort);
     URHO3D_LOGINFO("Direct: type IP[:port] -> Connect | Start Server [port]");
-    URHO3D_LOGINFO("Relay: room ID -> Start/Connect Relay | URL: {}", RelayUrl);
+    URHO3D_LOGINFO("Relay: room[@host:port] -> Start/Connect Relay (default: {})", RelayUrl);
 }
 
 void WebRTCSTUN::SubscribeToEvents()
@@ -247,7 +248,7 @@ void WebRTCSTUN::ShowChatText(const ea::string& row)
 void WebRTCSTUN::UpdateButtons()
 {
     bool cc = clientConnection_ && clientConnection_->IsConnected();
-    bool sr = server_ && server_->IsListening();
+    bool sr = server_ && (server_->IsListening() || !relayConnections_.empty());
     bool chat = cc || (sr && !serverConnections_.empty());
     bool idle = !cc && !sr;
 
@@ -279,7 +280,7 @@ void WebRTCSTUN::HandleSend(StringHash, VariantMap&)
         clientConnection_->SendMessage(MSG_CHAT, msg);
         ShowChatText("[You -> Server] " + text);
     }
-    else if (server_ && server_->IsListening())
+    else if (server_ && (server_->IsListening() || !relayConnections_.empty()))
     {
         for (const auto& weakConn : serverConnections_)
         {
@@ -380,10 +381,23 @@ void WebRTCSTUN::HandleStartServer(StringHash, VariantMap&)
 // ---- Relay mode ----
 void WebRTCSTUN::HandleStartRelay(StringHash, VariantMap&)
 {
-    ea::string rid = textEdit_->GetText().trimmed();
-    if (rid.empty())
-        rid = "default";
+    ea::string input = textEdit_->GetText().trimmed();
+    if (input.empty())
+        input = "default";
     textEdit_->SetText(EMPTY_STRING);
+
+    // Parse "room@host:port" or just "room"
+    ea::string rid = input;
+    ea::string relayUrl = RelayUrl;
+    const auto atPos = input.find('@');
+    if (atPos != ea::string::npos)
+    {
+        rid = input.substr(0, atPos);
+        ea::string hostPort = input.substr(atPos + 1);
+        if (hostPort.find(':') == ea::string::npos)
+            hostPort += ":9876";
+        relayUrl = Format("ws://{}", hostPort);
+    }
 
     if (!server_)
     {
@@ -395,51 +409,69 @@ void WebRTCSTUN::HandleStartRelay(StringHash, VariantMap&)
         server_->onDisconnected_.Subscribe(this, &WebRTCSTUN::HandleServerDisconnected);
     }
 
-    URHO3D_LOGINFO("Joining relay room '{}' as host...", rid);
+    URHO3D_LOGINFO("Joining relay room '{}' as host via {}...", rid, relayUrl);
 
     auto ws = std::make_shared<rtc::WebSocket>();
     ws->onOpen([this, rid, ws]()
     {
-        ea::string join = Format(R"({"type":"join","room":"{}"})", rid);
+        JSONFile jsonFile(context_);
+        jsonFile.GetRoot()["type"] = "join";
+        jsonFile.GetRoot()["room"] = rid;
+        const ea::string join = jsonFile.ToString("");
         ws->send(reinterpret_cast<const std::byte*>(join.c_str()), join.length());
     });
     ws->onMessage([this, ws](rtc::binary data)
     {
-        ea::string json(reinterpret_cast<const char*>(data.data()), data.size());
-        if (json.find("\"paired\"") != ea::string::npos)
+        const ea::string json(reinterpret_cast<const char*>(data.data()), data.size());
+        JSONValue jsonValue;
+        if (JSONFile::ParseJSON(json, jsonValue) && jsonValue["type"].GetString() == "paired")
         {
             URHO3D_LOGINFO("Relay: Paired!");
             auto dc = MakeShared<DataChannelConnection>(context_);
             dc->SetIceServers(AsViews(LoadIceServers(context_)));
             dc->onMessage_.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
-            dc->InitializeWithWebSocket(ws);
-            serverConnections_.push_back(WeakPtr<NetworkConnection>(dc));
-            serverClientIds_.push_back(nextClientId_++);
-            UpdateButtons();
+            dc->InitializeWithWebSocket(ws, server_);
+            HookIceLogging(dc);
+            relayConnections_.push_back(dc);
+            // HandleServerConnected will add to serverConnections_ when data channels open
         }
     }, [](rtc::string) {});
-    ws->open(RelayUrl);
+    ws->open(std::string(relayUrl.c_str()));
     UpdateButtons();
 }
 
 void WebRTCSTUN::HandleConnectRelay(StringHash, VariantMap&)
 {
-    ea::string rid = textEdit_->GetText().trimmed();
-    if (rid.empty())
-        rid = "default";
+    ea::string input = textEdit_->GetText().trimmed();
+    if (input.empty())
+        input = "default";
     textEdit_->SetText(EMPTY_STRING);
+
+    // Parse "room@host:port" or just "room"
+    ea::string rid = input;
+    ea::string relayUrl = RelayUrl;
+    const auto atPos = input.find('@');
+    if (atPos != ea::string::npos)
+    {
+        rid = input.substr(0, atPos);
+        ea::string hostPort = input.substr(atPos + 1);
+        if (hostPort.find(':') == ea::string::npos)
+            hostPort += ":9876";
+        relayUrl = Format("ws://{}", hostPort);
+    }
 
     if (clientConnection_ && !clientConnection_->IsDisconnected())
         clientConnection_->Disconnect();
 
     retryAddress_ = rid;
+    retryRelayUrl_ = relayUrl;
     retryCount_ = 0;
     wasEverConnected_ = false;
     isRelayMode_ = true;
-    TryConnectRelay(rid);
+    TryConnectRelay(rid, relayUrl);
 }
 
-void WebRTCSTUN::TryConnectRelay(const ea::string& rid)
+void WebRTCSTUN::TryConnectRelay(const ea::string& rid, const ea::string& relayUrl)
 {
     if (!clientConnection_)
     {
@@ -450,25 +482,29 @@ void WebRTCSTUN::TryConnectRelay(const ea::string& rid)
         clientConnection_->onMessage_.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
     }
 
-    URHO3D_LOGINFO("Joining relay room '{}' as client... (attempt {})", rid, retryCount_ + 1);
+    URHO3D_LOGINFO("Joining relay room '{}' as client via {}... (attempt {})", rid, relayUrl, retryCount_ + 1);
 
     auto ws = std::make_shared<rtc::WebSocket>();
     ws->onOpen([this, rid, ws]()
     {
-        ea::string join = Format(R"({"type":"join","room":"{}"})", rid);
+        JSONFile jsonFile(context_);
+        jsonFile.GetRoot()["type"] = "join";
+        jsonFile.GetRoot()["room"] = rid;
+        const ea::string join = jsonFile.ToString("");
         ws->send(reinterpret_cast<const std::byte*>(join.c_str()), join.length());
     });
     ws->onMessage([this, ws](rtc::binary data)
     {
-        ea::string json(reinterpret_cast<const char*>(data.data()), data.size());
-        if (json.find("\"paired\"") != ea::string::npos)
+        const ea::string json(reinterpret_cast<const char*>(data.data()), data.size());
+        JSONValue jsonValue;
+        if (JSONFile::ParseJSON(json, jsonValue) && jsonValue["type"].GetString() == "paired")
         {
             URHO3D_LOGINFO("Relay: Paired!");
             clientConnection_->InitializeWithWebSocket(ws);
             HookIceLogging(clientConnection_);
         }
     }, [](rtc::string) {});
-    ws->open(RelayUrl);
+    ws->open(std::string(relayUrl.c_str()));
     UpdateButtons();
 }
 
@@ -495,7 +531,7 @@ void WebRTCSTUN::HandleRetryUpdate(VariantMap&)
     if (retryCount_ < MaxRetries && !wasEverConnected_)
     {
         if (isRelayMode_)
-            TryConnectRelay(retryAddress_);
+            TryConnectRelay(retryAddress_, retryRelayUrl_);
         else
             TryConnect(retryAddress_);
     }
@@ -526,6 +562,13 @@ void WebRTCSTUN::HandleDisconnect(StringHash, VariantMap&)
         serverClientIds_.clear();
         server_->Stop();
     }
+
+    for (auto& conn : relayConnections_)
+    {
+        if (conn && !conn->IsDisconnected())
+            conn->Disconnect();
+    }
+    relayConnections_.clear();
 
     UpdateButtons();
 }
@@ -660,7 +703,7 @@ void WebRTCSTUN::HandleNetworkMessage(
         return;
 
     ea::string text = message.ReadString();
-    bool isServer = server_ && server_->IsListening();
+    bool isServer = server_ && (server_->IsListening() || !relayConnections_.empty());
 
     if (isServer)
     {

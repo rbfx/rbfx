@@ -69,6 +69,8 @@ public:
     void SetIceTransportPolicy(rtc::TransportPolicy policy) { iceTransportPolicy_ = policy; }
     /// Bind to a specific local address for all new connections (multi-homed servers).
     void SetBindAddress(ea::string_view address) { bindAddress_ = address; }
+    /// Override network MTU for all new connections (0 = use default).
+    void SetMtu(size_t mtu) { mtu_ = mtu; }
 
 protected:
     ea::shared_ptr<rtc::WebSocketServer> webSocketServer_ = {};
@@ -81,6 +83,7 @@ protected:
     bool enableIceUdpMux_ = false;
     rtc::TransportPolicy iceTransportPolicy_ = rtc::TransportPolicy::All;
     ea::string bindAddress_;
+    size_t mtu_ = 0;
 };
 
 }   // namespace Urho3D

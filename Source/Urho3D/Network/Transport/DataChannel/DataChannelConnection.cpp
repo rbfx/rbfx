@@ -222,6 +222,8 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
     config.iceTransportPolicy = iceTransportPolicy_;
     if (!bindAddress_.empty())
         config.bindAddress = std::string(bindAddress_.c_str());
+    if (mtu_ > 0)
+        config.mtu = mtu_;
     peer_ = std::make_shared<rtc::PeerConnection>(config);
     peer_->onLocalDescription([this](rtc::Description desc)
     {
