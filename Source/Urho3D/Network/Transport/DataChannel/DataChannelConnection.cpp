@@ -66,14 +66,14 @@ void DataChannelConnection::Disconnect()
     if (state_ == State::Disconnected || state_ == State::Disconnecting)
         return;
 
+    BaseClassName::Disconnect();
+#if URHO3D_PLATFORM_WEB
+    bool wasConnected = state_ == State::Connected;
+#endif
+    state_ = State::Disconnecting;
+
     if (peer_)
     {
-        BaseClassName::Disconnect();
-
-#if URHO3D_PLATFORM_WEB
-        bool wasConnected = state_ == State::Connected;
-#endif
-        state_ = State::Disconnecting;
 #ifndef URHO3D_PLATFORM_WEB
         peer_->resetCallbacks();
         peer_->close();
@@ -83,6 +83,10 @@ void DataChannelConnection::Disconnect()
             OnDataChannelDisconnected(i, wasConnected);
         peer_ = nullptr;
 #endif
+    }
+    else
+    {
+        OnDataChannelDisconnected(0, false);
     }
 }
 
@@ -113,6 +117,7 @@ bool DataChannelConnection::SendData(const MemoryBuffer& data, PacketTypeFlags t
             dc->send(reinterpret_cast<const rtc::byte*>(data.GetData() + data.GetPosition()), dataSize);
             return true;
         }
+        URHO3D_LOGDEBUG("DataChannel {} is not open yet, message dropped.", (int)type);
     }
     else
     {
@@ -207,14 +212,28 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
     websocket_ = websocket;
     websocketWasOpened_ = server != nullptr;
 
+    // Configure WebRTC peer connection with ICE servers for NAT traversal
     rtc::Configuration config = {};
+    for (const auto& url : iceServers_)
+        config.iceServers.emplace_back(std::string(url.c_str()));
+#ifndef URHO3D_PLATFORM_WEB
+    config.portRangeBegin = portRangeBegin_;
+    config.portRangeEnd = portRangeEnd_;
+    config.enableIceUdpMux = enableIceUdpMux_;
+    config.iceTransportPolicy = iceTransportPolicy_;
+    if (!bindAddress_.empty())
+        config.bindAddress = std::string(bindAddress_.c_str());
+    if (mtu_ > 0)
+        config.mtu = mtu_;
+#endif
     peer_ = std::make_shared<rtc::PeerConnection>(config);
     peer_->onLocalDescription([this](rtc::Description desc)
     {
         VectorBuffer msg;
         msg.WriteString(desc.typeString());
         msg.WriteString(std::string(desc));
-        websocket_->send(reinterpret_cast<const std::byte*>(msg.GetData()), msg.GetSize());
+        if (websocket_)
+            websocket_->send(reinterpret_cast<const std::byte*>(msg.GetData()), msg.GetSize());
         //URHO3D_LOGDEBUG("onLocalDescription: type={}, sdp={}", desc.typeString(), std::string(desc));
     });
     peer_->onLocalCandidate([this](rtc::Candidate candidate)
@@ -223,7 +242,8 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
         msg.WriteString("candidate");
         msg.WriteString(std::string(candidate));
         msg.WriteString(candidate.mid());
-        websocket_->send(reinterpret_cast<const std::byte*>(msg.GetData()), msg.GetSize());
+        if (websocket_)
+            websocket_->send(reinterpret_cast<const std::byte*>(msg.GetData()), msg.GetSize());
         //URHO3D_LOGDEBUG("onLocalCandidate: type=candidate, mid={}, sdp={}", candidate.mid(), std::string(candidate));
     });
 
@@ -250,7 +270,6 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
 
     peer_->onDataChannel([this](std::shared_ptr<rtc::DataChannel> dc)
     {
-        rtc::Reliability reliability = dc->reliability();
         PacketTypeFlags packetType = {};
         if (dc->reliability().type == rtc::Reliability::Type::Reliable)
             packetType |= PacketType::Reliable;

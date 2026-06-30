@@ -79,6 +79,18 @@ bool DataChannelServer::Listen(const URL& url)
         SharedPtr<DataChannelConnection> dcConnection;
         dcConnection.DynamicCast(connection);
         URHO3D_ASSERT(dcConnection);
+        // Apply ICE configuration to new connection
+        {
+            const ea::vector<ea::string_view> views(iceServers_.begin(), iceServers_.end());
+            dcConnection->SetIceServers(views);
+        }
+        dcConnection->SetPortRange(portRangeBegin_, portRangeEnd_);
+        dcConnection->SetIceUdpMux(enableIceUdpMux_);
+        dcConnection->SetIceTransportPolicy(iceTransportPolicy_);
+        if (!bindAddress_.empty())
+            dcConnection->SetBindAddress(bindAddress_);
+        if (mtu_ > 0)
+            dcConnection->SetMtu(mtu_);
         dcConnection->InitializeFromSocket(this, ws);
     });
 
@@ -122,6 +134,11 @@ void DataChannelServer::SetTLSCertificate(
     certificatePemFile_ = certificatePemFile;
     keyPemFile_ = keyPemFile;
     keyPassword_ = keyPassword;
+}
+
+void DataChannelServer::SetIceServers(ea::span<const ea::string_view> servers)
+{
+    iceServers_.assign(servers.begin(), servers.end());
 }
 
 } // namespace Urho3D
