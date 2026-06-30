@@ -28,6 +28,7 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(_RTC_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
 set(BUILD_SHARED_LIBS OFF) # to force usrsctp to be built static
 
 if(WIN32)
@@ -243,7 +244,9 @@ set_target_properties(datachannel-static PROPERTIES
 	VERSION ${PROJECT_VERSION}
 	CXX_STANDARD 17)
 target_compile_definitions(datachannel-static PRIVATE RTC_EXPORTS)
-target_compile_definitions(datachannel-static PUBLIC RTC_STATIC)
+if(NOT _RTC_BUILD_SHARED_LIBS)
+	target_compile_definitions(datachannel-static PUBLIC RTC_STATIC)
+endif()
 
 #target_include_directories(datachannel PUBLIC
 #    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

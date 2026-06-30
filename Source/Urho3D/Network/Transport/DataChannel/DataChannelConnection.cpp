@@ -216,6 +216,7 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
     rtc::Configuration config = {};
     for (const auto& url : iceServers_)
         config.iceServers.emplace_back(std::string(url.c_str()));
+#ifndef URHO3D_PLATFORM_WEB
     config.portRangeBegin = portRangeBegin_;
     config.portRangeEnd = portRangeEnd_;
     config.enableIceUdpMux = enableIceUdpMux_;
@@ -224,6 +225,7 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
         config.bindAddress = std::string(bindAddress_.c_str());
     if (mtu_ > 0)
         config.mtu = mtu_;
+#endif
     peer_ = std::make_shared<rtc::PeerConnection>(config);
     peer_->onLocalDescription([this](rtc::Description desc)
     {
