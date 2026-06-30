@@ -158,7 +158,7 @@
 #endif
 #include "121_CameraOperator/CameraOperator.h"
 #include "122_TextureFormats/TextureFormats.h"
-#if URHO3D_NETWORK
+#if URHO3D_NETWORK && !URHO3D_PLATFORM_WEB
 #include "119_WebRTCSTUN/WebRTCSTUN.h"
 #endif
 
@@ -419,7 +419,7 @@ void SamplesManager::Start()
     RegisterSample<PointerAdapterSample>();
 #endif
     RegisterSample<CameraShake>();
-#if URHO3D_NETWORK
+#if URHO3D_NETWORK && !URHO3D_PLATFORM_WEB
     RegisterSample<WebRTCSTUN>();
 #endif
 #if URHO3D_XR
