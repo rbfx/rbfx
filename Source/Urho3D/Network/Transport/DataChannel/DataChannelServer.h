@@ -58,6 +58,7 @@ public:
     /// Configure ICE servers (STUN/TURN) to use for NAT traversal on all new connections.
     /// Format: "stun:server:port" or "turn:user:pass@server:port"
     void SetIceServers(ea::span<const ea::string_view> servers);
+#ifndef URHO3D_PLATFORM_WEB
     /// Restrict WebRTC to a specific UDP port range for all new connections (default: 1024-65535).
     /// Useful for port-forwarded direct connections where predictable ports are needed.
     void SetPortRange(uint16_t begin, uint16_t end) { portRangeBegin_ = begin; portRangeEnd_ = end; }
@@ -71,6 +72,7 @@ public:
     void SetBindAddress(ea::string_view address) { bindAddress_ = address; }
     /// Override network MTU for all new connections (0 = use default).
     void SetMtu(size_t mtu) { mtu_ = mtu; }
+#endif
 
 protected:
     ea::shared_ptr<rtc::WebSocketServer> webSocketServer_ = {};
@@ -78,12 +80,14 @@ protected:
     ea::string keyPemFile_;
     ea::string keyPassword_;
     ea::vector<ea::string> iceServers_;
+#ifndef URHO3D_PLATFORM_WEB
     uint16_t portRangeBegin_ = 1024;
     uint16_t portRangeEnd_ = 65535;
     bool enableIceUdpMux_ = false;
     rtc::TransportPolicy iceTransportPolicy_ = rtc::TransportPolicy::All;
     ea::string bindAddress_;
     size_t mtu_ = 0;
+#endif
 };
 
 }   // namespace Urho3D

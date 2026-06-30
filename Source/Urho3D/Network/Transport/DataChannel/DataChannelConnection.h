@@ -61,6 +61,7 @@ public:
     /// Configure ICE servers (STUN/TURN) for NAT traversal.
     /// Format: "stun:server:port" or "turn:user:pass@server:port"
     void SetIceServers(ea::span<const ea::string_view> servers) { iceServers_.assign(servers.begin(), servers.end()); }
+#ifndef URHO3D_PLATFORM_WEB
     /// Restrict WebRTC to a specific UDP port range (default: 1024-65535).
     /// Useful for port-forwarded direct connections where predictable ports are needed.
     void SetPortRange(uint16_t begin, uint16_t end) { portRangeBegin_ = begin; portRangeEnd_ = end; }
@@ -75,6 +76,7 @@ public:
     /// Override network MTU for WebRTC data channels (0 = use default).
     /// Useful for VPNs or tunnels with reduced path MTU to avoid UDP fragmentation.
     void SetMtu(size_t mtu) { mtu_ = mtu; }
+#endif
     /// Access the underlying PeerConnection for advanced usage (ICE state, candidates, etc.).
     /// Requires knowledge of the rtc:: library. See WebRTC documentation for PeerConnection API.
     std::shared_ptr<rtc::PeerConnection> GetPeer() const { return peer_; }
@@ -93,12 +95,14 @@ protected:
     VectorBuffer buffer_;
     bool websocketWasOpened_ = false;
     ea::vector<ea::string> iceServers_;
+#ifndef URHO3D_PLATFORM_WEB
     uint16_t portRangeBegin_ = 1024;
     uint16_t portRangeEnd_ = 65535;
     bool enableIceUdpMux_ = false;
     rtc::TransportPolicy iceTransportPolicy_ = rtc::TransportPolicy::All;
     ea::string bindAddress_;
     size_t mtu_ = 0;
+#endif
 };
 
 }   // namespace Urho3D

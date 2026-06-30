@@ -24,6 +24,10 @@ if (NOT URHO3D_NETWORK)
     return ()
 endif ()
 
+if (WEB)
+    return ()
+endif ()
+
 file (GLOB SAMPLE_CODE *.h *.cpp)
 list (APPEND SOURCE_CODE ${SAMPLE_CODE})
 set (SOURCE_CODE "${SOURCE_CODE}" PARENT_SCOPE)
