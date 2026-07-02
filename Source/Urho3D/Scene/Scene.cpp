@@ -58,6 +58,22 @@ namespace Urho3D
 namespace
 {
 
+static constexpr DoubleVector3 defaultElapsedTimeWrap{
+    // double value with 1ms precision
+    1'000'000'000'000.0,
+    // float value with 1ms precision
+    1024.0,
+    // high-precision accumulator
+    1.0,
+};
+
+void WrapElapsedTime(DoubleVector3& elapsedTime, const DoubleVector3& wrapPoint)
+{
+    elapsedTime.x_ = Mod(elapsedTime.x_, wrapPoint.x_);
+    elapsedTime.y_ = Mod(elapsedTime.y_, wrapPoint.y_);
+    elapsedTime.z_ = Mod(elapsedTime.z_, wrapPoint.z_);
+}
+
 void UpdateNodeWorldOrigin(Node* node, const Vector3& offset)
 {
     switch (node->GetWorldOriginUpdateMode())
@@ -94,10 +110,10 @@ Scene::Scene(Context* context) :
     checksum_(0),
     asyncLoadingMs_(5),
     timeScale_(1.0f),
-    elapsedTime_(0),
     updateEnabled_(true),
     asyncLoading_(false),
     threadedUpdate_(false),
+    elapsedTimeWrap_(defaultElapsedTimeWrap),
     lightmaps_(Texture2D::GetTypeStatic())
 {
     SetUpdateEvents(DefaultUpdateEvents);
@@ -135,6 +151,7 @@ void Scene::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Update Events", GetUpdateEvents, SetUpdateEvents, StringVector, DefaultUpdateEvents, AM_DEFAULT);
     URHO3D_ATTRIBUTE("World Origin", IntVector3, worldOrigin_, IntVector3::ZERO, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Elapsed Time Wrap", DoubleVector3, elapsedTimeWrap_, defaultElapsedTimeWrap, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Lightmaps", ResourceRefList, lightmaps_, ReloadLightmaps, ResourceRefList(Texture2D::GetTypeStatic()), AM_DEFAULT);
 }
 
@@ -836,9 +853,10 @@ void Scene::SetAsyncLoadingMs(int ms)
     asyncLoadingMs_ = Max(ms, 1);
 }
 
-void Scene::SetElapsedTime(float time)
+void Scene::SetElapsedTime(double time)
 {
-    elapsedTime_ = time;
+    elapsedTime_ = DoubleVector3::ONE * time;
+    WrapElapsedTime(elapsedTime_, elapsedTimeWrap_);
 }
 
 void Scene::AddRequiredPackageFile(PackageFile* package)
@@ -924,7 +942,8 @@ void Scene::Update(float timeStep)
         // Note: using a float for elapsed time accumulation is inherently inaccurate. The purpose of this value is
         // primarily to update material animation effects, as it is available to shaders. It can be reset by calling
         // SetElapsedTime()
-        elapsedTime_ += timeStep;
+        elapsedTime_ += DoubleVector3::ONE * timeStep;
+        WrapElapsedTime(elapsedTime_, elapsedTimeWrap_);
     }
 }
 

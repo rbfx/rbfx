@@ -7,11 +7,14 @@
     #error Include _Config.glsl before _Uniforms.glsl
 #endif
 
+/// cElapsedTime: Time elapsed since scene started updating, in seconds, wrapped at certain thresholds.
+/// cElapsedTime.x: Low precision time, wrapped at 1000000000000.0 by default.
+/// cElapsedTime.y: Medium precision time, wrapped at 1024.0 by default.
+/// cElapsedTime.z: High precision time, wrapped at 1.0 by default.
 /// cDeltaTime: Time elapsed since previous frame, in seconds.
-/// cElapsedTime: Time elapsed since scene started updating, in seconds. Avoid using it.
 #define UNIFORMS_FRAME \
-    UNIFORM_HIGHP(float cDeltaTime) \
-    UNIFORM_HIGHP(float cElapsedTime)
+    UNIFORM_HIGHP(vec3 cElapsedTime) \
+    UNIFORM_HIGHP(float cDeltaTime)
 
 #ifndef URHO3D_CUSTOM_FRAME_UNIFORMS
 UNIFORM_BUFFER_BEGIN(0, Frame)

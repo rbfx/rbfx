@@ -38,13 +38,13 @@ void main()
         float stemDistance = iPos.y;
     #endif
     float windStrength = max(stemDistance - cWindHeightPivot, 0.0) * cWindHeightFactor;
-    float windPeriod = cElapsedTime * cWindPeriod + dot(worldPos.xz, cWindWorldSpacing);
+    float windPeriod = cElapsedTime.y * SnapTo1024th(cWindPeriod) + dot(worldPos.xz, cWindWorldSpacing);
     worldPos.x += windStrength * sin(windPeriod);
     worldPos.z -= windStrength * cos(windPeriod);
     vertexTransform.position.xyz = worldPos;
 
     Vertex_SetAll(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
-    
+
     #ifdef URHO3D_XR
         vInstID = gl_InstanceID;
     #endif

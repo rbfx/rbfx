@@ -37,7 +37,7 @@ void main()
 {
     VertexTransform vertexTransform = GetVertexTransform();
     Vertex_SetAll(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
-    vTexCoord += cElapsedTime * cNoiseSpeed;
+    vTexCoord += cElapsedTime.y * SnapTo1024th(cNoiseSpeed);
 }
 #endif
 

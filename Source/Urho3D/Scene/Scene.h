@@ -207,7 +207,7 @@ public:
     void SetTimeScale(float scale);
     /// Set elapsed time in seconds. This can be used to prevent inaccuracy in the timer if the scene runs for a long time.
     /// @property
-    void SetElapsedTime(float time);
+    void SetElapsedTime(double time);
     /// Set maximum milliseconds per frame to spend on async scene loading.
     /// @property
     void SetAsyncLoadingMs(int ms);
@@ -262,7 +262,10 @@ public:
 
     /// Return elapsed time in seconds.
     /// @property
-    float GetElapsedTime() const { return elapsedTime_; }
+    float GetElapsedTime() const { return static_cast<float>(elapsedTime_.x_); }
+
+    /// Return elapsed time in seconds, all accumulators.
+    const DoubleVector3& GetElapsedTimes() const { return elapsedTime_; }
 
     /// Return maximum milliseconds per frame to spend on async loading.
     /// @property
@@ -367,7 +370,7 @@ private:
     /// Scene update time scale.
     float timeScale_;
     /// Elapsed time accumulator.
-    float elapsedTime_;
+    DoubleVector3 elapsedTime_;
     /// Update enabled flag.
     bool updateEnabled_;
     /// Whether update is invoked manually.
@@ -388,6 +391,8 @@ private:
 
     /// World origin. This is position that corresponds to zero world position.
     IntVector3 worldOrigin_;
+    /// Elapsed time wrap points.
+    DoubleVector3 elapsedTimeWrap_;
 };
 
 /// Register Scene library objects.

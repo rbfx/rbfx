@@ -528,7 +528,7 @@ private:
             drawQueue_.AddShaderParameter(shaderParameter.name_, shaderParameter.value_);
 
         drawQueue_.AddShaderParameter(ShaderConsts::Frame_DeltaTime, frameInfo_.timeStep_);
-        drawQueue_.AddShaderParameter(ShaderConsts::Frame_ElapsedTime, scene_.GetElapsedTime());
+        drawQueue_.AddShaderParameter(ShaderConsts::Frame_ElapsedTime, scene_.GetElapsedTimes().Cast<Vector3>());
     }
 
     void AddCameraConstants(float constantDepthBias)
