@@ -98,6 +98,9 @@ public:
     /// @property
     unsigned GetFrameNumber() const { return frameNumber_; }
 
+    /// Return whether the main thread is currently between BeginFrame and EndFrame.
+    bool IsFrameInProgress() const { return isFrameInProgress_; }
+
     /// Return current frame timestep as seconds.
     /// @property
     float GetTimeStep() const { return timeStep_; }
@@ -128,11 +131,13 @@ private:
     /// Elapsed time since program start.
     Timer elapsedTime_;
     /// Frame number.
-    unsigned frameNumber_;
+    unsigned frameNumber_{};
+    /// Whether the main thread is currently between BeginFrame and EndFrame.
+    bool isFrameInProgress_{};
     /// Timestep in seconds.
-    float timeStep_;
+    float timeStep_{};
     /// Low-resolution timer period.
-    unsigned timerPeriod_;
+    unsigned timerPeriod_{};
 };
 
 /// Accumulates statistics for specified number of intervals.

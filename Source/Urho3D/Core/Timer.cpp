@@ -113,6 +113,7 @@ void Time::BeginFrame(float timeStep)
         ++frameNumber_;
 
     timeStep_ = timeStep;
+    isFrameInProgress_ = true;
 
     {
         URHO3D_PROFILE("BeginFrame");
@@ -138,6 +139,8 @@ void Time::EndFrame()
         // Internal frame end event used only by the engine/tools
         SendEvent(E_ENDFRAMEPRIVATE);
     }
+
+    isFrameInProgress_ = false;
 }
 
 void Time::SetTimerPeriod(unsigned mSec)

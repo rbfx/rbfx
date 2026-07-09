@@ -689,6 +689,10 @@ void Engine::RunFrame()
     auto* time = GetSubsystem<Time>();
     auto* input = GetSubsystem<Input>();
     auto* audio = GetSubsystem<Audio>();
+    auto* workQueue = GetSubsystem<WorkQueue>();
+
+    // Process WorkQueue tasks between frames
+    workQueue->Update();
 
     {
         URHO3D_PROFILE("DoFrame");

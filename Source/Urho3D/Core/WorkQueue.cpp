@@ -250,8 +250,6 @@ WorkQueue::WorkQueue(Context* context)
         threadIndexCount = 1;
         workQueue = this;
     }
-
-    SubscribeToEvent(E_BEGINFRAME, &WorkQueue::Update);
 }
 
 WorkQueue::~WorkQueue()
