@@ -58,7 +58,7 @@ Node* PrefabResource::InstantiateReference(Node* parentNode, bool inplace)
 
     const NodePrefab& nodePrefab = GetNodePrefab();
     if (!nodePrefab.IsEmpty())
-        nodePrefab.GetNode().Export(instanceNode);
+        nodePrefab.GetNode().Export(instanceNode, PrefabLoadFlag::KeepTemporaryState);
 
     return instanceNode;
 }
@@ -135,7 +135,7 @@ void PrefabResource::BackgroundLoadResources(const NodePrefab& prefab)
                 break;
             }
         }
-        
+
     }
 
     for (const NodePrefab& child : prefab.GetChildren())
