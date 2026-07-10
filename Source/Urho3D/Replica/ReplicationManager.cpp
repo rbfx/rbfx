@@ -45,7 +45,7 @@ void NetworkObjectRegistry::OnComponentAdded(TrackedComponentBase* baseComponent
 
     OnNetworkObjectAdded(this, networkObject);
 
-    URHO3D_LOGDEBUG("NetworkObject {} is added", ToString(networkId));
+    URHO3D_LOGTRACE("NetworkObject {} is added", ToString(networkId));
 }
 
 void NetworkObjectRegistry::OnComponentRemoved(TrackedComponentBase* baseComponent)
@@ -62,7 +62,7 @@ void NetworkObjectRegistry::OnComponentRemoved(TrackedComponentBase* baseCompone
 
     OnNetworkObjectRemoved(this, networkObject);
 
-    URHO3D_LOGDEBUG("NetworkObject {} is removed", ToString(networkId));
+    URHO3D_LOGTRACE("NetworkObject {} is removed", ToString(networkId));
 
     BaseClassName::OnComponentRemoved(baseComponent);
 }
@@ -94,7 +94,7 @@ void NetworkObjectRegistry::RemoveAllNetworkObjects()
 
     networkObjectsDirty_.clear();
 
-    URHO3D_LOGDEBUG("{} instances of NetworkObject removed", nodesToRemove.size());
+    URHO3D_LOGTRACE("{} instances of NetworkObject removed", nodesToRemove.size());
 }
 
 void NetworkObjectRegistry::UpdateNetworkObjects()
