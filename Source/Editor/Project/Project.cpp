@@ -940,6 +940,7 @@ void Project::RenderToolbar()
 
     RenderAssetsToolbar();
     RenderPluginReloadToolbar();
+    RenderSavePendingToolbar();
 }
 
 void Project::RenderAssetsToolbar()
@@ -966,6 +967,7 @@ void Project::RenderPluginReloadToolbar()
     if (pluginManager_->AreLoadedPluginsOutOfDate() && pluginManager_->IsReloadBlocked(&reloadBlockedReason))
     {
         ui::SameLine();
+        Widgets::ToolbarSeparator();
         ui::Text("Plugin reload is blocked: %s", reloadBlockedReason.c_str());
         return;
     }
@@ -980,8 +982,18 @@ void Project::RenderPluginReloadToolbar()
         const double elapsedSecondsPretty =
             elapsedSeconds <= 10.0 ? Ceil(elapsedSeconds) : SnapFloor(elapsedSeconds, 10.0);
         ui::SameLine();
+        Widgets::ToolbarSeparator();
         ui::Text("Plugins reloaded: %.0f seconds ago", elapsedSecondsPretty);
     }
+}
+
+void Project::RenderSavePendingToolbar()
+{
+    if (delayedFileSaves_.empty())
+        return;
+
+    Widgets::ToolbarSeparator();
+    ui::Text(ICON_FA_FLOPPY_DISK " Save in progress...");
 }
 
 void Project::RenderProjectMenu()

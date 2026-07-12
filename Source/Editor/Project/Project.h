@@ -271,6 +271,7 @@ private:
     void ProcessPendingRemoteCommands();
     void RenderAssetsToolbar();
     void RenderPluginReloadToolbar();
+    void RenderSavePendingToolbar();
 
     /// Project properties
     /// @{
