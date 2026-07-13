@@ -104,6 +104,15 @@ struct StoredLogMessage
     ea::string message_{};
 };
 
+/// Configuration of log file sink.
+struct LogFileParams
+{
+    bool rotateOnOpen_{true};
+    bool rotateBySize_{false};
+    unsigned maxFiles_{20};
+    unsigned maxSize_{20 * 1024 * 1024};
+};
+
 class LogImpl;
 class Log;
 
@@ -150,7 +159,7 @@ public:
     ~Log() override;
 
     /// Open the log file.
-    void Open(const ea::string& fileName);
+    void Open(const ea::string& fileName, const LogFileParams& params = {});
     /// Close the log file.
     void Close();
     /// Set logging level.

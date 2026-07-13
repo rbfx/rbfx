@@ -32,6 +32,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/logger.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/sinks/base_sink.h>
 #if DESKTOP
@@ -337,7 +338,7 @@ public:
     std::shared_ptr<IOSSink_mt> platformSink_;
 #elif defined(DESKTOP)
     /// File sink. Only for desktops.
-    std::shared_ptr<spdlog::sinks::basic_file_sink_mt> fileSink_;
+    std::shared_ptr<spdlog::sinks::sink> fileSink_;
     /// STDOUT sink.
 #ifdef _WIN32
     std::shared_ptr<spdlog::sinks::wincolor_stdout_sink_mt> platformSink_;
@@ -376,7 +377,7 @@ Log::~Log()
     spdlog::shutdown();
 }
 
-void Log::Open(const ea::string& fileName)
+void Log::Open(const ea::string& fileName, const LogFileParams& params)
 {
 #if defined(DESKTOP)
     if (fileName.empty())
@@ -387,7 +388,17 @@ void Log::Open(const ea::string& fileName)
 
     Close();
 
-    impl_->fileSink_ = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName.c_str());
+    if (params.rotateBySize_ || params.rotateOnOpen_)
+    {
+        const std::size_t maxSize = params.rotateBySize_ ? params.maxSize_ : ea::numeric_limits<std::size_t>::max();
+        impl_->fileSink_ = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+            fileName.c_str(), maxSize, params.maxFiles_, params.rotateOnOpen_);
+    }
+    else
+    {
+        impl_->fileSink_ = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName.c_str());
+    }
+
     impl_->fileSink_->set_pattern(formatPattern_.c_str());
     impl_->distributorSink_->add_sink(impl_->fileSink_);
 #endif
