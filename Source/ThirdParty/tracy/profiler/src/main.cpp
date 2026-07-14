@@ -283,7 +283,7 @@ static void ScaleChanged( float scale )
     if( dpiScaleOverriddenFromEnv ) return;
     if( dpiScale == scale ) return;
 
-    dpiScale = scale;
+    dpiScale = std::max(scale, 1.0f);
     SetupDPIScale();
 }
 
