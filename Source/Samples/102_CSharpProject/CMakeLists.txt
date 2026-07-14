@@ -24,6 +24,12 @@ if (NOT URHO3D_CSHARP)
     return ()
 endif ()
 
+# Workaround for UWP CI builds getting stuck.
+if ((NOT "$ENV{CI}" STREQUAL "") AND UWP)
+    message(WARNING "102_CSharpProject is excluded from build")
+    return ()
+endif ()
+
 if (UWP)
     set(NAME_SUFFIX .UWP)
 endif ()
