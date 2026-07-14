@@ -1,41 +1,24 @@
-//
 // Copyright (c) 2008-2022 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2023-2026 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Resource/Localization.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/JSONFile.h"
-#include "../Resource/ResourceEvents.h"
-#include "../IO/Log.h"
+#include "Urho3D/Resource/Localization.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Resource/JSONFile.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/ResourceEvents.h"
+
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
 
-Localization::Localization(Context* context) :
-    Object(context),
-    languageIndex_(-1)
+Localization::Localization(Context* context)
+    : Object(context)
 {
 }
 
@@ -45,59 +28,82 @@ int Localization::GetLanguageIndex(const ea::string& language)
 {
     if (language.empty())
     {
-        URHO3D_LOGWARNING("Localization::GetLanguageIndex(language): language name is empty");
+        URHO3D_LOGWARNING("Cannot get localization language index: language name is empty");
         return -1;
     }
+
     if (GetNumLanguages() == 0)
     {
-        URHO3D_LOGWARNING("Localization::GetLanguageIndex(language): no loaded languages");
+        URHO3D_LOGWARNING("Cannot get localization language index: no loaded languages");
         return -1;
     }
+
     for (int i = 0; i < GetNumLanguages(); i++)
     {
         if (languages_[i] == language)
             return i;
     }
+
     return -1;
 }
 
-ea::string Localization::GetLanguage()
+const ea::string& Localization::GetLanguage()
 {
     if (languageIndex_ == -1)
     {
-        URHO3D_LOGWARNING("Localization::GetLanguage(): no loaded languages");
+        URHO3D_LOGWARNING("Cannot get localization language: no loaded languages");
         return EMPTY_STRING;
     }
     return languages_[languageIndex_];
 }
 
-ea::string Localization::GetLanguage(int index)
+const ea::string& Localization::GetLanguage(int index)
 {
     if (GetNumLanguages() == 0)
     {
-        URHO3D_LOGWARNING("Localization::GetLanguage(index): no loaded languages");
+        URHO3D_LOGWARNING("Cannot get localization language: no loaded languages");
         return EMPTY_STRING;
     }
+
     if (index < 0 || index >= GetNumLanguages())
     {
-        URHO3D_LOGWARNING("Localization::GetLanguage(index): index out of range");
+        URHO3D_LOGWARNING("Cannot get localization language: index out of range");
         return EMPTY_STRING;
     }
+
     return languages_[index];
+}
+
+void Localization::SetStringPattern(const ea::string& pattern)
+{
+    try
+    {
+        if (pattern.empty())
+            pattern_ = ea::nullopt;
+        else
+            pattern_ = std::regex{pattern.c_str()};
+    }
+    catch (const std::exception& e)
+    {
+        URHO3D_LOGERROR("Cannot set localizable string pattern: {}", e.what());
+        pattern_ = ea::nullopt;
+    }
 }
 
 void Localization::SetLanguage(int index)
 {
     if (GetNumLanguages() == 0)
     {
-        URHO3D_LOGWARNING("Localization::SetLanguage(index): no loaded languages");
+        URHO3D_LOGWARNING("Cannot set localization language: no loaded languages");
         return;
     }
+
     if (index < 0 || index >= GetNumLanguages())
     {
-        URHO3D_LOGWARNING("Localization::SetLanguage(index): index out of range");
+        URHO3D_LOGWARNING("Cannot set localization language: index out of range");
         return;
     }
+
     if (index != languageIndex_)
     {
         languageIndex_ = index;
@@ -110,20 +116,23 @@ void Localization::SetLanguage(const ea::string& language)
 {
     if (language.empty())
     {
-        URHO3D_LOGWARNING("Localization::SetLanguage(language): language name is empty");
+        URHO3D_LOGWARNING("Cannot set localization language: language name is empty");
         return;
     }
+
     if (GetNumLanguages() == 0)
     {
-        URHO3D_LOGWARNING("Localization::SetLanguage(language): no loaded languages");
+        URHO3D_LOGWARNING("Cannot set localization language: no loaded languages");
         return;
     }
-    int index = GetLanguageIndex(language);
+
+    const int index = GetLanguageIndex(language);
     if (index == -1)
     {
-        URHO3D_LOGWARNING("Localization::SetLanguage(language): language not found");
+        URHO3D_LOGWARNING("Cannot set localization language: language not found");
         return;
     }
+
     SetLanguage(index);
 }
 
@@ -131,21 +140,33 @@ ea::string Localization::Get(const ea::string& id, int index)
 {
     if (id.empty())
         return EMPTY_STRING;
+
     if (GetNumLanguages() == 0)
     {
-        URHO3D_LOGWARNING("Localization::Get(id): no loaded languages");
-        return id;
-    }
-    if (index >= (int) languages_.size())
-    {
-        URHO3D_LOGWARNING("Localization::Get(id): invalid language index");
+        URHO3D_LOGWARNING("Cannot get localized string: no loaded languages");
         return id;
     }
 
-    ea::string result = strings_[index < 0 ? GetLanguage() : languages_[index]][StringHash(id)];
+    if (index >= static_cast<int>(languages_.size()))
+    {
+        URHO3D_LOGWARNING("Cannot get localized string: invalid language index");
+        return id;
+    }
+
+    if (pattern_ && !std::regex_match(id.begin(), id.end(), *pattern_))
+    {
+        // Quietly ignore strings that don't match the pattern
+        return id;
+    }
+
+    const ea::string& language = index < 0 ? GetLanguage() : languages_[index];
+    const ea::string& result = strings_[language][StringHash(id)];
     if (result.empty())
     {
-        URHO3D_LOGTRACE("Localization::Get(\"" + id + "\") not found translation, language=\"" + GetLanguage() + "\"");
+        if (pattern_)
+            URHO3D_LOGWARNING("Cannot get localized string for \"{}\" ({})", id, language);
+        else
+            URHO3D_LOGTRACE("Cannot get localized string for \"{}\" ({})", id, language);
         return id;
     }
     return result;
@@ -171,7 +192,6 @@ void Localization::LoadJSONFile(const ea::string& name, const ea::string& langua
     }
 }
 
-
 void Localization::LoadMultipleLanguageJSON(const JSONValue& source)
 {
     for (const auto& i : source)
@@ -179,44 +199,42 @@ void Localization::LoadMultipleLanguageJSON(const JSONValue& source)
         ea::string id = i.first;
         if (id.empty())
         {
-            URHO3D_LOGWARNING("Localization::LoadMultipleLanguageJSON(source): string ID is empty");
+            URHO3D_LOGWARNING("Error loading localization JSON: string ID is empty");
             continue;
         }
+
         const JSONValue& value = i.second;
         if (value.IsObject())
         {
             for (const auto& j : value)
             {
-                const ea::string &lang = j.first;
-                if (lang.empty())
+                const ea::string& language = j.first;
+                if (language.empty())
                 {
-                    URHO3D_LOGWARNING(
-                            "Localization::LoadMultipleLanguageJSON(source): language name is empty, string ID=\"" + id + "\"");
+                    URHO3D_LOGWARNING("Error loading localization JSON: language name is empty for \"{}\"", id);
                     continue;
                 }
-                const ea::string &string = j.second.GetString();
+
+                const ea::string& string = j.second.GetString();
                 if (string.empty())
                 {
                     URHO3D_LOGWARNING(
-                            "Localization::LoadMultipleLanguageJSON(source): translation is empty, string ID=\"" + id +
-                            "\", language=\"" + lang + "\"");
+                        "Error loading localization JSON: translation is empty for \"{}\" ({})", id, language);
                     continue;
                 }
-                if (strings_[StringHash(lang)][StringHash(id)] != EMPTY_STRING)
-                {
-                    URHO3D_LOGWARNING(
-                            "Localization::LoadMultipleLanguageJSON(source): override translation, string ID=\"" + id +
-                            "\", language=\"" + lang + "\"");
-                }
-                strings_[StringHash(lang)][StringHash(id)] = string;
-                if (!languages_.contains(lang))
-                    languages_.push_back(lang);
+
+                if (strings_[StringHash(language)][StringHash(id)] != EMPTY_STRING)
+                    URHO3D_LOGWARNING("Overriding translation for \"{}\" ({})", id, language);
+
+                strings_[StringHash(language)][StringHash(id)] = string;
+                if (!languages_.contains(language))
+                    languages_.push_back(language);
                 if (languageIndex_ == -1)
                     languageIndex_ = 0;
             }
         }
         else
-            URHO3D_LOGWARNING("Localization::LoadMultipleLanguageJSON(source): failed to load values, string ID=\"" + id + "\"");
+            URHO3D_LOGWARNING("Error loading localization JSON values for \"{}\"", id);
     }
 }
 
@@ -227,34 +245,30 @@ void Localization::LoadSingleLanguageJSON(const JSONValue& source, const ea::str
         ea::string id = i.first;
         if (id.empty())
         {
-            URHO3D_LOGWARNING("Localization::LoadSingleLanguageJSON(source, language): string ID is empty");
+            URHO3D_LOGWARNING("Error loading localization JSON: string ID is empty");
             continue;
         }
+
         const JSONValue& value = i.second;
         if (value.IsString())
         {
             if (value.GetString().empty())
             {
                 URHO3D_LOGWARNING(
-                        "Localization::LoadSingleLanguageJSON(source, language): translation is empty, string ID=\"" + id +
-                        "\", language=\"" + language + "\"");
+                    "Error loading localization JSON: translation is empty for \"{}\" ({})", id, language);
                 continue;
             }
+
             if (strings_[StringHash(language)][StringHash(id)] != EMPTY_STRING)
-            {
-                URHO3D_LOGWARNING(
-                        "Localization::LoadSingleLanguageJSON(source, language): override translation, string ID=\"" + id +
-                        "\", language=\"" + language + "\"");
-            }
+                URHO3D_LOGWARNING("Overriding translation for \"{}\" ({})", id, language);
+
             strings_[StringHash(language)][StringHash(id)] = value.GetString();
             if (!languages_.contains(language))
                 languages_.push_back(language);
         }
         else
-            URHO3D_LOGWARNING(
-                    "Localization::LoadSingleLanguageJSON(source, language): failed to load value, string ID=\"" + id +
-                    "\", language=\"" + language + "\"");
+            URHO3D_LOGWARNING("Error loading localization JSON values for \"{}\" ({})", id, language);
     }
 }
 
-}
+} // namespace Urho3D
