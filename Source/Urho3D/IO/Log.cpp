@@ -390,13 +390,29 @@ void Log::Open(const ea::string& fileName, const LogFileParams& params)
 
     if (params.rotateBySize_ || params.rotateOnOpen_)
     {
-        const std::size_t maxSize = params.rotateBySize_ ? params.maxSize_ : ea::numeric_limits<std::size_t>::max();
-        impl_->fileSink_ = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-            fileName.c_str(), maxSize, params.maxFiles_, params.rotateOnOpen_);
+        try
+        {
+            const std::size_t maxSize = params.rotateBySize_ ? params.maxSize_ : ea::numeric_limits<std::size_t>::max();
+            impl_->fileSink_ = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
+                fileName.c_str(), maxSize, params.maxFiles_, params.rotateOnOpen_);
+        }
+        catch (const std::exception& e)
+        {
+            URHO3D_LOGERROR("Cannot open log file: {}", e.what());
+        }
     }
-    else
+
+    if (!impl_->fileSink_)
     {
-        impl_->fileSink_ = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName.c_str());
+        try
+        {
+            impl_->fileSink_ = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName.c_str());
+        }
+        catch (const std::exception& e)
+        {
+            URHO3D_LOGERROR("Cannot open log file: {}", e.what());
+            return;
+        }
     }
 
     impl_->fileSink_->set_pattern(formatPattern_.c_str());
