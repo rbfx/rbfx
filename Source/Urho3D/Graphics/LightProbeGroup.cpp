@@ -177,7 +177,7 @@ bool LightProbeGroup::SaveLightProbesBakedData(Context* context, const FileIdent
 
     BinaryFile bakedDataFile(context);
 
-    if (!bakedDataFile.SaveObject("LightProbesBakedData", bakedData))
+    if (!bakedDataFile.SaveObject("LightProbesBakedData", copy))
         return false;
 
     if (!bakedDataFile.SaveFile(fileName))
