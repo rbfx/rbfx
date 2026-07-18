@@ -72,10 +72,10 @@ if (WEB)
         FILES        "${CMAKE_BINARY_DIR}/bin/Data.pak"
                      "${CMAKE_BINARY_DIR}/bin/CoreData.pak"
         RELATIVE_DIR "${CMAKE_BINARY_DIR}/bin"
-        OUTPUT       "Resources.js"
+        OUTPUT       "SampleResources.js"
         INSTALL_TO   "${CMAKE_INSTALL_BINDIR}"
     )
-    web_link_resources(Samples "Resources.js")
+    web_link_resources(Samples "SampleResources.js")
     target_link_libraries(Samples PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/shell.html")
     install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Samples.js" DESTINATION ${CMAKE_INSTALL_BINDIR})
     if (EMSCRIPTEN_WASM)

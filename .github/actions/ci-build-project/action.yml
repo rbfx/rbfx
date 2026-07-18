@@ -1,0 +1,164 @@
+# Builds and optionally publishes one downstream project. Run ci-prepare-platform
+# earlier in the same job: this action consumes the platform, framework, toolchain,
+# cache, source/SDK, and host-context environment prepared by that action.
+#
+# The action performs these operations in order:
+# 1. Resolve whether the project consumes an rbfx source tree or an installed SDK.
+#    The per-artifact build directory is derived from `project_build_dir` and, when
+#    provided, `artifact_name`, allowing several projects to build in one matrix job.
+# 2. Build a non-Android project through `ci_build.sh build-project`, passing the
+#    selected source/SDK mode. For Android, run `ci_build.sh build-android-project`
+#    in `android_dir` with `android_gradle_task` (assembleRelease by default).
+# 3. Save the compiler cache unless restoration was an exact hit or the job was
+#    cancelled. The key combines the prepared cache identity and the current SHA.
+# 4. Resolve `publish`: `none`, `artifact`, `release`, and `both` are explicit;
+#    `auto` uses the current matrix entry's `publish_artifact` flag. Publishing
+#    requires `artifact_name` so independently built projects remain distinguishable.
+# 5. Stage native outputs and/or Android Gradle outputs into a temporary directory.
+#    PDB files are omitted by default, controlled by the `EXCLUDE_PDBS` environment.
+# 6. Upload the staging directory as a GitHub Actions artifact, a compressed GitHub
+#    release asset, or both. Release uploads target `RELEASE_REPOSITORY` and
+#    `RELEASE_TAG`, which default to the current repository and the `latest` tag.
+#
+# This action does not check out repositories, install tools, download an SDK, or
+# acquire cross-compilation host artifacts; ci-prepare-platform owns those tasks.
+name: CI Build Project
+description: Build and publish a downstream project using the environment prepared by ci-prepare-platform.
+
+inputs:
+  project_dir:
+    description: "Downstream project root. Defaults to `project_source_dir` from the environment or `github.workspace`."
+    required: false
+    default: ''
+  android_dir:
+    description: "Path to the downstream Android Gradle project, relative to `project_dir`."
+    required: false
+    default: ''
+  android_gradle_task:
+    description: "Gradle task to execute inside `android_dir`."
+    required: false
+    default: assembleRelease
+  publish:
+    description: "How to publish staged outputs. Supported values: `auto`, `none`, `artifact`, `release`, `both`."
+    required: false
+    default: auto
+  artifact_name:
+    description: Artifact and release asset name. Required when publishing is enabled.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve build mode
+      id: build_mode
+      shell: bash
+      env:
+        INPUT_FRAMEWORK_BUILD_TYPE: ${{ env.ci_framework_build_type }}
+        INPUT_ARTIFACT_NAME: ${{ inputs.artifact_name }}
+      run: |
+        "$GITHUB_ACTION_PATH/../../../script/ci_build.sh" resolve-project-build-mode
+        active_project_build_dir="${project_build_dir:-${GITHUB_WORKSPACE}/project-build/${ci_platform_tag}}"
+        if [[ -n "$INPUT_ARTIFACT_NAME" ]]; then
+          active_project_build_dir="${active_project_build_dir}/${INPUT_ARTIFACT_NAME}"
+        fi
+        printf 'ci_active_project_build_dir=%s\n' "$active_project_build_dir" >> "$GITHUB_ENV"
+
+    - name: Build downstream project against SDK
+      if: env.ci_platform != 'android' && steps.build_mode.outputs.framework_build_type == 'sdk'
+      shell: bash
+      env:
+        INPUT_PROJECT_SOURCE_DIR: ${{ inputs.project_dir }}
+      run: |
+        project_dir="${INPUT_PROJECT_SOURCE_DIR:-${project_source_dir:-${GITHUB_WORKSPACE}}}"
+        "$ci_build_script" build-project --build-dir "$ci_active_project_build_dir" "$project_dir" sdk
+
+    - name: Build downstream project against source tree
+      if: env.ci_platform != 'android' && steps.build_mode.outputs.framework_build_type == 'source'
+      shell: bash
+      env:
+        INPUT_PROJECT_SOURCE_DIR: ${{ inputs.project_dir }}
+      run: |
+        project_dir="${INPUT_PROJECT_SOURCE_DIR:-${project_source_dir:-${GITHUB_WORKSPACE}}}"
+        "$ci_build_script" build-project --build-dir "$ci_active_project_build_dir" "$project_dir" source
+
+    - name: Build downstream Android project against SDK
+      if: env.ci_platform == 'android' && steps.build_mode.outputs.framework_build_type == 'sdk'
+      shell: bash
+      env:
+        INPUT_PROJECT_SOURCE_DIR: ${{ inputs.project_dir }}
+      run: |
+        project_dir="${INPUT_PROJECT_SOURCE_DIR:-${project_source_dir:-${GITHUB_WORKSPACE}}}"
+        "$ci_build_script" build-android-project --gradle-task '${{ inputs.android_gradle_task }}' "$project_dir/${{ inputs.android_dir }}" sdk
+
+    - name: Build downstream Android project against source tree
+      if: env.ci_platform == 'android' && steps.build_mode.outputs.framework_build_type == 'source'
+      shell: bash
+      env:
+        INPUT_PROJECT_SOURCE_DIR: ${{ inputs.project_dir }}
+      run: |
+        project_dir="${INPUT_PROJECT_SOURCE_DIR:-${project_source_dir:-${GITHUB_WORKSPACE}}}"
+        "$ci_build_script" build-android-project --gradle-task '${{ inputs.android_gradle_task }}' "$project_dir/${{ inputs.android_dir }}" source
+
+    - name: Save build cache
+      if: ${{ !cancelled() && env.ci_build_cache_hit != 'true' }}
+      uses: actions/cache/save@v5
+      with:
+        path: ${{ env.CCACHE_DIR || format('{0}/.ccache', github.workspace) }}
+        key: ${{ env.ci_cache_id }}-${{ github.sha }}
+
+    - name: Resolve publish flags
+      id: publish
+      shell: bash
+      env:
+        INPUT_PUBLISH: ${{ inputs.publish }}
+        MATRIX_PUBLISH_ARTIFACT: ${{ matrix.publish_artifact || '' }}
+      run: |
+        "$GITHUB_ACTION_PATH/../../../script/ci_build.sh" resolve-project-publish
+
+    - name: Validate publish inputs
+      if: steps.publish.outputs.upload_artifact == 'true' || steps.publish.outputs.upload_release == 'true'
+      shell: bash
+      env:
+        INPUT_ARTIFACT_NAME: ${{ inputs.artifact_name }}
+      run: |
+        if [[ -z "$INPUT_ARTIFACT_NAME" ]]; then
+          echo 'Error: artifact_name is required when artifact or release upload is enabled.'
+          exit 1
+        fi
+
+    - name: Stage build artifacts
+      if: steps.publish.outputs.upload_artifact == 'true' || steps.publish.outputs.upload_release == 'true'
+      shell: bash
+      env:
+        INPUT_PROJECT_SOURCE_DIR: ${{ inputs.project_dir }}
+        INPUT_ANDROID_DIR: ${{ inputs.android_dir }}
+        EXCLUDE_PDBS: ${{ env.EXCLUDE_PDBS || 'true' }}
+        ARTIFACT_STAGING_DIR: ${{ runner.temp }}/project-artifacts/${{ inputs.artifact_name }}
+      run: |
+        project_dir="${INPUT_PROJECT_SOURCE_DIR:-${project_source_dir:-${GITHUB_WORKSPACE}}}"
+        android_output_root=''
+        if [[ -n "$INPUT_ANDROID_DIR" ]]; then
+          android_output_root="$project_dir/$INPUT_ANDROID_DIR/build/outputs"
+        fi
+        "$ci_build_script" stage-project-artifacts --build-dir "$ci_active_project_build_dir" --android-output-root "$android_output_root"
+
+    - name: Upload build artifacts
+      if: steps.publish.outputs.upload_artifact == 'true'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.artifact_name }}
+        path: ${{ runner.temp }}/project-artifacts/${{ inputs.artifact_name }}
+        if-no-files-found: error
+
+    - name: Upload release assets
+      if: steps.publish.outputs.upload_release == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RELEASE_REPOSITORY: ${{ env.RELEASE_REPOSITORY || github.repository }}
+        RELEASE_TAG: ${{ env.RELEASE_TAG || 'latest' }}
+        RELEASE_ASSET_NAME: ${{ inputs.artifact_name }}
+        ARTIFACT_STAGING_DIR: ${{ runner.temp }}/project-artifacts/${{ inputs.artifact_name }}
+      run: |
+        "$ci_build_script" upload-release-archive

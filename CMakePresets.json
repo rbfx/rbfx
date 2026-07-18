@@ -230,6 +230,38 @@
       }
     },
     {
+      "name": "android-base",
+      "hidden": true,
+      "inherits": "base-dll",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/CMake/Toolchains/Android.cmake",
+        "ANDROID_PLATFORM": "android-21",
+        "ANDROID_STL": "c++_static"
+      }
+    },
+    {
+      "name": "android-clang-arm-dll",
+      "inherits": "android-base",
+      "cacheVariables": {
+        "ANDROID_ABI": "armeabi-v7a",
+        "ANDROID_ARM_MODE": "arm"
+      }
+    },
+    {
+      "name": "android-clang-arm64-dll",
+      "inherits": "android-base",
+      "cacheVariables": {
+        "ANDROID_ABI": "arm64-v8a"
+      }
+    },
+    {
+      "name": "android-clang-x64-dll",
+      "inherits": "android-base",
+      "cacheVariables": {
+        "ANDROID_ABI": "x86_64"
+      }
+    },
+    {
       "name": "web-emscripten-wasm-lib",
       "inherits": ["base-lib", "cmake-prefix-path-all"],
       "cacheVariables": {
@@ -527,6 +559,42 @@
     {
       "name": "macos-clang-arm64-dll-release",
       "configurePreset": "macos-clang-arm64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "android-clang-arm-dll-debug",
+      "configurePreset": "android-clang-arm-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "android-clang-arm-dll-release",
+      "configurePreset": "android-clang-arm-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "android-clang-arm64-dll-debug",
+      "configurePreset": "android-clang-arm64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "android-clang-arm64-dll-release",
+      "configurePreset": "android-clang-arm64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "android-clang-x64-dll-debug",
+      "configurePreset": "android-clang-x64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "android-clang-x64-dll-release",
+      "configurePreset": "android-clang-x64-dll",
       "displayName": "release",
       "inherits": "release-base"
     },
