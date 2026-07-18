@@ -22,13 +22,13 @@
 
 # Source environment
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
-    execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT)
+    execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT_DATA)
 else ()
-    execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT)
+    execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT_DATA)
 endif ()
-string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT "${ENVIRONMENT}")
+string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT_DATA "${ENVIRONMENT_DATA}")
 set(IMPORT_URHO3D_VARIABLES_FROM_ENV BUILD_SHARED_LIBS SWIG_EXECUTABLE SWIG_DIR)
-foreach(key ${ENVIRONMENT})
+foreach(key ${ENVIRONMENT_DATA})
     list (FIND IMPORT_URHO3D_VARIABLES_FROM_ENV ${key} _index)
     if ("${key}" MATCHES "^(URHO3D_|CMAKE_|ANDROID_).+" OR ${_index} GREATER -1)
         if (NOT DEFINED ${key})
