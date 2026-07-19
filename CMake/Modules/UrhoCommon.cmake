@@ -562,12 +562,15 @@ function (web_executable TARGET)
         if (BUILD_SHARED_LIBS)
             target_link_libraries(${TARGET} PRIVATE -sMAIN_MODULE=1)
         endif ()
-        if (TARGET datachannel-wasm)
-            if (Urho3D_IS_SDK)
+        set (LIBDATACHANNEL_WASM_DIR "")
+        if (URHO3D_NETWORK)
+            if (EXISTS "${Urho3D_PACKAGE_ROOT}/include/libdatachannel-wasm/wasm/js/webrtc.js")
                 set (LIBDATACHANNEL_WASM_DIR "${Urho3D_PACKAGE_ROOT}/include/libdatachannel-wasm")
-            else ()
+            elseif (DEFINED rbfx_SOURCE_DIR AND EXISTS "${rbfx_SOURCE_DIR}/Source/ThirdParty/libdatachannel-wasm/wasm/js/webrtc.js")
                 set (LIBDATACHANNEL_WASM_DIR "${rbfx_SOURCE_DIR}/Source/ThirdParty/libdatachannel-wasm")
             endif ()
+        endif ()
+        if (LIBDATACHANNEL_WASM_DIR)
             target_link_options(${TARGET} PRIVATE
                 "SHELL:--js-library ${LIBDATACHANNEL_WASM_DIR}/wasm/js/webrtc.js"
                 "SHELL:--js-library ${LIBDATACHANNEL_WASM_DIR}/wasm/js/websocket.js"
