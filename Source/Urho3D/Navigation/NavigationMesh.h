@@ -50,6 +50,7 @@ struct DynamicNavBuildData;
 struct NavigationGeometryInfo;
 
 using NavBuildDataPtr = ea::shared_ptr<NavBuildData>;
+using NavigationGeometryInfoVector = ea::vector<NavigationGeometryInfo>;
 
 /// A flag representing the type of path point- none, the start of a path segment, the end of one, or an off-mesh connection.
 enum NavigationPathPointFlag
@@ -152,12 +153,14 @@ public:
     /// Allocate the navigation mesh without building any tiles. Return true if successful.
     bool Allocate();
     /// Rebuild part of the navigation mesh contained by the world-space bounding box. Return true if successful.
-    bool BuildTilesInRegion(const BoundingBox& boundingBox);
+    bool BuildTilesInRegion(const BoundingBox& boundingBox, const NavigationGeometryInfoVector* geometryList = nullptr);
     /// Rebuild part of the navigation mesh in the rectangular area. Return true if successful.
-    bool BuildTiles(const IntVector2& from, const IntVector2& to);
+    bool BuildTiles(
+        const IntVector2& from, const IntVector2& to, const NavigationGeometryInfoVector* geometryList = nullptr);
     /// Rebuild part of the navigation mesh in the rectangular area. Task may be completed asynchronously.
     /// Callback is invoked for each tile in range.
-    void BuildTilesAsync(const IntVector2& from, const IntVector2& to, const OnAsyncTileBuildCompleted& callback = {});
+    void BuildTilesAsync(const IntVector2& from, const IntVector2& to,
+        const NavigationGeometryInfoVector* geometryList = nullptr, const OnAsyncTileBuildCompleted& callback = {});
     /// Cancel asynchronous tile build, if any.
     void CancelTileBuild(const IntVector2& tileIndex);
     /// Rebuild the navigation mesh allocating sufficient maximum number of tiles. Return true if successful.
@@ -358,9 +361,9 @@ protected:
 
     /// Build mesh tiles from the geometry data. Return number of tiles built.
     unsigned BuildTilesFromGeometry(
-        ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to);
+        const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to);
     /// Schedule mesh tile building.
-    void BuildTilesFromGeometryAsync(ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from,
+    void BuildTilesFromGeometryAsync(const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from,
         const IntVector2& to, const OnAsyncTileBuildCompleted& callback);
     /// Complete mesh tile building.
     void CompleteAsyncTileBuild(const NavBuildDataPtr& build);

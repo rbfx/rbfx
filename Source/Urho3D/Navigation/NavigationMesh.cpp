@@ -554,15 +554,17 @@ void NavigationMesh::OffsetTileData(ByteSpan tileData, const IntVector3& delta)
     WriteDetourBuffer(buffer, meshTile);
 }
 
-bool NavigationMesh::BuildTilesInRegion(const BoundingBox& boundingBox)
+bool NavigationMesh::BuildTilesInRegion(
+    const BoundingBox& boundingBox, const NavigationGeometryInfoVector* geometryList)
 {
     const IntVector2 beginTileIndex = GetTileIndex(boundingBox.min_);
     const IntVector2 endTileIndex = GetTileIndex(boundingBox.max_);
 
-    return BuildTiles(beginTileIndex, endTileIndex);
+    return BuildTiles(beginTileIndex, endTileIndex, geometryList);
 }
 
-bool NavigationMesh::BuildTiles(const IntVector2& from, const IntVector2& to)
+bool NavigationMesh::BuildTiles(
+    const IntVector2& from, const IntVector2& to, const NavigationGeometryInfoVector* geometryList)
 {
     URHO3D_PROFILE("BuildPartialNavigationMesh");
 
@@ -575,10 +577,11 @@ bool NavigationMesh::BuildTiles(const IntVector2& from, const IntVector2& to)
         return false;
     }
 
-    ea::vector<NavigationGeometryInfo> geometryList;
-    CollectGeometries(geometryList);
+    ea::vector<NavigationGeometryInfo> autoGeometryList;
+    if (!geometryList)
+        CollectGeometries(autoGeometryList);
 
-    unsigned numTiles = BuildTilesFromGeometry(geometryList, from, to);
+    unsigned numTiles = BuildTilesFromGeometry(geometryList ? *geometryList : autoGeometryList, from, to);
     URHO3D_LOGDEBUG("Rebuilt {} tiles of the navigation mesh", numTiles);
 
     for (const IntVector2& tileIndex : IntRect{from, to + IntVector2::ONE})
@@ -587,8 +590,8 @@ bool NavigationMesh::BuildTiles(const IntVector2& from, const IntVector2& to)
     return true;
 }
 
-void NavigationMesh::BuildTilesAsync(
-    const IntVector2& from, const IntVector2& to, const OnAsyncTileBuildCompleted& callback)
+void NavigationMesh::BuildTilesAsync(const IntVector2& from, const IntVector2& to,
+    const NavigationGeometryInfoVector* geometryList, const OnAsyncTileBuildCompleted& callback)
 {
     URHO3D_PROFILE("BuildPartialNavigationMeshAsync");
 
@@ -601,10 +604,11 @@ void NavigationMesh::BuildTilesAsync(
         return;
     }
 
-    ea::vector<NavigationGeometryInfo> geometryList;
-    CollectGeometries(geometryList);
+    ea::vector<NavigationGeometryInfo> autoGeometryList;
+    if (!geometryList)
+        CollectGeometries(autoGeometryList);
 
-    BuildTilesFromGeometryAsync(geometryList, from, to, callback);
+    BuildTilesFromGeometryAsync(geometryList ? *geometryList : autoGeometryList, from, to, callback);
 }
 
 void NavigationMesh::CancelTileBuild(const IntVector2& tileIndex)
@@ -1743,7 +1747,7 @@ void NavigationMesh::OffsetTilesGeometry(const IntVector2& tileOffset, int offse
 }
 
 unsigned NavigationMesh::BuildTilesFromGeometry(
-    ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to)
+    const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to)
 {
     unsigned numTiles = 0;
 
@@ -1767,7 +1771,7 @@ unsigned NavigationMesh::BuildTilesFromGeometry(
     return numTiles;
 }
 
-void NavigationMesh::BuildTilesFromGeometryAsync(ea::vector<NavigationGeometryInfo>& geometryList,
+void NavigationMesh::BuildTilesFromGeometryAsync(const ea::vector<NavigationGeometryInfo>& geometryList,
     const IntVector2& from, const IntVector2& to, const OnAsyncTileBuildCompleted& callback)
 {
     const auto workQueue = GetSubsystem<WorkQueue>();

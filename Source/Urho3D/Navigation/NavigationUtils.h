@@ -7,7 +7,6 @@
 #include "Urho3D/IO/Deserializer.h"
 #include "Urho3D/IO/Serializer.h"
 #include "Urho3D/Math/BoundingBox.h"
-#include "Urho3D/Math/Matrix3x4.h"
 #include "Urho3D/Navigation/NavBuildData.h"
 #include "Urho3D/Navigation/NavigationDefs.h"
 
@@ -27,21 +26,6 @@ void WriteDetourBuffer(Serializer& dest, const ConstByteSpan& buffer);
 
 /// Calculate tile offset.
 ea::optional<ea::pair<IntVector2, int>> CalculateTileOffset(const IntVector3& delta, int tileSize, float cellSize);
-
-/// Description of a navigation mesh geometry component, with transform and bounds information.
-struct NavigationGeometryInfo
-{
-    /// Geometry component.
-    Component* component_{};
-    /// Geometry LOD level if applicable.
-    unsigned lodLevel_{};
-    /// Transform relative to the navigation mesh root node.
-    Matrix3x4 transform_;
-    /// Bounding box relative to the navigation mesh root node.
-    BoundingBox boundingBox_;
-    /// Area ID.
-    unsigned char areaId_{DeduceAreaId};
-};
 
 /// Calculate bounding box of given geometry.
 URHO3D_API BoundingBox CalculateBoundingBox(
