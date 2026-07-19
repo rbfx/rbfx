@@ -4,8 +4,19 @@
 
 #include "Urho3D/Precompiled.h"
 
-#include "Urho3D/IO/Log.h"
 #include "Urho3D/Navigation/NavigationUtils.h"
+
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/TerrainPatch.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Math/Sphere.h"
+#include "Urho3D/Navigation/NavArea.h"
+#include "Urho3D/Navigation/OffMeshConnection.h"
+#include "Urho3D/Scene/Node.h"
+#ifdef URHO3D_PHYSICS
+    #include "Urho3D/Physics/CollisionShape.h"
+#endif
 
 #include <Detour/DetourAlloc.h>
 #include <Recast/Recast.h>
@@ -26,7 +37,7 @@ DetourAllocation ReadDetourBuffer(Deserializer& source)
 
 void WriteDetourBuffer(Serializer& dest, const DetourAllocation& buffer)
 {
-    WriteDetourBuffer(dest, buffer.data_.get(), + buffer.dataSize_);
+    WriteDetourBuffer(dest, buffer.data_.get(), buffer.dataSize_);
 }
 
 void WriteDetourBuffer(Serializer& dest, const unsigned char* data, int dataSize)
@@ -46,8 +57,8 @@ ea::optional<ea::pair<IntVector2, int>> CalculateTileOffset(const IntVector3& de
     const int tileEdgeLength = RoundToInt(tileSize * cellSize);
     if (tileEdgeLength <= 0 || !Equals(tileSize * cellSize, static_cast<float>(tileEdgeLength)))
     {
-        URHO3D_LOGERROR("Tile width should be integer for NavigationMesh rebase: {} * {} = {}",
-            tileSize, cellSize, tileSize * cellSize);
+        URHO3D_LOGERROR("Tile width should be integer for NavigationMesh rebase: {} * {} = {}", tileSize, cellSize,
+            tileSize * cellSize);
         return ea::nullopt;
     }
 
@@ -129,6 +140,91 @@ void DeduceAreaIds(
         const Vector3 normal = (v1 - v0).CrossProduct(v2 - v0).Normalized();
         areas[i] = normal.y_ > walkableThreshold ? RC_WALKABLE_AREA : 0;
     }
+}
+
+void AppendNavigationGeometry(
+    NavigationGeometryInfoVector& geometryList, Node* node, const Matrix3x4& inverseRootTransform, unsigned char areaId)
+{
+#ifdef URHO3D_PHYSICS
+    // Prefer compatible physics collision shapes (triangle mesh, convex hull, box) if found.
+    // Then fallback to visible geometry
+    ea::vector<CollisionShape*> collisionShapes;
+    node->GetComponents<CollisionShape>(collisionShapes);
+    bool collisionShapeFound = false;
+
+    for (unsigned i = 0; i < collisionShapes.size(); ++i)
+    {
+        CollisionShape* shape = collisionShapes[i];
+        if (!shape->IsEnabledEffective())
+            continue;
+
+        ShapeType type = shape->GetShapeType();
+        if ((type == SHAPE_BOX || type == SHAPE_TRIANGLEMESH || type == SHAPE_CONVEXHULL) && shape->GetCollisionShape())
+        {
+            Matrix3x4 shapeTransform(shape->GetPosition(), shape->GetRotation(), shape->GetSize());
+
+            NavigationGeometryInfo info;
+            info.component_ = shape;
+            info.transform_ = inverseRootTransform * node->GetWorldTransform() * shapeTransform;
+            info.boundingBox_ = shape->GetWorldBoundingBox().Transformed(inverseRootTransform);
+            info.areaId_ = areaId;
+
+            geometryList.push_back(info);
+            collisionShapeFound = true;
+        }
+    }
+    if (!collisionShapeFound)
+#endif
+    {
+        ea::vector<Drawable*> drawables;
+        node->FindComponents<Drawable>(drawables, ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
+
+        for (unsigned i = 0; i < drawables.size(); ++i)
+        {
+            /// \todo Evaluate whether should handle other types. Now StaticModel & TerrainPatch are supported, others
+            /// skipped
+            Drawable* drawable = drawables[i];
+            if (!drawable->IsEnabledEffective())
+                continue;
+
+            NavigationGeometryInfo info;
+
+            if (drawable->GetType() == StaticModel::GetTypeStatic())
+                info.lodLevel_ = static_cast<StaticModel*>(drawable)->GetOcclusionLodLevel();
+            else if (drawable->GetType() == TerrainPatch::GetTypeStatic())
+                info.lodLevel_ = 0;
+            else
+                continue;
+
+            info.component_ = drawable;
+            info.transform_ = inverseRootTransform * node->GetWorldTransform();
+            info.boundingBox_ = drawable->GetWorldBoundingBox().Transformed(inverseRootTransform);
+            info.areaId_ = areaId;
+
+            geometryList.push_back(info);
+        }
+    }
+}
+
+void AppendOffMessConnection(NavigationGeometryInfoVector& geometryList, OffMeshConnection* offMeshConnection,
+    const Matrix3x4& inverseRootTransform)
+{
+    const Matrix3x4& transform = offMeshConnection->GetNode()->GetWorldTransform();
+    const BoundingBox boundingBox{Sphere(transform.Translation(), offMeshConnection->GetRadius())};
+
+    NavigationGeometryInfo info;
+    info.component_ = offMeshConnection;
+    info.boundingBox_ = boundingBox.Transformed(inverseRootTransform);
+
+    geometryList.push_back(info);
+}
+
+void AppendNavArea(NavigationGeometryInfoVector& geometryList, NavArea* navArea, const Matrix3x4& inverseRootTransform)
+{
+    NavigationGeometryInfo info;
+    info.component_ = navArea;
+    info.boundingBox_ = navArea->GetWorldBoundingBox().Transformed(inverseRootTransform);
+    geometryList.push_back(info);
 }
 
 } // namespace Urho3D

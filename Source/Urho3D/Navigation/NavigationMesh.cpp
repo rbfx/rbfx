@@ -1105,15 +1105,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
     {
         OffMeshConnection* connection = connections[i];
         if (connection->IsEnabledEffective() && connection->GetEndPoint())
-        {
-            const Matrix3x4& transform = connection->GetNode()->GetWorldTransform();
-
-            NavigationGeometryInfo info;
-            info.component_ = connection;
-            info.boundingBox_ = BoundingBox(Sphere(transform.Translation(), connection->GetRadius())).Transformed(inverse);
-
-            geometryList.push_back(info);
-        }
+            AppendOffMessConnection(geometryList, connection, inverse);
     }
 
     // Get nav area volumes
@@ -1125,10 +1117,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
         NavArea* area = navAreas[i];
         if (area->IsEnabledEffective())
         {
-            NavigationGeometryInfo info;
-            info.component_ = area;
-            info.boundingBox_ = area->GetWorldBoundingBox();
-            geometryList.push_back(info);
+            AppendNavArea(geometryList, area, inverse);
             areas_.push_back(WeakPtr<NavArea>(area));
         }
     }
@@ -1147,64 +1136,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
 
     Matrix3x4 inverse = node_->GetWorldTransform().Inverse();
 
-#ifdef URHO3D_PHYSICS
-    // Prefer compatible physics collision shapes (triangle mesh, convex hull, box) if found.
-    // Then fallback to visible geometry
-    ea::vector<CollisionShape*> collisionShapes;
-    node->GetComponents<CollisionShape>(collisionShapes);
-    bool collisionShapeFound = false;
-
-    for (unsigned i = 0; i < collisionShapes.size(); ++i)
-    {
-        CollisionShape* shape = collisionShapes[i];
-        if (!shape->IsEnabledEffective())
-            continue;
-
-        ShapeType type = shape->GetShapeType();
-        if ((type == SHAPE_BOX || type == SHAPE_TRIANGLEMESH || type == SHAPE_CONVEXHULL) && shape->GetCollisionShape())
-        {
-            Matrix3x4 shapeTransform(shape->GetPosition(), shape->GetRotation(), shape->GetSize());
-
-            NavigationGeometryInfo info;
-            info.component_ = shape;
-            info.transform_ = inverse * node->GetWorldTransform() * shapeTransform;
-            info.boundingBox_ = shape->GetWorldBoundingBox().Transformed(inverse);
-            info.areaId_ = navigable->GetEffectiveAreaId();
-
-            geometryList.push_back(info);
-            collisionShapeFound = true;
-        }
-    }
-    if (!collisionShapeFound)
-#endif
-    {
-        ea::vector<Drawable*> drawables;
-        node->FindComponents<Drawable>(drawables, ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
-
-        for (unsigned i = 0; i < drawables.size(); ++i)
-        {
-            /// \todo Evaluate whether should handle other types. Now StaticModel & TerrainPatch are supported, others skipped
-            Drawable* drawable = drawables[i];
-            if (!drawable->IsEnabledEffective())
-                continue;
-
-            NavigationGeometryInfo info;
-
-            if (drawable->GetType() == StaticModel::GetTypeStatic())
-                info.lodLevel_ = static_cast<StaticModel*>(drawable)->GetOcclusionLodLevel();
-            else if (drawable->GetType() == TerrainPatch::GetTypeStatic())
-                info.lodLevel_ = 0;
-            else
-                continue;
-
-            info.component_ = drawable;
-            info.transform_ = inverse * node->GetWorldTransform();
-            info.boundingBox_ = drawable->GetWorldBoundingBox().Transformed(inverse);
-            info.areaId_ = navigable->GetEffectiveAreaId();
-
-            geometryList.push_back(info);
-        }
-    }
+    AppendNavigationGeometry(geometryList, node, inverse, navigable->GetEffectiveAreaId());
 
     if (recursive)
     {

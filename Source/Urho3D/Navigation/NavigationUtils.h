@@ -17,7 +17,9 @@
 namespace Urho3D
 {
 
-class Component;
+class NavArea;
+class Node;
+class OffMeshConnection;
 
 DetourAllocation ReadDetourBuffer(Deserializer& source);
 void WriteDetourBuffer(Serializer& dest, const DetourAllocation& buffer);
@@ -42,5 +44,17 @@ URHO3D_API unsigned CalculateMaxTiles(const BoundingBox& boundingBox, int tileSi
 /// @see rcMarkWalkableTriangles
 URHO3D_API void DeduceAreaIds(
     float walkableSlopeAngle, const float* vertices, const int* triangles, int numTriangles, unsigned char* areas);
+
+/// Append Node geometry to geometry list.
+URHO3D_API void AppendNavigationGeometry(NavigationGeometryInfoVector& geometryList, Node* node,
+    const Matrix3x4& inverseRootTransform, unsigned char areaId);
+
+/// Append off-mesh connection to geometry list.
+URHO3D_API void AppendOffMessConnection(NavigationGeometryInfoVector& geometryList,
+    OffMeshConnection* offMeshConnection, const Matrix3x4& inverseRootTransform);
+
+/// Append navigation area to geometry list.
+URHO3D_API void AppendNavArea(
+    NavigationGeometryInfoVector& geometryList, NavArea* navArea, const Matrix3x4& inverseRootTransform);
 
 } // namespace Urho3D
