@@ -70,6 +70,8 @@ void SharedReplicationState::OnNetworkObjectRemoved(NetworkObject* networkObject
 
 void SharedReplicationState::PrepareForUpdate()
 {
+    URHO3D_PROFILE("PrepareForUpdate");
+
     ResetFrameBuffers();
     InitializeNewObjects();
 
@@ -123,6 +125,8 @@ void SharedReplicationState::QueueDeltaUpdate(NetworkObject* networkObject)
 
 void SharedReplicationState::CookDeltaUpdates(NetworkFrame currentFrame)
 {
+    URHO3D_PROFILE("CookDeltaUpdates");
+
     recentlyRemovedObjects_.clear();
 
     for (unsigned i = 0; i < isDeltaUpdateQueued_.size(); ++i)
@@ -310,6 +314,8 @@ ClientReplicationState::ClientReplicationState(
 
 void ClientReplicationState::SendMessages(NetworkFrame currentFrame, const SharedReplicationState& sharedState)
 {
+    URHO3D_PROFILE("SendMessages");
+
     ClientSynchronizationState::SendMessages();
 
     if (IsSynchronized())
@@ -525,6 +531,8 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
     if (!IsSynchronized())
         return;
 
+    URHO3D_PROFILE("UpdateNetworkObjects");
+
     const float timeStep = 1.0f / updateFrequency_;
     const float relevanceTimeout = GetSetting(NetworkSettings::RelevanceTimeout).GetFloat();
 
@@ -665,6 +673,8 @@ void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float over
 
 void ServerReplicator::OnNetworkUpdate()
 {
+    URHO3D_PROFILE("ServerReplicatorUpdate");
+
     using namespace EndServerNetworkFrame;
     auto& eventData = network_->GetEventDataMap();
     eventData[P_FRAME] = static_cast<long long>(currentFrame_);

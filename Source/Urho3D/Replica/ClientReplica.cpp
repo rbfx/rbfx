@@ -366,6 +366,8 @@ ea::string ClientReplica::GetDebugInfo() const
 
 void ClientReplica::OnInputReady(float timeStep)
 {
+    URHO3D_PROFILE("ClientReplicaInterpolate");
+
     UpdateClientClocks(timeStep, pendingClockUpdates_);
     pendingClockUpdates_.clear();
 
@@ -385,6 +387,8 @@ void ClientReplica::OnNetworkUpdate()
 {
     if (IsNewInputFrame())
     {
+        URHO3D_PROFILE("ClientReplicaUpdate");
+
         using namespace EndClientNetworkFrame;
         auto& eventData = network_->GetEventDataMap();
         eventData[P_FRAME] = static_cast<long long>(GetInputTime().Frame());
