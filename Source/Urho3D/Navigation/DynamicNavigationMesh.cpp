@@ -664,7 +664,7 @@ DynamicNavigationMesh::TileBuilderFunction DynamicNavigationMesh::GetTileBuilder
 }
 
 NavBuildDataPtr DynamicNavigationMesh::CreateTileBuildData(
-    const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& tileIndex) const
+    const NavigationGeometryInfoVector& geometryList, const IntVector2& tileIndex) const
 {
     auto build = ea::make_shared<DynamicNavBuildData>(compressor_);
     InitializeBuildData(*build, tileIndex, geometryList);

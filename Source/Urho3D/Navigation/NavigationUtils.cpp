@@ -73,7 +73,7 @@ ea::optional<ea::pair<IntVector2, int>> CalculateTileOffset(const IntVector3& de
     return ea::make_pair(IntVector2{tileDelta.x_, tileDelta.z_}, delta.y_);
 }
 
-BoundingBox CalculateBoundingBox(const ea::vector<NavigationGeometryInfo>& geometryList, const Vector3& padding)
+BoundingBox CalculateBoundingBox(const NavigationGeometryInfoVector& geometryList, const Vector3& padding)
 {
     BoundingBox result;
     for (unsigned i = 0; i < geometryList.size(); ++i)
@@ -85,8 +85,7 @@ BoundingBox CalculateBoundingBox(const ea::vector<NavigationGeometryInfo>& geome
     return result;
 }
 
-BoundingBox CalculateTileBoundingBox(
-    const ea::vector<NavigationGeometryInfo>& geometryList, const BoundingBox& tileColumn)
+BoundingBox CalculateTileBoundingBox(const NavigationGeometryInfoVector& geometryList, const BoundingBox& tileColumn)
 {
     BoundingBox result = tileColumn;
     result.min_.y_ = M_LARGE_VALUE;

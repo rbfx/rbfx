@@ -437,7 +437,7 @@ void NavigationMesh::SendRebuildEvent()
 bool NavigationMesh::RebuildMesh()
 {
     // Collect geometry and update dimensions
-    ea::vector<NavigationGeometryInfo> geometryList;
+    NavigationGeometryInfoVector geometryList;
     CollectGeometries(geometryList);
 
     const BoundingBox boundingBox = CalculateBoundingBox(geometryList, padding_);
@@ -577,7 +577,7 @@ bool NavigationMesh::BuildTiles(
         return false;
     }
 
-    ea::vector<NavigationGeometryInfo> autoGeometryList;
+    NavigationGeometryInfoVector autoGeometryList;
     if (!geometryList)
         CollectGeometries(autoGeometryList);
 
@@ -604,7 +604,7 @@ void NavigationMesh::BuildTilesAsync(const IntVector2& from, const IntVector2& t
         return;
     }
 
-    ea::vector<NavigationGeometryInfo> autoGeometryList;
+    NavigationGeometryInfoVector autoGeometryList;
     if (!geometryList)
         CollectGeometries(autoGeometryList);
 
@@ -1077,7 +1077,7 @@ ea::vector<unsigned char> NavigationMesh::GetNavigationDataAttr() const
     return ret.GetBuffer();
 }
 
-void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList)
+void NavigationMesh::CollectGeometries(NavigationGeometryInfoVector& geometryList)
 {
     URHO3D_PROFILE("CollectNavigationGeometry");
 
@@ -1123,7 +1123,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
     }
 }
 
-void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList, Navigable* navigable,
+void NavigationMesh::CollectGeometries(NavigationGeometryInfoVector& geometryList, Navigable* navigable,
     Node* node, ea::hash_set<Node*>& processedNodes, bool recursive)
 {
     // Make sure nodes are not included twice
@@ -1147,7 +1147,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
 }
 
 void NavigationMesh::CollectTileGeometry(NavBuildData& build, const Matrix3x4& rootTransform,
-    const ea::vector<NavigationGeometryInfo>& geometryList, const BoundingBox& box)
+    const NavigationGeometryInfoVector& geometryList, const BoundingBox& box)
 {
     const Matrix3x4 inverse = rootTransform.Inverse();
 
@@ -1378,7 +1378,7 @@ void NavigationMesh::SendTileAddedEvent(const IntVector2& tileIndex)
 }
 
 void NavigationMesh::InitializeBuildData(
-    NavBuildData& build, const IntVector2& tileIndex, const ea::vector<NavigationGeometryInfo>& geometryList) const
+    NavBuildData& build, const IntVector2& tileIndex, const NavigationGeometryInfoVector& geometryList) const
 {
     URHO3D_PROFILE("InitializeBuildData");
 
@@ -1615,7 +1615,7 @@ NavigationMesh::TileBuilderFunction NavigationMesh::GetTileBuilder() const
 }
 
 NavBuildDataPtr NavigationMesh::CreateTileBuildData(
-    const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& tileIndex) const
+    const NavigationGeometryInfoVector& geometryList, const IntVector2& tileIndex) const
 {
     auto build = ea::make_shared<SimpleNavBuildData>();
     InitializeBuildData(*build, tileIndex, geometryList);
@@ -1679,7 +1679,7 @@ void NavigationMesh::OffsetTilesGeometry(const IntVector2& tileOffset, int offse
 }
 
 unsigned NavigationMesh::BuildTilesFromGeometry(
-    const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to)
+    const NavigationGeometryInfoVector& geometryList, const IntVector2& from, const IntVector2& to)
 {
     unsigned numTiles = 0;
 
@@ -1703,7 +1703,7 @@ unsigned NavigationMesh::BuildTilesFromGeometry(
     return numTiles;
 }
 
-void NavigationMesh::BuildTilesFromGeometryAsync(const ea::vector<NavigationGeometryInfo>& geometryList,
+void NavigationMesh::BuildTilesFromGeometryAsync(const NavigationGeometryInfoVector& geometryList,
     const IntVector2& from, const IntVector2& to, const OnAsyncTileBuildCompleted& callback)
 {
     const auto workQueue = GetSubsystem<WorkQueue>();

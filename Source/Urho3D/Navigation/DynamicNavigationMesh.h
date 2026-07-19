@@ -123,7 +123,7 @@ protected:
 
     TileBuilderFunction GetTileBuilder() const override;
     NavBuildDataPtr CreateTileBuildData(
-        const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& tileIndex) const override;
+        const NavigationGeometryInfoVector& geometryList, const IntVector2& tileIndex) const override;
     bool ReplaceTileData(NavBuildData& build) override;
     void OffsetTilesGeometry(const IntVector2& tileOffset, int offsetY) override;
     /// @}

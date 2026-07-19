@@ -30,12 +30,11 @@ void WriteDetourBuffer(Serializer& dest, const ConstByteSpan& buffer);
 ea::optional<ea::pair<IntVector2, int>> CalculateTileOffset(const IntVector3& delta, int tileSize, float cellSize);
 
 /// Calculate bounding box of given geometry.
-URHO3D_API BoundingBox CalculateBoundingBox(
-    const ea::vector<NavigationGeometryInfo>& geometryList, const Vector3& padding);
+URHO3D_API BoundingBox CalculateBoundingBox(const NavigationGeometryInfoVector& geometryList, const Vector3& padding);
 
 /// Calculate bounding box of given geometry within the given tile volume.
 URHO3D_API BoundingBox CalculateTileBoundingBox(
-    const ea::vector<NavigationGeometryInfo>& geometryList, const BoundingBox& tileColumn);
+    const NavigationGeometryInfoVector& geometryList, const BoundingBox& tileColumn);
 
 /// Calculate maximum number of tiles required to contain the given bounding box.
 URHO3D_API unsigned CalculateMaxTiles(const BoundingBox& boundingBox, int tileSize, float cellSize);
