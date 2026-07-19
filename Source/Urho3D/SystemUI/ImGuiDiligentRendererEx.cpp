@@ -141,6 +141,9 @@ ImGuiDiligentRendererEx::ImGuiDiligentRendererEx(RenderDevice* renderDevice)
         renderDevice, swapChainDesc.ColorBufferFormat, swapChainDesc.DepthBufferFormat, multiSample);
     secondaryPipelineState_ =
         CreateRenderPipeline(renderDevice, swapChainDesc.ColorBufferFormat, TextureFormat::TEX_FORMAT_UNKNOWN, 1);
+
+    if (!primaryPipelineState_ || !secondaryPipelineState_)
+        URHO3D_LOGERROR("Failed to initialize ImGui renderer");
 }
 
 ImGuiDiligentRendererEx::~ImGuiDiligentRendererEx()
@@ -204,6 +207,9 @@ void ImGuiDiligentRendererEx::RenderSecondaryWindows()
 
 void ImGuiDiligentRendererEx::RenderDrawDataWith(ImDrawData* drawData, PipelineState* pipelineState)
 {
+    if (!pipelineState)
+        return;
+
     pipelineState->Restore();
     if (!pipelineState->IsValid())
         return;
