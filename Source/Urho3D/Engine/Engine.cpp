@@ -632,6 +632,7 @@ void Engine::InitializeVirtualFileSystem(bool enableResourceRootFile)
     vfs->MountAliasRoot();
     vfs->MountRoot();
 
+    const unsigned numMountPoints = vfs->NumMountPoints();
     if (!resourceRootEntries.empty() && enableResourceRootFile)
     {
         for (const ResourceRootEntry& entry : resourceRootEntries)
@@ -669,6 +670,8 @@ void Engine::InitializeVirtualFileSystem(bool enableResourceRootFile)
             }
         }
     }
+    if (numMountPoints == vfs->NumMountPoints())
+        URHO3D_LOGERROR("No resource directories or packages were mounted");
 
 #ifndef __EMSCRIPTEN__
     vfs->MountDir("conf", GetAppPreferencesDir());

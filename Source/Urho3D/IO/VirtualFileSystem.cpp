@@ -40,6 +40,8 @@ MountedAliasRoot* VirtualFileSystem::GetOrCreateAliasRoot()
     {
         aliasMountPoint_ = MakeShared<MountedAliasRoot>(context_);
         mountPoints_.push_back(aliasMountPoint_);
+
+        URHO3D_LOGINFO("Mounted virtual directory '{}'", aliasMountPoint_->GetName());
     }
 
     return aliasMountPoint_;
@@ -109,6 +111,7 @@ MountPoint* VirtualFileSystem::MountPackageFile(const ea::string& path)
         return packageFile;
     }
 
+    URHO3D_LOGERROR("Failed to mount package '{}'", path);
     return nullptr;
 }
 
@@ -122,6 +125,8 @@ void VirtualFileSystem::Mount(MountPoint* mountPoint)
         return;
     }
     mountPoints_.push_back(pointPtr);
+
+    URHO3D_LOGINFO("Mounted virtual directory '{}'", pointPtr->GetName());
 
     mountPoint->SetWatching(isWatching_);
 
@@ -156,6 +161,10 @@ void VirtualFileSystem::MountExistingPackages(
                 if (mountPoint)
                     MountAlias(Format("res:{}", relativePath), mountPoint);
             }
+            else
+            {
+                URHO3D_LOGDEBUG("Ignored nonexistent mount path '{}'", packagePath);
+            }
         }
     }
 }
@@ -183,6 +192,10 @@ void VirtualFileSystem::MountExistingDirectoriesOrPackages(
                 if (mountPoint)
                     MountAlias(Format("res:{}", relativePath), mountPoint);
             }
+            else
+            {
+                URHO3D_LOGDEBUG("Ignored nonexistent mount path '{}(.pak)'", directoryPath);
+            }
         }
     }
 }
@@ -198,6 +211,8 @@ void VirtualFileSystem::Unmount(MountPoint* mountPoint)
     const auto i = mountPoints_.find(pointPtr);
     if (i != mountPoints_.end())
     {
+        URHO3D_LOGINFO("Unmounted virtual directory '{}'", pointPtr->GetName());
+
         // Erase the slow way because order of the mount points matters.
         mountPoints_.erase(i);
     }
@@ -206,6 +221,9 @@ void VirtualFileSystem::Unmount(MountPoint* mountPoint)
 void VirtualFileSystem::UnmountAll()
 {
     MutexLock lock(mountMutex_);
+
+    for (const auto& mountPoint : mountPoints_)
+        URHO3D_LOGINFO("Unmounted virtual directory '{}'", mountPoint->GetName());
 
     mountPoints_.clear();
     aliasMountPoint_ = nullptr;
