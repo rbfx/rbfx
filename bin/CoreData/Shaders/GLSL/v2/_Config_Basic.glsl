@@ -173,15 +173,17 @@ half RoughnessToSpecularPower(half roughness) { return (1.0 - roughness) * 255.0
 /// =================================== Uniforms ===================================
 
 #ifdef GL_ARB_shading_language_420pack
-    #define _URHO3D_LAYOUT(index) layout(binding=index)
+    #define _URHO3D_LAYOUT_UNIFORM(index) layout(binding=index)
+    #define _URHO3D_LAYOUT_SAMPLER(index) layout(binding=index)
 #else
-    #define _URHO3D_LAYOUT(index)
+    #define _URHO3D_LAYOUT_UNIFORM(index)
+    #define _URHO3D_LAYOUT_SAMPLER(index)
 #endif
 
-#define UNIFORM_BUFFER_BEGIN(index, name) _URHO3D_LAYOUT(index) uniform name {
+#define UNIFORM_BUFFER_BEGIN(index, name) _URHO3D_LAYOUT_UNIFORM(index) uniform name {
 #define UNIFORM(decl) decl;
 #define UNIFORM_BUFFER_END(index, name) };
-#define SAMPLER(index, decl) _URHO3D_LAYOUT(index) uniform decl;
+#define SAMPLER(index, decl) _URHO3D_LAYOUT_SAMPLER(index) uniform decl;
 
 #define UNIFORM_HIGHP(decl) UNIFORM(highp decl)
 #define SAMPLER_HIGHP(index, decl) SAMPLER(index, highp decl)
