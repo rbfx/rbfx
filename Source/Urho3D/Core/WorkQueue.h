@@ -44,6 +44,7 @@ class TaskScheduler;
 namespace Urho3D
 {
 
+class HiresTimer;
 class WorkQueue;
 
 /// Priority of the task.
@@ -184,9 +185,11 @@ public:
     /// @}
 
 private:
-    void ProcessPostedTasks();
-    bool ProcessMainThreadTasks();
-    void PurgeProcessedTasksInFallbackQueue();
+    unsigned ExecuteWithinBudget(const ea::vector<TaskFunction>& tasks, HiresTimer* budgetTimer, unsigned budgetMs);
+
+    bool ProcessPostedTasks(HiresTimer* budgetTimer);
+    bool ProcessMainThreadTasks(HiresTimer* budgetTimer);
+    bool UpdateOnMainThread(HiresTimer* budgetTimer);
     void CompleteImmediateForAnotherThread(unsigned threadIndex);
 
     template <class T> static TaskFunction WrapTask(T&& task);
@@ -248,7 +251,7 @@ private:
 
     /// Task queue used for fallback if no threads available.
     /// Used only for PostTask and PostTaskForThread, therefore no need for mutex.
-    ea::vector<ea::pair<TaskPriority, TaskFunction>> fallbackTaskQueue_;
+    ea::vector<TaskFunction> fallbackTaskQueue_;
 
     /// Total number of threads, including main thread.
     unsigned numProcessingThreads_{};

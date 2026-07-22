@@ -311,17 +311,35 @@ void WorkQueue::Initialize(unsigned numThreads)
 
 void WorkQueue::Update()
 {
-    ProcessPostedTasks();
-    ProcessMainThreadTasks();
+    HiresTimer budgetTimer;
+    UpdateOnMainThread(&budgetTimer);
 }
 
-void WorkQueue::ProcessPostedTasks()
+unsigned WorkQueue::ExecuteWithinBudget(
+    const ea::vector<TaskFunction>& tasks, HiresTimer* budgetTimer, unsigned budgetMs)
+{
+    unsigned numExecutedTasks = 0;
+    for (auto& callback : tasks)
+    {
+        if (numExecutedTasks > 0 && budgetTimer && budgetTimer->GetUSec(false) >= budgetMs * 1000LL)
+            break;
+
+        callback(0, this);
+        ++numExecutedTasks;
+    }
+    return numExecutedTasks;
+}
+
+bool WorkQueue::ProcessPostedTasks(HiresTimer* budgetTimer)
 {
     URHO3D_PROFILE("AnyThreadTasks");
 
 #ifdef URHO3D_THREADING
     if (taskScheduler_)
     {
+        // TODO: Do we need to call CompleteImmediateForAnotherThread too?
+        // Stacks for all threads are purged, so all immediate tasks should be completed too.
+        // This code probably works fine with immediate tasks are only posted to and from main thread.
         CompleteImmediateForThisThread();
         taskScheduler_->RunPinnedTasks();
         for (auto& stack : localTaskStack_)
@@ -333,20 +351,15 @@ void WorkQueue::ProcessPostedTasks()
 
     if (!fallbackTaskQueue_.empty())
     {
-        HiresTimer timer;
-        for (auto& [_, task] : fallbackTaskQueue_)
-        {
-            if (timer.GetUSec(false) >= maxNonThreadedWorkMs_ * 1000LL)
-                break;
-
-            task(0, this);
-            task = nullptr;
-        }
-        PurgeProcessedTasksInFallbackQueue();
+        const unsigned numExecutedTasks = ExecuteWithinBudget(fallbackTaskQueue_, budgetTimer, maxNonThreadedWorkMs_);
+        fallbackTaskQueue_.erase(fallbackTaskQueue_.begin(), fallbackTaskQueue_.begin() + numExecutedTasks);
+        return true;
     }
+
+    return false;
 }
 
-bool WorkQueue::ProcessMainThreadTasks()
+bool WorkQueue::ProcessMainThreadTasks(HiresTimer* budgetTimer)
 {
     URHO3D_PROFILE("MainThreadTasks");
 
@@ -360,18 +373,30 @@ bool WorkQueue::ProcessMainThreadTasks()
         ea::swap(mainThreadTasks_, mainThreadTasksSwap_);
     }
 
-    for (const auto& callback : mainThreadTasksSwap_)
-        callback(0, this);
-    const bool nothingToRun = mainThreadTasksSwap_.empty();
-    mainThreadTasksSwap_.clear();
+    if (!mainThreadTasksSwap_.empty())
+    {
+        const unsigned numExecutedTasks = ExecuteWithinBudget(mainThreadTasksSwap_, budgetTimer, maxNonThreadedWorkMs_);
+        if (numExecutedTasks != mainThreadTasksSwap_.size())
+        {
+            const auto iterBegin = ea::make_move_iterator(mainThreadTasksSwap_.begin());
+            const auto iterEnd = ea::make_move_iterator(mainThreadTasksSwap_.end());
 
-    return !nothingToRun;
+            MutexLock lock(mainThreadTasksMutex_);
+            mainThreadTasks_.insert(mainThreadTasks_.begin(), iterBegin + numExecutedTasks, iterEnd);
+        }
+        mainThreadTasksSwap_.clear();
+        return true;
+    }
+
+    return false;
 }
 
-void WorkQueue::PurgeProcessedTasksInFallbackQueue()
+bool WorkQueue::UpdateOnMainThread(HiresTimer* budgetTimer)
 {
-    ea::erase_if(fallbackTaskQueue_,
-        [](const ea::pair<TaskPriority, TaskFunction>& priorityAndTask) { return !priorityAndTask.second; });
+    bool result = false;
+    result |= ProcessPostedTasks(budgetTimer);
+    result |= ProcessMainThreadTasks(budgetTimer);
+    return result;
 }
 
 #ifdef URHO3D_THREADING
@@ -416,7 +441,7 @@ void WorkQueue::PostTask(TaskFunction&& task, TaskPriority priority)
     if (priority == TaskPriority::Immediate)
         task(0, this);
     else
-        fallbackTaskQueue_.emplace_back(priority, ea::move(task));
+        fallbackTaskQueue_.push_back(ea::move(task));
 }
 
 void WorkQueue::PostTaskForThread(TaskFunction&& task, TaskPriority priority, unsigned threadIndex)
@@ -454,7 +479,7 @@ void WorkQueue::PostTaskForThread(TaskFunction&& task, TaskPriority priority, un
     if (priority == TaskPriority::Immediate)
         task(0, this);
     else
-        fallbackTaskQueue_.emplace_back(priority, ea::move(task));
+        fallbackTaskQueue_.push_back(ea::move(task));
 }
 
 void WorkQueue::PostTaskForMainThread(TaskFunction&& task, TaskPriority priority)
@@ -526,14 +551,7 @@ void WorkQueue::CompleteAll()
         taskScheduler_->WaitforAll();
 #endif
 
-    if (!fallbackTaskQueue_.empty())
-    {
-        for (auto& [taskPriority, task] : fallbackTaskQueue_)
-            task(0, this);
-        fallbackTaskQueue_.clear();
-    }
-
-    while (ProcessMainThreadTasks())
+    while (UpdateOnMainThread(nullptr))
     {
         // Run tasks in main thread until there is nothing to run
     }
