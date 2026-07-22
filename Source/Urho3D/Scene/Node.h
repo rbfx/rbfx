@@ -753,9 +753,11 @@ public:
     template <class U>
     void FindComponents(
         U& destVector, ComponentSearchFlags flags = ComponentSearchFlag::Default, bool clearVector = true) const;
-    /// Find components. Return true to continue or false if search is over.
+    /// Find components (dynamic type). Return true to continue or false if search is over.
     template <class Callback>
     bool FindComponents(ComponentSearchFlags flags, StringHash typeId, const Callback& callback) const;
+    /// Find components (static type). Return true to continue or false if search is over.
+    template <class T, class Callback> bool FindComponents(ComponentSearchFlags flags, const Callback& callback) const;
 
     /// Find and return child node inplace if pointer is null, do nothing if pointer is already initialized.
     /// Return true if child node is found or is already initialized.
@@ -937,7 +939,8 @@ template <class T> T* Node::FindComponent(ComponentSearchFlags flags) const
     return static_cast<T*>(FindComponent(T::GetTypeStatic(), flags));
 }
 
-template <typename Callback> bool Node::FindComponents(ComponentSearchFlags flags, StringHash typeId, const Callback& callback) const
+template <class Callback>
+bool Node::FindComponents(ComponentSearchFlags flags, StringHash typeId, const Callback& callback) const
 {
     const bool includeDisabled = !flags.Test(ComponentSearchFlag::EnabledOnly);
     const bool includeDerived = flags.Test(ComponentSearchFlag::Derived);
@@ -1002,6 +1005,11 @@ template <typename Callback> bool Node::FindComponents(ComponentSearchFlags flag
     return true;
 }
 
+template <class T, class Callback> bool Node::FindComponents(ComponentSearchFlags flags, const Callback& callback) const
+{
+    return FindComponents(
+        flags, T::GetTypeStatic(), [&](Component* component) { return callback(static_cast<T*>(component)); });
+}
 
 template <class T, class U> void Node::FindComponents(U& destVector, ComponentSearchFlags flags, bool clearVector) const
 {
