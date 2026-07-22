@@ -4,9 +4,10 @@
 #
 # Configuration and checkout:
 # 1. Resolve `ci_platform_tag` into the platform, architecture, compiler, linkage,
-#    cache identity, build directories, and other shared CI variables by using the
-#    repository's `ci_build.sh` helpers. Defaults such as CMake/.NET versions and
-#    ccache behavior are exported to later workflow steps through `GITHUB_ENV`.
+#    cache identity, build directories, and other shared CI variables by using
+#    `ci_build.sh` from this action's own repository checkout. This keeps action
+#    logic pinned to the same repository and ref as the action. Defaults such as
+#    CMake/.NET versions and ccache behavior are exported through `GITHUB_ENV`.
 # 2. For `downstream`, check out the calling project, including submodules according
 #    to `submodules`, then resolve `framework_source` as either a local path or a
 #    GitHub URL with an optional `#ref`. In `source` mode, use the local rbfx tree or
@@ -120,7 +121,7 @@ runs:
         ci_platform_tag_value="${INPUT_CI_PLATFORM_TAG:-${ci_platform_tag:-}}"
         ci_source_path_value="${ci_source_path:-}"
         ci_source_dir_value="${ci_source_dir:-}"
-        ci_build_script_value="${ci_build_script:-}"
+        ci_build_script_value="${action_repo_root}/script/ci_build.sh"
         ci_sdk_dir_value="${ci_sdk_dir:-${GITHUB_WORKSPACE}/SDK/${ci_platform_tag_value}}"
         framework_source_value=''
         framework_source_kind=''
@@ -179,12 +180,10 @@ runs:
               ci_source_path_value="$framework_source_value"
               ci_source_dir_value="$framework_source_value"
             fi
-            ci_build_script_value="${ci_source_dir_value}/script/ci_build.sh"
             rbfx_android_java_dir="${ci_source_dir_value}/Source/ThirdParty/SDL/android-project/app/src/main/java"
           else
             ci_source_path_value='.'
             ci_source_dir_value="$action_repo_root"
-            ci_build_script_value="${action_repo_root}/script/ci_build.sh"
             if [[ "$framework_source_kind" == 'url' && -z "$framework_repository" ]]; then
               echo 'Error: framework_build_type=sdk requires a GitHub repository URL so the SDK release can be downloaded.'
               exit 1
@@ -200,9 +199,6 @@ runs:
           fi
           if [[ -z "$ci_source_dir_value" ]]; then
             ci_source_dir_value="${GITHUB_WORKSPACE}/${ci_source_path_value}"
-          fi
-          if [[ -z "$ci_build_script_value" ]]; then
-            ci_build_script_value="./${ci_source_path_value}/script/ci_build.sh"
           fi
         fi
 

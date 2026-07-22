@@ -6,9 +6,11 @@
 # 1. Resolve whether the project consumes an rbfx source tree or an installed SDK.
 #    The per-artifact build directory is derived from `project_build_dir` and, when
 #    provided, `artifact_name`, allowing several projects to build in one matrix job.
-# 2. Build a non-Android project through `ci_build.sh build-project`, passing the
-#    selected source/SDK mode. For Android, run `ci_build.sh build-android-project`
-#    in `android_dir` with `android_gradle_task` (assembleRelease by default).
+# 2. Build a non-Android project through the action checkout's `ci_build.sh`
+#    `build-project` command, passing the selected source/SDK mode. For Android, run
+#    `ci_build.sh build-android-project` in `android_dir` with `android_gradle_task`
+#    (assembleRelease by default). The helper is therefore pinned to the same ref as
+#    this action even when the selected framework source comes from another ref.
 # 3. Save the compiler cache unless restoration was an exact hit or the job was
 #    cancelled. The key combines the prepared cache identity and the current SHA.
 # 4. Resolve `publish`: `none`, `artifact`, `release`, and `both` are explicit;
@@ -57,7 +59,9 @@ runs:
         INPUT_FRAMEWORK_BUILD_TYPE: ${{ env.ci_framework_build_type }}
         INPUT_ARTIFACT_NAME: ${{ inputs.artifact_name }}
       run: |
-        "$GITHUB_ACTION_PATH/../../../script/ci_build.sh" resolve-project-build-mode
+        ci_build_script="$GITHUB_ACTION_PATH/../../../script/ci_build.sh"
+        "$ci_build_script" resolve-project-build-mode
+        printf 'ci_build_script=%s\n' "$ci_build_script" >> "$GITHUB_ENV"
         active_project_build_dir="${project_build_dir:-${GITHUB_WORKSPACE}/project-build/${ci_platform_tag}}"
         if [[ -n "$INPUT_ARTIFACT_NAME" ]]; then
           active_project_build_dir="${active_project_build_dir}/${INPUT_ARTIFACT_NAME}"
@@ -114,7 +118,7 @@ runs:
         INPUT_PUBLISH: ${{ inputs.publish }}
         MATRIX_PUBLISH_ARTIFACT: ${{ matrix.publish_artifact || '' }}
       run: |
-        "$GITHUB_ACTION_PATH/../../../script/ci_build.sh" resolve-project-publish
+        "$ci_build_script" resolve-project-publish
 
     - name: Validate publish inputs
       if: steps.publish.outputs.upload_artifact == 'true' || steps.publish.outputs.upload_release == 'true'
