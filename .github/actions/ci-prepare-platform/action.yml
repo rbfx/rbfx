@@ -67,6 +67,10 @@ inputs:
     description: "Optional rbfx CI platform tag override. Defaults to `matrix.ci_platform_tag`, then the `ci_platform_tag` environment variable."
     required: false
     default: ''
+  project_dir:
+    description: "Path to the downstream project root, absolute or relative to `github.workspace`. Required when `profile` is `downstream`."
+    required: false
+    default: ''
   framework_source:
     description: "Framework source for downstream builds. Supported values: a GitHub repository URL optionally suffixed with `#ref`, or a local path. The suffix selects a Git ref in source mode and a release in SDK mode. Without it, source mode uses `master` and SDK mode uses `latest`."
     required: false
@@ -112,6 +116,7 @@ runs:
       shell: bash
       env:
         INPUT_CI_PLATFORM_TAG: ${{ inputs.ci_platform_tag || matrix.ci_platform_tag || env.ci_platform_tag }}
+        INPUT_PROJECT_DIR: ${{ inputs.project_dir }}
         DEFAULT_CCACHE_PREFIX: ${{ inputs.profile == 'downstream' && format('downstream-{0}', github.repository_id) || '' }}
       run: |
         action_repo_root="$(cd "$GITHUB_ACTION_PATH/../../.." && pwd)"
@@ -120,6 +125,7 @@ runs:
         ci_source_dir_value="${ci_source_dir:-}"
         ci_build_script_value="${action_repo_root}/script/ci_build.sh"
         ci_sdk_dir_value="${ci_sdk_dir:-${GITHUB_WORKSPACE}/SDK/${ci_platform_tag_value}}"
+        project_source_dir_value="${project_source_dir:-}"
         framework_source_value=''
         framework_source_kind=''
         framework_clone_url=''
@@ -130,6 +136,20 @@ runs:
         rbfx_android_java_dir=''
 
         if [[ "${{ inputs.profile }}" == 'downstream' ]]; then
+          if [[ -z "$INPUT_PROJECT_DIR" ]]; then
+            echo 'Error: project_dir is required for downstream builds.'
+            exit 1
+          fi
+          if [[ "$INPUT_PROJECT_DIR" = /* || "$INPUT_PROJECT_DIR" =~ ^[A-Za-z]:[/\\] ]]; then
+            project_source_dir_value="$INPUT_PROJECT_DIR"
+          else
+            project_source_dir_value="${GITHUB_WORKSPACE}/${INPUT_PROJECT_DIR}"
+          fi
+          if [[ ! -d "$project_source_dir_value" ]]; then
+            echo "Error: project directory does not exist: $project_source_dir_value"
+            exit 1
+          fi
+
           framework_source_value="${{ inputs.framework_source }}"
           framework_build_type="${{ inputs.framework_build_type }}"
 
@@ -193,6 +213,7 @@ runs:
             rbfx_android_java_dir="${ci_sdk_dir_value}/share/Urho3D/Android/java"
           fi
         else
+          project_source_dir_value="${project_source_dir_value:-${GITHUB_WORKSPACE}}"
           if [[ -z "$ci_source_path_value" ]]; then
             ci_source_path_value='.'
           fi
@@ -222,7 +243,7 @@ runs:
           printf 'ci_build_script=%s\n' "$ci_build_script_value"
           printf 'ci_build_dir=%s\n' "${ci_build_dir:-${GITHUB_WORKSPACE}/rbfx-build/${ci_platform_tag_value}}"
           printf 'ci_sdk_dir=%s\n' "$ci_sdk_dir_value"
-          printf 'project_source_dir=%s\n' "${project_source_dir:-${GITHUB_WORKSPACE}}"
+          printf 'project_source_dir=%s\n' "$project_source_dir_value"
           printf 'project_build_dir=%s\n' "${project_build_dir:-${GITHUB_WORKSPACE}/project-build/${ci_platform_tag_value}}"
           printf 'ci_framework_source=%s\n' "$framework_source_value"
           printf 'ci_framework_source_kind=%s\n' "$framework_source_kind"

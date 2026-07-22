@@ -29,9 +29,8 @@ description: Build and publish a downstream project using the environment prepar
 
 inputs:
   project_dir:
-    description: "Downstream project root. Defaults to `project_source_dir` from the environment or `github.workspace`."
-    required: false
-    default: ''
+    description: "Downstream project root, absolute or relative to `github.workspace`."
+    required: true
   android_dir:
     description: "Path to the downstream Android Gradle project, relative to `project_dir`."
     required: false
@@ -58,10 +57,21 @@ runs:
       env:
         INPUT_FRAMEWORK_BUILD_TYPE: ${{ env.ci_framework_build_type }}
         INPUT_ARTIFACT_NAME: ${{ inputs.artifact_name }}
+        INPUT_PROJECT_SOURCE_DIR: ${{ inputs.project_dir }}
       run: |
         ci_build_script="$GITHUB_ACTION_PATH/../../../script/ci_build.sh"
         "$ci_build_script" resolve-project-build-mode
         printf 'ci_build_script=%s\n' "$ci_build_script" >> "$GITHUB_ENV"
+        if [[ "$INPUT_PROJECT_SOURCE_DIR" = /* || "$INPUT_PROJECT_SOURCE_DIR" =~ ^[A-Za-z]:[/\\] ]]; then
+          project_source_dir="$INPUT_PROJECT_SOURCE_DIR"
+        else
+          project_source_dir="${GITHUB_WORKSPACE}/${INPUT_PROJECT_SOURCE_DIR}"
+        fi
+        if [[ ! -d "$project_source_dir" ]]; then
+          echo "Error: project directory does not exist: $project_source_dir"
+          exit 1
+        fi
+        printf 'project_source_dir=%s\n' "$project_source_dir" >> "$GITHUB_ENV"
         active_project_build_dir="${project_build_dir:-${GITHUB_WORKSPACE}/project-build/${ci_platform_tag}}"
         if [[ -n "$INPUT_ARTIFACT_NAME" ]]; then
           active_project_build_dir="${active_project_build_dir}/${INPUT_ARTIFACT_NAME}"
@@ -71,38 +81,26 @@ runs:
     - name: Build downstream project against SDK
       if: env.ci_platform != 'android' && steps.build_mode.outputs.framework_build_type == 'sdk'
       shell: bash
-      env:
-        INPUT_PROJECT_SOURCE_DIR: ${{ inputs.project_dir }}
       run: |
-        project_dir="${INPUT_PROJECT_SOURCE_DIR:-${project_source_dir:-${GITHUB_WORKSPACE}}}"
-        "$ci_build_script" build-project --build-dir "$ci_active_project_build_dir" "$project_dir" sdk
+        "$ci_build_script" build-project --build-dir "$ci_active_project_build_dir" "$project_source_dir" sdk
 
     - name: Build downstream project against source tree
       if: env.ci_platform != 'android' && steps.build_mode.outputs.framework_build_type == 'source'
       shell: bash
-      env:
-        INPUT_PROJECT_SOURCE_DIR: ${{ inputs.project_dir }}
       run: |
-        project_dir="${INPUT_PROJECT_SOURCE_DIR:-${project_source_dir:-${GITHUB_WORKSPACE}}}"
-        "$ci_build_script" build-project --build-dir "$ci_active_project_build_dir" "$project_dir" source
+        "$ci_build_script" build-project --build-dir "$ci_active_project_build_dir" "$project_source_dir" source
 
     - name: Build downstream Android project against SDK
       if: env.ci_platform == 'android' && steps.build_mode.outputs.framework_build_type == 'sdk'
       shell: bash
-      env:
-        INPUT_PROJECT_SOURCE_DIR: ${{ inputs.project_dir }}
       run: |
-        project_dir="${INPUT_PROJECT_SOURCE_DIR:-${project_source_dir:-${GITHUB_WORKSPACE}}}"
-        "$ci_build_script" build-android-project --gradle-task '${{ inputs.android_gradle_task }}' "$project_dir/${{ inputs.android_dir }}" sdk
+        "$ci_build_script" build-android-project --gradle-task '${{ inputs.android_gradle_task }}' "$project_source_dir/${{ inputs.android_dir }}" sdk
 
     - name: Build downstream Android project against source tree
       if: env.ci_platform == 'android' && steps.build_mode.outputs.framework_build_type == 'source'
       shell: bash
-      env:
-        INPUT_PROJECT_SOURCE_DIR: ${{ inputs.project_dir }}
       run: |
-        project_dir="${INPUT_PROJECT_SOURCE_DIR:-${project_source_dir:-${GITHUB_WORKSPACE}}}"
-        "$ci_build_script" build-android-project --gradle-task '${{ inputs.android_gradle_task }}' "$project_dir/${{ inputs.android_dir }}" source
+        "$ci_build_script" build-android-project --gradle-task '${{ inputs.android_gradle_task }}' "$project_source_dir/${{ inputs.android_dir }}" source
 
     - name: Save build cache
       if: ${{ !cancelled() && env.ci_build_cache_hit != 'true' }}
@@ -135,15 +133,13 @@ runs:
       if: steps.publish.outputs.upload_artifact == 'true' || steps.publish.outputs.upload_release == 'true'
       shell: bash
       env:
-        INPUT_PROJECT_SOURCE_DIR: ${{ inputs.project_dir }}
         INPUT_ANDROID_DIR: ${{ inputs.android_dir }}
         EXCLUDE_PDBS: ${{ env.EXCLUDE_PDBS || 'true' }}
         ARTIFACT_STAGING_DIR: ${{ runner.temp }}/project-artifacts/${{ inputs.artifact_name }}
       run: |
-        project_dir="${INPUT_PROJECT_SOURCE_DIR:-${project_source_dir:-${GITHUB_WORKSPACE}}}"
         android_output_root=''
         if [[ -n "$INPUT_ANDROID_DIR" ]]; then
-          android_output_root="$project_dir/$INPUT_ANDROID_DIR/build/outputs"
+          android_output_root="$project_source_dir/$INPUT_ANDROID_DIR/build/outputs"
         fi
         "$ci_build_script" stage-project-artifacts --build-dir "$ci_active_project_build_dir" --android-output-root "$android_output_root"
 
