@@ -1629,6 +1629,7 @@ print(int(datetime.fromisoformat(sys.argv[1].replace("Z", "+00:00")).timestamp()
 function action-download-project-host-sdk() {
     # Arguments: none
     local framework_repository="${INPUT_FRAMEWORK_REPOSITORY:-}"
+    local framework_release="${INPUT_FRAMEWORK_RELEASE:-latest}"
     local framework_artifact_name="${INPUT_FRAMEWORK_ARTIFACT_NAME:-}"
     local extract_dir="${INPUT_EXTRACT_DIR:-}"
 
@@ -1644,7 +1645,7 @@ function action-download-project-host-sdk() {
     fi
 
     if download-release-archive \
-        "https://github.com/${framework_repository}/releases/download/latest/${framework_artifact_name}" \
+        "https://github.com/${framework_repository}/releases/download/${framework_release}/${framework_artifact_name}" \
         "$extract_dir"; then
         write-github-output available true
         return 0
