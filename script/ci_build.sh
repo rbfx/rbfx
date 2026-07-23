@@ -1348,18 +1348,6 @@ function action-resolve-cmake-prefix-path() {
                 done
             done
         fi
-        if [[ -z "$urho3d_dir" ]]; then
-            for candidate in \
-                "$prefix_path/Urho3D/share/Urho3D" \
-                "$prefix_path/share/Urho3D/CMake" \
-                "$prefix_path/Urho3D/CMake"; do
-                candidate="$(normalize-path "$candidate")"
-                if [[ -f "$candidate/Urho3DConfig.cmake" ]]; then
-                    urho3d_dir="$candidate"
-                    break
-                fi
-            done
-        fi
         if [[ -z "$android_java_dir" ]]; then
             for candidate in \
                 "$prefix_path/Source/ThirdParty/SDL/android-project/app/src/main/java" \
@@ -1378,6 +1366,30 @@ function action-resolve-cmake-prefix-path() {
     if [[ ${#resolved_prefix_paths[@]} -eq 0 ]]; then
         echo 'Error: cmake_prefix_path does not contain an existing directory.'
         return 1
+    fi
+
+    # A source-tree package is always the target framework, whereas installed
+    # prefixes may intentionally include native host tools before the target SDK.
+    # Prefer any source-tree package, then preserve caller order for SDK packages.
+    for prefix_path in "${resolved_prefix_paths[@]}"; do
+        candidate="$(normalize-path "$prefix_path/Urho3D/share/Urho3D")"
+        if [[ -f "$candidate/Urho3DConfig.cmake" ]]; then
+            urho3d_dir="$candidate"
+            break
+        fi
+    done
+    if [[ -z "$urho3d_dir" ]]; then
+        for prefix_path in "${resolved_prefix_paths[@]}"; do
+            for candidate in \
+                "$prefix_path/share/Urho3D/CMake" \
+                "$prefix_path/Urho3D/CMake"; do
+                candidate="$(normalize-path "$candidate")"
+                if [[ -f "$candidate/Urho3DConfig.cmake" ]]; then
+                    urho3d_dir="$candidate"
+                    break 2
+                fi
+            done
+        done
     fi
 
     cmake_prefix_path="$(IFS=';'; echo "${resolved_prefix_paths[*]}")"

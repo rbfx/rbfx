@@ -24,10 +24,11 @@
 # 4. Restore the engine or downstream compiler cache with keys scoped to platform,
 #    source revision, and (for downstream jobs) repository. The downstream cache-hit
 #    state is exported so ci-build-project knows whether a new cache must be saved.
-# 5. Export the resolved downstream CMake prefixes and discover Urho3D's package
-#    directory and Android Java glue from either source-tree or installed-SDK
-#    layouts. The direct package directory keeps Android cross-compilation from
-#    re-rooting the target package path into the NDK sysroot.
+# 5. Export the resolved downstream CMake prefixes and discover Urho3D's target
+#    package directory and Android Java glue from either source-tree or installed-
+#    SDK layouts. Source-tree packages take priority over native host-project
+#    prefixes; SDK packages retain caller order. The direct package directory keeps
+#    Android cross-compilation from re-rooting the target path into the NDK sysroot.
 # 6. For non-Android engine jobs, run CMake generation and report whether cached
 #    ThirdParty content was reused. The engine build itself remains a workflow step;
 #    this action only performs its common pre-build generation.
