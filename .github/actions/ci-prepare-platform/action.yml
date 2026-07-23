@@ -8,12 +8,10 @@
 #    `ci_build.sh` from this action's own repository checkout. This keeps action
 #    logic pinned to the same repository and ref as the action. Defaults such as
 #    CMake/.NET versions and ccache behavior are exported through `GITHUB_ENV`.
-# 2. For `downstream`, resolve the caller-provided framework path selected by
-#    `framework_build_type`. Source mode requires `framework_source` to name an
-#    existing rbfx source directory. SDK mode requires `framework_sdk` to name an
-#    existing SDK directory or local `.7z` archive, which is extracted into the
-#    job's SDK directory. The action never clones rbfx or downloads the target SDK.
-#    The calling workflow owns all project/framework acquisition operations.
+# 2. For `downstream`, resolve the caller-provided CMake prefixes. Existing paths
+#    are preserved in caller order and missing paths are ignored. Web jobs export
+#    them through `CMAKE_FIND_ROOT_PATH`; all other jobs use `CMAKE_PREFIX_PATH`.
+#    The action never acquires framework source, SDKs, or project artifacts.
 #    For `engine`, the workflow's existing checkout is used as the rbfx source tree.
 #
 # Toolchain, dependencies, and caches:
@@ -24,35 +22,17 @@
 # 4. Restore the engine or downstream compiler cache with keys scoped to platform,
 #    source revision, and (for downstream jobs) repository. The downstream cache-hit
 #    state is exported so ci-build-project knows whether a new cache must be saved.
-# 5. In downstream SDK mode, extract a caller-provided SDK archive when necessary.
-#    Engine builds may optionally download a cached SDK and sanitize/reuse its
-#    ThirdParty directory. Build SWIG where generated bindings require a native host
-#    tool, and configure PackageTool for non-desktop targets.
+# 5. Export the resolved downstream CMake prefixes and discover Android Java glue
+#    from either source-tree or installed-SDK layouts.
 # 6. For non-Android engine jobs, run CMake generation and report whether cached
 #    ThirdParty content was reused. The engine build itself remains a workflow step;
 #    this action only performs its common pre-build generation.
 #
-# Cross-compilation host context for downstream jobs:
-# 7. Determine whether the target needs native host binaries. An empty
-#    `host_artifact_names` list disables host handling. Otherwise, every literal host
-#    artifact name (normally written one per line in a YAML block scalar) is treated
-#    as required and obtained from the current workflow run. Names are used exactly
-#    as written. A project host artifact normally uses the complete
-#    `ci_host_platform_tag`, which preserves target linkage.
-# 8. Resolve the host platform/tag and isolated temporary extraction directories.
-#    Check the current workflow run for every required host project artifact. Poll
-#    while its producer job runs, fail promptly if that job fails, and allow the
-#    configured grace period after a successful producer job for artifacts to become
-#    visible instead of polling blindly until timeout.
-# 9. Download one or more named host project artifacts without merging their
-#    directories. Export the host context root and a CMake prefix path containing
-#    every requested artifact so custom steps can use native tools before building.
-#
-# ci-build-project consumes this prepared state to build and publish a downstream
-# project. Keeping preparation separate lets workflows insert their own SDK or host-
-# tool steps between the two actions.
+# ci-build-project consumes this prepared state to build a downstream project. The
+# caller owns checkout, download, extraction, build waiting, and artifact transfer.
+# Keeping preparation separate lets workflows perform those operations explicitly.
 name: CI Prepare Platform
-description: Shared toolchain, local framework, and host-context preparation for engine and downstream CI jobs.
+description: Shared toolchain, dependency, cache, and CMake-prefix preparation for engine and downstream CI jobs.
 
 inputs:
   profile:
@@ -66,47 +46,20 @@ inputs:
     description: "Path to the downstream project root, absolute or relative to `github.workspace`. Required when `profile` is `downstream`."
     required: false
     default: ''
-  framework_source:
-    description: "Caller-provided engine source directory for source-mode downstream builds, absolute or relative to `github.workspace`."
-    required: false
-    default: ''
-  framework_sdk:
-    description: "Caller-provided extracted SDK directory or `.7z` SDK archive for SDK-mode downstream builds, absolute or relative to `github.workspace`."
-    required: false
-    default: ''
-  framework_build_type:
-    description: "How downstream projects consume the framework. Supported values: `sdk`, `source`."
-    required: false
-    default: source
-  host_artifact_names:
-    description: "Literal names of required host-platform project artifacts from the current workflow run, one per line. JSON string arrays are also accepted. Names normally use `ci_host_platform_tag` to preserve target linkage and are never rewritten. Host handling is disabled when empty."
+  cmake_prefix_path:
+    description: "CMake prefix directories, one per line or as a JSON string array. Relative paths are resolved against `github.workspace`; missing paths are ignored."
     required: false
     default: '[]'
-  host_job_name:
-    description: "Rendered workflow job name that publishes the requested host project artifacts. Defaults to the resolved host platform tag."
-    required: false
-    default: ''
-  use_cached_thirdparty:
-    description: Reuse ThirdParty from the latest SDK for engine-profile builds when possible.
-    required: false
-    default: 'true'
-
 outputs:
   build_cache_hit:
     description: Cache hit state for downstream cache restore.
     value: ${{ steps.build_cache.outputs.cache-hit }}
-  sdk_cached:
-    description: Whether the optional engine-profile cached SDK download succeeded.
-    value: ${{ steps.cached_sdk.outputs.sdk_cached }}
   engine_thirdparty_used:
     description: Whether engine generate reused cached ThirdParty.
     value: ${{ steps.generate.outputs.thirdparty_used }}
-  host_context_dir:
-    description: Root directory containing downloaded host project artifacts.
-    value: ${{ steps.export_host_context.outputs.host_context_dir }}
   cmake_prefix_path:
-    description: Semicolon-separated prefix paths contributed by downloaded host project artifacts.
-    value: ${{ steps.export_host_context.outputs.cmake_prefix_path }}
+    description: Semicolon-separated existing CMake prefixes in caller order.
+    value: ${{ steps.prefixes.outputs.cmake_prefix_path }}
 
 runs:
   using: composite
@@ -125,12 +78,6 @@ runs:
         ci_build_script_value="${action_repo_root}/script/ci_build.sh"
         ci_sdk_dir_value="${ci_sdk_dir:-${GITHUB_WORKSPACE}/SDK/${ci_platform_tag_value}}"
         project_source_dir_value="${project_source_dir:-}"
-        framework_source_value=''
-        framework_sdk_value=''
-        framework_sdk_kind=''
-        framework_build_type=''
-        rbfx_android_java_dir=''
-
         if [[ "${{ inputs.profile }}" == 'downstream' ]]; then
           if [[ -z "$INPUT_PROJECT_DIR" ]]; then
             echo 'Error: project_dir is required for downstream builds.'
@@ -146,58 +93,8 @@ runs:
             exit 1
           fi
 
-          framework_source_value="${{ inputs.framework_source }}"
-          framework_sdk_value="${{ inputs.framework_sdk }}"
-          framework_build_type="${{ inputs.framework_build_type }}"
-
-          if [[ -z "$framework_build_type" ]]; then
-            framework_build_type='source'
-          fi
-          case "$framework_build_type" in
-            sdk|source)
-              ;;
-            *)
-              echo "Error: unsupported framework build type '$framework_build_type'"
-              exit 1
-              ;;
-          esac
-
-          if [[ "$framework_build_type" == 'source' ]]; then
-            if [[ -z "$framework_source_value" ]]; then
-              echo 'Error: framework_source is required for source-mode downstream builds.'
-              exit 1
-            fi
-            if [[ "$framework_source_value" != /* && ! "$framework_source_value" =~ ^[A-Za-z]:[/\\] ]]; then
-              framework_source_value="${GITHUB_WORKSPACE}/${framework_source_value}"
-            fi
-            if [[ ! -d "$framework_source_value" ]]; then
-              echo "Error: framework source directory does not exist: $framework_source_value"
-              exit 1
-            fi
-            ci_source_path_value="$framework_source_value"
-            ci_source_dir_value="$framework_source_value"
-            rbfx_android_java_dir="${ci_source_dir_value}/Source/ThirdParty/SDL/android-project/app/src/main/java"
-          else
-            if [[ -z "$framework_sdk_value" ]]; then
-              echo 'Error: framework_sdk is required for SDK-mode downstream builds.'
-              exit 1
-            fi
-            if [[ "$framework_sdk_value" != /* && ! "$framework_sdk_value" =~ ^[A-Za-z]:[/\\] ]]; then
-              framework_sdk_value="${GITHUB_WORKSPACE}/${framework_sdk_value}"
-            fi
-            ci_source_path_value='.'
-            ci_source_dir_value="$action_repo_root"
-            if [[ -d "$framework_sdk_value" ]]; then
-              framework_sdk_kind='directory'
-              ci_sdk_dir_value="$framework_sdk_value"
-            elif [[ -f "$framework_sdk_value" && "$framework_sdk_value" == *.7z ]]; then
-              framework_sdk_kind='archive'
-            else
-              echo "Error: framework_sdk must be an SDK directory or .7z archive: $framework_sdk_value"
-              exit 1
-            fi
-            rbfx_android_java_dir="${ci_sdk_dir_value}/share/Urho3D/Android/java"
-          fi
+          ci_source_path_value='.'
+          ci_source_dir_value="$action_repo_root"
         else
           project_source_dir_value="${project_source_dir_value:-${GITHUB_WORKSPACE}}"
           if [[ -z "$ci_source_path_value" ]]; then
@@ -231,11 +128,6 @@ runs:
           printf 'ci_sdk_dir=%s\n' "$ci_sdk_dir_value"
           printf 'project_source_dir=%s\n' "$project_source_dir_value"
           printf 'project_build_dir=%s\n' "${project_build_dir:-${GITHUB_WORKSPACE}/project-build/${ci_platform_tag_value}}"
-          printf 'ci_framework_source=%s\n' "$framework_source_value"
-          printf 'ci_framework_sdk=%s\n' "$framework_sdk_value"
-          printf 'ci_framework_sdk_kind=%s\n' "$framework_sdk_kind"
-          printf 'ci_framework_build_type=%s\n' "$framework_build_type"
-          printf 'RBFX_ANDROID_JAVA_DIR=%s\n' "$rbfx_android_java_dir"
         } >> "$GITHUB_ENV"
 
     - name: Setup environment
@@ -301,38 +193,26 @@ runs:
       run: |
         "$ci_build_script" dependencies
 
-    - name: Extract framework SDK
-      if: inputs.profile == 'downstream' && env.ci_framework_build_type == 'sdk' && env.ci_framework_sdk_kind == 'archive'
-      shell: bash
-      run: |
-        "$ci_build_script" extract-sdk-archive -- "$ci_framework_sdk" "$ci_sdk_dir"
-
-    - name: Download cached ThirdParty SDK
-      id: cached_sdk
-      if: inputs.profile == 'engine' && inputs.use_cached_thirdparty == 'true'
-      continue-on-error: true
+    - name: Resolve CMake prefix path
+      id: prefixes
+      if: inputs.profile == 'downstream'
       shell: bash
       env:
-        DOWNLOAD_SDK_REPOSITORY: ${{ github.repository }}
+        INPUT_CMAKE_PREFIX_PATH: ${{ inputs.cmake_prefix_path }}
+        INPUT_WORKSPACE_DIR: ${{ github.workspace }}
       run: |
-        "$ci_build_script" download-cached-sdk
-
-    - name: Sanitize cached ThirdParty SDK
-      if: steps.cached_sdk.outputs.sdk_cached == 'true'
-      shell: bash
-      run: |
-        "$ci_build_script" sanitize-cached-sdk '${{ github.workspace }}/cached-sdk'
+        "$ci_build_script" resolve-cmake-prefix-path
 
     - name: Build swig
       if: >-
-        (inputs.profile == 'engine' || env.ci_framework_build_type == 'source') &&
-        ((env.ci_lib_type == 'dll' && env.ci_platform_group != 'desktop') || (env.ci_platform == 'ios'))
+        inputs.profile == 'engine' &&
+        ((env.ci_lib_type == 'dll' && env.ci_platform_group != 'desktop') || env.ci_platform == 'ios')
       shell: bash
       run: |
         "$ci_build_script" build-swig
 
     - name: Setup PackageTool
-      if: env.ci_platform_group != 'desktop'
+      if: inputs.profile == 'engine' && env.ci_platform_group != 'desktop'
       shell: bash
       run: |
         "$ci_build_script" setup-package-tool
@@ -351,64 +231,3 @@ runs:
         {
           printf 'ci_build_cache_hit=%s\n' "${{ steps.build_cache.outputs.cache-hit }}"
         } >> "$GITHUB_ENV"
-
-    - name: Resolve host artifacts
-      id: host
-      if: inputs.profile == 'downstream'
-      shell: bash
-      env:
-        INPUT_ARTIFACT_NAMES: ${{ inputs.host_artifact_names }}
-        INPUT_HOST_PLATFORM_TAG: ${{ matrix.ci_host_platform_tag || '' }}
-      run: |
-        "$ci_build_script" resolve-project-host
-
-    - name: Resolve host context paths
-      id: host_paths
-      if: steps.host.outputs.enabled == 'true'
-      shell: bash
-      env:
-        INPUT_HOST_PLATFORM_TAG: ${{ steps.host.outputs.host_platform_tag }}
-        INPUT_HOST_CONTEXT_DIR: ${{ env.HOST_CONTEXT_DIR || '' }}
-      run: |
-        "$ci_build_script" resolve-project-host-paths
-
-    - name: Check host project artifacts
-      id: host_project
-      if: steps.host.outputs.enabled == 'true' && steps.host.outputs.project_artifact_count != '0'
-      shell: bash
-      env:
-        GH_TOKEN: ${{ github.token }}
-        INPUT_HOST_ARTIFACT_NAMES: ${{ steps.host.outputs.project_artifact_names }}
-        INPUT_HOST_JOB_NAME: ${{ inputs.host_job_name || steps.host.outputs.host_platform_tag }}
-        INPUT_ARTIFACT_WAIT_SECONDS: ${{ env.HOST_ARTIFACT_WAIT_SECONDS || '3600' }}
-        INPUT_ARTIFACT_GRACE_SECONDS: ${{ env.HOST_ARTIFACT_GRACE_SECONDS || '60' }}
-      run: |
-        "$ci_build_script" check-project-host-artifact
-
-    - name: Download host project artifact
-      if: steps.host_project.outputs.available == 'true' && steps.host.outputs.project_artifact_count == '1'
-      uses: actions/download-artifact@v5
-      with:
-        artifact-ids: ${{ steps.host_project.outputs.artifact_ids }}
-        path: ${{ steps.host_paths.outputs.project_host_context_dir }}/${{ steps.host.outputs.single_project_artifact_name }}
-
-    - name: Download host project artifacts
-      if: steps.host_project.outputs.available == 'true' && steps.host.outputs.project_artifact_count > 1
-      uses: actions/download-artifact@v5
-      with:
-        artifact-ids: ${{ steps.host_project.outputs.artifact_ids }}
-        path: ${{ steps.host_paths.outputs.project_host_context_dir }}
-        merge-multiple: false
-
-    - name: Export host context
-      id: export_host_context
-      if: >-
-        steps.host.outputs.enabled == 'true' &&
-        (steps.host.outputs.project_artifact_count == '0' || steps.host_project.outputs.available == 'true')
-      shell: bash
-      env:
-        INPUT_HOST_CONTEXT_DIR: ${{ steps.host_paths.outputs.host_context_dir }}
-        INPUT_PROJECT_HOST_CONTEXT_DIR: ${{ steps.host_paths.outputs.project_host_context_dir }}
-        INPUT_PROJECT_HOST_ARTIFACT_NAMES: ${{ steps.host.outputs.project_artifact_names }}
-      run: |
-        "$ci_build_script" export-project-host-context

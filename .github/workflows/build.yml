@@ -130,7 +130,6 @@ jobs:
         with:
           profile: engine
           platforms: all
-          artifact_platforms: 'false'
 
   Build:
     name: ${{ matrix.ci_platform_tag }}
@@ -169,12 +168,34 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Download cached ThirdParty SDK
+        id: cached_sdk
+        if: ${{ !contains(github.event.head_commit.message || '', '#full-build') && !(github.event_name == 'workflow_dispatch' && github.event.inputs.full_build == 'true') }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          ci_hash_thirdparty="$(cmake \
+            -DDIRECTORY_PATH="${GITHUB_WORKSPACE}/Source/ThirdParty" \
+            -DHASH_FORMAT=short \
+            -P "${GITHUB_WORKSPACE}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)"
+          ci_platform_tag="${{ matrix.ci_platform_tag }}" \
+          ci_workspace_dir="${GITHUB_WORKSPACE}" \
+          ci_hash_thirdparty="$ci_hash_thirdparty" \
+            ./script/ci_build.sh download-cached-sdk
+
+      - name: Sanitize cached ThirdParty SDK
+        if: steps.cached_sdk.outputs.sdk_cached == 'true'
+        shell: bash
+        run: |
+          platform_tag="${{ matrix.ci_platform_tag }}"
+          ci_platform="${platform_tag%%-*}" \
+            ./script/ci_build.sh sanitize-cached-sdk '${{ github.workspace }}/cached-sdk'
+
       - name: Prepare shared build context
         id: common
         uses: ./.github/actions/ci-prepare-platform
         with:
           profile: engine
-          use_cached_thirdparty: ${{ !contains(github.event.head_commit.message || '', '#full-build') && !(github.event_name == 'workflow_dispatch' && github.event.inputs.full_build == 'true') }}
 
       - name: Set up butler
         if: ${{ env.ci_publish == 'true' && vars.DISABLE_ITCH != 'true' }}
@@ -203,7 +224,7 @@ jobs:
         run: ${{ env.ci_build_script }} cstest --build-type rel
 
       - name: Copy cached ThirdParty into SDK
-        if: steps.common.outputs.sdk_cached == 'true' && (env.ci_platform == 'android' || steps.common.outputs.engine_thirdparty_used == 'true')
+        if: steps.cached_sdk.outputs.sdk_cached == 'true' && (env.ci_platform == 'android' || steps.common.outputs.engine_thirdparty_used == 'true')
         run: ${{ env.ci_build_script }} copy-cached-sdk '${{ github.workspace }}/cached-sdk' '${{ env.ci_sdk_dir }}'
 
       - name: Install rbfx SDK

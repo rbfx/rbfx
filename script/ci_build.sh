@@ -8,11 +8,7 @@
 #          extract-sdk-archive|
 #          download-cached-sdk|download-nuget-sdks|sanitize-cached-sdk|
 #          copy-cached-sdk|setup-package-tool|setup-emsdk|setup-environment|
-#          resolve-project-build-mode|resolve-project-host|
-#          resolve-project-host-paths|
-#          check-project-host-artifact|export-project-host-context|
-#          resolve-project-publish|
-#          stage-project-artifacts|upload-release-archive
+#          resolve-cmake-prefix-path|wait-for-build
 #
 # Environment variables (used for defaults):
 #   ci_platform:      windows|linux|macos|android|ios|web|uwp
@@ -54,14 +50,8 @@ then
     echo "  setup-package-tool        Configure PackageTool executable"
     echo "  setup-emsdk              Activate emsdk and export environment"
     echo "  setup-environment         Gather build information"
-    echo "  resolve-project-build-mode Resolve downstream framework build mode"
-    echo "  resolve-project-host      Resolve and classify requested host artifacts"
-    echo "  resolve-project-host-paths Prepare downstream host context directories"
-    echo "  check-project-host-artifact Wait for required downstream host artifacts"
-    echo "  export-project-host-context Export downstream host context to CMake paths"
-    echo "  resolve-project-publish   Resolve downstream artifact/release publishing"
-    echo "  stage-project-artifacts   Stage downstream build outputs for publishing"
-    echo "  upload-release-archive    Archive a staged output directory and upload it"
+    echo "  resolve-cmake-prefix-path Resolve downstream CMake prefix directories"
+    echo "  wait-for-build            Wait for a named workflow job and its artifacts"
     echo ""
     echo "Options:"
     echo "  --build-type TYPE         Build type: dbg or rel (default: rel)"
@@ -143,40 +133,32 @@ trim-whitespace() {
     printf '%s' "$value"
 }
 
-prepend-cmake-path-list() {
-    local prefix=$1
-    local current=$2
-
-    if [[ -z "$prefix" ]]; then
-        printf '%s' "$current"
-    elif [[ -z "$current" ]]; then
-        printf '%s' "$prefix"
-    else
-        printf '%s;%s' "$prefix" "$current"
-    fi
-}
-
-parse-json-string-array() {
+parse-path-list() {
     python3 -c '
 import json
 import sys
 
-try:
-    values = json.loads(sys.argv[1])
-except json.JSONDecodeError as error:
-    raise SystemExit(f"invalid JSON array: {error}")
-if not isinstance(values, list):
-    raise SystemExit("value must be a JSON array")
-if any(not isinstance(value, str) or not value or any(char in value for char in "\r\n\t") for value in values):
-    raise SystemExit("array entries must be non-empty strings without control whitespace")
+raw_value = sys.argv[1]
+if raw_value.lstrip().startswith("["):
+    try:
+        values = json.loads(raw_value)
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"invalid JSON array: {error}")
+    if not isinstance(values, list):
+        raise SystemExit("value must be a JSON array")
+else:
+    values = [line.strip() for line in raw_value.splitlines() if line.strip()]
+
+if any(not isinstance(value, str) or not value or any(char in value for char in "\r\n\t;") for value in values):
+    raise SystemExit("paths must be non-empty strings without control whitespace or semicolons")
 if len(values) != len(set(values)):
-    raise SystemExit("array entries must be unique")
+    raise SystemExit("paths must be unique")
 output = "\n".join(values)
 sys.stdout.buffer.write((output + ("\n" if output else "")).encode("utf-8"))
 ' "$1"
 }
 
-parse-artifact-name-list() {
+parse-string-list() {
     python3 -c '
 import json
 import sys
@@ -193,44 +175,12 @@ else:
     values = [line.strip() for line in raw_value.splitlines() if line.strip()]
 
 if any(not isinstance(value, str) or not value or any(char in value for char in "\r\n\t") for value in values):
-    raise SystemExit("artifact names must be non-empty strings without control whitespace")
+    raise SystemExit("values must be non-empty strings without control whitespace")
 if len(values) != len(set(values)):
-    raise SystemExit("artifact names must be unique")
+    raise SystemExit("values must be unique")
 output = "\n".join(values)
 sys.stdout.buffer.write((output + ("\n" if output else "")).encode("utf-8"))
 ' "$1"
-}
-
-make-json-string-array() {
-    python3 -c 'import json, sys; sys.stdout.write(json.dumps(sys.argv[1:]))' "$@"
-}
-
-resolve-project-host-platform-tag() {
-    local platform_tag=$1
-    local platform=''
-    local compiler=''
-    local arch=''
-    local lib_type=''
-
-    if [[ -z "$platform_tag" ]]; then
-        return 1
-    fi
-
-    IFS='-' read -r platform compiler arch lib_type <<< "$platform_tag"
-    case "$platform" in
-        android|web)
-            printf 'linux-gcc-x64-%s\n' "$lib_type"
-            ;;
-        ios)
-            printf 'macos-clang-x64-%s\n' "$lib_type"
-            ;;
-        uwp)
-            printf 'windows-msvc-x64-%s\n' "$lib_type"
-            ;;
-        *)
-            return 1
-            ;;
-    esac
 }
 
 is-truthy() {
@@ -446,54 +396,19 @@ copy-runtime-libraries-for-file() {
 }
 
 prepare-project-search-paths() {
-    local mode=$1
-    local cached_sdk=''
-    local additional_project_prefix="${CI_ADDITIONAL_CMAKE_PREFIX_PATH:-}"
-
     project_cmake_prefix_variable='CMAKE_PREFIX_PATH'
-    project_cmake_root_value=''
-    project_urho3d_dir=''
-    project_sdk_suffix=$(get-sdk-share-suffix)
-
-    cached_sdk="${ci_workspace_dir}/cached-sdk${project_sdk_suffix}"
-
-    if [[ "$mode" == "sdk" ]];
-    then
-        project_cmake_prefix_value="${ci_sdk_dir}${project_sdk_suffix}"
-        if [[ -n "$project_sdk_suffix" ]]; then
-            project_urho3d_dir="${ci_sdk_dir}${project_sdk_suffix}/Urho3D/CMake"
-        else
-            project_urho3d_dir="${ci_sdk_dir}/share/Urho3D/CMake"
-        fi
-        if [[ "$ci_platform" == "web" ]];
-        then
-            project_cmake_root_value="$ci_sdk_dir"
-        fi
-    else
-        project_urho3d_dir="${ci_source_dir}/CMake/Urho3D/share/Urho3D"
-        project_cmake_prefix_value="${ci_source_dir}/CMake"
-
-        if [[ -d "$cached_sdk" ]];
-        then
-            if [[ "$ci_platform" == "web" ]];
-            then
-                project_cmake_root_value="$cached_sdk"
-            else
-                project_cmake_prefix_value="${project_cmake_prefix_value};${cached_sdk}"
-            fi
-        fi
+    project_cmake_prefix_value="${CI_CMAKE_PREFIX_PATH:-}"
+    if [[ "$ci_platform" == 'web' ]]; then
+        project_cmake_prefix_variable='CMAKE_FIND_ROOT_PATH'
     fi
-
-    project_cmake_prefix_value=$(prepend-cmake-path-list "$additional_project_prefix" "$project_cmake_prefix_value")
 }
 
 prepare-project-cmake-args() {
     local source_dir=$1
     local build_dir=$2
-    local mode=$3
 
     local shared=$([[ "$ci_lib_type" == 'dll' ]] && echo ON || echo OFF)
-    prepare-project-search-paths "$mode"
+    prepare-project-search-paths
 
     project_cmake_args=(
         -S "$source_dir"
@@ -503,19 +418,9 @@ prepare-project-cmake-args() {
         "-D${project_cmake_prefix_variable}=${project_cmake_prefix_value}"
     )
 
-    if [[ -n "$project_urho3d_dir" ]];
-    then
-        project_cmake_args+=("-DUrho3D_DIR=${project_urho3d_dir}")
-    fi
-
     if [[ "$ci_platform" == "web" || "$ci_platform" == "ios" ]];
     then
         project_cmake_args+=('-DURHO3D_PACKAGING=ON')
-    fi
-
-    if [[ "$ci_platform" == "web" && -n "$project_cmake_root_value" ]];
-    then
-        project_cmake_args+=("-DCMAKE_FIND_ROOT_PATH=${project_cmake_root_value}")
     fi
 
     case "$ci_platform" in
@@ -598,10 +503,9 @@ prepare-project-cmake-args() {
 configure-project() {
     local source_dir=$1
     local build_dir=$2
-    local mode=$3
-    local message=$4
+    local message=$3
 
-    prepare-project-cmake-args "$source_dir" "$build_dir" "$mode" || return 1
+    prepare-project-cmake-args "$source_dir" "$build_dir" || return 1
 
     echo "$message"
     printf 'cmake'
@@ -629,6 +533,26 @@ build-project-configurations() {
 
         echo "Building configuration ${types[$build_type]}"
         cmake --build "$build_dir" --config "${types[$build_type]}" --parallel "$ci_number_of_processors" || return 1
+    done
+}
+
+install-project-configurations() {
+    local build_dir=$1
+    local install_dir=$2
+    local build_types=(dbg rel)
+
+    if [[ -n "${arg_build_type:-}" ]]; then
+        build_types=("$arg_build_type")
+    fi
+
+    for build_type in "${build_types[@]}"; do
+        if [[ -z "${types[$build_type]:-}" ]]; then
+            echo "Error: unsupported build type '$build_type'"
+            return 1
+        fi
+
+        echo "Installing configuration ${types[$build_type]} into $install_dir"
+        cmake --install "$build_dir" --config "${types[$build_type]}" --prefix "$install_dir" || return 1
     done
 }
 
@@ -971,7 +895,13 @@ function action-test-project() {
         return 1
     fi
 
-    configure-project "$source_dir" "$build_dir" "$mode" "Configuring $project_name with $mode mode..." || return 1
+    if [[ "$mode" == 'sdk' ]]; then
+        CI_CMAKE_PREFIX_PATH="${ci_sdk_dir}$(get-sdk-share-suffix)"
+    else
+        CI_CMAKE_PREFIX_PATH="${ci_source_dir}/CMake"
+    fi
+
+    configure-project "$source_dir" "$build_dir" "Configuring $project_name with configured CMake prefixes..." || return 1
 
     # Only build for SDK mode
     if [[ "$mode" == "sdk" ]];
@@ -985,10 +915,12 @@ function action-test-project() {
 }
 
 function action-build-project() {
-    # Arguments: <project_dir> <mode>, --build-dir <dir> (optional), --build-type <dbg|rel> (optional), -- <extra_cmake_args...>
+    # Arguments: <project_dir>, --build-dir <dir> (optional),
+    #            --install-dir <dir> (optional), --build-type <dbg|rel> (optional),
+    #            -- <extra_cmake_args...>
 
-    if [ ${#arg_positional[@]} -ne 2 ]; then
-        echo "Error: build-project requires exactly 2 arguments: <project_dir> <mode>"
+    if [ ${#arg_positional[@]} -ne 1 ]; then
+        echo "Error: build-project requires exactly 1 argument: <project_dir>"
         return 1
     fi
 
@@ -998,32 +930,33 @@ function action-build-project() {
     fi
 
     local source_dir="${arg_positional[0]}"
-    local mode="${arg_positional[1]}"
     local build_dir="${arg_build_dir:-$ci_workspace_dir/project-build/$ci_platform_tag}"
+    local install_dir="${arg_install_dir:-}"
 
     source_dir=$(normalize-path "$source_dir")
     build_dir=$(normalize-path "$build_dir")
+    if [[ -n "$install_dir" ]]; then
+        install_dir=$(normalize-path "$install_dir")
+    fi
 
     if [[ ! -d "$source_dir" ]]; then
         echo "Error: project directory does not exist: $source_dir"
         return 1
     fi
 
-    if [[ "$mode" != "sdk" && "$mode" != "source" ]]; then
-        echo "Error: build-project mode must be either 'sdk' or 'source'"
-        return 1
+    configure-project "$source_dir" "$build_dir" "Configuring downstream project from $source_dir" || return 1
+
+    build-project-configurations "$build_dir" || return 1
+    if [[ -n "$install_dir" ]]; then
+        install-project-configurations "$build_dir" "$install_dir"
     fi
-
-    configure-project "$source_dir" "$build_dir" "$mode" "Configuring downstream project from $source_dir" || return 1
-
-    build-project-configurations "$build_dir"
 }
 
 function action-build-android-project() {
-    # Arguments: --gradle-task <task>, <android_dir> <mode>
+    # Arguments: --gradle-task <task>, <android_dir>
 
-    if [ ${#arg_positional[@]} -ne 2 ]; then
-        echo "Error: build-android-project requires exactly 2 arguments: <android_dir> <mode>"
+    if [ ${#arg_positional[@]} -ne 1 ]; then
+        echo "Error: build-android-project requires exactly 1 argument: <android_dir>"
         return 1
     fi
 
@@ -1033,7 +966,6 @@ function action-build-android-project() {
     fi
 
     local android_dir="${arg_positional[0]}"
-    local mode="${arg_positional[1]}"
     local gradle_task="${arg_gradle_task:-assembleRelease}"
 
     android_dir=$(normalize-path "$android_dir")
@@ -1043,24 +975,11 @@ function action-build-android-project() {
         return 1
     fi
 
-    if [[ "$mode" != "sdk" && "$mode" != "source" ]]; then
-        echo "Error: build-android-project mode must be either 'sdk' or 'source'"
-        return 1
-    fi
-
-    prepare-project-search-paths "$mode"
-
-    ensure-package-tool-executable || return 1
+    prepare-project-search-paths
 
     echo "Building downstream Android project from $android_dir"
     echo "Using ${project_cmake_prefix_variable}=${project_cmake_prefix_value}"
     export CMAKE_PREFIX_PATH="$project_cmake_prefix_value"
-    if [[ -n "$project_urho3d_dir" ]]; then
-        echo "Using Urho3D_DIR=${project_urho3d_dir}"
-        export Urho3D_DIR="$project_urho3d_dir"
-    else
-        unset Urho3D_DIR
-    fi
     if [[ -n "${PACKAGE_TOOL_EXECUTABLE:-}" ]]; then
         echo "Using PackageTool executable: ${PACKAGE_TOOL_EXECUTABLE}"
     fi
@@ -1366,373 +1285,210 @@ function action-setup-emsdk() {
     fi
 }
 
-function action-stage-project-artifacts() {
-    # Arguments: --staging-dir <dir> (optional), --build-dir <dir> (optional), --android-output-root <dir> (optional), --exclude-pdbs <bool> (optional)
-    local staging_dir="${arg_staging_dir:-${ARTIFACT_STAGING_DIR:-}}"
-    local build_dir="${arg_build_dir:-${project_build_dir:-}}"
-    local android_output_root="${arg_android_output_root:-${ANDROID_OUTPUT_ROOT:-}}"
-    local exclude_pdbs="${arg_exclude_pdbs:-${EXCLUDE_PDBS:-false}}"
-    local found_assets=0
+function action-resolve-cmake-prefix-path() {
+    # Arguments: none
+    local prefix_paths_value="${INPUT_CMAKE_PREFIX_PATH:-[]}"
+    local workspace_dir="${INPUT_WORKSPACE_DIR:-${GITHUB_WORKSPACE:-${ci_workspace_dir:-}}}"
+    local parsed_prefix_paths=''
+    local prefix_path=''
+    local cmake_variable='CMAKE_PREFIX_PATH'
+    local cmake_prefix_path=''
+    local android_java_dir=''
+    local candidate=''
+    local -a prefix_paths=()
+    local -a resolved_prefix_paths=()
 
-    if [[ -z "$staging_dir" || -z "$build_dir" ]]; then
-        echo "Error: stage-project-artifacts requires a staging directory and build directory"
+    if ! parsed_prefix_paths="$(parse-path-list "$prefix_paths_value")"; then
+        echo 'Error: INPUT_CMAKE_PREFIX_PATH must contain one directory per line or a JSON string array.'
         return 1
     fi
+    if [[ -n "$parsed_prefix_paths" ]]; then
+        mapfile -t prefix_paths <<< "$parsed_prefix_paths"
+    fi
 
-    rm -rf "$staging_dir"
-    mkdir -p "$staging_dir"
-
-    for output_dir in bin lib share include; do
-        if [[ -d "$build_dir/$output_dir" ]]; then
-            cp -a "$build_dir/$output_dir" "$staging_dir/$output_dir"
-            found_assets=1
+    for prefix_path in "${prefix_paths[@]}"; do
+        if [[ "$prefix_path" != /* && ! "$prefix_path" =~ ^[A-Za-z]:[/\\] ]]; then
+            prefix_path="${workspace_dir}/${prefix_path}"
+        fi
+        prefix_path="$(normalize-path "$prefix_path")"
+        if [[ ! -d "$prefix_path" ]]; then
+            echo "Ignoring missing CMake prefix: $prefix_path"
+            continue
+        fi
+        resolved_prefix_paths+=("$prefix_path")
+        if [[ -z "$android_java_dir" ]]; then
+            for candidate in \
+                "$prefix_path/Source/ThirdParty/SDL/android-project/app/src/main/java" \
+                "$prefix_path/../Source/ThirdParty/SDL/android-project/app/src/main/java" \
+                "$prefix_path/share/Urho3D/Android/java" \
+                "$prefix_path/Urho3D/Android/java"; do
+                candidate="$(normalize-path "$candidate")"
+                if [[ -d "$candidate" ]]; then
+                    android_java_dir="$candidate"
+                    break
+                fi
+            done
         fi
     done
 
-    if [[ -n "$android_output_root" ]]; then
-        while IFS= read -r android_output; do
-            local relative_output=${android_output#"$android_output_root/"}
-            mkdir -p "$staging_dir/$(dirname "$relative_output")"
-            cp -a "$android_output" "$staging_dir/$relative_output"
-            found_assets=1
-        done < <(find "$android_output_root" -type f \( -name '*.apk' -o -name '*.aab' \) 2>/dev/null)
-    fi
-
-    if is-truthy "$exclude_pdbs"; then
-        find "$staging_dir" -type f -name '*.pdb' -delete
-    fi
-
-    if [[ "$found_assets" -ne 1 ]]; then
-        echo 'No build outputs found for artifact staging.'
+    if [[ ${#resolved_prefix_paths[@]} -eq 0 ]]; then
+        echo 'Error: cmake_prefix_path does not contain an existing directory.'
         return 1
     fi
 
-    if ! find "$staging_dir" -type f -print -quit | grep -q .; then
-        echo 'No build outputs remain after artifact staging.'
-        return 1
+    cmake_prefix_path="$(IFS=';'; echo "${resolved_prefix_paths[*]}")"
+    if [[ "$ci_platform" == 'web' ]]; then
+        cmake_variable='CMAKE_FIND_ROOT_PATH'
     fi
+
+    write-github-env CI_CMAKE_PREFIX_PATH "$cmake_prefix_path"
+    write-github-env "$cmake_variable" "$cmake_prefix_path"
+    write-github-env RBFX_ANDROID_JAVA_DIR "$android_java_dir"
+    write-github-output cmake_prefix_path "$cmake_prefix_path"
+    write-github-output cmake_variable "$cmake_variable"
 }
 
-function action-resolve-project-build-mode() {
-    # Arguments: --framework-build-type <sdk|source> (optional)
-    local framework_build_type="${arg_framework_build_type:-${INPUT_FRAMEWORK_BUILD_TYPE:-${ci_framework_build_type:-source}}}"
-
-    case "$framework_build_type" in
-        sdk|source)
-            ;;
-        *)
-            echo "Error: unsupported framework build type '$framework_build_type'"
-            return 1
-            ;;
-    esac
-
-    write-github-output framework_build_type "$framework_build_type"
-}
-
-function action-resolve-project-host() {
+function action-wait-for-build() {
     # Arguments: none
+    local job_name="${INPUT_JOB_NAME:-}"
     local artifact_names_value="${INPUT_ARTIFACT_NAMES:-[]}"
+    local timeout_seconds="${INPUT_TIMEOUT_SECONDS:-3600}"
+    local artifact_grace_seconds="${INPUT_ARTIFACT_GRACE_SECONDS:-60}"
+    local repository="${INPUT_REPOSITORY:-${GITHUB_REPOSITORY:-}}"
+    local run_id="${INPUT_RUN_ID:-${GITHUB_RUN_ID:-}}"
+    local run_attempt="${INPUT_RUN_ATTEMPT:-${GITHUB_RUN_ATTEMPT:-1}}"
     local parsed_artifact_names=''
     local artifact_name=''
-    local -a artifact_names=()
-    local -a project_artifact_names=()
-    local host_platform_tag="${INPUT_HOST_PLATFORM_TAG:-}"
-
-    if ! parsed_artifact_names="$(parse-artifact-name-list "$artifact_names_value")"; then
-        echo 'Error: INPUT_ARTIFACT_NAMES must contain one artifact name per line or a JSON string array.'
-        return 1
-    fi
-    if [[ -n "$parsed_artifact_names" ]]; then
-        mapfile -t artifact_names <<< "$parsed_artifact_names"
-    fi
-    if [[ ${#artifact_names[@]} -eq 0 ]]; then
-        write-github-output enabled false
-        echo 'host_artifact_names is empty; continuing without host artifacts.'
-        return 0
-    fi
-
-    case "${ci_platform:-${ci_platform_tag%%-*}}" in
-        android|web|ios|uwp)
-            ;;
-        *)
-            write-github-output enabled false
-            echo "ci_platform_tag '$ci_platform_tag' is a native build; continuing without host artifacts."
-            return 0
-            ;;
-    esac
-
-    if [[ -z "$host_platform_tag" ]]; then
-        host_platform_tag="$(resolve-project-host-platform-tag "${ci_platform_tag:-}" || true)"
-    fi
-    if [[ -z "$host_platform_tag" ]]; then
-        write-github-output enabled false
-        echo "ci_platform_tag '$ci_platform_tag' does not require host artifacts; continuing without them."
-        return 0
-    fi
-
-    project_artifact_names=("${artifact_names[@]}")
-
-    write-github-output enabled true
-    write-github-output host_platform_tag "$host_platform_tag"
-    write-github-output project_artifact_names "$(make-json-string-array "${project_artifact_names[@]}")"
-    write-github-output project_artifact_count "${#project_artifact_names[@]}"
-    if [[ ${#project_artifact_names[@]} -eq 1 ]]; then
-        write-github-output single_project_artifact_name "${project_artifact_names[0]}"
-    fi
-}
-
-function action-resolve-project-host-paths() {
-    # Arguments: none
-    local host_platform_tag="${INPUT_HOST_PLATFORM_TAG:-}"
-    local host_context_dir="${INPUT_HOST_CONTEXT_DIR:-${RUNNER_TEMP}/host-context}"
-    local project_host_context_dir=''
-
-    if [[ -z "$host_platform_tag" ]]; then
-        echo 'Error: INPUT_HOST_PLATFORM_TAG is required'
-        return 1
-    fi
-
-    project_host_context_dir="${host_context_dir}/project"
-
-    rm -rf "$host_context_dir"
-    mkdir -p "$project_host_context_dir"
-
-    write-github-output host_context_dir "$host_context_dir"
-    write-github-output project_host_context_dir "$project_host_context_dir"
-}
-
-function action-check-project-host-artifact() {
-    # Arguments: none
-    local artifact_names_json="${INPUT_HOST_ARTIFACT_NAMES:-[]}"
-    local wait_seconds="${INPUT_ARTIFACT_WAIT_SECONDS:-3600}"
-    local grace_seconds="${INPUT_ARTIFACT_GRACE_SECONDS:-60}"
-    local host_job_name="${INPUT_HOST_JOB_NAME:-}"
-    local parsed_artifact_names=''
-    local artifact_name=''
-    local artifact_data=''
     local job_data=''
     local job_row=''
-    local host_job_status=''
-    local host_job_conclusion=''
-    local host_job_completed_at=''
-    local host_job_completed_epoch=''
+    local job_status=''
+    local job_conclusion=''
+    local job_started_at=''
+    local job_completed_at=''
+    local artifact_data=''
+    local artifact_id=''
     local artifact_deadline=''
+    local completed_epoch=''
     local -a artifact_names=()
     local -a artifact_ids=()
     local -a missing_artifact_names=()
 
-    if ! parsed_artifact_names="$(parse-json-string-array "$artifact_names_json")"; then
-        echo 'Error: INPUT_HOST_ARTIFACT_NAMES must be a JSON array of artifact names.'
+    if [[ -z "$job_name" ]]; then
+        echo 'Error: INPUT_JOB_NAME is required.'
+        return 1
+    fi
+    if [[ -z "$repository" || -z "$run_id" ]]; then
+        echo 'Error: repository and workflow run ID are required.'
+        return 1
+    fi
+    if [[ ! "$timeout_seconds" =~ ^[1-9][0-9]*$ ]]; then
+        echo 'Error: INPUT_TIMEOUT_SECONDS must be a positive integer.'
+        return 1
+    fi
+    if [[ ! "$artifact_grace_seconds" =~ ^[0-9]+$ ]]; then
+        echo 'Error: INPUT_ARTIFACT_GRACE_SECONDS must be a non-negative integer.'
+        return 1
+    fi
+    if ! parsed_artifact_names="$(parse-string-list "$artifact_names_value")"; then
+        echo 'Error: INPUT_ARTIFACT_NAMES must contain one name per line or a JSON string array.'
         return 1
     fi
     if [[ -n "$parsed_artifact_names" ]]; then
         mapfile -t artifact_names <<< "$parsed_artifact_names"
     fi
-    if [[ ${#artifact_names[@]} -eq 0 ]]; then
-        echo 'Error: INPUT_HOST_ARTIFACT_NAMES must contain at least one artifact name.'
-        return 1
-    fi
 
-    find_artifact_ids() {
-        local found_id=''
+    find_job() {
+        job_status=''
+        job_conclusion=''
+        job_started_at=''
+        job_completed_at=''
+        job_data="$(
+            gh api "/repos/${repository}/actions/runs/${run_id}/attempts/${run_attempt}/jobs?per_page=100" \
+                --paginate \
+                --jq '.jobs[] | [.name, .status, (.conclusion // ""), (.started_at // ""), (.completed_at // "")] | @tsv' 2>/dev/null || true
+        )"
+        job_row="$(awk -F '\t' -v name="$job_name" '$1 == name { print; exit }' <<< "$job_data")"
+        if [[ -n "$job_row" ]]; then
+            IFS=$'\t' read -r _ job_status job_conclusion job_started_at job_completed_at <<< "$job_row"
+        fi
+    }
+
+    find_artifacts() {
         artifact_ids=()
         missing_artifact_names=()
         artifact_data="$(
-            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100" \
+            gh api "/repos/${repository}/actions/runs/${run_id}/artifacts?per_page=100" \
                 --paginate \
-                --jq '.artifacts[] | [.name, (.id | tostring)] | @tsv' 2>/dev/null || true
+                --jq '.artifacts[] | select(.expired == false) | [.name, (.id | tostring), .created_at] | @tsv' 2>/dev/null || true
         )"
         for artifact_name in "${artifact_names[@]}"; do
-            found_id="$(awk -F '\t' -v name="$artifact_name" '$1 == name { print $2; exit }' <<< "$artifact_data")"
-            if [[ -n "$found_id" ]]; then
-                artifact_ids+=("$found_id")
+            artifact_id="$(
+                awk -F '\t' -v name="$artifact_name" -v started="$job_started_at" \
+                    '$1 == name && $3 >= started { print $2; exit }' <<< "$artifact_data"
+            )"
+            if [[ -n "$artifact_id" ]]; then
+                artifact_ids+=("$artifact_id")
             else
                 missing_artifact_names+=("$artifact_name")
             fi
         done
     }
 
-    find_host_job_status() {
-        host_job_status=''
-        host_job_conclusion=''
-        host_job_completed_at=''
-        job_data="$(
-            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT:-1}/jobs?per_page=100" \
-                --paginate \
-                --jq '.jobs[] | [.name, .status, (.conclusion // ""), (.completed_at // "")] | @tsv' 2>/dev/null || true
-        )"
-        job_row="$(awk -F '\t' -v name="$host_job_name" '$1 == name { print; exit }' <<< "$job_data")"
-        if [[ -n "$job_row" ]]; then
-            IFS=$'\t' read -r _ host_job_status host_job_conclusion host_job_completed_at <<< "$job_row"
-        fi
-    }
-
-    if [[ -z "$host_job_name" ]]; then
-        echo 'Error: INPUT_HOST_JOB_NAME is required when host project artifacts are requested.'
-        return 1
-    fi
-    local deadline=$((SECONDS + wait_seconds))
+    local deadline=$((SECONDS + timeout_seconds))
     while [[ $SECONDS -lt $deadline ]]; do
-        find_host_job_status
-        if [[ -z "$host_job_status" ]]; then
-            echo "Waiting for host job to appear: $host_job_name"
+        find_job
+        if [[ -z "$job_status" ]]; then
+            echo "Waiting for workflow job to appear: $job_name"
             sleep 15
             continue
         fi
-        if [[ "$host_job_status" != 'completed' ]]; then
-            echo "Waiting for host job: $host_job_name ($host_job_status)"
+        if [[ "$job_status" != 'completed' ]]; then
+            echo "Waiting for workflow job: $job_name ($job_status)"
             sleep 15
             continue
         fi
-        if [[ "$host_job_conclusion" != 'success' ]]; then
-            echo "Error: host job '$host_job_name' completed with conclusion '$host_job_conclusion'."
+        if [[ "$job_conclusion" != 'success' ]]; then
+            echo "Error: workflow job '$job_name' completed with conclusion '$job_conclusion'."
             return 1
         fi
 
-        if [[ -z "$artifact_deadline" ]]; then
-            host_job_completed_epoch="$(python3 -c '
-from datetime import datetime
-import sys
-print(int(datetime.fromisoformat(sys.argv[1].replace("Z", "+00:00")).timestamp()))
-' "$host_job_completed_at" 2>/dev/null || true)"
-            if [[ -n "$host_job_completed_epoch" ]]; then
-                artifact_deadline=$((host_job_completed_epoch + grace_seconds))
-            else
-                artifact_deadline=$(($(date +%s) + grace_seconds))
-            fi
+        if [[ ${#artifact_names[@]} -eq 0 ]]; then
+            write-github-output conclusion "$job_conclusion"
+            write-github-output completed_at "$job_completed_at"
+            return 0
         fi
 
-        find_artifact_ids
+        find_artifacts
         if [[ ${#missing_artifact_names[@]} -eq 0 ]]; then
-            echo "Found host artifacts after host job completed: ${artifact_names[*]}"
-            write-github-output available true
+            write-github-output conclusion "$job_conclusion"
+            write-github-output completed_at "$job_completed_at"
             write-github-output artifact_ids "$(IFS=,; echo "${artifact_ids[*]}")"
             return 0
         fi
+
+        if [[ -z "$artifact_deadline" ]]; then
+            completed_epoch="$(python3 -c '
+from datetime import datetime
+import sys
+print(int(datetime.fromisoformat(sys.argv[1].replace("Z", "+00:00")).timestamp()))
+' "$job_completed_at" 2>/dev/null || true)"
+            if [[ -n "$completed_epoch" ]]; then
+                artifact_deadline=$((completed_epoch + artifact_grace_seconds))
+            else
+                artifact_deadline=$(($(date +%s) + artifact_grace_seconds))
+            fi
+        fi
         if [[ $(date +%s) -ge $artifact_deadline ]]; then
-            echo "Error: host job '$host_job_name' succeeded, but artifacts were not available within ${grace_seconds}s: ${missing_artifact_names[*]}"
+            echo "Error: workflow job '$job_name' succeeded, but artifacts were not available within ${artifact_grace_seconds}s: ${missing_artifact_names[*]}"
             return 1
         fi
 
-        echo "Waiting for host artifacts after host job completed: ${missing_artifact_names[*]}"
+        echo "Waiting for artifacts from '$job_name': ${missing_artifact_names[*]}"
         sleep 15
     done
 
-    echo "Error: timed out waiting for host job '$host_job_name' after ${wait_seconds}s."
+    echo "Error: timed out waiting for workflow job '$job_name' after ${timeout_seconds}s."
     return 1
-}
-
-function action-export-project-host-context() {
-    # Arguments: none
-    local host_context_dir="${INPUT_HOST_CONTEXT_DIR:-}"
-    local project_host_context_dir="${INPUT_PROJECT_HOST_CONTEXT_DIR:-}"
-    local project_host_artifact_names_json="${INPUT_PROJECT_HOST_ARTIFACT_NAMES:-[]}"
-    local parsed_artifact_names=''
-    local artifact_name=''
-    local artifact_path=''
-    local -a artifact_names=()
-    local host_context_prefix_path=''
-    local additional_prefix_path=''
-    local exported_cmake_prefix_path=''
-
-    if [[ ! -d "$project_host_context_dir" ]]; then
-        echo "Error: host project context directory does not exist: $project_host_context_dir"
-        return 1
-    fi
-
-    if ! parsed_artifact_names="$(parse-json-string-array "$project_host_artifact_names_json")"; then
-        echo 'Error: INPUT_PROJECT_HOST_ARTIFACT_NAMES must be a JSON array of artifact names.'
-        return 1
-    fi
-    if [[ -n "$parsed_artifact_names" ]]; then
-        mapfile -t artifact_names <<< "$parsed_artifact_names"
-    fi
-
-    for artifact_name in "${artifact_names[@]}"; do
-        artifact_path="${project_host_context_dir}/${artifact_name}"
-        if [[ ! -d "$artifact_path" ]]; then
-            echo "Error: host project artifact directory does not exist: $artifact_path"
-            return 1
-        fi
-        host_context_prefix_path="$(prepend-cmake-path-list "$host_context_prefix_path" "$artifact_path")"
-    done
-    if [[ -z "$host_context_prefix_path" ]]; then
-        echo 'Error: no downloaded host artifacts are available to export.'
-        return 1
-    fi
-
-    additional_prefix_path=$(prepend-cmake-path-list "$host_context_prefix_path" "${CI_ADDITIONAL_CMAKE_PREFIX_PATH:-}")
-    exported_cmake_prefix_path=$(prepend-cmake-path-list "$host_context_prefix_path" "${CMAKE_PREFIX_PATH:-}")
-
-    write-github-env CI_ADDITIONAL_CMAKE_PREFIX_PATH "$additional_prefix_path"
-    write-github-env CMAKE_PREFIX_PATH "$exported_cmake_prefix_path"
-    write-github-output host_context_dir "$host_context_dir"
-    write-github-output cmake_prefix_path "$host_context_prefix_path"
-}
-
-function action-resolve-project-publish() {
-    # Arguments: none
-    local publish_mode="${INPUT_PUBLISH:-auto}"
-    local matrix_publish_artifact="${MATRIX_PUBLISH_ARTIFACT:-}"
-    local upload_artifact=false
-    local upload_release=false
-
-    case "$publish_mode" in
-        auto)
-            if [[ "$matrix_publish_artifact" == 'true' ]]; then
-                upload_artifact=true
-            fi
-            ;;
-        none)
-            ;;
-        artifact)
-            upload_artifact=true
-            ;;
-        release)
-            upload_release=true
-            ;;
-        both)
-            upload_artifact=true
-            upload_release=true
-            ;;
-        *)
-            echo "Error: unsupported publish mode '$publish_mode'"
-            return 1
-            ;;
-    esac
-
-    write-github-output upload_artifact "$upload_artifact"
-    write-github-output upload_release "$upload_release"
-}
-
-function action-upload-release-archive() {
-    # Arguments: --staging-dir <dir> (optional), --archive-name <name> (optional), --release-tag <tag> (optional), --repository <repo> (optional)
-    local staging_dir="${arg_staging_dir:-${ARTIFACT_STAGING_DIR:-}}"
-    local release_repository="${arg_repository:-${RELEASE_REPOSITORY:-${GITHUB_REPOSITORY:-}}}"
-    local release_tag="${arg_release_tag:-${RELEASE_TAG:-latest}}"
-    local archive_stem="${arg_archive_name:-${RELEASE_ASSET_NAME:-}}"
-    local archive_file=''
-
-    if [[ -z "$staging_dir" || -z "$archive_stem" || -z "$release_repository" ]]; then
-        echo "Error: upload-release-archive requires staging dir, archive name, and repository"
-        return 1
-    fi
-
-    archive_file="${archive_stem}.7z"
-
-    if [[ ! -d "$staging_dir" ]]; then
-        echo 'No build outputs found for release upload.'
-        return 1
-    fi
-
-    if ! find "$staging_dir" -type f -print -quit | grep -q .; then
-        echo 'No build outputs remain for release upload.'
-        return 1
-    fi
-
-    rm -f "$archive_file"
-    7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "$archive_file" "$staging_dir"/* >/dev/null
-    gh release upload "$release_tag" "$archive_file" --repo "$release_repository" --clobber
 }
 
 # Action to set environment variables

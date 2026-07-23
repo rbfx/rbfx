@@ -1,0 +1,56 @@
+# Explicitly waits for another job in the current workflow run. This action is kept
+# separate from platform preparation so callers decide when a cross build needs to
+# wait, which producer job it needs, and which artifacts must be visible before
+# continuing. Artifact download remains a separate caller-owned step.
+name: CI Wait for Build
+description: Wait for a named workflow job and, optionally, its artifacts.
+
+inputs:
+  job_name:
+    description: Exact rendered workflow job name to wait for.
+    required: true
+  artifact_names:
+    description: Optional artifact names to wait for after the job succeeds, one per line or as a JSON string array.
+    required: false
+    default: '[]'
+  timeout_seconds:
+    description: Maximum time to wait for the job.
+    required: false
+    default: '3600'
+  artifact_grace_seconds:
+    description: Maximum time after successful job completion to wait for artifacts to become visible.
+    required: false
+    default: '60'
+  token:
+    description: GitHub token with Actions read access. Defaults to the current workflow token.
+    required: false
+    default: ''
+
+outputs:
+  conclusion:
+    description: Successful producer-job conclusion.
+    value: ${{ steps.wait.outputs.conclusion }}
+  completed_at:
+    description: Producer-job completion timestamp.
+    value: ${{ steps.wait.outputs.completed_at }}
+  artifact_ids:
+    description: Comma-separated artifact IDs in the same order as artifact_names.
+    value: ${{ steps.wait.outputs.artifact_ids }}
+
+runs:
+  using: composite
+  steps:
+    - name: Wait for workflow build
+      id: wait
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token || github.token }}
+        INPUT_JOB_NAME: ${{ inputs.job_name }}
+        INPUT_ARTIFACT_NAMES: ${{ inputs.artifact_names }}
+        INPUT_TIMEOUT_SECONDS: ${{ inputs.timeout_seconds }}
+        INPUT_ARTIFACT_GRACE_SECONDS: ${{ inputs.artifact_grace_seconds }}
+        INPUT_REPOSITORY: ${{ github.repository }}
+        INPUT_RUN_ID: ${{ github.run_id }}
+        INPUT_RUN_ATTEMPT: ${{ github.run_attempt }}
+      run: |
+        "$GITHUB_ACTION_PATH/../../../script/ci_build.sh" wait-for-build

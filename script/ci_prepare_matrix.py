@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Prepare the workflow matrix and artifact selection from action inputs."""
+"""Prepare the workflow platform matrix from action inputs."""
 
 import json
 import os
@@ -39,10 +39,6 @@ def require_env(name: str) -> str:
 
 def parse_csv_env(name: str) -> list[str]:
     raw_value = require_env(name)
-    return [value.strip() for value in raw_value.split(',') if value.strip()]
-
-
-def parse_csv_value(raw_value: str) -> list[str]:
     return [value.strip() for value in raw_value.split(',') if value.strip()]
 
 
@@ -110,28 +106,6 @@ def resolve_platform_selector(selector_name: str, requested_tokens: list[str]) -
     return platform_tags
 
 
-def resolve_deploy_artifact_tags(platform_tags: list[str]) -> list[str]:
-    artifact_platforms = require_env('INPUT_ARTIFACT_PLATFORMS').strip()
-    normalized_value = artifact_platforms.lower()
-    if normalized_value == 'false' or artifact_platforms == '':
-        return []
-    if normalized_value == 'true':
-        return list(platform_tags)
-
-    selected_platform_tags = set(platform_tags)
-    deploy_artifact_tags = [
-        tag for tag in resolve_platform_selector('artifact_platforms', parse_csv_value(artifact_platforms))
-        if tag in selected_platform_tags
-    ]
-    if not deploy_artifact_tags:
-        raise SystemExit(
-            'artifact_platforms does not match any selected platforms. '
-            'Adjust artifact_platforms or platforms.'
-        )
-
-    return deploy_artifact_tags
-
-
 def resolve_runs_on(platform_tag: str) -> str:
     if platform_tag.startswith(('windows-', 'uwp-')):
         return 'windows-latest'
@@ -154,7 +128,6 @@ def resolve_host_platform_tag(platform_tag: str) -> str:
 def build_platform_matrix_entry(
     platform_tag: str,
     requested_platform_tags: set[str],
-    deploy_artifact_tags: set[str],
 ) -> dict[str, bool | str]:
     host_platform_tag = resolve_host_platform_tag(platform_tag)
     host_platform, host_compiler, host_arch, _host_lib_type = host_platform_tag.split('-')
@@ -166,21 +139,18 @@ def build_platform_matrix_entry(
         'ci_host_arch': host_arch,
         'runs_on': resolve_runs_on(platform_tag),
         'requested': platform_tag in requested_platform_tags,
-        'publish_artifact': platform_tag in deploy_artifact_tags,
     }
 
 
 def build_platform_matrix(
     platform_tags: list[str],
     requested_platform_tags: list[str],
-    deploy_artifact_tags: list[str],
 ) -> dict[str, list[dict[str, bool | str]]]:
     requested_platform_tag_set = set(requested_platform_tags)
-    deploy_artifact_tag_set = set(deploy_artifact_tags)
 
     return {
         'include': [
-            build_platform_matrix_entry(tag, requested_platform_tag_set, deploy_artifact_tag_set)
+            build_platform_matrix_entry(tag, requested_platform_tag_set)
             for tag in platform_tags
         ]
     }
@@ -189,19 +159,16 @@ def build_platform_matrix(
 def write_output(
     requested_platform_tags: list[str],
     platform_tags: list[str],
-    deploy_artifact_tags: list[str],
 ) -> None:
     github_output = require_env('GITHUB_OUTPUT')
     platform_matrix = build_platform_matrix(
         platform_tags,
         requested_platform_tags,
-        deploy_artifact_tags,
     )
     with open(github_output, 'a', encoding='utf-8') as output:
         print(f'requested_platform_tags={json.dumps(requested_platform_tags)}', file=output)
         print(f'platform_tags={json.dumps(platform_tags)}', file=output)
         print(f'platform_matrix={json.dumps(platform_matrix)}', file=output)
-        print(f'deploy_artifact_tags={json.dumps(deploy_artifact_tags)}', file=output)
 
 
 def main() -> None:
@@ -216,8 +183,7 @@ def main() -> None:
         raise SystemExit('No platform tags remain after filtering. Adjust platforms exclusions.')
 
     platform_tags = selected_platform_tags
-    deploy_artifact_tags = resolve_deploy_artifact_tags(platform_tags)
-    write_output(selected_platform_tags, platform_tags, deploy_artifact_tags)
+    write_output(selected_platform_tags, platform_tags)
 
 
 if __name__ == '__main__':
