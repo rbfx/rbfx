@@ -1307,6 +1307,8 @@ function action-resolve-cmake-prefix-path() {
     local android_java_dir=''
     local urho3d_dir=''
     local candidate=''
+    local bin_dir=''
+    local executable_dir=''
     local -a prefix_paths=()
     local -a resolved_prefix_paths=()
 
@@ -1328,6 +1330,24 @@ function action-resolve-cmake-prefix-path() {
             continue
         fi
         resolved_prefix_paths+=("$prefix_path")
+        # actions/upload-artifact does not preserve Unix file modes. Restore the
+        # executable bit on extensionless files in conventional binary directories
+        # so cross-build tools from a downloaded project install can be invoked.
+        if [[ "${RUNNER_OS:-}" != 'Windows' ]]; then
+            for bin_dir in "$prefix_path/bin" "$prefix_path/Urho3D/bin"; do
+                for executable_dir in \
+                    "$bin_dir" \
+                    "$bin_dir/Debug" \
+                    "$bin_dir/RelWithDebInfo" \
+                    "$bin_dir/Release" \
+                    "$bin_dir/MinSizeRel"; do
+                    if [[ -d "$executable_dir" ]]; then
+                        find "$executable_dir" -maxdepth 1 -type f ! -name '*.*' \
+                            -exec chmod a+x {} +
+                    fi
+                done
+            done
+        fi
         if [[ -z "$urho3d_dir" ]]; then
             for candidate in \
                 "$prefix_path/Urho3D/share/Urho3D" \

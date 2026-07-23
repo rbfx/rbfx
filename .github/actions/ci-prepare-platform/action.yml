@@ -11,6 +11,8 @@
 # 2. For `downstream`, resolve the caller-provided CMake prefixes. Existing paths
 #    are preserved in caller order and missing paths are ignored. Web jobs export
 #    them through `CMAKE_FIND_ROOT_PATH`; all other jobs use `CMAKE_PREFIX_PATH`.
+#    On Unix hosts, extensionless files in each prefix's conventional binary
+#    directories are made executable because GitHub artifact transfer strips modes.
 #    The action never acquires framework source, SDKs, or project artifacts.
 #    For `engine`, the workflow's existing checkout is used as the rbfx source tree.
 #
@@ -49,7 +51,7 @@ inputs:
     required: false
     default: ''
   cmake_prefix_path:
-    description: "CMake prefix directories, one per line or as a JSON string array. Relative paths are resolved against `github.workspace`; missing paths are ignored."
+    description: "CMake prefix directories, one per line or as a JSON string array. Relative paths are resolved against `github.workspace`; missing paths are ignored. Unix tool permissions stripped by artifact transfer are restored."
     required: false
     default: '[]'
 outputs:
