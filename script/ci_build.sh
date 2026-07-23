@@ -5,12 +5,13 @@
 # Actions: dependencies|generate|generate-detect-thirdparty|build|build-swig|
 #          install|test|cstest|apk|publish-to-itch|release-mobile-artifacts|
 #          test-project|build-project|build-android-project|download-release|
+#          extract-sdk-archive|
 #          download-cached-sdk|download-nuget-sdks|sanitize-cached-sdk|
 #          copy-cached-sdk|setup-package-tool|setup-emsdk|setup-environment|
 #          resolve-project-build-mode|resolve-project-host|
 #          resolve-project-host-paths|
-#          check-project-host-artifact|download-project-host-sdk|
-#          export-project-host-context|resolve-project-publish|
+#          check-project-host-artifact|export-project-host-context|
+#          resolve-project-publish|
 #          stage-project-artifacts|upload-release-archive
 #
 # Environment variables (used for defaults):
@@ -45,6 +46,7 @@ then
     echo "  build-project             Build downstream project"
     echo "  build-android-project     Build downstream Android project"
     echo "  download-release          Download and optionally verify release"
+    echo "  extract-sdk-archive       Extract a caller-provided SDK archive"
     echo "  download-cached-sdk       Download and verify cached ThirdParty SDK"
     echo "  download-nuget-sdks       Download SDKs for NuGet"
     echo "  sanitize-cached-sdk       Remove engine package exports from cached SDK"
@@ -56,7 +58,6 @@ then
     echo "  resolve-project-host      Resolve and classify requested host artifacts"
     echo "  resolve-project-host-paths Prepare downstream host context directories"
     echo "  check-project-host-artifact Wait for required downstream host artifacts"
-    echo "  download-project-host-sdk Download a required downstream host rbfx SDK"
     echo "  export-project-host-context Export downstream host context to CMake paths"
     echo "  resolve-project-publish   Resolve downstream artifact/release publishing"
     echo "  stage-project-artifacts   Stage downstream build outputs for publishing"
@@ -230,24 +231,6 @@ resolve-project-host-platform-tag() {
             return 1
             ;;
     esac
-}
-
-infer-github-repository-from-dir() {
-    local source_dir=$1
-    local origin_url=''
-
-    if [[ ! -d "$source_dir" ]]; then
-        return 1
-    fi
-
-    origin_url="$(git -C "$source_dir" config --get remote.origin.url 2>/dev/null || true)"
-    if [[ "$origin_url" =~ ^https://github\.com/([^/#]+/[^/#]+)$ ]]; then
-        local repository="${BASH_REMATCH[1]}"
-        printf '%s\n' "${repository%.git}"
-        return 0
-    fi
-
-    return 1
 }
 
 is-truthy() {
@@ -1182,6 +1165,47 @@ function action-download-release() {
     download-release-archive "$url" "$extract_dir" "$id_file_path" "$expected_id"
 }
 
+function action-extract-sdk-archive() {
+    # Arguments: -- <archive> <extract_dir>
+    if [[ ${#arg_extra[@]} -ne 2 ]]; then
+        echo "Error: extract-sdk-archive requires 2 arguments after --: <archive> <extract_dir>"
+        return 1
+    fi
+
+    local archive="${arg_extra[0]}"
+    local extract_dir="${arg_extra[1]}"
+    local temp_dir="${RUNNER_TEMP:-${ci_workspace_dir}}/rbfx-sdk-extract-$$"
+    local extracted_entries=()
+
+    if [[ ! -f "$archive" ]]; then
+        echo "Error: SDK archive does not exist: $archive"
+        return 1
+    fi
+
+    rm -rf "$temp_dir"
+    mkdir -p "$temp_dir"
+    if ! 7z x -y "$archive" -o"$temp_dir" >/dev/null; then
+        echo "Error: failed to extract SDK archive: $archive"
+        rm -rf "$temp_dir"
+        return 1
+    fi
+
+    shopt -s nullglob
+    extracted_entries=("$temp_dir"/*)
+    shopt -u nullglob
+    if [[ ${#extracted_entries[@]} -ne 1 || ! -d "${extracted_entries[0]}" ]]; then
+        echo 'Error: SDK archive must contain exactly one top-level directory.'
+        rm -rf "$temp_dir"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$extract_dir")"
+    rm -rf "$extract_dir"
+    mv "${extracted_entries[0]}" "$extract_dir"
+    rm -rf "$temp_dir"
+    echo "Extracted SDK archive into $extract_dir"
+}
+
 function action-download-cached-sdk() {
     # Arguments: --repository <repo> (optional), --extract-dir <dir> (optional)
     local repository="${arg_repository:-${DOWNLOAD_SDK_REPOSITORY:-${GITHUB_REPOSITORY:-}}}"
@@ -1408,11 +1432,8 @@ function action-resolve-project-build-mode() {
 function action-resolve-project-host() {
     # Arguments: none
     local artifact_names_value="${INPUT_ARTIFACT_NAMES:-[]}"
-    local framework_repository="${INPUT_FRAMEWORK_REPOSITORY:-${ci_framework_repository:-}}"
-    local source_dir="${INPUT_SOURCE_DIR:-${ci_source_dir:-}}"
     local parsed_artifact_names=''
     local artifact_name=''
-    local framework_artifact_name=''
     local -a artifact_names=()
     local -a project_artifact_names=()
     local host_platform_tag="${INPUT_HOST_PLATFORM_TAG:-}"
@@ -1449,28 +1470,12 @@ function action-resolve-project-host() {
         return 0
     fi
 
-    for artifact_name in "${artifact_names[@]}"; do
-        if [[ "$artifact_name" == rebelfork-sdk-*.7z ]]; then
-            if [[ -n "$framework_artifact_name" ]]; then
-                echo 'Error: host_artifact_names may contain only one rbfx SDK artifact.'
-                return 1
-            fi
-            framework_artifact_name="$artifact_name"
-        else
-            project_artifact_names+=("$artifact_name")
-        fi
-    done
-
-    if [[ -n "$framework_artifact_name" && -z "$framework_repository" ]]; then
-        framework_repository="$(infer-github-repository-from-dir "$source_dir" || true)"
-    fi
+    project_artifact_names=("${artifact_names[@]}")
 
     write-github-output enabled true
     write-github-output host_platform_tag "$host_platform_tag"
-    write-github-output framework_repository "$framework_repository"
     write-github-output project_artifact_names "$(make-json-string-array "${project_artifact_names[@]}")"
     write-github-output project_artifact_count "${#project_artifact_names[@]}"
-    write-github-output framework_artifact_name "$framework_artifact_name"
     if [[ ${#project_artifact_names[@]} -eq 1 ]]; then
         write-github-output single_project_artifact_name "${project_artifact_names[0]}"
     fi
@@ -1481,8 +1486,6 @@ function action-resolve-project-host-paths() {
     local host_platform_tag="${INPUT_HOST_PLATFORM_TAG:-}"
     local host_context_dir="${INPUT_HOST_CONTEXT_DIR:-${RUNNER_TEMP}/host-context}"
     local project_host_context_dir=''
-    local framework_host_context_dir=''
-    local framework_host_prefix_path=''
 
     if [[ -z "$host_platform_tag" ]]; then
         echo 'Error: INPUT_HOST_PLATFORM_TAG is required'
@@ -1490,19 +1493,12 @@ function action-resolve-project-host-paths() {
     fi
 
     project_host_context_dir="${host_context_dir}/project"
-    framework_host_context_dir="${host_context_dir}/framework-sdk"
-    framework_host_prefix_path="$framework_host_context_dir"
-    if [[ "$host_platform_tag" == windows-* || "$host_platform_tag" == uwp-* ]]; then
-        framework_host_prefix_path="${framework_host_context_dir}/share"
-    fi
 
     rm -rf "$host_context_dir"
-    mkdir -p "$project_host_context_dir" "$framework_host_context_dir"
+    mkdir -p "$project_host_context_dir"
 
     write-github-output host_context_dir "$host_context_dir"
     write-github-output project_host_context_dir "$project_host_context_dir"
-    write-github-output framework_host_context_dir "$framework_host_context_dir"
-    write-github-output framework_host_prefix_path "$framework_host_prefix_path"
 }
 
 function action-check-project-host-artifact() {
@@ -1626,44 +1622,11 @@ print(int(datetime.fromisoformat(sys.argv[1].replace("Z", "+00:00")).timestamp()
     return 1
 }
 
-function action-download-project-host-sdk() {
-    # Arguments: none
-    local framework_repository="${INPUT_FRAMEWORK_REPOSITORY:-}"
-    local framework_release="${INPUT_FRAMEWORK_RELEASE:-latest}"
-    local framework_artifact_name="${INPUT_FRAMEWORK_ARTIFACT_NAME:-}"
-    local extract_dir="${INPUT_EXTRACT_DIR:-}"
-
-    if [[ -z "$extract_dir" || -z "$framework_artifact_name" ]]; then
-        echo 'Error: INPUT_EXTRACT_DIR and INPUT_FRAMEWORK_ARTIFACT_NAME are required'
-        return 1
-    fi
-
-    if [[ -z "$framework_repository" ]]; then
-        echo 'Error: unable to infer framework repository for host SDK download.'
-        echo 'Use a GitHub URL for framework_source, or a local Git checkout with a GitHub origin.'
-        return 1
-    fi
-
-    if download-release-archive \
-        "https://github.com/${framework_repository}/releases/download/${framework_release}/${framework_artifact_name}" \
-        "$extract_dir"; then
-        write-github-output available true
-        return 0
-    fi
-
-    rm -rf "$extract_dir"
-    mkdir -p "$extract_dir"
-    echo "Error: failed to download required host framework SDK: $framework_artifact_name"
-    return 1
-}
-
 function action-export-project-host-context() {
     # Arguments: none
     local host_context_dir="${INPUT_HOST_CONTEXT_DIR:-}"
     local project_host_context_dir="${INPUT_PROJECT_HOST_CONTEXT_DIR:-}"
     local project_host_artifact_names_json="${INPUT_PROJECT_HOST_ARTIFACT_NAMES:-[]}"
-    local framework_host_artifact_name="${INPUT_FRAMEWORK_HOST_ARTIFACT_NAME:-}"
-    local framework_host_prefix_path="${INPUT_FRAMEWORK_HOST_PREFIX_PATH:-}"
     local parsed_artifact_names=''
     local artifact_name=''
     local artifact_path=''
@@ -1693,13 +1656,6 @@ function action-export-project-host-context() {
         fi
         host_context_prefix_path="$(prepend-cmake-path-list "$host_context_prefix_path" "$artifact_path")"
     done
-    if [[ -n "$framework_host_artifact_name" ]]; then
-        if [[ ! -d "$framework_host_prefix_path" ]]; then
-            echo "Error: host framework SDK prefix path does not exist: $framework_host_prefix_path"
-            return 1
-        fi
-        host_context_prefix_path="$(prepend-cmake-path-list "$host_context_prefix_path" "$framework_host_prefix_path")"
-    fi
     if [[ -z "$host_context_prefix_path" ]]; then
         echo 'Error: no downloaded host artifacts are available to export.'
         return 1

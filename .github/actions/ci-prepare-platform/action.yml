@@ -2,18 +2,18 @@
 # It centralizes everything that must happen before the actual engine/project build,
 # and exports its state through the job environment and the outputs listed below.
 #
-# Configuration and checkout:
+# Configuration:
 # 1. Resolve `ci_platform_tag` into the platform, architecture, compiler, linkage,
 #    cache identity, build directories, and other shared CI variables by using
 #    `ci_build.sh` from this action's own repository checkout. This keeps action
 #    logic pinned to the same repository and ref as the action. Defaults such as
 #    CMake/.NET versions and ccache behavior are exported through `GITHUB_ENV`.
-# 2. For `downstream`, resolve `framework_source` as either a local path or a GitHub
-#    URL with an optional `#ref`. In `source` mode, use the requested local rbfx tree
-#    unchanged, or shallow-fetch the requested remote ref into `rbfx`; URLs without
-#    `#ref` use `master`. In `sdk` mode, use a local SDK path or download assets from
-#    the requested repository release; URLs without `#ref` use the `latest` release.
-#    The calling workflow is responsible for checking out its project beforehand.
+# 2. For `downstream`, resolve the caller-provided framework path selected by
+#    `framework_build_type`. Source mode requires `framework_source` to name an
+#    existing rbfx source directory. SDK mode requires `framework_sdk` to name an
+#    existing SDK directory or local `.7z` archive, which is extracted into the
+#    job's SDK directory. The action never clones rbfx or downloads the target SDK.
+#    The calling workflow owns all project/framework acquisition operations.
 #    For `engine`, the workflow's existing checkout is used as the rbfx source tree.
 #
 # Toolchain, dependencies, and caches:
@@ -24,9 +24,8 @@
 # 4. Restore the engine or downstream compiler cache with keys scoped to platform,
 #    source revision, and (for downstream jobs) repository. The downstream cache-hit
 #    state is exported so ci-build-project knows whether a new cache must be saved.
-# 5. In downstream SDK mode with a GitHub framework source, download and extract the
-#    target platform's `rebelfork-sdk-<platform>-latest.7z` release archive. In source
-#    and engine modes, optionally download a cached SDK and sanitize/reuse its
+# 5. In downstream SDK mode, extract a caller-provided SDK archive when necessary.
+#    Engine builds may optionally download a cached SDK and sanitize/reuse its
 #    ThirdParty directory. Build SWIG where generated bindings require a native host
 #    tool, and configure PackageTool for non-desktop targets.
 # 6. For non-Android engine jobs, run CMake generation and report whether cached
@@ -37,27 +36,23 @@
 # 7. Determine whether the target needs native host binaries. An empty
 #    `host_artifact_names` list disables host handling. Otherwise, every literal host
 #    artifact name (normally written one per line in a YAML block scalar) is treated
-#    as required. Project artifacts are obtained from the current workflow run; a
-#    name matching `rebelfork-sdk-*.7z` identifies the rbfx SDK release asset. Names
-#    are used exactly as written. A project host artifact normally uses the complete
-#    `ci_host_platform_tag`, which preserves target linkage. A build-host SDK only
-#    supplies native tools, so its linkage may be selected independently using the
-#    individual host matrix fields.
+#    as required and obtained from the current workflow run. Names are used exactly
+#    as written. A project host artifact normally uses the complete
+#    `ci_host_platform_tag`, which preserves target linkage.
 # 8. Resolve the host platform/tag and isolated temporary extraction directories.
 #    Check the current workflow run for every required host project artifact. Poll
 #    while its producer job runs, fail promptly if that job fails, and allow the
 #    configured grace period after a successful producer job for artifacts to become
 #    visible instead of polling blindly until timeout.
 # 9. Download one or more named host project artifacts without merging their
-#    directories, and download the named host rbfx SDK release asset when present.
-#    Export the host context root and a CMake prefix path containing every requested
-#    artifact so custom steps can use native tools before building.
+#    directories. Export the host context root and a CMake prefix path containing
+#    every requested artifact so custom steps can use native tools before building.
 #
 # ci-build-project consumes this prepared state to build and publish a downstream
 # project. Keeping preparation separate lets workflows insert their own SDK or host-
 # tool steps between the two actions.
 name: CI Prepare Platform
-description: Shared checkout, toolchain, SDK, and host-context preparation for engine and downstream CI jobs.
+description: Shared toolchain, local framework, and host-context preparation for engine and downstream CI jobs.
 
 inputs:
   profile:
@@ -72,15 +67,19 @@ inputs:
     required: false
     default: ''
   framework_source:
-    description: "Framework source for downstream builds. Supported values: a GitHub repository URL optionally suffixed with `#ref`, or a local path. The suffix selects a Git ref in source mode and a release in SDK mode. Without it, source mode uses `master` and SDK mode uses `latest`."
+    description: "Caller-provided engine source directory for source-mode downstream builds, absolute or relative to `github.workspace`."
     required: false
-    default: https://github.com/rbfx/rbfx.git
+    default: ''
+  framework_sdk:
+    description: "Caller-provided extracted SDK directory or `.7z` SDK archive for SDK-mode downstream builds, absolute or relative to `github.workspace`."
+    required: false
+    default: ''
   framework_build_type:
     description: "How downstream projects consume the framework. Supported values: `sdk`, `source`."
     required: false
     default: source
   host_artifact_names:
-    description: "Literal names of required host-platform artifacts, one per line. JSON string arrays are also accepted for compatibility. Project artifacts are downloaded from this workflow run and normally use `ci_host_platform_tag` to preserve target linkage. Names matching `rebelfork-sdk-*.7z` are downloaded from the framework release; build-host SDK linkage is independent. Names are never rewritten. Host handling is disabled when empty."
+    description: "Literal names of required host-platform project artifacts from the current workflow run, one per line. JSON string arrays are also accepted. Names normally use `ci_host_platform_tag` to preserve target linkage and are never rewritten. Host handling is disabled when empty."
     required: false
     default: '[]'
   host_job_name:
@@ -88,7 +87,7 @@ inputs:
     required: false
     default: ''
   use_cached_thirdparty:
-    description: Reuse ThirdParty from the latest SDK when possible.
+    description: Reuse ThirdParty from the latest SDK for engine-profile builds when possible.
     required: false
     default: 'true'
 
@@ -97,16 +96,16 @@ outputs:
     description: Cache hit state for downstream cache restore.
     value: ${{ steps.build_cache.outputs.cache-hit }}
   sdk_cached:
-    description: Whether the cached SDK download succeeded.
+    description: Whether the optional engine-profile cached SDK download succeeded.
     value: ${{ steps.cached_sdk.outputs.sdk_cached }}
   engine_thirdparty_used:
     description: Whether engine generate reused cached ThirdParty.
     value: ${{ steps.generate.outputs.thirdparty_used }}
   host_context_dir:
-    description: Root directory containing downloaded host project artifacts and optional host framework SDK files.
+    description: Root directory containing downloaded host project artifacts.
     value: ${{ steps.export_host_context.outputs.host_context_dir }}
   cmake_prefix_path:
-    description: Semicolon-separated prefix paths contributed by downloaded host project artifacts and optional host framework SDK files.
+    description: Semicolon-separated prefix paths contributed by downloaded host project artifacts.
     value: ${{ steps.export_host_context.outputs.cmake_prefix_path }}
 
 runs:
@@ -127,11 +126,8 @@ runs:
         ci_sdk_dir_value="${ci_sdk_dir:-${GITHUB_WORKSPACE}/SDK/${ci_platform_tag_value}}"
         project_source_dir_value="${project_source_dir:-}"
         framework_source_value=''
-        framework_source_kind=''
-        framework_clone_url=''
-        framework_repository=''
-        framework_ref=''
-        framework_release='latest'
+        framework_sdk_value=''
+        framework_sdk_kind=''
         framework_build_type=''
         rbfx_android_java_dir=''
 
@@ -151,6 +147,7 @@ runs:
           fi
 
           framework_source_value="${{ inputs.framework_source }}"
+          framework_sdk_value="${{ inputs.framework_sdk }}"
           framework_build_type="${{ inputs.framework_build_type }}"
 
           if [[ -z "$framework_build_type" ]]; then
@@ -165,50 +162,39 @@ runs:
               ;;
           esac
 
-          if [[ "$framework_source_value" == *://* ]]; then
-            framework_source_kind='url'
-            framework_clone_url="${framework_source_value%%#*}"
-            if [[ "$framework_source_value" == *'#'* ]]; then
-              framework_ref="${framework_source_value#*#}"
+          if [[ "$framework_build_type" == 'source' ]]; then
+            if [[ -z "$framework_source_value" ]]; then
+              echo 'Error: framework_source is required for source-mode downstream builds.'
+              exit 1
             fi
-
-            if [[ "$framework_clone_url" =~ ^https://github\.com/([^/#]+/[^/#]+)$ ]]; then
-              framework_repository="${BASH_REMATCH[1]}"
-              framework_repository="${framework_repository%.git}"
-            fi
-          else
-            framework_source_kind='path'
-            if [[ "$framework_source_value" = /* ]]; then
-              framework_source_value="$framework_source_value"
-            else
+            if [[ "$framework_source_value" != /* && ! "$framework_source_value" =~ ^[A-Za-z]:[/\\] ]]; then
               framework_source_value="${GITHUB_WORKSPACE}/${framework_source_value}"
             fi
-
             if [[ ! -d "$framework_source_value" ]]; then
-              echo "Error: framework path does not exist: $framework_source_value"
+              echo "Error: framework source directory does not exist: $framework_source_value"
               exit 1
             fi
-          fi
-
-          if [[ "$framework_build_type" == 'source' ]]; then
-            if [[ "$framework_source_kind" == 'url' ]]; then
-              ci_source_path_value='rbfx'
-              ci_source_dir_value="${GITHUB_WORKSPACE}/rbfx"
-            else
-              ci_source_path_value="$framework_source_value"
-              ci_source_dir_value="$framework_source_value"
-            fi
+            ci_source_path_value="$framework_source_value"
+            ci_source_dir_value="$framework_source_value"
             rbfx_android_java_dir="${ci_source_dir_value}/Source/ThirdParty/SDL/android-project/app/src/main/java"
           else
-            framework_release="${framework_ref:-latest}"
-            ci_source_path_value='.'
-            ci_source_dir_value="$action_repo_root"
-            if [[ "$framework_source_kind" == 'url' && -z "$framework_repository" ]]; then
-              echo 'Error: framework_build_type=sdk requires a GitHub repository URL so the SDK release can be downloaded.'
+            if [[ -z "$framework_sdk_value" ]]; then
+              echo 'Error: framework_sdk is required for SDK-mode downstream builds.'
               exit 1
             fi
-            if [[ "$framework_source_kind" == 'path' ]]; then
-              ci_sdk_dir_value="$framework_source_value"
+            if [[ "$framework_sdk_value" != /* && ! "$framework_sdk_value" =~ ^[A-Za-z]:[/\\] ]]; then
+              framework_sdk_value="${GITHUB_WORKSPACE}/${framework_sdk_value}"
+            fi
+            ci_source_path_value='.'
+            ci_source_dir_value="$action_repo_root"
+            if [[ -d "$framework_sdk_value" ]]; then
+              framework_sdk_kind='directory'
+              ci_sdk_dir_value="$framework_sdk_value"
+            elif [[ -f "$framework_sdk_value" && "$framework_sdk_value" == *.7z ]]; then
+              framework_sdk_kind='archive'
+            else
+              echo "Error: framework_sdk must be an SDK directory or .7z archive: $framework_sdk_value"
+              exit 1
             fi
             rbfx_android_java_dir="${ci_sdk_dir_value}/share/Urho3D/Android/java"
           fi
@@ -246,29 +232,11 @@ runs:
           printf 'project_source_dir=%s\n' "$project_source_dir_value"
           printf 'project_build_dir=%s\n' "${project_build_dir:-${GITHUB_WORKSPACE}/project-build/${ci_platform_tag_value}}"
           printf 'ci_framework_source=%s\n' "$framework_source_value"
-          printf 'ci_framework_source_kind=%s\n' "$framework_source_kind"
-          printf 'ci_framework_clone_url=%s\n' "$framework_clone_url"
-          printf 'ci_framework_repository=%s\n' "$framework_repository"
-          printf 'ci_framework_ref=%s\n' "$framework_ref"
-          printf 'ci_framework_release=%s\n' "$framework_release"
+          printf 'ci_framework_sdk=%s\n' "$framework_sdk_value"
+          printf 'ci_framework_sdk_kind=%s\n' "$framework_sdk_kind"
           printf 'ci_framework_build_type=%s\n' "$framework_build_type"
           printf 'RBFX_ANDROID_JAVA_DIR=%s\n' "$rbfx_android_java_dir"
         } >> "$GITHUB_ENV"
-
-    - name: Checkout framework source
-      if: inputs.profile == 'downstream' && env.ci_framework_build_type == 'source' && env.ci_framework_source_kind == 'url'
-      shell: bash
-      run: |
-        rm -rf "${ci_source_dir}"
-        git init "${ci_source_dir}"
-        git -C "${ci_source_dir}" remote add origin "${ci_framework_clone_url}"
-        if [[ -n "${ci_framework_ref}" ]]; then
-          git -C "${ci_source_dir}" fetch --depth 1 origin "${ci_framework_ref}"
-          git -C "${ci_source_dir}" checkout --detach FETCH_HEAD
-        else
-          git -C "${ci_source_dir}" fetch --depth 1 origin refs/heads/master
-          git -C "${ci_source_dir}" checkout --detach FETCH_HEAD
-        fi
 
     - name: Setup environment
       shell: bash
@@ -333,25 +301,19 @@ runs:
       run: |
         "$ci_build_script" dependencies
 
-    - name: Download framework SDK
-      if: inputs.profile == 'downstream' && env.ci_framework_build_type == 'sdk' && env.ci_framework_source_kind == 'url'
+    - name: Extract framework SDK
+      if: inputs.profile == 'downstream' && env.ci_framework_build_type == 'sdk' && env.ci_framework_sdk_kind == 'archive'
       shell: bash
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: >-
-        "$ci_build_script" download-release --
-        "https://github.com/${ci_framework_repository}/releases/download/${ci_framework_release}/rebelfork-sdk-${ci_platform_tag}-latest.7z"
-        "$ci_sdk_dir"
+      run: |
+        "$ci_build_script" extract-sdk-archive -- "$ci_framework_sdk" "$ci_sdk_dir"
 
     - name: Download cached ThirdParty SDK
       id: cached_sdk
-      if: >-
-        (inputs.profile == 'engine' && inputs.use_cached_thirdparty == 'true') ||
-        (inputs.profile == 'downstream' && env.ci_framework_build_type == 'source' && env.ci_framework_repository != '' && inputs.use_cached_thirdparty == 'true')
+      if: inputs.profile == 'engine' && inputs.use_cached_thirdparty == 'true'
       continue-on-error: true
       shell: bash
       env:
-        DOWNLOAD_SDK_REPOSITORY: ${{ inputs.profile == 'engine' && github.repository || env.ci_framework_repository }}
+        DOWNLOAD_SDK_REPOSITORY: ${{ github.repository }}
       run: |
         "$ci_build_script" download-cached-sdk
 
@@ -438,31 +400,15 @@ runs:
         path: ${{ steps.host_paths.outputs.project_host_context_dir }}
         merge-multiple: false
 
-    - name: Download host framework SDK
-      id: host_framework
-      if: steps.host.outputs.enabled == 'true' && steps.host.outputs.framework_artifact_name != ''
-      shell: bash
-      env:
-        GH_TOKEN: ${{ github.token }}
-        INPUT_FRAMEWORK_REPOSITORY: ${{ steps.host.outputs.framework_repository }}
-        INPUT_FRAMEWORK_RELEASE: ${{ env.ci_framework_release }}
-        INPUT_FRAMEWORK_ARTIFACT_NAME: ${{ steps.host.outputs.framework_artifact_name }}
-        INPUT_EXTRACT_DIR: ${{ steps.host_paths.outputs.framework_host_context_dir }}
-      run: |
-        "$ci_build_script" download-project-host-sdk
-
     - name: Export host context
       id: export_host_context
       if: >-
         steps.host.outputs.enabled == 'true' &&
-        (steps.host.outputs.project_artifact_count == '0' || steps.host_project.outputs.available == 'true') &&
-        (steps.host.outputs.framework_artifact_name == '' || steps.host_framework.outputs.available == 'true')
+        (steps.host.outputs.project_artifact_count == '0' || steps.host_project.outputs.available == 'true')
       shell: bash
       env:
         INPUT_HOST_CONTEXT_DIR: ${{ steps.host_paths.outputs.host_context_dir }}
         INPUT_PROJECT_HOST_CONTEXT_DIR: ${{ steps.host_paths.outputs.project_host_context_dir }}
         INPUT_PROJECT_HOST_ARTIFACT_NAMES: ${{ steps.host.outputs.project_artifact_names }}
-        INPUT_FRAMEWORK_HOST_ARTIFACT_NAME: ${{ steps.host.outputs.framework_artifact_name }}
-        INPUT_FRAMEWORK_HOST_PREFIX_PATH: ${{ steps.host_paths.outputs.framework_host_prefix_path }}
       run: |
         "$ci_build_script" export-project-host-context
