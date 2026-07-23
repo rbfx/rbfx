@@ -27,6 +27,19 @@
 namespace Urho3D
 {
 
+const unsigned MAX_SINGLE_RESOURCE_PREVIEW_SIZE = 2048;
+const std::initializer_list<ea::string_view> SINGLE_RESOURCE_PREVIEW_EXTENSIONS = {
+    ".txt",
+    ".glsl",
+    ".xml",
+    ".json",
+    ".prefab",
+    ".rcss",
+    ".rml",
+    ".css",
+    ".html"
+};
+
 void Foundation_PlaceholderResourceInspector(Context* context, InspectorTab* inspectorTab)
 {
     inspectorTab->RegisterAddon<PlaceholderResourceInspector>(inspectorTab->GetProject());
@@ -54,12 +67,28 @@ void PlaceholderResourceInspector::OnProjectRequest(ProjectRequest* request)
 
 void PlaceholderResourceInspector::InspectResources(const ea::vector<ResourceFileDescriptor>& resources)
 {
+    singleResourcePreview_.clear();
+
     if (resources.size() == 1)
     {
         const ResourceFileDescriptor& desc = resources.front();
         const ea::string resourceType = !desc.isDirectory_ ? "File" : "Folder";
         singleResource_ = SingleResource{resourceType, desc.resourceName_};
         multipleResources_ = ea::nullopt;
+
+        if (desc.HasExtension(SINGLE_RESOURCE_PREVIEW_EXTENSIONS))
+        {
+            File file(context_, desc.fileName_);
+            if (file.IsOpen())
+            {
+                const unsigned size = Min(MAX_SINGLE_RESOURCE_PREVIEW_SIZE, file.GetSize());
+                ea::vector<char> data(size);
+                if (file.Read(data.data(), size) == size)
+                {
+                    singleResourcePreview_ = ea::string_view(data.data(), size);
+                }
+            }
+        }
     }
     else
     {
@@ -82,6 +111,20 @@ void PlaceholderResourceInspector::RenderContent()
         }
 
         ui::TextWrapped("%s", singleResource_->resourceName_.c_str());
+
+        if (!singleResourcePreview_.empty())
+        {
+            const bool border = true;
+            ui::BeginChild("File Preview", ImVec2(), border);
+
+            ui::TextWrapped("%s", singleResourcePreview_.c_str());
+            if (singleResourcePreview_.size() == MAX_SINGLE_RESOURCE_PREVIEW_SIZE)
+            {
+                ui::TextWrapped("...");
+            }
+
+            ui::EndChild();
+        }
     }
     else if (multipleResources_)
     {
