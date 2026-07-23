@@ -398,6 +398,7 @@ copy-runtime-libraries-for-file() {
 prepare-project-search-paths() {
     project_cmake_prefix_variable='CMAKE_PREFIX_PATH'
     project_cmake_prefix_value="${CI_CMAKE_PREFIX_PATH:-}"
+    project_urho3d_dir="${Urho3D_DIR:-}"
     if [[ "$ci_platform" == 'web' ]]; then
         project_cmake_prefix_variable='CMAKE_FIND_ROOT_PATH'
     fi
@@ -417,6 +418,10 @@ prepare-project-cmake-args() {
         -DCMAKE_CONFIGURATION_TYPES="${types[dbg]};${types[rel]}"
         "-D${project_cmake_prefix_variable}=${project_cmake_prefix_value}"
     )
+
+    if [[ -n "$project_urho3d_dir" ]]; then
+        project_cmake_args+=("-DUrho3D_DIR=${project_urho3d_dir}")
+    fi
 
     if [[ "$ci_platform" == "web" || "$ci_platform" == "ios" ]];
     then
@@ -980,6 +985,12 @@ function action-build-android-project() {
     echo "Building downstream Android project from $android_dir"
     echo "Using ${project_cmake_prefix_variable}=${project_cmake_prefix_value}"
     export CMAKE_PREFIX_PATH="$project_cmake_prefix_value"
+    if [[ -n "$project_urho3d_dir" ]]; then
+        echo "Using Urho3D_DIR=${project_urho3d_dir}"
+        export Urho3D_DIR="$project_urho3d_dir"
+    else
+        unset Urho3D_DIR
+    fi
     if [[ -n "${PACKAGE_TOOL_EXECUTABLE:-}" ]]; then
         echo "Using PackageTool executable: ${PACKAGE_TOOL_EXECUTABLE}"
     fi
@@ -1294,6 +1305,7 @@ function action-resolve-cmake-prefix-path() {
     local cmake_variable='CMAKE_PREFIX_PATH'
     local cmake_prefix_path=''
     local android_java_dir=''
+    local urho3d_dir=''
     local candidate=''
     local -a prefix_paths=()
     local -a resolved_prefix_paths=()
@@ -1316,6 +1328,18 @@ function action-resolve-cmake-prefix-path() {
             continue
         fi
         resolved_prefix_paths+=("$prefix_path")
+        if [[ -z "$urho3d_dir" ]]; then
+            for candidate in \
+                "$prefix_path/Urho3D/share/Urho3D" \
+                "$prefix_path/share/Urho3D/CMake" \
+                "$prefix_path/Urho3D/CMake"; do
+                candidate="$(normalize-path "$candidate")"
+                if [[ -f "$candidate/Urho3DConfig.cmake" ]]; then
+                    urho3d_dir="$candidate"
+                    break
+                fi
+            done
+        fi
         if [[ -z "$android_java_dir" ]]; then
             for candidate in \
                 "$prefix_path/Source/ThirdParty/SDL/android-project/app/src/main/java" \
@@ -1343,6 +1367,7 @@ function action-resolve-cmake-prefix-path() {
 
     write-github-env CI_CMAKE_PREFIX_PATH "$cmake_prefix_path"
     write-github-env "$cmake_variable" "$cmake_prefix_path"
+    write-github-env Urho3D_DIR "$urho3d_dir"
     write-github-env RBFX_ANDROID_JAVA_DIR "$android_java_dir"
     write-github-output cmake_prefix_path "$cmake_prefix_path"
     write-github-output cmake_variable "$cmake_variable"
