@@ -792,6 +792,7 @@ StringVector AssetManager::EnumerateAssetFiles(const ea::string& resourcePath) c
     for (ea::string& fileName : result)
         fileName = AddTrailingSlash(resourcePath) + fileName;
 
+    ea::sort(result.begin(), result.end());
     return result;
 }
 
