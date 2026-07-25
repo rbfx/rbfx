@@ -140,3 +140,8 @@ install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfigVersion.cmake
     DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/
 )
+install(DIRECTORY
+    ${rbfx_SOURCE_DIR}/CMake/Toolchains/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/Toolchains
+    FILES_MATCHING PATTERN "*.cmake"
+)
