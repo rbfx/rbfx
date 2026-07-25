@@ -120,13 +120,16 @@ jobs:
       platform_matrix: ${{ steps.prepare.outputs.platform_matrix }}
 
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout CI actions
+        uses: actions/checkout@v5
         with:
+          repository: rbfx/ci
+          path: rbfx-ci
           fetch-depth: 1
 
       - name: Prepare engine matrix
         id: prepare
-        uses: ./.github/actions/ci-prepare-matrix
+        uses: ./rbfx-ci/.github/actions/ci-prepare-matrix
         with:
           profile: engine
           platforms: all
@@ -159,13 +162,20 @@ jobs:
       ci_cache_id: ''
       ci_source_path: .
       ci_source_dir: ${{ github.workspace }}
-      ci_build_script: ./script/ci_build.sh
+      ci_build_script: ./rbfx-ci/script/ci_build.sh
       ci_build_dir: ${{ github.workspace }}/rbfx-build/${{ matrix.ci_platform_tag }}
       ci_sdk_dir: ${{ github.workspace }}/SDK/${{ matrix.ci_platform_tag }}
 
     steps:
       - uses: actions/checkout@v5
         with:
+          fetch-depth: 1
+
+      - name: Checkout CI actions
+        uses: actions/checkout@v5
+        with:
+          repository: rbfx/ci
+          path: rbfx-ci
           fetch-depth: 1
 
       - name: Download cached ThirdParty SDK
@@ -181,7 +191,7 @@ jobs:
           ci_platform_tag="${{ matrix.ci_platform_tag }}" \
           ci_workspace_dir="${GITHUB_WORKSPACE}" \
           ci_hash_thirdparty="$ci_hash_thirdparty" \
-            ./script/ci_build.sh download-cached-sdk
+            "$ci_build_script" download-cached-sdk
 
       - name: Sanitize cached ThirdParty SDK
         if: steps.cached_sdk.outputs.sdk_cached == 'true'
@@ -189,11 +199,11 @@ jobs:
         run: |
           platform_tag="${{ matrix.ci_platform_tag }}"
           ci_platform="${platform_tag%%-*}" \
-            ./script/ci_build.sh sanitize-cached-sdk '${{ github.workspace }}/cached-sdk'
+            "$ci_build_script" sanitize-cached-sdk '${{ github.workspace }}/cached-sdk'
 
       - name: Prepare shared build context
         id: common
-        uses: ./.github/actions/ci-prepare-platform
+        uses: ./rbfx-ci/.github/actions/ci-prepare-platform
         with:
           profile: engine
 
@@ -201,27 +211,16 @@ jobs:
         if: ${{ env.ci_publish == 'true' && vars.DISABLE_ITCH != 'true' }}
         uses: jdno/setup-butler@v1
 
-      - name: Build rbfx SDK Debug
-        run: ${{ env.ci_build_script }} build --build-type dbg
+      - name: Build rbfx SDK configurations
+        run: ${{ env.ci_build_script }} build-configurations
 
-      - name: Build rbfx SDK Release
-        run: ${{ env.ci_build_script }} build --build-type rel
-
-      - name: Test rbfx SDK Debug (Native)
+      - name: Test rbfx SDK configurations (Native)
         if: env.ci_compiler == 'msvc' || env.ci_platform == 'linux'
-        run: ${{ env.ci_build_script }} test --build-type dbg
+        run: ${{ env.ci_build_script }} test-configurations
 
-      - name: Test rbfx SDK Debug (Managed)
+      - name: Test rbfx SDK configurations (Managed)
         if: env.ci_platform == 'windows' && env.ci_compiler == 'msvc' && env.ci_lib_type == 'dll' && env.ci_arch == 'x64'
-        run: ${{ env.ci_build_script }} cstest --build-type dbg
-
-      - name: Test rbfx SDK Release (Native)
-        if: env.ci_compiler == 'msvc' || env.ci_platform == 'linux'
-        run: ${{ env.ci_build_script }} test --build-type rel
-
-      - name: Test rbfx SDK Release (Managed)
-        if: env.ci_platform == 'windows' && env.ci_compiler == 'msvc' && env.ci_lib_type == 'dll' && env.ci_arch == 'x64'
-        run: ${{ env.ci_build_script }} cstest --build-type rel
+        run: ${{ env.ci_build_script }} cstest-configurations
 
       - name: Copy cached ThirdParty into SDK
         if: steps.cached_sdk.outputs.sdk_cached == 'true' && (env.ci_platform == 'android' || steps.common.outputs.engine_thirdparty_used == 'true')
@@ -236,10 +235,6 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ci_cache_id }}-${{ env.ci_short_sha }}
-
-      - name: Build APK
-        if: env.ci_platform == 'android'
-        run: ${{ env.ci_build_script }} apk --build-type rel
 
       - name: Release Mobile Artifacts
         if: env.ci_platform_group == 'mobile' && env.ci_artifacts == 'true'
