@@ -192,7 +192,10 @@ bool GenerateWorldSpaceTracksTransformer::Execute(
         if (task.targetAnimation_->GetAbsoluteFileName().empty())
             task.targetAnimation_->SaveFile(FileIdentifier{input.tempPath_ + task.targetAnimation_->GetName()});
         else
+        {
             task.targetAnimation_->SaveFile(FileIdentifier{task.targetAnimation_->GetAbsoluteFileName()});
+            output.modifiedResourceNames_.emplace(task.targetAnimation_->GetName());
+        }
     }
 
     return true;

@@ -233,10 +233,11 @@ bool CalculateAnimationVelocityTransformer::Execute(
         {
             task.animation_->AddMetadata("Velocity", *velocity);
             task.animation_->SaveFile(FileIdentifier{task.animation_->GetAbsoluteFileName()});
+            output.modifiedResourceNames_.emplace(task.animation_->GetName());
         }
         else
         {
-            URHO3D_LOGERROR("Cannot calculate velocity for animation '{}'", task.animation_->GetName());
+            URHO3D_LOGDEBUG("Cannot calculate velocity for animation '{}'", task.animation_->GetName());
         }
     }
 

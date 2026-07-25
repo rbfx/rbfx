@@ -91,6 +91,7 @@ void AssetTransformerOutput::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "sourceModified", sourceModified_);
     SerializeValue(archive, "outputResourceNames", outputResourceNames_);
+    SerializeValue(archive, "modifiedResourceNames", modifiedResourceNames_);
     SerializeValue(archive, "appliedTransformers", appliedTransformers_);
     SerializeValue(archive, "dependencyModificationTimes", dependencyModificationTimes_);
 }

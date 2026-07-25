@@ -746,8 +746,8 @@ bool AssetManager::CompleteAssetProcessing(
     if (output->sourceModified_)
         ignoredAssetUpdates_.insert(input.resourceName_);
 
-    URHO3D_LOGDEBUG("Asset {} was processed with {} ({} files generated{})",
-        input.resourceName_, assetDesc.GetTransformerDebugString(), assetDesc.outputs_.size(),
+    URHO3D_LOGDEBUG("Asset {} was processed with {} ({} files generated, {} files modified{})", input.resourceName_,
+        assetDesc.GetTransformerDebugString(), assetDesc.outputs_.size(), output->modifiedResourceNames_.size(),
         output->sourceModified_ ? ", source modified" : "");
 
     return true;
