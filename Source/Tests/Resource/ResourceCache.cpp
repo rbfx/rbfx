@@ -25,6 +25,7 @@
 #include <Urho3D/IO/MountedExternalMemory.h>
 #include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/UI/SplashScreen.h>
 
 namespace Tests
 {
@@ -50,6 +51,20 @@ TEST_CASE("ResourceCache loads resources from memory")
     xmlFile = resourceCache->GetResource<XMLFile>("memory://path/to/file.xml");
     REQUIRE(xmlFile);
     CHECK(xmlFile->GetRoot().GetName() == "something_else");
+}
+
+TEST_CASE("ResourceCache loads resources referenced from prefabs in scene")
+{
+    const auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    const auto resourceCache = context->GetSubsystem<ResourceCache>();
+
+    auto splash = MakeShared<SplashScreen>(context);
+    splash->QueueSceneResourcesAsync("Scenes/PrefabTestScene.scene");
+
+    do
+    {
+        Tests::RunFrame(context, 0.1f);
+    } while (resourceCache->GetNumBackgroundLoadResources() > 0);
 }
 
 } // namespace Tests
