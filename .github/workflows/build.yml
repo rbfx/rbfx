@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name != 'rbfx/rbfx') }}
     outputs:
-      platform_matrix: ${{ steps.prepare.outputs.platform_matrix }}
+      matrix: ${{ steps.prepare.outputs.matrix }}
 
     steps:
       - name: Checkout CI actions
@@ -131,11 +131,10 @@ jobs:
         id: prepare
         uses: ./rbfx-ci/.github/actions/ci-prepare-matrix
         with:
-          profile: engine
           platforms: all
 
   Build:
-    name: ${{ matrix.ci_platform_tag }}
+    name: ${{ matrix.ci_job_name }}
     needs: [PrepareFlags, PrepareMatrix]
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name != 'rbfx/rbfx') }}
     runs-on: ${{ matrix.runs_on }}
@@ -144,10 +143,11 @@ jobs:
 
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.PrepareMatrix.outputs.platform_matrix) }}
+      matrix: ${{ fromJSON(needs.PrepareMatrix.outputs.matrix) }}
 
     env:
       ci_platform_tag: ${{ matrix.ci_platform_tag }}
+      ci_build_types: ${{ toJSON(matrix.ci_build_types) }}
       ci_artifacts: ${{ needs.PrepareFlags.outputs.ci_artifacts }}
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
       BINARYEN_CORES: 1
