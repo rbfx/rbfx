@@ -85,7 +85,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         working-directory: packaging/nuget/
-        run: ${{ github.workspace }}/rbfx-actions/script/ci_build.sh download-nuget-sdks -- '${{ github.repository }}' ./in
+        run: ${{ github.workspace }}/rbfx-actions/script/ci_artifacts.sh download-nuget-sdks '${{ github.repository }}' ./in
 
       - name: Build NuGet Packages
         working-directory: packaging/nuget/

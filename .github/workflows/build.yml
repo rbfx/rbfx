@@ -152,17 +152,9 @@ jobs:
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
       BINARYEN_CORES: 1
       ci_workspace_dir: ${{ github.workspace }}
-      ci_platform: ''
-      ci_arch: ''
-      ci_compiler: ''
-      ci_lib_type: ''
-      ci_platform_group: ''
-      ci_hash_thirdparty: ''
-      ci_short_sha: ''
-      ci_cache_id: ''
-      ci_source_path: .
       ci_source_dir: ${{ github.workspace }}
       ci_build_script: ./rbfx-ci/script/ci_build.sh
+      ci_artifacts_script: ./rbfx-ci/script/ci_artifacts.sh
       ci_build_dir: ${{ github.workspace }}/rbfx-build/${{ matrix.ci_platform_tag }}
       ci_sdk_dir: ${{ github.workspace }}/SDK/${{ matrix.ci_platform_tag }}
 
@@ -191,7 +183,7 @@ jobs:
           ci_platform_tag="${{ matrix.ci_platform_tag }}" \
           ci_workspace_dir="${GITHUB_WORKSPACE}" \
           ci_hash_thirdparty="$ci_hash_thirdparty" \
-            "$ci_build_script" download-cached-sdk
+            "$ci_artifacts_script" download-cached-sdk
 
       - name: Sanitize cached ThirdParty SDK
         if: steps.cached_sdk.outputs.sdk_cached == 'true'
@@ -199,7 +191,7 @@ jobs:
         run: |
           platform_tag="${{ matrix.ci_platform_tag }}"
           ci_platform="${platform_tag%%-*}" \
-            "$ci_build_script" sanitize-cached-sdk '${{ github.workspace }}/cached-sdk'
+            "$ci_artifacts_script" sanitize-cached-sdk '${{ github.workspace }}/cached-sdk'
 
       - name: Prepare shared build context
         id: common
@@ -212,22 +204,22 @@ jobs:
         uses: jdno/setup-butler@v1
 
       - name: Build rbfx SDK configurations
-        run: ${{ env.ci_build_script }} build-configurations
+        run: ${{ env.ci_build_script }} build-engine
 
       - name: Test rbfx SDK configurations (Native)
         if: env.ci_compiler == 'msvc' || env.ci_platform == 'linux'
-        run: ${{ env.ci_build_script }} test-configurations
+        run: ${{ env.ci_build_script }} test-engine-native
 
       - name: Test rbfx SDK configurations (Managed)
         if: env.ci_platform == 'windows' && env.ci_compiler == 'msvc' && env.ci_lib_type == 'dll' && env.ci_arch == 'x64'
-        run: ${{ env.ci_build_script }} cstest-configurations
+        run: ${{ env.ci_build_script }} test-engine-managed
 
       - name: Copy cached ThirdParty into SDK
         if: steps.cached_sdk.outputs.sdk_cached == 'true' && (env.ci_platform == 'android' || steps.common.outputs.engine_thirdparty_used == 'true')
-        run: ${{ env.ci_build_script }} copy-cached-sdk '${{ github.workspace }}/cached-sdk' '${{ env.ci_sdk_dir }}'
+        run: ${{ env.ci_artifacts_script }} copy-cached-sdk '${{ github.workspace }}/cached-sdk' '${{ env.ci_sdk_dir }}'
 
       - name: Install rbfx SDK
-        run: ${{ env.ci_build_script }} install --sdk-layout true
+        run: ${{ env.ci_build_script }} install-engine-sdk
 
       - name: Save Build Cache
         if: env.ci_artifacts == 'true'
@@ -241,7 +233,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: ${{ env.ci_build_script }} release-mobile-artifacts
+        run: ${{ env.ci_artifacts_script }} release-mobile-artifacts
 
       - name: Deploy to GitHub Pages
         if: env.ci_platform == 'web' && env.ci_publish == 'true'
@@ -330,7 +322,7 @@ jobs:
 
       - name: Publish to itch.io
         if: ${{ env.ci_publish == 'true' && vars.DISABLE_ITCH != 'true' }}
-        run: ${{ env.ci_build_script }} publish-to-itch
+        run: ${{ env.ci_artifacts_script }} publish-to-itch
 
       - uses: actions/upload-artifact@v7
         if: ${{ env.CCACHE_DEBUG == 'true' }}
