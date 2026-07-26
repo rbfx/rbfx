@@ -54,6 +54,10 @@ URHO3D_EXPORT_API void SWIGSTDCALL Urho3D_Context_RegisterFactory(Context* conte
     auto typeInfo = ea::make_unique<TypeInfo>(typeName, Urho3DGetDirectorTypeInfo(StringHash(baseType)));
     auto reflection = context->ReflectCustomType(ea::move(typeInfo));
     reflection->SetObjectFactory(CreateManagedObject);
+    if (category)
+    {
+        context->SetReflectionCategory(reflection->GetTypeInfo(), category);
+    }
 }
 
 URHO3D_EXPORT_API void SWIGSTDCALL Urho3D_ParseArguments(int argc, char** argv)

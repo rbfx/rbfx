@@ -20,7 +20,7 @@
         [param: System.Runtime.InteropServices.MarshalAs(global::Urho3DNet.Urho3DPINVOKE.LPStr)]
         string val);
 
-    [System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="CSharp_Urho3D_String_Get")]
+    [System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="CSharp_EaStl_String_Get")]
     [return: System.Runtime.InteropServices.MarshalAs(global::Urho3DNet.Urho3DPINVOKE.LPStr)]
     internal static extern string GetString(global::System.IntPtr str);
 
