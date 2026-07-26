@@ -129,6 +129,7 @@ jobs:
 
       - name: Prepare engine matrix
         id: prepare
+        # Matrix planning is profile-independent and exposes only `matrix`.
         uses: ./rbfx-ci/.github/actions/ci-prepare-matrix
         with:
           platforms: all
