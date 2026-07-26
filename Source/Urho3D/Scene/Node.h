@@ -48,19 +48,19 @@ class SceneResolver;
 class SerializablePrefab;
 class PrefabResource;
 
-enum class SceneLookupFlag
+enum class ChildSearchFlag
 {
-    None = 0x0,
+    None = 0,
     /// Whether to do recursive search in the scene subtree.
     Recursive = 0x1,
-    /// Whether to ignore temporary nodes and components.
+    /// Whether to ignore temporary nodes.
     //IgnoreTemporary = 0x2,
     /// Used for lazy node lookup. Whether to validate the existing node name.
     ValidateName = 0x4,
     /// Used for lazy node lookup. Whether to validate that the existing node is a child of the queried node.
     ValidateRelation = 0x8,
 };
-URHO3D_FLAGSET(SceneLookupFlag, SceneLookupFlags);
+URHO3D_FLAGSET(ChildSearchFlag, ChildSearchFlags);
 
 enum class ComponentSearchFlag
 {
@@ -766,12 +766,16 @@ public:
     /// Find and return child node inplace if pointer is null, do nothing if pointer is already initialized.
     /// Return true if child node is found or is already initialized.
     /// This function is optimized for the case when the child node is expected to be found.
-    bool GetChildLazy(
-        WeakPtr<Node>& childNode, StringHash nameHash, SceneLookupFlags flags = SceneLookupFlag::None) const;
+    bool EnsureChild(
+        WeakPtr<Node>& cachedNode, StringHash nameHash, ChildSearchFlags flags = ChildSearchFlag::None) const;
     /// Find and return component inplace if pointer is null, do nothing if pointer is already initialized.
     /// Return true if component is found or is already initialized.
     /// This function is optimized for the case when the component is expected to be found.
-    template <class T> bool GetNthComponentLazy(WeakPtr<T>& childComponent, unsigned index = 0) const;
+    template <class T>
+    bool EnsureComponent(WeakPtr<T>& cachedComponent, ComponentSearchFlags flags = ComponentSearchFlag::SelfDerived,
+        unsigned index = 0) const;
+    /// See above. Component is searched by the exact type only in this Node.
+    template <class T> bool EnsureExactComponent(WeakPtr<T>& cachedComponent, unsigned index = 0) const;
 
     /// Traverse all components and child nodes recursively depth-first.
     /// Return `false` from `nodeCallback` to prevent traversal of the node.
@@ -1046,16 +1050,38 @@ template <class T> T* Node::GetDerivedComponent() const
     return static_cast<T*>(GetDerivedComponent(T::GetTypeStatic()));
 }
 
-template <class T> bool Node::GetNthComponentLazy(WeakPtr<T>& childComponent, unsigned index) const
+template <class T>
+bool Node::EnsureComponent(WeakPtr<T>& cachedComponent, ComponentSearchFlags flags, unsigned index) const
 {
     // Try to use existing weak pointer
-    if (childComponent)
+    if (cachedComponent)
+        return true;
+
+    return !FindComponents<T>(flags, [&](T* component)
+    {
+        if (index == 0)
+        {
+            cachedComponent = component;
+            return false;
+        }
+        else
+        {
+            --index;
+            return true;
+        }
+    });
+}
+
+template <class T> bool Node::EnsureExactComponent(WeakPtr<T>& cachedComponent, unsigned index) const
+{
+    // Try to use existing weak pointer
+    if (cachedComponent)
         return true;
 
     // Try to find and cache the component.
     if (auto component = GetNthComponent<T>(index))
     {
-        childComponent = component;
+        cachedComponent = component;
         return true;
     }
 

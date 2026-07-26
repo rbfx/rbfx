@@ -28,10 +28,10 @@ using PrefabLoadFlags = Urho3D::PrefabLoadFlag;
 %typemap(ctype) PrefabLoadFlags "size_t";
 %typemap(out) PrefabLoadFlags "$result = (size_t)$1.AsInteger();"
 %csconstvalue("0") Urho3D::None;
-%typemap(csattributes) Urho3D::SceneLookupFlag "[global::System.Flags]";
-using SceneLookupFlags = Urho3D::SceneLookupFlag;
-%typemap(ctype) SceneLookupFlags "size_t";
-%typemap(out) SceneLookupFlags "$result = (size_t)$1.AsInteger();"
+%typemap(csattributes) Urho3D::ChildSearchFlag "[global::System.Flags]";
+using ChildSearchFlags = Urho3D::ChildSearchFlag;
+%typemap(ctype) ChildSearchFlags "size_t";
+%typemap(out) ChildSearchFlags "$result = (size_t)$1.AsInteger();"
 %csconstvalue("0") Urho3D::ComponentSearchFlag::None;
 %csconstvalue("1") Urho3D::ComponentSearchFlag::Self;
 %csconstvalue("2") Urho3D::ComponentSearchFlag::Parent;
