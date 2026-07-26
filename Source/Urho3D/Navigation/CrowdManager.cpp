@@ -663,7 +663,7 @@ void CrowdManager::OnSceneSet(Scene* previousScene, Scene* scene)
         // Attempt to auto discover a NavigationMesh component (or its derivative) under the scene node
         if (navigationMeshId_ == 0)
         {
-            auto* navMesh = scene->FindComponent<NavigationMesh>(ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
+            auto* navMesh = scene->FindComponent<NavigationMesh>(ComponentSearchFlag::SelfOrChildrenRecursiveDerived);
             if (navMesh)
                 SetNavigationMesh(navMesh);
             else
@@ -765,7 +765,7 @@ void CrowdManager::HandleComponentAdded(StringHash eventType, VariantMap& eventD
     Scene* scene = GetScene();
     if (scene)
     {
-        auto* navMesh = scene->FindComponent<NavigationMesh>(ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
+        auto* navMesh = scene->FindComponent<NavigationMesh>(ComponentSearchFlag::SelfOrChildrenRecursiveDerived);
         if (navMesh)
             SetNavigationMesh(navMesh);
     }

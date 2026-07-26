@@ -521,7 +521,7 @@ void RigidBody2D::OnNodeSet(Node* previousNode, Node* currentNode)
         node_->AddListener(this);
 
         ea::vector<CollisionShape2D*> shapes;
-        node_->FindComponents<CollisionShape2D>(shapes, ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
+        node_->FindComponents<CollisionShape2D>(shapes, ComponentSearchFlag::SelfDerived);
 
         for (auto i = shapes.begin(); i != shapes.end(); ++i)
         {

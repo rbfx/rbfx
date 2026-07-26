@@ -85,7 +85,7 @@ SharedPtr<BaseWidget> PrefabInspector::MakePreviewWidget(Resource* resource)
     // Calculate total bounding box of the prefab
     ea::vector<Drawable*> drawables;
     prefabNode->FindComponents<Drawable>(drawables,
-        ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
+        ComponentSearchFlag::SelfOrChildrenRecursiveDerived);
     BoundingBox bbox;
     for (auto* drawable : drawables)
     {

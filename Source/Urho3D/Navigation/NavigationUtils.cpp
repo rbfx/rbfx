@@ -176,7 +176,7 @@ void AppendNavigationGeometry(
 #endif
     {
         ea::vector<Drawable*> drawables;
-        node->FindComponents<Drawable>(drawables, ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
+        node->FindComponents<Drawable>(drawables, ComponentSearchFlag::SelfDerived);
 
         for (unsigned i = 0; i < drawables.size(); ++i)
         {

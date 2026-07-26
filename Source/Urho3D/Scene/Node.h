@@ -76,6 +76,10 @@ enum class ComponentSearchFlag
     SelfOrParentRecursive = Self | ParentRecursive,
     SelfOrChildrenRecursive = Self | ChildrenRecursive,
 
+    SelfDerived = Self | Derived,
+    SelfOrParentRecursiveDerived = Self | ParentRecursive | Derived,
+    SelfOrChildrenRecursiveDerived = Self | ChildrenRecursive | Derived,
+
     /// Default search option - to find components in the given node and all children recursively.
     Default = SelfOrChildrenRecursive,
 };

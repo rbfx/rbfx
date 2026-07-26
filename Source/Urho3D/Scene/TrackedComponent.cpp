@@ -123,7 +123,7 @@ void TrackedComponentRegistryBase::InitializeTrackedComponents()
     }
 
     ea::vector<TrackedComponentBase*> components;
-    scene->FindComponents(components, ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
+    scene->FindComponents(components, ComponentSearchFlag::SelfOrChildrenRecursiveDerived);
     for (TrackedComponentBase* component : components)
     {
         if (!component->IsInstanceOf(componentType_))

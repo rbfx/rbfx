@@ -88,7 +88,7 @@ void BehaviorNetworkObject::InitializeBehaviors()
     CreateBehaviors();
 
     ea::vector<NetworkBehavior*> networkBehaviors;
-    node_->FindComponents(networkBehaviors, ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
+    node_->FindComponents(networkBehaviors, ComponentSearchFlag::SelfOrChildrenRecursiveDerived);
 
     ea::erase_if(networkBehaviors,
         [this](NetworkBehavior* networkBehavior) { return networkBehavior->FindClosestNetworkObject() != this; });
