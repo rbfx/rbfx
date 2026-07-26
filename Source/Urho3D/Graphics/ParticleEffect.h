@@ -231,10 +231,10 @@ public:
     void SetMaxRotationSpeed(float speed);
     /// Set particle size additive modifier.
     /// @property
-    void SetSizeAdd(float sizeAdd);
+    void SetSizeAdd(Vector2 sizeAdd);
     /// Set particle size multiplicative modifier.
     /// @property
-    void SetSizeMul(float sizeMul);
+    void SetSizeMul(Vector2 sizeMul);
     /// Set how the particles should rotate in relation to the camera. Default is to follow camera rotation on all axes (FC_ROTATE_XYZ).
     /// @property
     void SetFaceCameraMode(FaceCameraMode mode);
@@ -387,11 +387,11 @@ public:
 
     /// Return particle size additive modifier.
     /// @property
-    float GetSizeAdd() const { return sizeAdd_; }
+    Vector2 GetSizeAdd() const { return sizeAdd_; }
 
     /// Return particle size multiplicative modifier.
     /// @property
-    float GetSizeMul() const { return sizeMul_; }
+    Vector2 GetSizeMul() const { return sizeMul_; }
 
     /// Return all color animation frames.
     const ea::vector<ColorFrame>& GetColorFrames() const { return colorFrames_; }
@@ -495,9 +495,9 @@ private:
     /// Particle rotation speed maximum.
     float rotationSpeedMax_;
     /// Particle size additive parameter.
-    float sizeAdd_;
+    Vector2 sizeAdd_;
     /// Particle size multiplicative parameter.
-    float sizeMul_;
+    Vector2 sizeMul_;
     /// Particle color animation frames.
     ea::vector<ColorFrame> colorFrames_;
     /// Texture animation frames.
