@@ -160,7 +160,7 @@ static void DecompressAlphaDXT3(unsigned char* rgba, void const* block)
     }
 }
 
-static void DecompressAlphaDXT5(unsigned char* rgba, void const* block)
+static void DecompressAlphaDXT5(unsigned char* rgba, void const* block, unsigned channel)
 {
     // get the two alpha values
     auto const* bytes = reinterpret_cast< unsigned char const* >( block );
@@ -210,7 +210,7 @@ static void DecompressAlphaDXT5(unsigned char* rgba, void const* block)
 
     // write out the indexed codebook values
     for (int i = 0; i < 16; ++i)
-        rgba[4 * i + 3] = codes[indices[i]];
+        rgba[4 * i + channel] = codes[indices[i]];
 }
 
 static void DecompressDXT(unsigned char* rgba, const void* block, TextureFormat format)
@@ -231,13 +231,23 @@ static void DecompressDXT(unsigned char* rgba, const void* block, TextureFormat 
     if (format == TextureFormat::TEX_FORMAT_BC2_UNORM)
         DecompressAlphaDXT3(rgba, alphaBock);
     else if (format == TextureFormat::TEX_FORMAT_BC3_UNORM)
-        DecompressAlphaDXT5(rgba, alphaBock);
+        DecompressAlphaDXT5(rgba, alphaBock, 3);
+}
+
+static void DecompressBC5(unsigned char* rgba, const void* block)
+{
+    memset(rgba, 0, 4 * 16);
+    for (unsigned i = 0; i < 16; ++i)
+        rgba[4 * i + 3] = 255;
+
+    DecompressAlphaDXT5(rgba, block, 0);
+    DecompressAlphaDXT5(rgba, reinterpret_cast<const unsigned char*>(block) + 8, 1);
 }
 
 void DecompressImageDXT(unsigned char* rgba, const void* blocks, int width, int height, int depth, TextureFormat format)
 {
     URHO3D_ASSERT(format == TextureFormat::TEX_FORMAT_BC1_UNORM || format == TextureFormat::TEX_FORMAT_BC2_UNORM
-        || format == TextureFormat::TEX_FORMAT_BC3_UNORM);
+        || format == TextureFormat::TEX_FORMAT_BC3_UNORM || format == TextureFormat::TEX_FORMAT_BC5_UNORM);
 
     // initialise the block input
     auto const* sourceBlock = reinterpret_cast< unsigned char const* >( blocks );
@@ -253,7 +263,10 @@ void DecompressImageDXT(unsigned char* rgba, const void* blocks, int width, int 
             {
                 // decompress the block
                 unsigned char targetRgba[4 * 16];
-                DecompressDXT(targetRgba, sourceBlock, format);
+                if (format == TextureFormat::TEX_FORMAT_BC5_UNORM)
+                    DecompressBC5(targetRgba, sourceBlock);
+                else
+                    DecompressDXT(targetRgba, sourceBlock, format);
 
                 // write the decompressed pixels to the correct image locations
                 unsigned char const* sourcePixel = targetRgba;

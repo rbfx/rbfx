@@ -22,6 +22,8 @@
 
 #include "../CommonUtils.h"
 #include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Resource/Decompress.h"
+#include "Urho3D/Resource/ImageDDS.h"
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Resource/Image.h>
 
@@ -96,6 +98,24 @@ TEST_CASE("DXT, ETC and PVRTC images are decompressed")
 
     REQUIRE(CompareImages(*imageReference, *imagePVRTC2, false) < 0.25f);
     REQUIRE(CompareImages(*imageReference, *imagePVRTC4, false) < 0.15f);
+}
+
+TEST_CASE("ATI2 images are recognized and decompressed")
+{
+    DDPixelFormat pixelFormat{};
+    pixelFormat.dwFourCC_ = MakeFourCC('A', 'T', 'I', '2');
+    REQUIRE(PickTextureFormat(pixelFormat, 0) == TextureFormat::TEX_FORMAT_BC5_UNORM);
+
+    const unsigned char block[16] = {128, 128, 0, 0, 0, 0, 0, 0, 192, 192, 0, 0, 0, 0, 0, 0};
+    unsigned char rgba[4 * 16]{};
+    DecompressImageDXT(rgba, block, 4, 4, 1, TextureFormat::TEX_FORMAT_BC5_UNORM);
+    for (unsigned i = 0; i < 16; ++i)
+    {
+        CHECK(rgba[i * 4] == 128);
+        CHECK(rgba[i * 4 + 1] == 192);
+        CHECK(rgba[i * 4 + 2] == 0);
+        CHECK(rgba[i * 4 + 3] == 255);
+    }
 }
 
 } // namespace Tests

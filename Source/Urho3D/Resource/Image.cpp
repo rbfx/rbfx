@@ -98,6 +98,7 @@ bool CompressedLevel::Decompress(unsigned char* dest) const
     case TextureFormat::TEX_FORMAT_BC1_UNORM:
     case TextureFormat::TEX_FORMAT_BC2_UNORM:
     case TextureFormat::TEX_FORMAT_BC3_UNORM:
+    case TextureFormat::TEX_FORMAT_BC5_UNORM:
         DecompressImageDXT(dest, data_, width_, height_, depth_, format_);
         return true;
 

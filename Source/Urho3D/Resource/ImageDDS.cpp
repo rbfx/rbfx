@@ -17,6 +17,7 @@ static constexpr unsigned FOURCC_DXT2 = MakeFourCC('D', 'X', 'T', '2');
 static constexpr unsigned FOURCC_DXT3 = MakeFourCC('D', 'X', 'T', '3');
 static constexpr unsigned FOURCC_DXT4 = MakeFourCC('D', 'X', 'T', '4');
 static constexpr unsigned FOURCC_DXT5 = MakeFourCC('D', 'X', 'T', '5');
+static constexpr unsigned FOURCC_ATI2 = MakeFourCC('A', 'T', 'I', '2');
 
 static constexpr unsigned FOURCC_ETC1 = MakeFourCC('E', 'T', 'C', '1');
 static constexpr unsigned FOURCC_ETC2 = MakeFourCC('E', 'T', 'C', '2');
@@ -63,6 +64,7 @@ static const unsigned DDS_DXGI_FORMAT_BC2_UNORM = 74;
 static const unsigned DDS_DXGI_FORMAT_BC2_UNORM_SRGB = 75;
 static const unsigned DDS_DXGI_FORMAT_BC3_UNORM = 77;
 static const unsigned DDS_DXGI_FORMAT_BC3_UNORM_SRGB = 78;
+static const unsigned DDS_DXGI_FORMAT_BC5_UNORM = 83;
 static const unsigned DDS_DXGI_FORMAT_B5G6R5_UNORM = 85;
 static const unsigned DDS_DXGI_FORMAT_B5G5R5A1_UNORM = 86;
 
@@ -104,6 +106,7 @@ TextureFormat PickTextureFormat(const DDPixelFormat& pixelFormat, unsigned dxgiF
         {DDS_DXGI_FORMAT_BC2_UNORM_SRGB, TextureFormat::TEX_FORMAT_BC2_UNORM_SRGB},
         {DDS_DXGI_FORMAT_BC3_UNORM, TextureFormat::TEX_FORMAT_BC3_UNORM},
         {DDS_DXGI_FORMAT_BC3_UNORM_SRGB, TextureFormat::TEX_FORMAT_BC3_UNORM_SRGB},
+        {DDS_DXGI_FORMAT_BC5_UNORM, TextureFormat::TEX_FORMAT_BC5_UNORM},
         {DDS_DXGI_FORMAT_B5G6R5_UNORM, TextureFormat::TEX_FORMAT_B5G6R5_UNORM},
         {DDS_DXGI_FORMAT_B5G5R5A1_UNORM, TextureFormat::TEX_FORMAT_B5G5R5A1_UNORM},
     };
@@ -112,6 +115,7 @@ TextureFormat PickTextureFormat(const DDPixelFormat& pixelFormat, unsigned dxgiF
         {FOURCC_DXT1, TextureFormat::TEX_FORMAT_BC1_UNORM},
         {FOURCC_DXT3, TextureFormat::TEX_FORMAT_BC2_UNORM},
         {FOURCC_DXT5, TextureFormat::TEX_FORMAT_BC3_UNORM},
+        {FOURCC_ATI2, TextureFormat::TEX_FORMAT_BC5_UNORM},
         {FOURCC_ETC1, TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM},
         {FOURCC_ETC2, TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM},
         {FOURCC_ETC2A, TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM},
