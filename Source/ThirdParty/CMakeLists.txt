@@ -53,6 +53,7 @@ add_subdirectory(ETCPACK)
 add_subdirectory(enkiTS)
 
 add_subdirectory(tinygltf)
+add_subdirectory(ufbx)
 if (URHO3D_TESTING)
     add_subdirectory(catch2)
 endif ()

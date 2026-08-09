@@ -1,0 +1,2 @@
+ufbx is vendored from https://github.com/ufbx/ufbx at commit
+fcc5d6ba444cfd3eb80677dba5e37e493941abe5 (version 0.21.3).
