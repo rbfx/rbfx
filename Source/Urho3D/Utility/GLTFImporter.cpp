@@ -125,7 +125,7 @@ unsigned FindCommonPrefixWord(const StringVector& strings)
     return prefix.size();
 }
 
-bool IsNegativeScale(const Vector3& scale) { return scale.x_ * scale.y_ * scale.y_ < 0.0f; }
+bool IsNegativeScale(const Vector3& scale) { return scale.x_ * scale.y_ * scale.z_ < 0.0f; }
 
 Vector3 MirrorX(const Vector3& vec) { return { -vec.x_, vec.y_, vec.z_ }; }
 
@@ -1576,12 +1576,12 @@ private:
 
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
                     {
-                        const auto morphWeightInTangents = ReadVerticalSlice(weightsValues, morphIndex * 3, numMorphs * 3);
-                        const auto morphWeightValues = ReadVerticalSlice(weightsValues, morphIndex * 3 + 1, numMorphs * 3);
-                        const auto morphWeightOutTangents = ReadVerticalSlice(weightsValues, morphIndex * 3 + 2, numMorphs * 3);
+                        const auto morphWeightInTangents = ReadVerticalSlice(weightsValues, morphIndex, numMorphs * 3);
+                        const auto morphWeightValues = ReadVerticalSlice(weightsValues, numMorphs + morphIndex, numMorphs * 3);
+                        const auto morphWeightOutTangents = ReadVerticalSlice(weightsValues, numMorphs * 2 + morphIndex, numMorphs * 3);
                         ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
-                        ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.inTangents_));
-                        ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.outTangents_));
+                        ea::copy(morphWeightInTangents.begin(), morphWeightInTangents.end(), ea::back_inserter(track.inTangents_));
+                        ea::copy(morphWeightOutTangents.begin(), morphWeightOutTangents.end(), ea::back_inserter(track.outTangents_));
                     }
                     else
                     {
@@ -3158,6 +3158,7 @@ private:
                 const ea::string animationName = base_.GetResourceName(animationNameHint, "Animations/", "Animation", ".ani");
 
                 auto animation = ImportAnimation(animationName, groupIndex, group);
+                animation->AddMetadata(AnimationMetadata::SourceAnimationIndex, animationIndex);
 
                 if (groupIndex)
                 {
