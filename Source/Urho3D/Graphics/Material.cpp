@@ -978,17 +978,18 @@ Variant Material::ParseShaderParameterValue(const ea::string& value)
 
 void Material::ResetToDefaults()
 {
-    // Needs to be a no-op when async loading, as this does a GetResource() which is not allowed from worker threads
-    if (!Thread::IsMainThread())
-        return;
-
     vertexShaderDefines_.clear();
     pixelShaderDefines_.clear();
 
+    techniques_.clear();
     SetNumTechniques(1);
-    auto* renderer = GetSubsystem<Renderer>();
-    SetTechnique(0, renderer ? renderer->GetDefaultTechnique() :
-        GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/NoTexture.xml"));
+    // Resource loading is forbidden on worker threads, but the rest of the default state is thread-independent.
+    if (Thread::IsMainThread())
+    {
+        auto* renderer = GetSubsystem<Renderer>();
+        SetTechnique(0, renderer ? renderer->GetDefaultTechnique() :
+            GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/NoTexture.xml"));
+    }
 
     textures_.clear();
     RefreshTextureEventSubscriptions();
