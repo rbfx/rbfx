@@ -761,7 +761,7 @@ void AnimatedModel::CalculateLocalBoundingBox()
 
     const ea::vector<Bone>& bones = skeleton_.GetBones();
     if (bones.empty())
-        boneBoundingBox_.Merge(Vector3::ZERO);
+        boneBoundingBox_ = boundingBox_;
     else
     {
         for (unsigned boneIndex = 0; boneIndex < skeleton_.GetNumBones(); ++boneIndex)
@@ -776,6 +776,10 @@ void AnimatedModel::CalculateLocalBoundingBox()
             else if (bone->collisionMask_ & BONECOLLISION_SPHERE)
                 boneBoundingBox_.Merge(Sphere(transform.Translation(), bone->radius_ * 0.5f));
         }
+        // Use the model geometry bounds when no bone has collision data.
+        // A model without geometry can have undefined bounds, so use the origin then.
+        if (!boneBoundingBox_.Defined())
+            boneBoundingBox_ = boundingBox_;
         if (!boneBoundingBox_.Defined())
             boneBoundingBox_.Merge(Vector3::ZERO);
     }
@@ -1146,7 +1150,8 @@ void AnimatedModel::UpdateSoftwareSkinningState()
     if (renderer->GetSkinningMode() == SKINNING_AUTO && model_)
     {
         // Fallback to software skinning if too many bones affect the model
-        if (geometrySkinMatrices_.empty() && model_->GetSkeleton().GetNumBones() > Graphics::GetMaxBones())
+        if (model_->GetNumGeometries() > 0 && geometrySkinMatrices_.empty()
+            && model_->GetSkeleton().GetNumBones() > Graphics::GetMaxBones())
         {
             URHO3D_LOGWARNING(
                 "Model {} have {} bones, but only {} can be skinned on GPU. "
