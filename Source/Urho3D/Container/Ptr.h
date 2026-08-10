@@ -505,7 +505,8 @@ public:
     template <class U1, class U2> bool operator !=(const WeakPtr<U1, U2>& rhs) const noexcept { return ptr_ != rhs.ptr_ || refCount_ != rhs.refCount_; }
 
     /// Test for less than with another weak pointer.
-    template <class U1, class U2> bool operator <(const WeakPtr<U1, U2>& rhs) const noexcept { return ptr_ < rhs.ptr_; }
+    /// Weak pointers sharing the same control block are equivalent.
+    template <class U1, class U2> bool operator <(const WeakPtr<U1, U2>& rhs) const noexcept { return refCount_ < rhs.refCount_; }
 
     /// Convert to a raw pointer, null if the object is expired.
     operator InterfaceType*() const noexcept { return Get(); }   // NOLINT(google-explicit-constructor)
