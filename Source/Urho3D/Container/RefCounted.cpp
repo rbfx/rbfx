@@ -20,16 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include <cassert>
+#include "Urho3D/Container/RefCounted.h"
 
-#include <EASTL/internal/thread_support.h>
-
-#include "../Container/RefCounted.h"
-#include "../Core/Macros.h"
+#include "Urho3D/Core/Macros.h"
 #if URHO3D_CSHARP
-#   include "../Script/Script.h"
+    #include "Urho3D/Script/Script.h"
 #endif
 
 namespace Urho3D
@@ -38,8 +35,8 @@ namespace Urho3D
 RefCount* RefCount::Allocate()
 {
     void* const memory = EASTLAlloc(*ea::get_default_allocator((Allocator*)nullptr), sizeof(RefCount));
-    assert(memory != nullptr);
-    return ::new(memory) RefCount();
+    URHO3D_ASSERT(memory != nullptr);
+    return ::new (memory) RefCount();
 }
 
 void RefCount::Free(RefCount* instance)
@@ -52,14 +49,14 @@ RefCounted::RefCounted()
     : refCount_(RefCount::Allocate())
 {
     // Hold a weak ref to self to avoid possible double delete of the refcount
-    refCount_->weakRefs_++;
+    refCount_->AddRefWeak();
 }
 
 RefCounted::~RefCounted()
 {
-    assert(refCount_);
-    assert(refCount_->refs_ == 0);
-    assert(refCount_->weakRefs_ > 0);
+    URHO3D_ASSERT(refCount_);
+    URHO3D_ASSERT(refCount_->Refs() == 0);
+    URHO3D_ASSERT(refCount_->WeakRefs() > 0);
 
 #if URHO3D_CSHARP
     // Dispose of managed object when native object was a part of other object (did not use refcounting). Native
@@ -72,15 +69,14 @@ RefCounted::~RefCounted()
         if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
         {
             SetScriptObject(nullptr, false);
-            assert(scriptObject_ == nullptr);
+            URHO3D_ASSERT(scriptObject_ == nullptr);
         }
     }
 #endif
 
     // Mark object as expired, release the self weak ref and delete the refcount if no other weak refs exist
-    refCount_->refs_ = -1;
-
-    if (ea::Internal::atomic_decrement(&refCount_->weakRefs_) == 0)
+    refCount_->MarkObjectDestroyed();
+    if (refCount_->ReleaseRefWeak() == 0)
         RefCount::Free(refCount_);
 
     refCount_ = nullptr;
@@ -88,8 +84,7 @@ RefCounted::~RefCounted()
 
 int RefCounted::AddRef()
 {
-    int refs = ea::Internal::atomic_increment(&refCount_->refs_);
-    assert(refs > 0);
+    const int refs = refCount_->AddRefStrong();
 #if URHO3D_CSHARP
     if (URHO3D_UNLIKELY(scriptObject_ && !isScriptStrongRef_))
     {
@@ -107,8 +102,7 @@ int RefCounted::AddRef()
 
 int RefCounted::ReleaseRef()
 {
-    int refs = ea::Internal::atomic_decrement(&refCount_->refs_);
-    assert(refs >= 0);
+    const int refs = refCount_->ReleaseRefStrong();
 #if URHO3D_CSHARP
     if (refs == 0)
     {
@@ -120,7 +114,7 @@ int RefCounted::ReleaseRef()
             // API may be null when application when finalizers run on application exit.
             if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
             {
-                assert(api != nullptr);
+                URHO3D_ASSERT(api != nullptr);
                 api->Dispose(this);
             }
         }
@@ -135,14 +129,15 @@ int RefCounted::ReleaseRef()
 
 int RefCounted::Refs() const
 {
-    return refCount_->refs_;
+    return refCount_->Refs();
 }
 
 int RefCounted::WeakRefs() const
 {
     // Subtract one to not return the internally held reference
-    return refCount_->weakRefs_ - 1;
+    return refCount_->WeakRefs() - 1;
 }
+
 #if URHO3D_CSHARP
 void RefCounted::SetScriptObject(void* handle, bool isStrong)
 {
@@ -161,4 +156,5 @@ void RefCounted::ResetScriptObject()
     isScriptStrongRef_ = false;
 }
 #endif
-}
+
+} // namespace Urho3D

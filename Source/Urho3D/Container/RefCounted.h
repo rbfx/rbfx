@@ -22,9 +22,11 @@
 
 #pragma once
 
+#include "Urho3D/Core/AssertBase.h"
+
 #include <EASTL/allocator.h>
 
-#include <Urho3D/Urho3D.h>
+#include <atomic>
 
 namespace Urho3D
 {
@@ -43,19 +45,80 @@ public:
     ~RefCount()
     {
         // Set reference counts below zero to fire asserts if this object is still accessed
-        refs_ = -1;
-        weakRefs_ = -1;
+        refs_.store(-1, std::memory_order_release);
+        weakRefs_.store(-1, std::memory_order_release);
     }
 
-    /// Allocate RefCount using it's default allocator.
+    /// Allocate RefCount using its default allocator.
     static RefCount* Allocate();
-    /// Free RefCount using it's default allocator.
+    /// Free RefCount using its default allocator.
     static void Free(RefCount* instance);
 
+    /// Add strong reference. Returns new reference count.
+    /// If the object has been destroyed, behavior is undefined.
+    int AddRefStrong()
+    {
+        const int oldValue = refs_.fetch_add(1, std::memory_order_relaxed);
+        URHO3D_ASSERT(oldValue >= 0);
+        return oldValue + 1;
+    }
+
+    /// Release strong reference. Returns new reference count.
+    /// If 0 is returned, the object must be destroyed immediately.
+    /// If the object has been destroyed, behavior is undefined.
+    int ReleaseRefStrong()
+    {
+        const int oldValue = refs_.fetch_sub(1, std::memory_order_acq_rel);
+        URHO3D_ASSERT(oldValue >= 1);
+        return oldValue - 1;
+    }
+
+    /// Add weak reference. Returns new reference count.
+    /// If the control block has been destroyed, behavior is undefined.
+    int AddRefWeak()
+    {
+        const int oldValue = weakRefs_.fetch_add(1, std::memory_order_relaxed);
+        URHO3D_ASSERT(oldValue >= 0);
+        return oldValue + 1;
+    }
+
+    /// Release weak reference. Returns new reference count.
+    /// If 0 is returned, the control block must be destroyed immediately.
+    int ReleaseRefWeak()
+    {
+        const int oldValue = weakRefs_.fetch_sub(1, std::memory_order_acq_rel);
+        URHO3D_ASSERT(oldValue >= 1);
+        return oldValue - 1;
+    }
+
+    /// Try add strong reference. The object may be destroyed.
+    /// Returns true if strong reference was added.
+    bool TryAddRefStrong()
+    {
+        int count = refs_.load(std::memory_order_acquire);
+        while (count > 0)
+        {
+            if (refs_.compare_exchange_weak(count, count + 1, std::memory_order_acquire, std::memory_order_relaxed))
+                return true;
+        }
+
+        return false;
+    }
+
+    /// Mark object as destroyed.
+    void MarkObjectDestroyed() { refs_.store(-1, std::memory_order_release); }
+
+    /// Return strong reference count.
+    int Refs() const { return refs_.load(std::memory_order_relaxed); }
+
+    /// Return weak reference count.
+    int WeakRefs() const { return weakRefs_.load(std::memory_order_relaxed); }
+
+private:
     /// Reference count. If below zero, the object has been destroyed.
-    int refs_ = 0;
+    std::atomic_int32_t refs_{0};
     /// Weak reference count.
-    int weakRefs_ = 0;
+    std::atomic_int32_t weakRefs_{0};
 };
 
 /// Base class for intrusively reference-counted objects. These are noncopyable and non-assignable.
@@ -130,4 +193,4 @@ private:
 #endif
 };
 
-}
+} // namespace Urho3D

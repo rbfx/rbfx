@@ -64,10 +64,10 @@ public:
         rhs.refCounted_ = nullptr;
     }
 
-    SharedPtrBase(InterfaceType* ptr, RefCounted* refCounted) noexcept
+    SharedPtrBase(InterfaceType* ptr, RefCounted* refCounted, bool addReference = true) noexcept
         : refCounted_(ptr)
     {
-        if (refCounted_ != nullptr)
+        if (refCounted_ != nullptr && addReference)
             refCounted_->AddRef();
     }
 
@@ -111,11 +111,11 @@ public:
         rhs.ptr_ = nullptr;
     }
 
-    SharedPtrBase(InterfaceType* ptr, RefCounted* refCounted) noexcept
+    SharedPtrBase(InterfaceType* ptr, RefCounted* refCounted, bool addReference = true) noexcept
         : refCounted_(refCounted)
         , ptr_(ptr)
     {
-        if (refCounted_ != nullptr)
+        if (refCounted_ != nullptr && addReference)
             refCounted_->AddRef();
     }
 
@@ -155,7 +155,10 @@ public:
     SharedPtr(ThisType&& rhs) noexcept = default;
 
     /// Construct with explicit reference counter.
-    SharedPtr(InterfaceType* ptr, RefCounted* refCounted) noexcept : BaseType(ptr, refCounted) {}
+    SharedPtr(InterfaceType* ptr, RefCounted* refCounted, bool addReference = true) noexcept
+        : BaseType(ptr, refCounted, addReference)
+    {
+    }
 
     /// Construct from another shared pointer.
     template <class U1, class U2>
@@ -277,9 +280,9 @@ public:
         if (ptr)
         {
             RefCount* refCount = RefCountPtr();
-            ea::Internal::atomic_increment(&refCount->refs_); // 2 refs
+            refCount->AddRefStrong(); // 2 refs
             Reset(); // 1 ref
-            ea::Internal::atomic_decrement(&refCount->refs_); // 0 refs
+            refCount->ReleaseRefStrong(); // 0 refs
         }
         return ptr;
     }
@@ -472,10 +475,10 @@ public:
     SharedPtrType Lock() const noexcept
     {
         static_assert(ea::is_convertible_v<InterfaceType*, RefCounted*>, "WeakPtr::Lock can be used only for types derived from RefCounted");
-        if (Expired())
-            return SharedPtrType();
+        if (refCount_ && refCount_->TryAddRefStrong())
+            return SharedPtrType(ptr_, static_cast<RefCounted*>(ptr_), false);
         else
-            return SharedPtrType(ptr_, static_cast<RefCounted*>(ptr_));
+            return SharedPtrType();
     }
 
     /// Return raw pointer. If expired, return null.
@@ -552,19 +555,19 @@ public:
     }
 
     /// Return the object's reference count, or 0 if null pointer or if object has expired.
-    int Refs() const noexcept { return (refCount_ && refCount_->refs_ >= 0) ? refCount_->refs_ : 0; }
+    int Refs() const noexcept { return (refCount_ && refCount_->Refs() >= 0) ? refCount_->Refs() : 0; }
 
     /// Return the object's weak reference count.
     int WeakRefs() const noexcept
     {
         if (!Expired())
-            return refCount_->weakRefs_ - 1;
+            return refCount_->WeakRefs() - 1;
         else
-            return refCount_ ? refCount_->weakRefs_ : 0;
+            return refCount_ ? refCount_->WeakRefs() : 0;
     }
 
     /// Return whether the object has expired. If null pointer, always return true.
-    bool Expired() const noexcept { return refCount_ ? refCount_->refs_ < 0 : true; }
+    bool Expired() const noexcept { return refCount_ ? refCount_->Refs() < 0 : true; }
 
     /// Return pointer to the RefCount structure.
     RefCount* RefCountPtr() const noexcept { return refCount_; }
@@ -579,10 +582,7 @@ private:
     void AddRef() noexcept
     {
         if (refCount_)
-        {
-            assert(refCount_->weakRefs_ >= 0);
-            ea::Internal::atomic_increment(&refCount_->weakRefs_);
-        }
+            refCount_->AddRefWeak();
     }
 
     /// Release the weak reference. Delete the Refcount structure if necessary.
@@ -590,10 +590,7 @@ private:
     {
         if (refCount_)
         {
-            assert(refCount_->weakRefs_ > 0);
-            int weakRefs = ea::Internal::atomic_decrement(&refCount_->weakRefs_);
-
-            if (Expired() && weakRefs == 0)
+            if (refCount_->ReleaseRefWeak() == 0)
                 RefCount::Free(refCount_);
         }
 

@@ -39,7 +39,6 @@ namespace Urho3D
 
 View3D::View3D(Context* context) :
     Window(context),
-    ownScene_(true),
     rttFormat_(TextureFormat::TEX_FORMAT_RGBA8_UNORM),
     autoUpdate_(true)
 {
@@ -98,7 +97,7 @@ void View3D::SetView(Scene* scene, Camera* camera, bool ownScene)
 
     scene_ = scene;
     cameraNode_ = camera ? camera->GetNode() : nullptr;
-    ownScene_ = ownScene;
+    ownedScene_ = ownScene ? scene : nullptr;
 
     viewport_->SetScene(scene_);
     viewport_->SetCamera(camera);
@@ -156,15 +155,8 @@ void View3D::ResetScene()
     if (!scene_)
         return;
 
-    if (!ownScene_)
-    {
-        RefCount* refCount = scene_->RefCountPtr();
-        ea::Internal::atomic_increment(&refCount->refs_);
-        scene_ = nullptr;
-        ea::Internal::atomic_decrement(&refCount->refs_);
-    }
-    else
-        scene_ = nullptr;
+    scene_ = nullptr;
+    ownedScene_ = nullptr;
 }
 
 void View3D::HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData)

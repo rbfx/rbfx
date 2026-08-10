@@ -98,11 +98,10 @@ private:
     /// Viewport.
     SharedPtr<Viewport> viewport_;
     /// Scene.
-    SharedPtr<Scene> scene_;
+    WeakPtr<Scene> scene_;
+    SharedPtr<Scene> ownedScene_;
     /// Camera scene node.
     SharedPtr<Node> cameraNode_;
-    /// Own scene.
-    bool ownScene_;
     /// Render texture format.
     TextureFormat rttFormat_{};
     /// Render texture auto update mode.
