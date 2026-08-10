@@ -82,7 +82,7 @@ RefCounted::~RefCounted()
     refCount_ = nullptr;
 }
 
-int RefCounted::AddRef()
+int RefCounted::AddRef() const
 {
     const int refs = refCount_->AddRefStrong();
 #if URHO3D_CSHARP
@@ -100,7 +100,7 @@ int RefCounted::AddRef()
     return refs;
 }
 
-int RefCounted::ReleaseRef()
+int RefCounted::ReleaseRef() const
 {
     const int refs = refCount_->ReleaseRefStrong();
 #if URHO3D_CSHARP
@@ -115,7 +115,7 @@ int RefCounted::ReleaseRef()
             if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
             {
                 URHO3D_ASSERT(api != nullptr);
-                api->Dispose(this);
+                api->Dispose(const_cast<RefCounted*>(this));
             }
         }
         delete this;

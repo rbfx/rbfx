@@ -21,14 +21,16 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/StringUtils.h"
-#include "../Math/Matrix2.h"
+#include "Urho3D/Core/StringUtils.h"
+
+#include "Urho3D/Core/AssertBase.h"
+#include "Urho3D/Math/Matrix2.h"
 
 #include <cstdio>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -796,7 +798,7 @@ void BufferToHexString(ea::string& dest, const void* data, unsigned size)
             ? bytes[i / 2] & 0xf
             : bytes[i / 2] >> 4;
 
-        assert(digit < 16);
+        URHO3D_ASSERT(digit < 16);
         if (digit < 10)
             dest[i] = '0' + digit;
         else
@@ -822,7 +824,7 @@ bool HexStringToBuffer(ea::vector<unsigned char>& dest, const ea::string_view& s
         else
             return false;
 
-        assert(digit < 16);
+        URHO3D_ASSERT(digit < 16);
         if (i % 2 == 0)
             dest[i / 2] = digit << 4;
         else

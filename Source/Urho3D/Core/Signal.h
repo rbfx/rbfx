@@ -22,11 +22,12 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
-#include "../Container/RefCounted.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Container/RefCounted.h"
+#include "Urho3D/Core/AssertBase.h"
 
-#include <EASTL/type_traits.h>
 #include <EASTL/fixed_function.h>
+#include <EASTL/type_traits.h>
 #include <EASTL/utility.h>
 #include <EASTL/vector.h>
 #include <EASTL/vector_multiset.h>
@@ -124,7 +125,7 @@ public:
     {
         if (invocationInProgress_)
         {
-            assert(0);
+            URHO3D_ASSERT(0);
             return;
         }
 
@@ -152,7 +153,7 @@ public:
 protected:
     void RemoveExpiredElements()
     {
-        assert(!invocationInProgress_);
+        URHO3D_ASSERT(!invocationInProgress_);
         const auto isExpired = [](const Subscription& subscription) { return !subscription.receiver_; };
         ea::erase_if(subscriptions_, isExpired);
     }

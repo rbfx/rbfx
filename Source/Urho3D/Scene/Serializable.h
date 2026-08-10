@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include "../Core/Attribute.h"
-#include "../Core/Object.h"
+#include "Urho3D/Core/AssertBase.h"
+#include "Urho3D/Core/Attribute.h"
+#include "Urho3D/Core/Object.h"
 
 #include <cstddef>
 
@@ -153,7 +154,7 @@ public:
     /// Invoke getter function.
     void Get(const Serializable* ptr, Variant& value) const override
     {
-        assert(ptr);
+        URHO3D_ASSERT(ptr);
         const auto classPtr = static_cast<const TClassType*>(ptr);
         getFunction_(*classPtr, value);
     }
@@ -161,7 +162,7 @@ public:
     /// Invoke setter function.
     void Set(Serializable* ptr, const Variant& value) override
     {
-        assert(ptr);
+        URHO3D_ASSERT(ptr);
         auto classPtr = static_cast<TClassType*>(ptr);
         setFunction_(*classPtr, value);
     }

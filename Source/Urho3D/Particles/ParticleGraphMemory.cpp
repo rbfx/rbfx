@@ -20,10 +20,11 @@
 // THE SOFTWARE.
 //
 
+#include "Urho3D/Precompiled.h"
 
-#include "../Precompiled.h"
+#include "Urho3D/Particles/ParticleGraphMemory.h"
 
-#include "ParticleGraphMemory.h"
+#include "Urho3D/Core/AssertBase.h"
 
 namespace Urho3D
 {
@@ -77,7 +78,7 @@ void ParticleGraphBufferLayout::Reset(unsigned capacity)
 
 unsigned ParticleGraphBufferLayout::Allocate(ParticleGraphContainerType container, VariantType type)
 {
-    assert(container != ParticleGraphContainerType::Auto);
+    URHO3D_ASSERT(container != ParticleGraphContainerType::Auto);
     unsigned index = spans_.size();
     unsigned size = ((container == ParticleGraphContainerType::Scalar) ? 1 : capacity_) * GetVariantTypeSize(type);
     spans_.push_back(PinSpan{container, type, ParticleGraphSpan(position_, size)});

@@ -22,12 +22,13 @@
 
 #pragma once
 
+#include "Urho3D/Container/RefCounted.h"
+#include "Urho3D/Core/AssertBase.h"
+
 #include <EASTL/internal/thread_support.h>
+#include <EASTL/type_traits.h>
 #include <EASTL/utility.h>
 
-#include "../Container/RefCounted.h"
-
-#include <cassert>
 #include <cstddef>
 #include <utility>
 
@@ -64,9 +65,12 @@ public:
         rhs.refCounted_ = nullptr;
     }
 
-    SharedPtrBase(InterfaceType* ptr, RefCounted* refCounted, bool addReference = true) noexcept
+    SharedPtrBase(InterfaceType* ptr, const RefCounted* refCounted, bool addReference = true) noexcept
         : refCounted_(ptr)
     {
+        URHO3D_ASSERT(!ptr || ptr == refCounted,
+            "SharedPtr<T, T> cannot be created with different interface and refcounted pointers");
+
         if (refCounted_ != nullptr && addReference)
             refCounted_->AddRef();
     }
@@ -82,7 +86,8 @@ public:
         std::swap(refCounted_, rhs.refCounted_);
     }
 
-    InterfaceType* GetRefCounted() const noexcept { return refCounted_; }
+    const InterfaceType* GetRefCounted() const noexcept { return refCounted_; }
+    InterfaceType* GetMutableRefCounted() const noexcept { return refCounted_; }
     InterfaceType* GetPointer() const noexcept { return refCounted_; }
 
 private:
@@ -111,8 +116,8 @@ public:
         rhs.ptr_ = nullptr;
     }
 
-    SharedPtrBase(InterfaceType* ptr, RefCounted* refCounted, bool addReference = true) noexcept
-        : refCounted_(refCounted)
+    SharedPtrBase(InterfaceType* ptr, const RefCounted* refCounted, bool addReference = true) noexcept
+        : refCounted_(ptr ? refCounted : nullptr)
         , ptr_(ptr)
     {
         if (refCounted_ != nullptr && addReference)
@@ -131,15 +136,178 @@ public:
         std::swap(ptr_, rhs.ptr_);
     }
 
-    RefCounted* GetRefCounted() const noexcept { return refCounted_; }
+    const RefCounted* GetRefCounted() const noexcept { return refCounted_; }
+    RefCounted* GetMutableRefCounted() const noexcept { return const_cast<RefCounted*>(refCounted_); }
     InterfaceType* GetPointer() const noexcept { return ptr_; }
 
 private:
-    RefCounted* refCounted_{};
+    const RefCounted* refCounted_{};
     InterfaceType* ptr_{};
 };
 
-}
+/// Base class for weak pointer reference counting.
+class WeakPtrRefCountBase
+{
+public:
+    /// Return the object's reference count, or 0 if null pointer or if object has expired.
+    int Refs() const noexcept { return (refCount_ && refCount_->Refs() >= 0) ? refCount_->Refs() : 0; }
+
+    /// Return the object's weak reference count.
+    int WeakRefs() const noexcept
+    {
+        if (!Expired())
+            return refCount_->WeakRefs() - 1;
+        else
+            return refCount_ ? refCount_->WeakRefs() : 0;
+    }
+
+    /// Return whether the object has expired. If null pointer, always return true.
+    bool Expired() const noexcept { return refCount_ ? refCount_->Refs() < 0 : true; }
+
+    /// Return pointer to the RefCount structure.
+    RefCount* RefCountPtr() const noexcept { return refCount_; }
+
+protected:
+    WeakPtrRefCountBase() noexcept = default;
+
+    explicit WeakPtrRefCountBase(const WeakPtrRefCountBase& rhs) noexcept
+        : refCount_(rhs.refCount_)
+    {
+    }
+
+    explicit WeakPtrRefCountBase(WeakPtrRefCountBase&& rhs) noexcept
+        : refCount_(rhs.refCount_)
+    {
+        rhs.refCount_ = nullptr;
+    }
+
+    explicit WeakPtrRefCountBase(RefCount* refCount) noexcept
+        : refCount_(refCount)
+    {
+    }
+
+    void Swap(WeakPtrRefCountBase& rhs) noexcept { ea::swap(refCount_, rhs.refCount_); }
+
+    void AddRef() noexcept
+    {
+        if (refCount_)
+            refCount_->AddRefWeak();
+    }
+
+    void ReleaseRef() noexcept
+    {
+        if (refCount_)
+        {
+            if (refCount_->ReleaseRefWeak() == 0)
+                RefCount::Free(refCount_);
+        }
+    }
+
+private:
+    RefCount* refCount_{};
+};
+
+/// Base class for weak pointer.
+template <class InterfaceType, class RefCountedType, class Enabled = void>
+class WeakPtrBase;
+
+template <class InterfaceType>
+class WeakPtrBase<InterfaceType, InterfaceType, void> : public WeakPtrRefCountBase
+{
+public:
+    WeakPtrBase() noexcept = default;
+
+    explicit WeakPtrBase(const WeakPtrBase& rhs) noexcept
+        : WeakPtrRefCountBase(rhs)
+        , refCounted_(rhs.refCounted_)
+    {
+        AddRef();
+    }
+
+    explicit WeakPtrBase(WeakPtrBase&& rhs) noexcept
+        : WeakPtrRefCountBase(ea::move(rhs))
+        , refCounted_(rhs.refCounted_)
+    {
+        rhs.refCounted_ = nullptr;
+    }
+
+    WeakPtrBase(RefCount* refCount, InterfaceType* ptr, const RefCounted* refCounted) noexcept
+        : WeakPtrRefCountBase(refCount)
+        , refCounted_(ptr)
+    {
+        URHO3D_ASSERT(!ptr || ptr == refCounted,
+            "WeakPtr<T, T> cannot be created with different interface and refcounted pointers");
+
+        AddRef();
+    }
+
+    ~WeakPtrBase() { ReleaseRef(); }
+
+    void Swap(WeakPtrBase& rhs) noexcept
+    {
+        WeakPtrRefCountBase::Swap(rhs);
+        std::swap(refCounted_, rhs.refCounted_);
+    }
+
+    const InterfaceType* GetRefCounted() const noexcept { return refCounted_; }
+    InterfaceType* GetMutableRefCounted() const noexcept { return refCounted_; }
+    InterfaceType* GetPointer() const noexcept { return refCounted_; }
+
+private:
+    InterfaceType* refCounted_{};
+};
+
+template <class InterfaceType>
+class WeakPtrBase<InterfaceType, RefCounted, ea::enable_if_t<!IsRefCountedType<InterfaceType>>>
+    : public WeakPtrRefCountBase
+{
+public:
+    WeakPtrBase() noexcept = default;
+
+    explicit WeakPtrBase(const WeakPtrBase& rhs) noexcept
+        : WeakPtrRefCountBase(rhs)
+        , refCounted_(rhs.refCounted_)
+        , ptr_(rhs.ptr_)
+    {
+        AddRef();
+    }
+
+    explicit WeakPtrBase(WeakPtrBase&& rhs) noexcept
+        : WeakPtrRefCountBase(ea::move(rhs))
+        , refCounted_(rhs.refCounted_)
+        , ptr_(rhs.ptr_)
+    {
+        rhs.refCounted_ = nullptr;
+        rhs.ptr_ = nullptr;
+    }
+
+    WeakPtrBase(RefCount* refCount, InterfaceType* ptr, const RefCounted* refCounted) noexcept
+        : WeakPtrRefCountBase(ptr ? refCount : nullptr)
+        , refCounted_(ptr ? refCounted : nullptr)
+        , ptr_(ptr)
+    {
+        AddRef();
+    }
+
+    ~WeakPtrBase() { ReleaseRef(); }
+
+    void Swap(WeakPtrBase& rhs) noexcept
+    {
+        WeakPtrRefCountBase::Swap(rhs);
+        std::swap(refCounted_, rhs.refCounted_);
+        std::swap(ptr_, rhs.ptr_);
+    }
+
+    const RefCounted* GetRefCounted() const noexcept { return refCounted_; }
+    RefCounted* GetMutableRefCounted() const noexcept { return const_cast<RefCounted*>(refCounted_); }
+    InterfaceType* GetPointer() const noexcept { return ptr_; }
+
+private:
+    const RefCounted* refCounted_{};
+    InterfaceType* ptr_{};
+};
+
+} // namespace Detail
 
 /// Shared pointer template class with intrusive reference counting.
 template <class InterfaceType, class RefCountedType = InterfaceType>
@@ -155,23 +323,29 @@ public:
     SharedPtr(ThisType&& rhs) noexcept = default;
 
     /// Construct with explicit reference counter.
-    SharedPtr(InterfaceType* ptr, RefCounted* refCounted, bool addReference = true) noexcept
+    SharedPtr(InterfaceType* ptr, const RefCounted* refCounted, bool addReference = true) noexcept
         : BaseType(ptr, refCounted, addReference)
     {
     }
 
     /// Construct from another shared pointer.
     template <class U1, class U2>
-    SharedPtr(const SharedPtr<U1, U2>& rhs) noexcept : BaseType(rhs.GetPointer(), rhs.GetRefCounted()) {} // NOLINT(google-explicit-constructor)
+    SharedPtr(const SharedPtr<U1, U2>& rhs) noexcept // NOLINT(google-explicit-constructor)
+        : BaseType(rhs.GetPointer(), rhs.GetRefCounted())
+    {
+    }
 
     /// Construct from a raw pointer.
     template <class U>
-    explicit SharedPtr(U* ptr) noexcept : BaseType(ptr, ptr) {}
+    explicit SharedPtr(U* ptr) noexcept
+        : BaseType(ptr, ptr)
+    {
+    }
 
     /// Assign from another shared pointer.
     ThisType& operator=(const ThisType& rhs) noexcept
     {
-        if (this->GetRefCounted() != rhs.GetRefCounted())
+        if (this->GetPointer() != rhs.GetPointer())
         {
             ThisType temp{rhs};
             this->Swap(temp);
@@ -180,10 +354,9 @@ public:
     }
 
     /// Assign from another shared pointer.
-    template <class U1, class U2>
-    ThisType& operator =(const SharedPtr<U1, U2>& rhs) noexcept
+    template <class U1, class U2> ThisType& operator=(const SharedPtr<U1, U2>& rhs) noexcept
     {
-        if (this->GetRefCounted() != rhs.GetRefCounted())
+        if (this->GetPointer() != rhs.GetPointer())
         {
             ThisType temp{rhs};
             this->Swap(temp);
@@ -194,31 +367,25 @@ public:
     /// Move-assign from another shared pointer.
     ThisType& operator=(ThisType&& rhs) noexcept
     {
-        if (this->GetRefCounted() != rhs.GetRefCounted())
-        {
-            ThisType temp{ea::move(rhs)};
-            this->Swap(temp);
-        }
+        ThisType temp{ea::move(rhs)};
+        this->Swap(temp);
+
         return *this;
     }
 
     /// Move-assign from another shared pointer.
-    template <class U1, class U2>
-    ThisType& operator =(SharedPtr<U1, U2>&& rhs) noexcept
+    template <class U1, class U2> ThisType& operator=(SharedPtr<U1, U2>&& rhs) noexcept
     {
-        if (this->GetRefCounted() != rhs.GetRefCounted())
-        {
-            ThisType temp{ea::move(rhs)};
-            this->Swap(temp);
-        }
+        ThisType temp{ea::move(rhs)};
+        this->Swap(temp);
+
         return *this;
     }
 
     /// Assign from a raw pointer.
-    template <class U>
-    ThisType& operator =(U* ptr) noexcept
+    template <class U> ThisType& operator=(U* ptr) noexcept
     {
-        if (this->GetRefCounted() != ptr)
+        if (this->GetPointer() != ptr)
         {
             ThisType temp{ptr};
             this->Swap(temp);
@@ -227,16 +394,16 @@ public:
     }
 
     /// Point to the object.
-    InterfaceType* operator ->() const noexcept
+    InterfaceType* operator->() const noexcept
     {
-        assert(this->GetPointer());
+        URHO3D_ASSERT(this->GetPointer());
         return this->GetPointer();
     }
 
     /// Dereference the object.
-    InterfaceType& operator *() const noexcept
+    InterfaceType& operator*() const noexcept
     {
-        assert(this->GetPointer());
+        URHO3D_ASSERT(this->GetPointer());
         return *this->GetPointer();
     }
 
@@ -252,6 +419,7 @@ public:
     /// Convert to a raw pointer.
     operator InterfaceType*() const noexcept { return this->GetPointer(); }    // NOLINT(google-explicit-constructor)
 
+    /// Reset.
     void Reset() noexcept
     {
         ThisType temp;
@@ -267,7 +435,7 @@ public:
     }
 
     /// Reset with another pointers.
-    void Reset(InterfaceType* ptr, RefCounted* refCounted) noexcept
+    void Reset(InterfaceType* ptr, const RefCounted* refCounted) noexcept
     {
         ThisType temp(ptr, refCounted);
         this->Swap(temp);
@@ -339,134 +507,86 @@ template <class T, class U1, class U2> SharedPtrT<T> DynamicCast(const SharedPtr
 
 /// Weak pointer template class with intrusive reference counting. Does not keep the object pointed to alive.
 template <class InterfaceType, class RefCountedType = InterfaceType>
-class WeakPtr
+class WeakPtr : public Detail::WeakPtrBase<InterfaceType, RefCountedType>
 {
 public:
     using ThisType = WeakPtr<InterfaceType, RefCountedType>;
+    using BaseType = Detail::WeakPtrBase<InterfaceType, RefCountedType>;
     using SharedPtrType = SharedPtr<InterfaceType, RefCountedType>;
 
     WeakPtr() noexcept = default;
     WeakPtr(std::nullptr_t) noexcept {} // NOLINT(google-explicit-constructor)
+    WeakPtr(const ThisType& rhs) noexcept = default;
+    WeakPtr(ThisType&& rhs) noexcept = default;
 
-    /// Copy-construct from another weak pointer.
-    WeakPtr(const ThisType& rhs) noexcept
-        : ptr_(rhs.ptr_)
-        , refCount_(rhs.refCount_)
+    /// Construct with explicit reference counter.
+    WeakPtr(RefCount* refCount, InterfaceType* ptr, const RefCounted* refCounted) noexcept
+        : BaseType(refCount, ptr, refCounted)
     {
-        AddRef();
-    }
-
-    /// Move-construct from another weak pointer.
-    WeakPtr(ThisType&& rhs) noexcept
-        : ptr_(rhs.ptr_)
-        , refCount_(rhs.refCount_)
-    {
-        rhs.ptr_ = nullptr;
-        rhs.refCount_ = nullptr;
     }
 
     /// Copy-construct from another weak pointer allowing implicit upcasting.
     template <class U1, class U2>
-    WeakPtr(const WeakPtr<U1, U2>& rhs) noexcept   // NOLINT(google-explicit-constructor)
-        : ptr_(rhs.ptr_)
-        , refCount_(rhs.refCount_)
+    WeakPtr(const WeakPtr<U1, U2>& rhs) noexcept // NOLINT(google-explicit-constructor)
+        : BaseType(rhs.RefCountPtr(), rhs.GetPointer(), rhs.GetRefCounted())
     {
-        AddRef();
     }
 
     /// Construct from a shared pointer.
     template <class U1, class U2>
-    WeakPtr(const SharedPtr<U1, U2>& rhs) noexcept   // NOLINT(google-explicit-constructor)
-        : ptr_(rhs.Get())
-        , refCount_(rhs.RefCountPtr())
+    WeakPtr(const SharedPtr<U1, U2>& rhs) noexcept // NOLINT(google-explicit-constructor)
+        : BaseType(rhs.RefCountPtr(), rhs.GetPointer(), rhs.GetRefCounted())
     {
-        AddRef();
     }
 
     /// Construct from a raw pointer.
     template <class U, ea::enable_if_t<ea::is_base_of_v<InterfaceType, U>, int> = 0>
     explicit WeakPtr(U* ptr) noexcept
-        : ptr_(ptr)
-        , refCount_(ptr ? ptr->RefCountPtr() : nullptr)
+        : BaseType(ptr ? ptr->RefCountPtr() : nullptr, ptr, ptr)
     {
-        AddRef();
-    }
-
-    /// Construct from separate pointers.
-    WeakPtr(InterfaceType* ptr, RefCounted* refCounted) noexcept
-        : ptr_(ptr)
-        , refCount_(refCounted->RefCountPtr())
-    {
-        AddRef();
-    }
-
-    /// Destruct. Release the weak reference to the object.
-    ~WeakPtr() noexcept
-    {
-        ReleaseRef();
     }
 
     /// Assign from a shared pointer.
-    template <class U1, class U2>
-    ThisType& operator =(const SharedPtr<U1, U2>& rhs) noexcept
+    template <class U1, class U2> ThisType& operator=(const SharedPtr<U1, U2>& rhs) noexcept
     {
-        if (ptr_ == rhs.Get() && refCount_ == rhs.RefCountPtr())
-            return *this;
-
-        ThisType copy(rhs);
-        Swap(copy);
+        ThisType temp{rhs};
+        this->Swap(temp);
 
         return *this;
     }
 
-    /// Assign from a weak pointer.
-    ThisType& operator =(const ThisType& rhs) noexcept
+    /// Assign from another weak pointer.
+    ThisType& operator=(const ThisType& rhs) noexcept
     {
-        if (ptr_ == rhs.ptr_ && refCount_ == rhs.refCount_)
-            return *this;
+        ThisType temp{rhs};
+        this->Swap(temp);
 
-        ThisType copy(rhs);
-        Swap(copy);
+        return *this;
+    }
+
+    /// Assign from another weak pointer.
+    template <class U1, class U2> ThisType& operator=(const WeakPtr<U1, U2>& rhs) noexcept
+    {
+        ThisType temp{rhs};
+        this->Swap(temp);
 
         return *this;
     }
 
     /// Move-assign from another weak pointer.
-    ThisType& operator =(ThisType&& rhs) noexcept
+    ThisType& operator=(ThisType&& rhs) noexcept
     {
-        ThisType copy(ea::move(rhs));
-        Swap(copy);
-
-        return *this;
-    }
-
-    /// Assign from another weak pointer allowing implicit upcasting.
-    template <class U1, class U2>
-    ThisType& operator =(const WeakPtr<U1, U2>& rhs) noexcept
-    {
-        if (ptr_ == rhs.ptr_ && refCount_ == rhs.refCount_)
-            return *this;
-
-        ReleaseRef();
-        ptr_ = rhs.ptr_;
-        refCount_ = rhs.refCount_;
-        AddRef();
+        ThisType temp(ea::move(rhs));
+        this->Swap(temp);
 
         return *this;
     }
 
     /// Assign from a raw pointer.
-    ThisType& operator =(InterfaceType* ptr) noexcept
+    template <class U> ThisType& operator=(U* ptr) noexcept
     {
-        RefCount* refCount = ptr ? ptr->RefCountPtr() : nullptr;
-
-        if (ptr_ == ptr && refCount_ == refCount)
-            return *this;
-
-        ReleaseRef();
-        ptr_ = ptr;
-        refCount_ = refCount;
-        AddRef();
+        ThisType temp{ptr};
+        this->Swap(temp);
 
         return *this;
     }
@@ -474,134 +594,82 @@ public:
     /// Convert to a shared pointer. If expired, return a null shared pointer.
     SharedPtrType Lock() const noexcept
     {
-        static_assert(ea::is_convertible_v<InterfaceType*, RefCounted*>, "WeakPtr::Lock can be used only for types derived from RefCounted");
-        if (refCount_ && refCount_->TryAddRefStrong())
-            return SharedPtrType(ptr_, static_cast<RefCounted*>(ptr_), false);
+        if (this->RefCountPtr() && this->RefCountPtr()->TryAddRefStrong())
+            return SharedPtrType(this->GetPointer(), this->GetRefCounted(), false);
         else
             return SharedPtrType();
     }
 
     /// Return raw pointer. If expired, return null.
-    InterfaceType* Get() const noexcept
-    {
-        return Expired() ? nullptr : ptr_;
-    }
+    InterfaceType* Get() const noexcept { return this->Expired() ? nullptr : this->GetPointer(); }
 
     /// Point to the object.
-    InterfaceType* operator ->() const noexcept
+    InterfaceType* operator->() const noexcept
     {
-        assert(!Expired());
-        return ptr_;
+        URHO3D_ASSERT(!this->Expired());
+        return this->GetPointer();
     }
 
     /// Dereference the object.
-    InterfaceType& operator *() const noexcept
+    InterfaceType& operator*() const noexcept
     {
-        assert(!Expired());
-        return *ptr_;
+        URHO3D_ASSERT(!this->Expired());
+        return *this->GetPointer();
     }
 
     /// Test for equality with another weak pointer.
-    template <class U1, class U2> bool operator ==(const WeakPtr<U1, U2>& rhs) const noexcept { return ptr_ == rhs.ptr_ && refCount_ == rhs.refCount_; }
+    template <class U1, class U2> bool operator ==(const WeakPtr<U1, U2>& rhs) const noexcept { return this->GetRefCounted() == rhs.GetRefCounted() && this->RefCountPtr() == rhs.RefCountPtr(); }
 
     /// Test for inequality with another weak pointer.
-    template <class U1, class U2> bool operator !=(const WeakPtr<U1, U2>& rhs) const noexcept { return ptr_ != rhs.ptr_ || refCount_ != rhs.refCount_; }
+    template <class U1, class U2> bool operator !=(const WeakPtr<U1, U2>& rhs) const noexcept { return this->GetRefCounted() != rhs.GetRefCounted() || this->RefCountPtr() != rhs.RefCountPtr(); }
 
     /// Test for less than with another weak pointer.
     /// Weak pointers sharing the same control block are equivalent.
-    template <class U1, class U2> bool operator <(const WeakPtr<U1, U2>& rhs) const noexcept { return refCount_ < rhs.refCount_; }
+    template <class U1, class U2> bool operator <(const WeakPtr<U1, U2>& rhs) const noexcept { return this->RefCountPtr() < rhs.RefCountPtr(); }
 
     /// Convert to a raw pointer, null if the object is expired.
     operator InterfaceType*() const noexcept { return Get(); }   // NOLINT(google-explicit-constructor)
 
-    /// Swap with another WeakPtr.
-    void Swap(ThisType& rhs) noexcept
+    /// Reset.
+    void Reset() noexcept
     {
-        ea::swap(ptr_, rhs.ptr_);
-        ea::swap(refCount_, rhs.refCount_);
+        ThisType temp;
+        this->Swap(temp);
     }
 
     /// Reset with another pointer.
-    void Reset(InterfaceType* ptr = nullptr) noexcept
+    template <class U>
+    void Reset(U* ptr) noexcept
     {
-        ThisType copy(ptr);
-        Swap(copy);
+        ThisType temp(ptr);
+        this->Swap(temp);
+    }
+
+    /// Reset with another pointers.
+    void Reset(RefCount* refCount, InterfaceType* ptr, const RefCounted* refCounted) noexcept
+    {
+        ThisType temp(refCount, ptr, refCounted);
+        this->Swap(temp);
     }
 
     /// Perform a static cast from a weak pointer of another type.
     template <class U1, class U2>
     void StaticCast(const WeakPtr<U1, U2>& rhs) noexcept
     {
-        ReleaseRef();
-        ptr_ = static_cast<InterfaceType*>(rhs.Get());
-        refCount_ = rhs.refCount_;
-        AddRef();
+        ThisType temp(rhs.RefCountedPtr(), static_cast<InterfaceType*>(rhs.GetPointer()), rhs.GetRefCounted());
+        this->Swap(temp);
     }
 
     /// Perform a dynamic cast from a weak pointer of another type.
     template <class U1, class U2>
     void DynamicCast(const WeakPtr<U1, U2>& rhs) noexcept
     {
-        ReleaseRef();
-        ptr_ = dynamic_cast<InterfaceType*>(rhs.Get());
-
-        if (ptr_)
-        {
-            refCount_ = rhs.refCount_;
-            AddRef();
-        }
-        else
-            refCount_ = 0;
+        ThisType temp(rhs.RefCountedPtr(), dynamic_cast<InterfaceType*>(rhs.GetPointer()), rhs.GetRefCounted());
+        this->Swap(temp);
     }
-
-    /// Return the object's reference count, or 0 if null pointer or if object has expired.
-    int Refs() const noexcept { return (refCount_ && refCount_->Refs() >= 0) ? refCount_->Refs() : 0; }
-
-    /// Return the object's weak reference count.
-    int WeakRefs() const noexcept
-    {
-        if (!Expired())
-            return refCount_->WeakRefs() - 1;
-        else
-            return refCount_ ? refCount_->WeakRefs() : 0;
-    }
-
-    /// Return whether the object has expired. If null pointer, always return true.
-    bool Expired() const noexcept { return refCount_ ? refCount_->Refs() < 0 : true; }
-
-    /// Return pointer to the RefCount structure.
-    RefCount* RefCountPtr() const noexcept { return refCount_; }
 
     /// Return hash value for HashSet & HashMap. Use the same hash function as for raw pointers!
-    size_t ToHash() const noexcept { return size_t(uintptr_t(ptr_)); }
-
-private:
-    template <class U1, class U2> friend class WeakPtr;
-
-    /// Add a weak reference to the object pointed to.
-    void AddRef() noexcept
-    {
-        if (refCount_)
-            refCount_->AddRefWeak();
-    }
-
-    /// Release the weak reference. Delete the Refcount structure if necessary.
-    void ReleaseRef() noexcept
-    {
-        if (refCount_)
-        {
-            if (refCount_->ReleaseRefWeak() == 0)
-                RefCount::Free(refCount_);
-        }
-
-        ptr_ = nullptr;
-        refCount_ = nullptr;
-    }
-
-    /// Pointer to the object.
-    InterfaceType* ptr_{};
-    /// Pointer to the RefCount structure.
-    RefCount* refCount_{};
+    size_t ToHash() const noexcept { return size_t(uintptr_t(this->RefCountPtr())); }
 };
 
 /// Weak pointer alias with automatic type deduction. Can be used only for complete types!

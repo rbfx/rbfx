@@ -225,7 +225,7 @@
     %typemap(imtype) Urho3D::SharedPtr<TYPE, BASE> "global::System.IntPtr"               // pinvoke type
     %typemap(cstype) Urho3D::SharedPtr<TYPE, BASE> "$typemap(cstype, TYPE*)"             // c# type
     %typemap(in)     Urho3D::SharedPtr<TYPE, BASE> %{ $1 = Urho3D::SharedPtr<TYPE, BASE>(dynamic_cast<TYPE*>($input), $input); %}    // c to cpp
-    %typemap(out)    Urho3D::SharedPtr<TYPE, BASE> %{ $result = $1.GetRefCounted(); $1.Detach(); %}          // cpp to c
+    %typemap(out)    Urho3D::SharedPtr<TYPE, BASE> %{ $result = $1.GetMutableRefCounted(); $1.Detach(); %}          // cpp to c
     %typemap(out)    TYPE*                         %{ $result = $1;          %}          // cpp to c
     %typemap(csin)   Urho3D::SharedPtr<TYPE, BASE> "$csinput.GetInterfaceCPtr().Handle"      // convert C# to pinvoke
     %typemap(csout, excode=SWIGEXCODE) Urho3D::SharedPtr<TYPE, BASE> {                   // convert pinvoke to C#
@@ -253,7 +253,7 @@
         $*1_ltype $1Ref(dynamic_cast<TYPE*>($input), $input);
         $1 = &$1Ref;
     %}
-    %typemap(out) Urho3D::SharedPtr<TYPE, BASE> & %{ $result = $1->GetRefCounted(); %}             // cpp to c
+    %typemap(out) Urho3D::SharedPtr<TYPE, BASE> & %{ $result = $1->GetMutableRefCounted(); %}             // cpp to c
 %enddef
 
 // TODO: Fix autoswig script to output these as well.

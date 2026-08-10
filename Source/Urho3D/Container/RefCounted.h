@@ -137,10 +137,10 @@ public:
 
     /// Increment reference count. Can also be called outside of a SharedPtr for traditional reference counting. Returns new reference count value. Operation is atomic.
     /// @manualbind
-    int AddRef();
+    int AddRef() const;
     /// Decrement reference count and delete self if no more references. Can also be called outside of a SharedPtr for traditional reference counting. Returns new reference count value. Operation is atomic.
     /// @manualbind
-    int ReleaseRef();
+    int ReleaseRef() const;
     /// Return reference count.
     /// @property
     int Refs() const;
@@ -187,9 +187,9 @@ private:
 
 #if URHO3D_CSHARP
     /// A handle to script object that wraps this native instance.
-    void* scriptObject_{};
+    mutable void* scriptObject_{};
     /// GC Handle type (strong vs weak).
-    bool isScriptStrongRef_{};
+    mutable bool isScriptStrongRef_{};
 #endif
 };
 

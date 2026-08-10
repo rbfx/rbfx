@@ -20,9 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/PipelineStateTracker.h"
+#include "Urho3D/Graphics/PipelineStateTracker.h"
+
+#include "Urho3D/Core/AssertBase.h"
 
 namespace Urho3D
 {
@@ -64,7 +66,7 @@ void PipelineStateTracker::RemoveSubscriberReference(PipelineStateTracker* subsc
     if (!subscriber)
         return;
     auto iter = FindSubscriberIter(subscriber);
-    assert(iter != subscribers_.end());
+    URHO3D_ASSERT(iter != subscribers_.end());
     --iter->second;
     if (iter->second == 0)
         subscribers_.erase(iter);

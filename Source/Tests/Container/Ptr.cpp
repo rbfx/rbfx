@@ -28,20 +28,20 @@ namespace
 class TestFooInterface
 {
 public:
-    virtual void Foo() = 0;
+    virtual void Foo() const = 0;
 };
 
 class TestBarInterface
 {
 public:
-    virtual void Bar() = 0;
+    virtual void Bar() const = 0;
 };
 
 class TestObject : public RefCounted, public TestFooInterface, public TestBarInterface
 {
 public:
-    void Foo() override {}
-    void Bar() override {}
+    void Foo() const override {}
+    void Bar() const override {}
 };
 
 }
@@ -58,7 +58,7 @@ TEST_CASE("SharedPtr is converted between types")
 
     // Create base SharedPtrs
     SharedPtrT<RefCounted> refCountedPtr = objectPtr;
-    SharedPtrT<TestFooInterface> fooPtr = objectPtr;
+    SharedPtrT<const TestFooInterface> fooPtr = objectPtr;
     const SharedPtrT<TestBarInterface> barPtr = objectPtr;
 
     REQUIRE(objectPtr.Refs() == 4);
@@ -81,7 +81,7 @@ TEST_CASE("SharedPtr is converted between types")
 
     // Move SharedPtrs
     SharedPtrT<RefCounted> refCountedPtr2 = ea::move(refCountedPtr);
-    SharedPtrT<TestFooInterface> fooPtr2 = ea::move(fooPtr);
+    SharedPtrT<const TestFooInterface> fooPtr2 = ea::move(fooPtr);
 
     REQUIRE(objectPtr.Refs() == 4);
     REQUIRE(objectPtr.WeakRefs() == 0);
@@ -108,15 +108,16 @@ TEST_CASE("SharedPtr is converted between types")
 
     // Create WeakPtrs
     WeakPtrT<TestObject> weakObjectPtr = objectPtr;
-    WeakPtrT<TestFooInterface> weakFooPtr = fooPtr;
-    WeakPtrT<TestFooInterface> weakFooPtr2 = fooPtr2;
+    WeakPtrT<const TestFooInterface> weakFooPtr = fooPtr;
+    WeakPtrT<const TestFooInterface> weakFooPtr2 = fooPtr2;
     WeakPtrT<TestBarInterface> weakBarPtr = barPtr;
+    WeakPtrT<const TestBarInterface> weakConstBarPtr = barPtr;
 
     REQUIRE(objectPtr.Refs() == 4);
-    REQUIRE(objectPtr.WeakRefs() == 3);
+    REQUIRE(objectPtr.WeakRefs() == 4);
     REQUIRE(weakObjectPtr.Get() == objectPtr);
     REQUIRE(weakObjectPtr.Refs() == 4);
-    REQUIRE(weakObjectPtr.WeakRefs() == 3);
+    REQUIRE(weakObjectPtr.WeakRefs() == 4);
 
     REQUIRE(refCountedPtr == nullptr);
     REQUIRE(refCountedPtr.Refs() == 0);
@@ -124,7 +125,7 @@ TEST_CASE("SharedPtr is converted between types")
 
     REQUIRE(refCountedPtr2 == objectPtr);
     REQUIRE(refCountedPtr2.Refs() == 4);
-    REQUIRE(refCountedPtr2.WeakRefs() == 3);
+    REQUIRE(refCountedPtr2.WeakRefs() == 4);
 
     REQUIRE(fooPtr == nullptr);
     REQUIRE(fooPtr.Refs() == 0);
@@ -135,36 +136,55 @@ TEST_CASE("SharedPtr is converted between types")
 
     REQUIRE(fooPtr2 == objectPtr);
     REQUIRE(fooPtr2.Refs() == 4);
-    REQUIRE(fooPtr2.WeakRefs() == 3);
+    REQUIRE(fooPtr2.WeakRefs() == 4);
     REQUIRE(weakFooPtr2.Get() == objectPtr);
     REQUIRE(weakFooPtr2.Refs() == 4);
-    REQUIRE(weakFooPtr2.WeakRefs() == 3);
+    REQUIRE(weakFooPtr2.WeakRefs() == 4);
 
     REQUIRE(barPtr == objectPtr);
     REQUIRE(barPtr.Refs() == 4);
-    REQUIRE(barPtr.WeakRefs() == 3);
+    REQUIRE(barPtr.WeakRefs() == 4);
     REQUIRE(weakBarPtr.Get() == objectPtr);
     REQUIRE(weakBarPtr.Refs() == 4);
-    REQUIRE(weakBarPtr.WeakRefs() == 3);
+    REQUIRE(weakBarPtr.WeakRefs() == 4);
+    REQUIRE(weakConstBarPtr.Get() == objectPtr);
+    REQUIRE(weakConstBarPtr.Refs() == 4);
+    REQUIRE(weakConstBarPtr.WeakRefs() == 4);
 
     // Lock WeakPtrs
     WeakPtrT<RefCounted> weakRefCountedPtr = refCountedPtr;
     WeakPtrT<RefCounted> weakRefCountedPtr2 = refCountedPtr2;
     auto lockedObjectPtr = weakObjectPtr.Lock();
+    auto lockedFooPtr = weakFooPtr.Lock();
+    auto lockedFooPtr2 = weakFooPtr2.Lock();
+    auto lockedBarPtr = weakBarPtr.Lock();
+    auto lockedConstBarPtr = weakConstBarPtr.Lock();
     auto lockedRefCountedPtr = weakRefCountedPtr.Lock();
     auto lockedRefCountedPtr2 = weakRefCountedPtr2.Lock();
 
     REQUIRE(lockedObjectPtr == objectPtr);
-    REQUIRE(lockedObjectPtr.Refs() == 6);
-    REQUIRE(lockedObjectPtr.WeakRefs() == 4);
+    REQUIRE(lockedObjectPtr.Refs() == 9);
+    REQUIRE(lockedObjectPtr.WeakRefs() == 5);
+
+    REQUIRE(lockedFooPtr == nullptr);
+    REQUIRE(lockedFooPtr.Refs() == 0);
+    REQUIRE(lockedFooPtr.WeakRefs() == 0);
+
+    REQUIRE(lockedFooPtr2 == objectPtr);
+    REQUIRE(lockedFooPtr2.Refs() == 9);
+    REQUIRE(lockedFooPtr2.WeakRefs() == 5);
+
+    REQUIRE(lockedBarPtr == objectPtr);
+    REQUIRE(lockedBarPtr.Refs() == 9);
+    REQUIRE(lockedBarPtr.WeakRefs() == 5);
 
     REQUIRE(lockedRefCountedPtr == nullptr);
     REQUIRE(lockedRefCountedPtr.Refs() == 0);
     REQUIRE(lockedRefCountedPtr.WeakRefs() == 0);
 
     REQUIRE(lockedRefCountedPtr2 == objectPtr);
-    REQUIRE(lockedRefCountedPtr2.Refs() == 6);
-    REQUIRE(lockedRefCountedPtr2.WeakRefs() == 4);
+    REQUIRE(lockedRefCountedPtr2.Refs() == 9);
+    REQUIRE(lockedRefCountedPtr2.WeakRefs() == 5);
 }
 
 TEST_CASE("WeakPtr is consistent on expiration")
