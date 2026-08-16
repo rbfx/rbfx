@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "LinuxDevelopment",
+  "platform": "Linux",
+  "architecture": "x64",
+  "optimization": "Development",
+  "outputPath": "dist/linux-development",
+  "reproducible": true,
+  "assetFilters": [
+    { "pattern": "*", "exclude": false },
+    { "pattern": "Generated/*", "exclude": true },
+    { "pattern": "*.tmp", "exclude": true }
+  ]
+}

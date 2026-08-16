@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "name": "macOSShipping",
+  "platform": "macOS",
+  "architecture": "arm64",
+  "optimization": "Shipping",
+  "outputPath": "dist/macos-shipping",
+  "reproducible": true,
+  "assetFilters": [
+    { "pattern": "*", "exclude": false },
+    { "pattern": "Editor/*", "exclude": true },
+    { "pattern": "Tests/*", "exclude": true },
+    { "pattern": "Generated/*", "exclude": true },
+    { "pattern": "*.tmp", "exclude": true }
+  ]
+}

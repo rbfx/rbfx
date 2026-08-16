@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "name": "WindowsShipping",
+  "platform": "Windows",
+  "architecture": "x64",
+  "optimization": "Shipping",
+  "outputPath": "dist/windows-shipping",
+  "reproducible": true,
+  "assetFilters": [
+    { "pattern": "*", "exclude": false },
+    { "pattern": "Editor/*", "exclude": true },
+    { "pattern": "Tests/*", "exclude": true },
+    { "pattern": "Generated/*", "exclude": true },
+    { "pattern": "*.tmp", "exclude": true }
+  ]
+}

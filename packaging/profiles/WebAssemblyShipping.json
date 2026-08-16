@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "name": "WebAssemblyShipping",
+  "platform": "WebAssembly",
+  "architecture": "wasm32",
+  "optimization": "Shipping",
+  "outputPath": "dist/webassembly-shipping",
+  "reproducible": true,
+  "assetFilters": [
+    { "pattern": "*", "exclude": false },
+    { "pattern": "Editor/*", "exclude": true },
+    { "pattern": "Tests/*", "exclude": true },
+    { "pattern": "*.tmp", "exclude": true }
+  ]
+}
