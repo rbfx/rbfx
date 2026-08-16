@@ -30,6 +30,69 @@
 			}
 		},
 		{
+			"type": "TemporalUpscalingPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Temporal Upscaling"
+					},
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					}
+				]
+			}
+		},
+		{
+			"type": "VolumetricFogPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Volumetric Fog"
+					},
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					}
+				]
+			}
+		},
+		{
+			"type": "ScreenSpaceReflectionsPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Screen Space Reflections"
+					},
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					}
+				]
+			}
+		},
+		{
+			"type": "CascadedShadowMapsPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Lighting: Cascaded Shadow Maps"
+					}
+				]
+			}
+		},
+		{
 			"type": "BloomPass",
 			"value": {
 				"attributes": [

@@ -38,6 +38,21 @@ void FullScreenShaderPass::RegisterObject(Context* context)
     // clang-format on
 }
 
+void FullScreenShaderPass::ConfigureShader(const ea::string& shaderName, const ea::string& shaderDefines,
+    BlendMode blendMode, bool needReadWriteColorBuffer, bool needBilinearColorSampler,
+    bool disableOnDefaultParameters, const ea::string& parametersPrefix, const StringVariantMap& parameters)
+{
+    attributes_.shaderName_ = shaderName;
+    attributes_.shaderDefines_ = shaderDefines;
+    attributes_.blendMode_ = blendMode;
+    attributes_.needReadWriteColorBuffer_ = needReadWriteColorBuffer;
+    attributes_.needBilinearColorSampler_ = needBilinearColorSampler;
+    attributes_.disableOnDefaultParameters_ = disableOnDefaultParameters;
+    attributes_.parametersPrefix_ = parametersPrefix;
+    attributes_.parameters_ = parameters;
+    InvalidateCache();
+}
+
 void FullScreenShaderPass::CollectParameters(StringVariantMap& params) const
 {
     for (const auto& [name, defaultValue] : attributes_.parameters_)

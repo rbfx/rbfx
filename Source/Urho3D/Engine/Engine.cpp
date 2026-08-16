@@ -79,6 +79,7 @@
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../RenderPipeline/Passes/AmbientOcclusionPass.h"
 #include "../RenderPipeline/Passes/AutoExposurePass.h"
+#include "../RenderPipeline/Passes/AdvancedRenderPasses.h"
 #include "../RenderPipeline/Passes/BloomPass.h"
 #include "../RenderPipeline/Passes/FullScreenShaderPass.h"
 #include "../RenderPipeline/Passes/OutlineRenderPass.h"
@@ -280,6 +281,10 @@ Engine::Engine(Context* context) :
     RenderPass::RegisterObject(context_);
     AmbientOcclusionPass::RegisterObject(context_);
     AutoExposurePass::RegisterObject(context_);
+    TemporalUpscalingPass::RegisterObject(context_);
+    VolumetricFogPass::RegisterObject(context_);
+    ScreenSpaceReflectionsPass::RegisterObject(context_);
+    CascadedShadowMapsPass::RegisterObject(context_);
     BloomPass::RegisterObject(context_);
     FullScreenShaderPass::RegisterObject(context_);
     OutlineRenderPass::RegisterObject(context_);

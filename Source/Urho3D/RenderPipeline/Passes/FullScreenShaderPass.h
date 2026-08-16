@@ -29,6 +29,12 @@ public:
     void Render(const SharedRenderPassState& sharedState) override;
     /// @}
 
+protected:
+    /// Configure a specialized fullscreen pass while preserving the standard RenderPass serialization contract.
+    void ConfigureShader(const ea::string& shaderName, const ea::string& shaderDefines, BlendMode blendMode,
+        bool needReadWriteColorBuffer, bool needBilinearColorSampler, bool disableOnDefaultParameters,
+        const ea::string& parametersPrefix, const StringVariantMap& parameters);
+
 private:
     void InvalidateCache();
     void RestoreCache(const SharedRenderPassState& sharedState);
