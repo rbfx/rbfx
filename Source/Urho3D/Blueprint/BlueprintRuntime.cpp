@@ -18,6 +18,7 @@
 #include <Urho3D/Physics2D/PhysicsWorld2D.h>
 #include <Urho3D/Physics2D/RigidBody2D.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Scene/WorldPartition.h>
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/Log.h>
@@ -1704,6 +1705,66 @@ void BlueprintRuntime::RegisterBuiltinNodes()
         {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
          RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
          RuntimePin("delta", BlueprintPinKind::Input, BlueprintDataType::Vector2, Variant(Vector2::ZERO))});
+
+    RegisterDefinition(registry_, "World.LoadCell", "World/Streaming", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldPartition* partition = context.GetRuntime().GetWorldPartition();
+            if (!partition)
+            {
+                context.ReportError("BPWORLD001", "World.LoadCell requires a WorldPartition bound to the BlueprintRuntime.");
+                return;
+            }
+            const bool accepted = partition->RequestLoad(context.GetInput("cell").GetString());
+            context.SetOutput("queued", accepted);
+            if (accepted)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPWORLD002", partition->GetLastError());
+        }, "Request a named world-partition cell to load.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("cell", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("queued", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "World.UnloadCell", "World/Streaming", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldPartition* partition = context.GetRuntime().GetWorldPartition();
+            if (!partition)
+            {
+                context.ReportError("BPWORLD003", "World.UnloadCell requires a WorldPartition bound to the BlueprintRuntime.");
+                return;
+            }
+            const bool accepted = partition->RequestUnload(context.GetInput("cell").GetString());
+            context.SetOutput("queued", accepted);
+            if (accepted)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPWORLD004", partition->GetLastError());
+        }, "Request a named world-partition cell to unload.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("cell", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("queued", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "World.SetStreamingRadius", "World/Streaming", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldPartition* partition = context.GetRuntime().GetWorldPartition();
+            if (!partition)
+            {
+                context.ReportError("BPWORLD005", "World.SetStreamingRadius requires a WorldPartition bound to the BlueprintRuntime.");
+                return;
+            }
+            partition->SetStreamingRadius(context.GetInput("radius").GetFloat());
+            context.SetOutput("value", partition->GetStreamingRadius());
+            context.ContinueWith("then");
+        }, "Set the active world-partition streaming radius.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("radius", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(100.0f)),
+         RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Float)});
 }
 
 bool BlueprintRuntime::Execute(const BlueprintGraph& graph, BlueprintId entryNode,

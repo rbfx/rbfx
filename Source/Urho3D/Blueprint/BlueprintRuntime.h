@@ -14,6 +14,7 @@ namespace Urho3D
 class BlueprintRuntime;
 class Context;
 class Serializable;
+class WorldPartition;
 
 /// Runtime callback implemented by a built-in node or a user extension.
 using BlueprintNodeExecutor = ea::function<void(class BlueprintExecutionContext&)>;
@@ -111,6 +112,10 @@ public:
     /// Bind a scene node or component for reflected property nodes.
     void SetTargetObject(Serializable* object) { targetObject_ = object; }
     Serializable* GetTargetObject() const { return targetObject_; }
+    /// Bind a world-partition coordinator used by World.* Blueprint nodes.
+    void SetWorldPartition(WorldPartition* worldPartition) { worldPartition_ = worldPartition; }
+    /// Return the currently bound world-partition coordinator.
+    WorldPartition* GetWorldPartition() const { return worldPartition_; }
 
     /// Execute a graph from a node identifier.
     bool Execute(const BlueprintGraph& graph, BlueprintId entryNode,
@@ -200,6 +205,7 @@ private:
 
     BlueprintNodeRegistry registry_;
     Serializable* targetObject_{};
+    WorldPartition* worldPartition_{};
     StringVariantMap values_;
     StringVariantMap variables_;
     ea::vector<BlueprintDiagnostic> diagnostics_;
