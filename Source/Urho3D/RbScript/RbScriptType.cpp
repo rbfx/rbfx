@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "RbScriptType.h"
+#include "RbScriptReflection.h"
 
 namespace Urho3D
 {
@@ -194,6 +195,11 @@ const RbScriptFunctionSignature* RbScriptTypeRegistry::FindFunction(const ea::st
 bool RbScriptTypeRegistry::HasType(const ea::string& name) const
 {
     return Resolve(name).IsValid();
+}
+
+unsigned RbScriptTypeRegistry::RegisterFromReflection(Context* context)
+{
+    return RbScriptReflection::RegisterObjectReflection(context, *this);
 }
 
 RbScriptTypeChecker::RbScriptTypeChecker(const RbScriptTypeRegistry& registry)

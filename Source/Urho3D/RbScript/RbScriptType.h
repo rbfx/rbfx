@@ -8,6 +8,8 @@
 namespace Urho3D
 {
 
+class Context;
+
 enum class RbScriptTypeKind
 {
     Invalid,
@@ -68,6 +70,7 @@ public:
     RbScriptType Resolve(const ea::string& name) const;
     const RbScriptFunctionSignature* FindFunction(const ea::string& name) const;
     bool HasType(const ea::string& name) const;
+    unsigned RegisterFromReflection(Context* context);
 
 private:
     ea::unordered_map<ea::string, RbScriptType> types_;
