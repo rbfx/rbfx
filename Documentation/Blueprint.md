@@ -53,7 +53,15 @@ cmake --build build --target Tests -j2
 ctest --test-dir build --output-on-failure
 ```
 
-La validation réalisée sur cette branche a donné **193 tests réussis sur 193** dans la suite complète. Les tests Blueprint ciblés couvrent désormais 14 cas et 163 assertions : recherche, commentaires, fonctions paramétrées, sous-graphes sérialisés, runtime latent, événements d’entrée, migration de schéma, ressource native, registre, réflexion et débogage. La compilation de l’éditeur produit également `build-editor/bin/Debug/Editor`.
+La validation réalisée sur cette branche a donné **199 tests réussis sur 199** dans la suite complète. Les tests Blueprint ciblés couvrent désormais 14 cas et 163 assertions : recherche, commentaires, fonctions paramétrées, sous-graphes sérialisés, runtime latent, événements d’entrée, migration de schéma, ressource native, registre, réflexion et débogage. La compilation de l’éditeur produit également `build-editor/bin/Debug/Editor` sous Linux.
+
+## Compatibilité des plateformes
+
+Le code Blueprint est écrit en C++17 et utilise les APIs portables de rbfx, EASTL, JSONValue, Variant, ObjectReflection et Dear ImGui. Il ne contient pas de dépendance spécifique à Linux, Windows ou macOS dans le module Blueprint lui-même. La compatibilité de compilation est donc conçue pour les trois plateformes, sous réserve que les dépendances et les backends graphiques rbfx soient correctement configurés.
+
+La validation automatisée complète réalisée dans l’environnement disponible a été effectuée sous **Linux x86_64** : compilation de `Editor` et **199 tests réussis sur 199**. Windows et macOS n’ont pas été compilés dans cet environnement ; ils sont considérés comme des cibles portables à valider avec Visual Studio/MSVC pour Windows et Xcode/Clang pour macOS avant de les déclarer officiellement vérifiés.
+
+Les zones à contrôler lors d’une validation Windows/macOS sont la détection CMake des dépendances, les backends OpenGL/Vulkan/Metal ou DirectX sélectionnés par rbfx, les chemins de fichiers, les warnings de compilateur traités comme erreurs et l’intégration du Resource Browser.
 
 ## Utilisation dans l’éditeur
 
