@@ -6,6 +6,18 @@
 
 #include <Urho3D/Scene/Serializable.h>
 #include <Urho3D/Scene/Node.h>
+#include <Urho3D/Audio/Sound.h>
+#include <Urho3D/Audio/SoundSource.h>
+#include <Urho3D/Graphics/AnimationController.h>
+#include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/Texture.h>
+#include <Urho3D/Physics/PhysicsWorld.h>
+#include <Urho3D/Physics/RigidBody.h>
+#include <Urho3D/Physics2D/PhysicsWorld2D.h>
+#include <Urho3D/Physics2D/RigidBody2D.h>
+#include <Urho3D/Resource/ResourceCache.h>
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/Log.h>
@@ -122,6 +134,25 @@ ea::vector<BlueprintPin> BuiltinPins(const char* typeName)
     return pins;
 }
 
+ea::string GetNodeString(BlueprintExecutionContext& context, const char* propertyName, const char* inputName)
+{
+    const auto property = context.GetNode().properties.find(propertyName);
+    if (property != context.GetNode().properties.end() && property->second.GetType() == VAR_STRING)
+        return property->second.GetString();
+    return context.GetInput(inputName).GetString();
+}
+
+StringVariantMap CollectCallableInputs(BlueprintExecutionContext& context, const char* excludedName)
+{
+    StringVariantMap inputs;
+    for (const BlueprintPin& pin : context.GetNode().pins)
+    {
+        if (pin.kind == BlueprintPinKind::Input && pin.name != excludedName)
+            inputs[pin.name] = context.GetInput(pin.name);
+    }
+    return inputs;
+}
+
 Node* GetTargetNode(BlueprintExecutionContext& context)
 {
     Serializable* target = context.GetTargetObject();
@@ -131,6 +162,36 @@ Node* GetTargetNode(BlueprintExecutionContext& context)
         return nullptr;
     }
     return static_cast<Node*>(target);
+}
+
+Material* GetTargetMaterial(BlueprintExecutionContext& context, unsigned index)
+{
+    Node* node = GetTargetNode(context);
+    if (!node)
+        return nullptr;
+    StaticModel* model = node->GetComponent<StaticModel>();
+    if (!model)
+    {
+        context.ReportError("BPMAT001", "This material node requires a StaticModel or AnimatedModel target.");
+        return nullptr;
+    }
+    Material* material = model->GetMaterial(index);
+    if (!material)
+        context.ReportError("BPMAT002", "The requested material slot is not available on the target model.");
+    return material;
+}
+
+template <class T> T* GetTargetResource(BlueprintExecutionContext& context, const ea::string& name, const char* errorCode,
+    const char* errorMessage)
+{
+    Node* node = GetTargetNode(context);
+    if (!node)
+        return nullptr;
+    ResourceCache* cache = node->GetContext()->GetSubsystem<ResourceCache>();
+    T* resource = cache && !name.empty() ? cache->GetResource<T>(name) : nullptr;
+    if (!resource)
+        context.ReportError(errorCode, errorMessage);
+    return resource;
 }
 
 void RegisterDefinition(BlueprintNodeRegistry& registry, const char* typeName, const char* category,
@@ -265,6 +326,96 @@ void BlueprintExecutionContext::Delay(float seconds)
 BlueprintRuntime::BlueprintRuntime()
 {
     RegisterBuiltinNodes();
+}
+
+bool BlueprintRuntime::BindDelegate(const ea::string& delegateName, const ea::string& functionName)
+{
+    if (delegateName.empty() || functionName.empty())
+        return false;
+    delegateBindings_[delegateName] = functionName;
+    return true;
+}
+
+bool BlueprintRuntime::UnbindDelegate(const ea::string& delegateName)
+{
+    return delegateBindings_.erase(delegateName) != 0;
+}
+
+bool BlueprintRuntime::IsDelegateBound(const ea::string& delegateName) const
+{
+    return delegateBindings_.find(delegateName) != delegateBindings_.end();
+}
+
+bool BlueprintRuntime::InvokeDelegate(const BlueprintGraph& graph, const ea::string& delegateName,
+    const StringVariantMap& inputs, StringVariantMap* outputs)
+{
+    const auto binding = delegateBindings_.find(delegateName);
+    if (binding == delegateBindings_.end())
+        return false;
+    return ExecuteFunction(graph, binding->second, inputs, outputs);
+}
+
+bool BlueprintRuntime::InvokeMacro(const BlueprintGraph& graph, const ea::string& macroName,
+    const StringVariantMap& inputs, StringVariantMap* outputs)
+{
+    return ExecuteFunction(graph, macroName, inputs, outputs);
+}
+
+bool BlueprintRuntime::PlayTimeline(const BlueprintGraph& graph, const ea::string& timelineName)
+{
+    const BlueprintTimeline* timeline = graph.GetTimeline(timelineName);
+    if (!timeline)
+        return false;
+    timelineGraph_ = &graph;
+    timelinePositions_[timelineName] = 0.0f;
+    activeTimelines_.insert(timelineName);
+    return true;
+}
+
+bool BlueprintRuntime::PauseTimeline(const ea::string& timelineName)
+{
+    return activeTimelines_.erase(timelineName) != 0;
+}
+
+bool BlueprintRuntime::StopTimeline(const ea::string& timelineName)
+{
+    const bool existed = activeTimelines_.erase(timelineName) != 0 || timelinePositions_.find(timelineName) != timelinePositions_.end();
+    timelinePositions_.erase(timelineName);
+    if (activeTimelines_.empty())
+        timelineGraph_ = nullptr;
+    return existed;
+}
+
+bool BlueprintRuntime::IsTimelinePlaying(const ea::string& timelineName) const
+{
+    return activeTimelines_.find(timelineName) != activeTimelines_.end();
+}
+
+Variant BlueprintRuntime::GetTimelineValue(const BlueprintGraph& graph, const ea::string& timelineName) const
+{
+    const BlueprintTimeline* timeline = graph.GetTimeline(timelineName);
+    if (!timeline || timeline->keyframes.empty())
+        return Variant();
+    const auto position = timelinePositions_.find(timelineName);
+    const float time = position != timelinePositions_.end() ? position->second : 0.0f;
+    if (time <= timeline->keyframes.front().time)
+        return timeline->keyframes.front().value;
+    if (time >= timeline->keyframes.back().time)
+        return timeline->keyframes.back().value;
+    for (unsigned i = 1; i < timeline->keyframes.size(); ++i)
+    {
+        const BlueprintTimelineKeyframe& right = timeline->keyframes[i];
+        const BlueprintTimelineKeyframe& left = timeline->keyframes[i - 1];
+        if (time <= right.time)
+        {
+            const float span = right.time - left.time;
+            const float alpha = span > 0.0f ? (time - left.time) / span : 1.0f;
+            if (left.value.GetType() == VAR_FLOAT && right.value.GetType() == VAR_FLOAT)
+                return Lerp(left.value.GetFloat(), right.value.GetFloat(), alpha);
+            return alpha < 0.5f ? left.value : right.value;
+        }
+    }
+    return timeline->keyframes.back().value;
 }
 
 unsigned BlueprintRuntime::RegisterReflectedNodes(Context* context)
@@ -481,6 +632,909 @@ void BlueprintRuntime::RegisterBuiltinNodes()
         {
             context.SetOutput("result", context.GetInput("value").GetVector3() * context.GetInput("scale").GetFloat());
         }, "Scale a Vector3 by a scalar.");
+
+    RegisterDefinition(registry_, "Array.Make", "Collections/Array", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const Variant input = context.GetInput("values");
+            VariantVector result = input.GetVariantVector();
+            for (const BlueprintPin& pin : context.GetNode().pins)
+            {
+                if (pin.kind == BlueprintPinKind::Input && pin.name != "values")
+                    result.push_back(context.GetInput(pin.name));
+            }
+            context.SetOutput("array", Variant(result));
+        }, "Create a Variant array from an optional values pin and additional input pins.",
+        {RuntimePin("values", BlueprintPinKind::Input, BlueprintDataType::Array, Variant(VariantVector{})),
+         RuntimePin("array", BlueprintPinKind::Output, BlueprintDataType::Array)});
+
+    RegisterDefinition(registry_, "Array.Get", "Collections/Array", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const Variant arrayInput = context.GetInput("array");
+            const VariantVector& array = arrayInput.GetVariantVector();
+            const unsigned index = context.GetInput("index").GetUInt();
+            const bool valid = index < array.size();
+            context.SetOutput("valid", valid);
+            if (valid)
+                context.SetOutput("value", array[index]);
+        }, "Read an array element with a bounds check.",
+        {RuntimePin("array", BlueprintPinKind::Input, BlueprintDataType::Array, Variant(VariantVector{})),
+         RuntimePin("index", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Variant),
+         RuntimePin("valid", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Array.Set", "Collections/Array", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const Variant arrayInput = context.GetInput("array");
+            VariantVector result = arrayInput.GetVariantVector();
+            const unsigned index = context.GetInput("index").GetUInt();
+            if (index >= result.size())
+            {
+                context.ReportError("BP410", "Array.Set index is out of bounds.");
+                return;
+            }
+            result[index] = context.GetInput("value");
+            context.SetOutput("result", Variant(result));
+            context.ContinueWith("then");
+        }, "Assign an existing array element after checking its index.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("array", BlueprintPinKind::Input, BlueprintDataType::Array, Variant(VariantVector{})),
+         RuntimePin("index", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("value", BlueprintPinKind::Input, BlueprintDataType::Variant),
+         RuntimePin("result", BlueprintPinKind::Output, BlueprintDataType::Array)});
+
+    RegisterDefinition(registry_, "Array.Length", "Collections/Array", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const Variant arrayInput = context.GetInput("array");
+            context.SetOutput("length", static_cast<int>(arrayInput.GetVariantVector().size()));
+        }, "Return the number of elements in an array.",
+        {RuntimePin("array", BlueprintPinKind::Input, BlueprintDataType::Array, Variant(VariantVector{})),
+         RuntimePin("length", BlueprintPinKind::Output, BlueprintDataType::Int)});
+
+    RegisterDefinition(registry_, "Array.Add", "Collections/Array", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const Variant arrayInput = context.GetInput("array");
+            VariantVector result = arrayInput.GetVariantVector();
+            result.push_back(context.GetInput("value"));
+            context.SetOutput("result", Variant(result));
+            context.ContinueWith("then");
+        }, "Append one element to an array and return the new array.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("array", BlueprintPinKind::Input, BlueprintDataType::Array, Variant(VariantVector{})),
+         RuntimePin("value", BlueprintPinKind::Input, BlueprintDataType::Variant),
+         RuntimePin("result", BlueprintPinKind::Output, BlueprintDataType::Array)});
+
+    RegisterDefinition(registry_, "Array.Remove", "Collections/Array", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const Variant arrayInput = context.GetInput("array");
+            VariantVector result = arrayInput.GetVariantVector();
+            const unsigned index = context.GetInput("index").GetUInt();
+            if (index >= result.size())
+            {
+                context.ReportError("BP411", "Array.Remove index is out of bounds.");
+                return;
+            }
+            result.erase_at(index);
+            context.SetOutput("result", Variant(result));
+            context.ContinueWith("then");
+        }, "Remove an array element after checking its index.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("array", BlueprintPinKind::Input, BlueprintDataType::Array, Variant(VariantVector{})),
+         RuntimePin("index", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("result", BlueprintPinKind::Output, BlueprintDataType::Array)});
+
+    RegisterDefinition(registry_, "Map.Make", "Collections/Map", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            context.SetOutput("map", Variant(context.GetInput("entries").GetStringVariantMap()));
+        }, "Create a string-keyed Variant map from entries.",
+        {RuntimePin("entries", BlueprintPinKind::Input, BlueprintDataType::Map, Variant(StringVariantMap{})),
+         RuntimePin("map", BlueprintPinKind::Output, BlueprintDataType::Map)});
+
+    RegisterDefinition(registry_, "Map.Get", "Collections/Map", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const Variant mapInput = context.GetInput("map");
+            const StringVariantMap& map = mapInput.GetStringVariantMap();
+            const auto iter = map.find(context.GetInput("key").GetString());
+            const bool found = iter != map.end();
+            context.SetOutput("found", found);
+            if (found)
+                context.SetOutput("value", iter->second);
+        }, "Read a string-keyed map entry with a found flag.",
+        {RuntimePin("map", BlueprintPinKind::Input, BlueprintDataType::Map, Variant(StringVariantMap{})),
+         RuntimePin("key", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Variant),
+         RuntimePin("found", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Map.Set", "Collections/Map", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const Variant mapInput = context.GetInput("map");
+            StringVariantMap result = mapInput.GetStringVariantMap();
+            result[context.GetInput("key").GetString()] = context.GetInput("value");
+            context.SetOutput("result", Variant(result));
+            context.ContinueWith("then");
+        }, "Assign a string-keyed map entry and return the new map.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("map", BlueprintPinKind::Input, BlueprintDataType::Map, Variant(StringVariantMap{})),
+         RuntimePin("key", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("value", BlueprintPinKind::Input, BlueprintDataType::Variant),
+         RuntimePin("result", BlueprintPinKind::Output, BlueprintDataType::Map)});
+
+    RegisterDefinition(registry_, "Map.Contains", "Collections/Map", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const Variant mapInput = context.GetInput("map");
+            const StringVariantMap& map = mapInput.GetStringVariantMap();
+            context.SetOutput("contains", map.find(context.GetInput("key").GetString()) != map.end());
+        }, "Check whether a string-keyed map contains a key.",
+        {RuntimePin("map", BlueprintPinKind::Input, BlueprintDataType::Map, Variant(StringVariantMap{})),
+         RuntimePin("key", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("contains", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Struct.Make", "Types/Struct", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const auto type = context.GetNode().properties.find("structName");
+            if (type == context.GetNode().properties.end() || type->second.GetString().empty())
+            {
+                context.ReportError("BP420", "Struct.Make requires a structName property.");
+                return;
+            }
+            const BlueprintStructDef* definition = context.GetGraph().GetStruct(type->second.GetString());
+            if (!definition)
+            {
+                context.ReportError("BP421", "Struct.Make references an unknown Blueprint struct.");
+                return;
+            }
+            VariantMap result;
+            for (const BlueprintStructField& field : definition->fields)
+            {
+                const BlueprintPin* pin = nullptr;
+                for (const BlueprintPin& candidate : context.GetNode().pins)
+                {
+                    if (candidate.name == field.name)
+                    {
+                        pin = &candidate;
+                        break;
+                    }
+                }
+                result[StringHash(field.name)] = pin ? context.GetInput(field.name) : field.defaultValue;
+            }
+            context.SetOutput("value", Variant(result));
+        }, "Construct a user-defined Blueprint struct from its field pins.");
+
+    RegisterDefinition(registry_, "Struct.Get", "Types/Struct", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const auto field = context.GetNode().properties.find("fieldName");
+            if (field == context.GetNode().properties.end() || field->second.GetString().empty())
+            {
+                context.ReportError("BP422", "Struct.Get requires a fieldName property.");
+                return;
+            }
+            const Variant structInput = context.GetInput("struct");
+            const VariantMap& value = structInput.GetVariantMap();
+            const auto iter = value.find(StringHash(field->second.GetString()));
+            if (iter != value.end())
+                context.SetOutput("value", iter->second);
+        }, "Read a named field from a Blueprint struct value.",
+        {RuntimePin("struct", BlueprintPinKind::Input, BlueprintDataType::Struct, Variant(VariantMap{})),
+         RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Variant)});
+
+    RegisterDefinition(registry_, "Struct.Set", "Types/Struct", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const auto field = context.GetNode().properties.find("fieldName");
+            if (field == context.GetNode().properties.end() || field->second.GetString().empty())
+            {
+                context.ReportError("BP423", "Struct.Set requires a fieldName property.");
+                return;
+            }
+            const Variant structInput = context.GetInput("struct");
+            VariantMap result = structInput.GetVariantMap();
+            result[StringHash(field->second.GetString())] = context.GetInput("value");
+            context.SetOutput("result", Variant(result));
+            context.ContinueWith("then");
+        }, "Assign a named field and return the updated Blueprint struct.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("struct", BlueprintPinKind::Input, BlueprintDataType::Struct, Variant(VariantMap{})),
+         RuntimePin("value", BlueprintPinKind::Input, BlueprintDataType::Variant),
+         RuntimePin("result", BlueprintPinKind::Output, BlueprintDataType::Struct)});
+
+    RegisterDefinition(registry_, "Enum.Value", "Types/Enum", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const auto enumName = context.GetNode().properties.find("enumName");
+            const auto valueName = context.GetNode().properties.find("valueName");
+            if (enumName == context.GetNode().properties.end() || valueName == context.GetNode().properties.end())
+            {
+                context.ReportError("BP430", "Enum.Value requires enumName and valueName properties.");
+                return;
+            }
+            const BlueprintEnumDef* definition = context.GetGraph().GetEnum(enumName->second.GetString());
+            if (!definition)
+            {
+                context.ReportError("BP431", "Enum.Value references an unknown Blueprint enum.");
+                return;
+            }
+            for (const BlueprintEnumValue& value : definition->values)
+            {
+                if (value.name == valueName->second.GetString())
+                {
+                    context.SetOutput("value", value.value);
+                    return;
+                }
+            }
+            context.ReportError("BP432", "Enum.Value references an unknown enum constant.");
+        }, "Return a named constant from a user-defined Blueprint enum.",
+        {RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Enum)});
+
+    RegisterDefinition(registry_, "Delegate.Bind", "Events/Delegate", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string delegateName = GetNodeString(context, "delegateName", "delegate");
+            const ea::string functionName = GetNodeString(context, "functionName", "function");
+            const bool bound = context.GetRuntime().BindDelegate(delegateName, functionName);
+            context.SetOutput("bound", bound);
+            if (!bound)
+                context.ReportError("BP440", "Delegate.Bind requires non-empty delegate and function names.");
+            else
+                context.ContinueWith("then");
+        }, "Bind a delegate or signal to a Blueprint function.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("delegate", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("function", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("bound", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Delegate.Unbind", "Events/Delegate", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string delegateName = GetNodeString(context, "delegateName", "delegate");
+            const bool unbound = context.GetRuntime().UnbindDelegate(delegateName);
+            context.SetOutput("unbound", unbound);
+            if (unbound)
+                context.ContinueWith("then");
+        }, "Remove a delegate or signal binding.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("delegate", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("unbound", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Delegate.Call", "Events/Delegate", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string delegateName = GetNodeString(context, "delegateName", "delegate");
+            if (!context.GetGraph().GetDelegate(delegateName))
+            {
+                context.ReportError("BP441", "Delegate.Call references an unknown delegate.");
+                return;
+            }
+            const StringVariantMap inputs = CollectCallableInputs(context, "delegate");
+            const bool called = context.GetRuntime().InvokeDelegate(context.GetGraph(), delegateName, inputs);
+            context.SetOutput("called", called);
+            if (called)
+                context.ContinueWith("then");
+        }, "Invoke a bound delegate or signal function.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("delegate", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("called", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Delegate.IsBound", "Events/Delegate", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string delegateName = GetNodeString(context, "delegateName", "delegate");
+            context.SetOutput("bound", context.GetRuntime().IsDelegateBound(delegateName));
+        }, "Check whether a delegate or signal currently has a binding.",
+        {RuntimePin("delegate", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("bound", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Signal.Connect", "Events/Signal", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string signalName = GetNodeString(context, "signalName", "signal");
+            const ea::string functionName = GetNodeString(context, "functionName", "function");
+            const bool connected = context.GetRuntime().BindDelegate(signalName, functionName);
+            context.SetOutput("connected", connected);
+            if (connected)
+                context.ContinueWith("then");
+        }, "Connect a Signal to a Blueprint function.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("signal", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("function", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("connected", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Signal.Disconnect", "Events/Signal", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string signalName = GetNodeString(context, "signalName", "signal");
+            const bool disconnected = context.GetRuntime().UnbindDelegate(signalName);
+            context.SetOutput("disconnected", disconnected);
+            if (disconnected)
+                context.ContinueWith("then");
+        }, "Disconnect a Signal from its Blueprint function.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("signal", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("disconnected", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Signal.Emit", "Events/Signal", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string signalName = GetNodeString(context, "signalName", "signal");
+            if (!context.GetGraph().GetDelegate(signalName))
+            {
+                context.ReportError("BP442", "Signal.Emit references an unknown signal.");
+                return;
+            }
+            const StringVariantMap inputs = CollectCallableInputs(context, "signal");
+            const bool emitted = context.GetRuntime().InvokeDelegate(context.GetGraph(), signalName, inputs);
+            context.SetOutput("emitted", emitted);
+            if (emitted)
+                context.ContinueWith("then");
+        }, "Emit a connected Signal.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("signal", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("emitted", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Signal.IsConnected", "Events/Signal", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string signalName = GetNodeString(context, "signalName", "signal");
+            context.SetOutput("connected", context.GetRuntime().IsDelegateBound(signalName));
+        }, "Check whether a Signal has a connected Blueprint function.",
+        {RuntimePin("signal", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("connected", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Timeline.Play", "Animation/Timeline", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string timelineName = GetNodeString(context, "timelineName", "timeline");
+            const bool playing = context.GetRuntime().PlayTimeline(context.GetGraph(), timelineName);
+            context.SetOutput("playing", playing);
+            if (playing)
+                context.ContinueWith("then");
+        }, "Start a Blueprint timeline from its first keyframe.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("timeline", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("playing", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Timeline.Pause", "Animation/Timeline", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string timelineName = GetNodeString(context, "timelineName", "timeline");
+            const bool paused = context.GetRuntime().PauseTimeline(timelineName);
+            context.SetOutput("paused", paused);
+            if (paused)
+                context.ContinueWith("then");
+        }, "Pause a Blueprint timeline while preserving its current position.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("timeline", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("paused", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Timeline.Stop", "Animation/Timeline", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string timelineName = GetNodeString(context, "timelineName", "timeline");
+            const bool stopped = context.GetRuntime().StopTimeline(timelineName);
+            context.SetOutput("stopped", stopped);
+            if (stopped)
+                context.ContinueWith("then");
+        }, "Stop a Blueprint timeline and reset its position.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("timeline", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("stopped", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Timeline.GetValue", "Animation/Timeline", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string timelineName = GetNodeString(context, "timelineName", "timeline");
+            context.SetOutput("value", context.GetRuntime().GetTimelineValue(context.GetGraph(), timelineName));
+        }, "Read the interpolated value of a Blueprint timeline.",
+        {RuntimePin("timeline", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Variant)});
+
+    RegisterDefinition(registry_, "Macro.Call", "Flow/Macro", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const ea::string macroName = GetNodeString(context, "macroName", "macro");
+            if (!context.GetGraph().GetMacro(macroName))
+            {
+                context.ReportError("BP450", "Macro.Call references an unknown Blueprint macro.");
+                return;
+            }
+            const StringVariantMap inputs = CollectCallableInputs(context, "macro");
+            const bool called = context.GetRuntime().InvokeMacro(context.GetGraph(), macroName, inputs);
+            context.SetOutput("called", called);
+            if (called)
+                context.ContinueWith("then");
+        }, "Expand and execute a user-defined Blueprint macro.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("macro", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("called", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Physics.ApplyForce", "Gameplay/Physics", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            if (!node)
+                return;
+            const Vector3 force = context.GetInput("force").GetVector3();
+            if (RigidBody* body = node->GetComponent<RigidBody>())
+                body->ApplyForce(force);
+            else if (RigidBody2D* body2d = node->GetComponent<RigidBody2D>())
+                body2d->ApplyForceToCenter(Vector2(force.x_, force.y_), true);
+            else
+            {
+                context.ReportError("BPPHY001", "Physics.ApplyForce requires a RigidBody or RigidBody2D target.");
+                return;
+            }
+            context.ContinueWith("then");
+        }, "Apply a force to a 2D or 3D rigid body.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("force", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::ZERO))});
+
+    RegisterDefinition(registry_, "Physics.ApplyImpulse", "Gameplay/Physics", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            if (!node)
+                return;
+            const Vector3 impulse = context.GetInput("impulse").GetVector3();
+            if (RigidBody* body = node->GetComponent<RigidBody>())
+                body->ApplyImpulse(impulse);
+            else if (RigidBody2D* body2d = node->GetComponent<RigidBody2D>())
+                body2d->ApplyLinearImpulseToCenter(Vector2(impulse.x_, impulse.y_), true);
+            else
+            {
+                context.ReportError("BPPHY002", "Physics.ApplyImpulse requires a RigidBody or RigidBody2D target.");
+                return;
+            }
+            context.ContinueWith("then");
+        }, "Apply an impulse to a 2D or 3D rigid body.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("impulse", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::ZERO))});
+
+    RegisterDefinition(registry_, "Physics.SetVelocity", "Gameplay/Physics", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            if (!node)
+                return;
+            const Vector3 velocity = context.GetInput("velocity").GetVector3();
+            if (RigidBody* body = node->GetComponent<RigidBody>())
+                body->SetLinearVelocity(velocity);
+            else if (RigidBody2D* body2d = node->GetComponent<RigidBody2D>())
+                body2d->SetLinearVelocity(Vector2(velocity.x_, velocity.y_));
+            else
+            {
+                context.ReportError("BPPHY003", "Physics.SetVelocity requires a RigidBody or RigidBody2D target.");
+                return;
+            }
+            context.ContinueWith("then");
+        }, "Set linear velocity on a 2D or 3D rigid body.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("velocity", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::ZERO))});
+
+    RegisterDefinition(registry_, "Physics.GetVelocity", "Gameplay/Physics", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            if (!node)
+                return;
+            if (RigidBody* body = node->GetComponent<RigidBody>())
+                context.SetOutput("velocity", body->GetLinearVelocity());
+            else if (RigidBody2D* body2d = node->GetComponent<RigidBody2D>())
+            {
+                const Vector2 velocity = body2d->GetLinearVelocity();
+                context.SetOutput("velocity", Vector3(velocity.x_, velocity.y_, 0.0f));
+            }
+            else
+                context.ReportError("BPPHY004", "Physics.GetVelocity requires a RigidBody or RigidBody2D target.");
+        }, "Read linear velocity from a 2D or 3D rigid body.",
+        {RuntimePin("velocity", BlueprintPinKind::Output, BlueprintDataType::Vector3)});
+
+    RegisterDefinition(registry_, "Physics.RayCast", "Gameplay/Physics", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            if (!node || !node->GetScene())
+                return;
+            const Vector3 start = context.GetInput("start").GetVector3();
+            const Vector3 end = context.GetInput("end").GetVector3();
+            const unsigned mask = context.GetInput("collisionMask").GetUInt();
+            bool hit = false;
+            PhysicsRaycastResult result;
+            if (PhysicsWorld* world = node->GetScene()->GetComponent<PhysicsWorld>())
+            {
+                world->RaycastSingle(result, Ray(start, end - start), (end - start).Length(), mask);
+                hit = result.body_ != nullptr;
+                context.SetOutput("position", result.position_);
+                context.SetOutput("normal", result.normal_);
+                context.SetOutput("distance", result.distance_);
+            }
+            else if (PhysicsWorld2D* world2d = node->GetScene()->GetComponent<PhysicsWorld2D>())
+            {
+                PhysicsRaycastResult2D result2d;
+                world2d->RaycastSingle(result2d, Vector2(start.x_, start.y_), Vector2(end.x_, end.y_), mask);
+                hit = result2d.body_ != nullptr;
+                context.SetOutput("position", Vector3(result2d.position_.x_, result2d.position_.y_, 0.0f));
+                context.SetOutput("normal", Vector3(result2d.normal_.x_, result2d.normal_.y_, 0.0f));
+                context.SetOutput("distance", result2d.distance_);
+            }
+            else
+            {
+                context.ReportError("BPPHY005", "Physics.RayCast requires a PhysicsWorld or PhysicsWorld2D in the scene.");
+                return;
+            }
+            context.SetOutput("hit", hit);
+        }, "Raycast between two points in a 2D or 3D physics world.",
+        {RuntimePin("start", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::ZERO)),
+         RuntimePin("end", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::FORWARD)),
+         RuntimePin("collisionMask", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(M_MAX_UNSIGNED)),
+         RuntimePin("hit", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("position", BlueprintPinKind::Output, BlueprintDataType::Vector3),
+         RuntimePin("normal", BlueprintPinKind::Output, BlueprintDataType::Vector3),
+         RuntimePin("distance", BlueprintPinKind::Output, BlueprintDataType::Float)});
+
+    RegisterDefinition(registry_, "Physics.SetGravity", "Gameplay/Physics", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            if (!node || !node->GetScene())
+                return;
+            const Vector3 gravity = context.GetInput("gravity").GetVector3();
+            bool changed = false;
+            if (PhysicsWorld* world = node->GetScene()->GetComponent<PhysicsWorld>())
+            {
+                world->SetGravity(gravity);
+                changed = true;
+            }
+            if (PhysicsWorld2D* world2d = node->GetScene()->GetComponent<PhysicsWorld2D>())
+            {
+                world2d->SetGravity(Vector2(gravity.x_, gravity.y_));
+                changed = true;
+            }
+            if (!changed)
+            {
+                context.ReportError("BPPHY006", "Physics.SetGravity requires a physics world in the scene.");
+                return;
+            }
+            context.ContinueWith("then");
+        }, "Set gravity for the active 2D and/or 3D physics world.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("gravity", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3(0.0f, -9.81f, 0.0f)))});
+
+    RegisterDefinition(registry_, "Animation.Play", "Gameplay/Animation", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            AnimationController* controller = node ? node->GetComponent<AnimationController>() : nullptr;
+            if (!controller)
+            {
+                context.ReportError("BPANI001", "Animation.Play requires an AnimationController target.");
+                return;
+            }
+            const bool played = controller->Play(context.GetInput("animation").GetString(),
+                static_cast<unsigned char>(context.GetInput("layer").GetUInt()), context.GetInput("looped").GetBool());
+            context.SetOutput("played", played);
+            if (played)
+                context.ContinueWith("then");
+        }, "Play a named animation on an AnimationController.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("animation", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("layer", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0u)),
+         RuntimePin("looped", BlueprintPinKind::Input, BlueprintDataType::Bool, Variant(true)),
+         RuntimePin("played", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Animation.Stop", "Gameplay/Animation", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            AnimationController* controller = node ? node->GetComponent<AnimationController>() : nullptr;
+            if (!controller)
+            {
+                context.ReportError("BPANI002", "Animation.Stop requires an AnimationController target.");
+                return;
+            }
+            const bool stopped = controller->Stop(context.GetInput("animation").GetString());
+            context.SetOutput("stopped", stopped);
+            if (stopped)
+                context.ContinueWith("then");
+        }, "Stop a named animation.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("animation", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("stopped", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Animation.SetSpeed", "Gameplay/Animation", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            AnimationController* controller = node ? node->GetComponent<AnimationController>() : nullptr;
+            if (!controller)
+            {
+                context.ReportError("BPANI003", "Animation.SetSpeed requires an AnimationController target.");
+                return;
+            }
+            const bool changed = controller->SetSpeed(context.GetInput("animation").GetString(), context.GetInput("speed").GetFloat());
+            context.SetOutput("changed", changed);
+            if (changed)
+                context.ContinueWith("then");
+        }, "Set playback speed for a named animation.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("animation", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("speed", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(1.0f)),
+         RuntimePin("changed", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Animation.IsPlaying", "Gameplay/Animation", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            AnimationController* controller = node ? node->GetComponent<AnimationController>() : nullptr;
+            if (!controller)
+            {
+                context.ReportError("BPANI004", "Animation.IsPlaying requires an AnimationController target.");
+                return;
+            }
+            context.SetOutput("playing", controller->IsPlaying(context.GetInput("animation").GetString()));
+        }, "Check whether a named animation is playing.",
+        {RuntimePin("animation", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("playing", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Animation.GetTime", "Gameplay/Animation", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            AnimationController* controller = node ? node->GetComponent<AnimationController>() : nullptr;
+            if (!controller)
+            {
+                context.ReportError("BPANI005", "Animation.GetTime requires an AnimationController target.");
+                return;
+            }
+            context.SetOutput("time", controller->GetTime(context.GetInput("animation").GetString()));
+        }, "Read the current time of a named animation.",
+        {RuntimePin("animation", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("time", BlueprintPinKind::Output, BlueprintDataType::Float)});
+
+    RegisterDefinition(registry_, "Audio.Play", "Gameplay/Audio", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            SoundSource* source = node ? node->GetComponent<SoundSource>() : nullptr;
+            if (!source)
+            {
+                context.ReportError("BPAUD001", "Audio.Play requires a SoundSource target.");
+                return;
+            }
+            Sound* sound = GetTargetResource<Sound>(context, context.GetInput("sound").GetString(), "BPAUD002", "Audio.Play could not load the requested Sound resource.");
+            if (!sound)
+                return;
+            const float frequency = context.GetInput("frequency").GetFloat();
+            const float volume = context.GetInput("volume").GetFloat();
+            if (frequency > 0.0f)
+                source->Play(sound, frequency, volume);
+            else
+                source->Play(sound);
+            context.ContinueWith("then");
+        }, "Play a Sound resource through a SoundSource.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("sound", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("frequency", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(0.0f)),
+         RuntimePin("volume", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(1.0f))});
+
+    RegisterDefinition(registry_, "Audio.Stop", "Gameplay/Audio", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            SoundSource* source = node ? node->GetComponent<SoundSource>() : nullptr;
+            if (!source)
+            {
+                context.ReportError("BPAUD003", "Audio.Stop requires a SoundSource target.");
+                return;
+            }
+            source->Stop();
+            context.ContinueWith("then");
+        }, "Stop SoundSource playback.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard)});
+
+    RegisterDefinition(registry_, "Audio.SetVolume", "Gameplay/Audio", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            SoundSource* source = node ? node->GetComponent<SoundSource>() : nullptr;
+            if (!source)
+            {
+                context.ReportError("BPAUD004", "Audio.SetVolume requires a SoundSource target.");
+                return;
+            }
+            source->SetGain(context.GetInput("volume").GetFloat());
+            context.ContinueWith("then");
+        }, "Set SoundSource gain.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("volume", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(1.0f))});
+
+    RegisterDefinition(registry_, "Audio.SetPitch", "Gameplay/Audio", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            SoundSource* source = node ? node->GetComponent<SoundSource>() : nullptr;
+            if (!source)
+            {
+                context.ReportError("BPAUD005", "Audio.SetPitch requires a SoundSource target.");
+                return;
+            }
+            source->SetFrequency(context.GetInput("frequency").GetFloat());
+            context.ContinueWith("then");
+        }, "Set SoundSource playback frequency.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("frequency", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(44100.0f))});
+
+    RegisterDefinition(registry_, "Audio.IsPlaying", "Gameplay/Audio", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            SoundSource* source = node ? node->GetComponent<SoundSource>() : nullptr;
+            if (!source)
+            {
+                context.ReportError("BPAUD006", "Audio.IsPlaying requires a SoundSource target.");
+                return;
+            }
+            context.SetOutput("playing", source->IsPlaying());
+        }, "Check whether a SoundSource is currently playing.",
+        {RuntimePin("playing", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Camera.SetFOV", "Gameplay/Camera", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            Camera* camera = node ? node->GetComponent<Camera>() : nullptr;
+            if (!camera)
+            {
+                context.ReportError("BPCAM001", "Camera.SetFOV requires a Camera target.");
+                return;
+            }
+            camera->SetFov(context.GetInput("fov").GetFloat());
+            context.ContinueWith("then");
+        }, "Set camera vertical field of view in degrees.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("fov", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(45.0f))});
+
+    RegisterDefinition(registry_, "Camera.GetFOV", "Gameplay/Camera", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            Camera* camera = node ? node->GetComponent<Camera>() : nullptr;
+            if (!camera)
+            {
+                context.ReportError("BPCAM002", "Camera.GetFOV requires a Camera target.");
+                return;
+            }
+            context.SetOutput("fov", camera->GetFov());
+        }, "Read camera vertical field of view in degrees.",
+        {RuntimePin("fov", BlueprintPinKind::Output, BlueprintDataType::Float)});
+
+    RegisterDefinition(registry_, "Camera.SetOrtho", "Gameplay/Camera", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            Camera* camera = node ? node->GetComponent<Camera>() : nullptr;
+            if (!camera)
+            {
+                context.ReportError("BPCAM003", "Camera.SetOrtho requires a Camera target.");
+                return;
+            }
+            camera->SetOrthographic(context.GetInput("orthographic").GetBool());
+            context.ContinueWith("then");
+        }, "Enable or disable orthographic camera projection.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("orthographic", BlueprintPinKind::Input, BlueprintDataType::Bool, Variant(false))});
+
+    RegisterDefinition(registry_, "Camera.ScreenToWorld", "Gameplay/Camera", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            Camera* camera = node ? node->GetComponent<Camera>() : nullptr;
+            if (!camera)
+            {
+                context.ReportError("BPCAM004", "Camera.ScreenToWorld requires a Camera target.");
+                return;
+            }
+            context.SetOutput("world", camera->ScreenToWorldPoint(context.GetInput("screen").GetVector3()));
+        }, "Convert a screen-space point to world space.",
+        {RuntimePin("screen", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::ZERO)),
+         RuntimePin("world", BlueprintPinKind::Output, BlueprintDataType::Vector3)});
+
+    RegisterDefinition(registry_, "Camera.WorldToScreen", "Gameplay/Camera", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            Node* node = GetTargetNode(context);
+            Camera* camera = node ? node->GetComponent<Camera>() : nullptr;
+            if (!camera)
+            {
+                context.ReportError("BPCAM005", "Camera.WorldToScreen requires a Camera target.");
+                return;
+            }
+            context.SetOutput("screen", camera->WorldToScreenPoint(context.GetInput("world").GetVector3()));
+        }, "Convert a world-space point to screen space.",
+        {RuntimePin("world", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::ZERO)),
+         RuntimePin("screen", BlueprintPinKind::Output, BlueprintDataType::Vector3)});
+
+    RegisterDefinition(registry_, "Material.SetParameter", "Gameplay/Materials", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Material* material = GetTargetMaterial(context, context.GetInput("materialIndex").GetUInt());
+            if (!material)
+                return;
+            material->SetShaderParameter(context.GetInput("parameter").GetString(), context.GetInput("value"));
+            context.ContinueWith("then");
+        }, "Set a shader parameter on a model material.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("materialIndex", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0u)),
+         RuntimePin("parameter", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("value", BlueprintPinKind::Input, BlueprintDataType::Variant)});
+
+    RegisterDefinition(registry_, "Material.GetParameter", "Gameplay/Materials", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            Material* material = GetTargetMaterial(context, context.GetInput("materialIndex").GetUInt());
+            if (!material)
+                return;
+            context.SetOutput("value", material->GetShaderParameter(context.GetInput("parameter").GetString()));
+        }, "Read a shader parameter from a model material.",
+        {RuntimePin("materialIndex", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0u)),
+         RuntimePin("parameter", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Variant)});
+
+    RegisterDefinition(registry_, "Material.SetTexture", "Gameplay/Materials", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Material* material = GetTargetMaterial(context, context.GetInput("materialIndex").GetUInt());
+            if (!material)
+                return;
+            Texture* texture = GetTargetResource<Texture>(context, context.GetInput("texture").GetString(), "BPMAT003", "Material.SetTexture could not load the requested Texture resource.");
+            if (!texture)
+                return;
+            material->SetTexture(context.GetInput("slot").GetString(), texture);
+            context.ContinueWith("then");
+        }, "Assign a texture resource to a material texture slot.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("materialIndex", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0u)),
+         RuntimePin("slot", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("texture", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string()))});
 
     RegisterDefinition(registry_, "Variable.Get", "Variables", BlueprintExecutionMode::Pure,
         [](BlueprintExecutionContext& context)
@@ -700,11 +1754,22 @@ bool BlueprintRuntime::ExecuteEvent(const BlueprintGraph& graph, const ea::strin
 bool BlueprintRuntime::ExecuteFunction(const BlueprintGraph& ownerGraph, const ea::string& functionName,
     const StringVariantMap& inputs, StringVariantMap* outputs, unsigned maxSteps)
 {
+    BlueprintFunction macroAsFunction;
     const BlueprintFunction* function = ownerGraph.GetFunction(functionName);
     if (!function)
     {
-        AddError(BLUEPRINT_INVALID_ID, "BP201", Format("Blueprint function '{}' was not found.", functionName));
-        return false;
+        const BlueprintMacro* macro = ownerGraph.GetMacro(functionName);
+        if (!macro)
+        {
+            AddError(BLUEPRINT_INVALID_ID, "BP201", Format("Blueprint function or macro '{}' was not found.", functionName));
+            return false;
+        }
+        macroAsFunction.name = macro->name;
+        macroAsFunction.description = macro->description;
+        macroAsFunction.inputs = macro->inputs;
+        macroAsFunction.outputs = macro->outputs;
+        macroAsFunction.body = macro->body;
+        function = &macroAsFunction;
     }
     if (functionCallStack_.size() >= 32)
     {
@@ -924,10 +1989,48 @@ bool BlueprintRuntime::ExecuteNode(const BlueprintGraph& graph, BlueprintId node
 
 bool BlueprintRuntime::Tick(float deltaSeconds)
 {
-    if (!latentPending_ || !latentGraph_)
-        return false;
+    const float delta = Max(0.0f, deltaSeconds);
+    bool progressed = false;
+    if (timelineGraph_)
+    {
+        for (auto iter = activeTimelines_.begin(); iter != activeTimelines_.end();)
+        {
+            const ea::string timelineName = *iter;
+            const BlueprintTimeline* timeline = timelineGraph_->GetTimeline(timelineName);
+            if (!timeline)
+            {
+                timelinePositions_.erase(timelineName);
+                iter = activeTimelines_.erase(iter);
+                continue;
+            }
+            float& position = timelinePositions_[timelineName];
+            position += delta;
+            progressed = true;
+            if (position >= timeline->length)
+            {
+                if (timeline->looping)
+                {
+                    while (position >= timeline->length)
+                        position -= timeline->length;
+                    ++iter;
+                }
+                else
+                {
+                    position = timeline->length;
+                    iter = activeTimelines_.erase(iter);
+                }
+            }
+            else
+                ++iter;
+        }
+        if (activeTimelines_.empty())
+            timelineGraph_ = nullptr;
+    }
 
-    latentRemaining_ -= Max(0.0f, deltaSeconds);
+    if (!latentPending_ || !latentGraph_)
+        return progressed;
+
+    latentRemaining_ -= delta;
     if (latentRemaining_ > 0.0f)
         return true;
 

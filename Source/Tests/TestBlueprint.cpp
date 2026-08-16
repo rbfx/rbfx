@@ -300,6 +300,209 @@ TEST_CASE("Blueprint debugger continues to a breakpoint and exposes watches", "[
     REQUIRE_FALSE(runtime.HasBreakpoint(printNode));
 }
 
+TEST_CASE("Blueprint graph supports structs and enums with JSON round-trip", "[blueprint][types][serialization]")
+{
+    BlueprintGraph source("UserTypes");
+    BlueprintStructDef transform;
+    transform.name = "Transform2D";
+    transform.description = "A 2D transform value.";
+    BlueprintStructField position;
+    position.name = "position";
+    position.dataType = BlueprintDataType::Vector2;
+    position.defaultValue = Variant(Vector2::ZERO);
+    transform.fields.push_back(position);
+    BlueprintStructField scale;
+    scale.name = "scale";
+    scale.dataType = BlueprintDataType::Float;
+    scale.defaultValue = Variant(1.0f);
+    transform.fields.push_back(scale);
+    REQUIRE(source.AddStruct(transform));
+    REQUIRE(source.GetStruct("Transform2D") != nullptr);
+    REQUIRE(source.GetStruct("Transform2D")->fields.size() == 2);
+    BlueprintStructDef invalidStruct = transform;
+    invalidStruct.fields.push_back(position);
+    REQUIRE_FALSE(source.AddStruct(invalidStruct));
+
+    BlueprintEnumDef direction;
+    direction.name = "Direction";
+    direction.description = "Cardinal directions.";
+    direction.values.push_back({"North", 10});
+    direction.values.push_back({"South", 20});
+    REQUIRE(source.AddEnum(direction));
+    REQUIRE(source.GetEnum("Direction") != nullptr);
+    REQUIRE(source.GetEnum("Direction")->values[1].value == 20);
+    BlueprintEnumDef invalidEnum = direction;
+    invalidEnum.values.push_back({"North", 30});
+    REQUIRE_FALSE(source.AddEnum(invalidEnum));
+
+    BlueprintGraph restored;
+    ea::string error;
+    REQUIRE(restored.FromString(source.ToString(), &error));
+    REQUIRE(error.empty());
+    REQUIRE(restored.GetStructs().size() == 1);
+    REQUIRE(restored.GetStruct("Transform2D")->fields[1].defaultValue.GetFloat() == Catch::Approx(1.0f));
+    REQUIRE(restored.GetEnums().size() == 1);
+    REQUIRE(restored.GetEnum("Direction")->values[0].value == 10);
+    REQUIRE(source.ToString().find("\"schemaVersion\": 5") != ea::string::npos);
+}
+
+TEST_CASE("Blueprint runtime executes Array and Map nodes", "[blueprint][collections][runtime]")
+{
+    VariantVector initialArray;
+    initialArray.push_back(Variant(11));
+    initialArray.push_back(Variant(22));
+
+    BlueprintGraph arrayGraph("ArrayNodes");
+    const BlueprintId lengthNode = arrayGraph.AddNode("Array.Length", "Length");
+    AddPin(arrayGraph, lengthNode, "array", BlueprintPinKind::Input, BlueprintDataType::Array, Variant(initialArray));
+    AddPin(arrayGraph, lengthNode, "length", BlueprintPinKind::Output, BlueprintDataType::Int);
+    BlueprintRuntime arrayRuntime;
+    REQUIRE(arrayRuntime.Execute(arrayGraph, lengthNode));
+    REQUIRE(arrayRuntime.GetValue(lengthNode, "length").GetInt() == 2);
+
+    const BlueprintId getNode = arrayGraph.AddNode("Array.Get", "Get");
+    AddPin(arrayGraph, getNode, "array", BlueprintPinKind::Input, BlueprintDataType::Array, Variant(initialArray));
+    AddPin(arrayGraph, getNode, "index", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(1));
+    AddPin(arrayGraph, getNode, "value", BlueprintPinKind::Output, BlueprintDataType::Variant);
+    AddPin(arrayGraph, getNode, "valid", BlueprintPinKind::Output, BlueprintDataType::Bool);
+    REQUIRE(arrayRuntime.Execute(arrayGraph, getNode));
+    REQUIRE(arrayRuntime.GetValue(getNode, "valid").GetBool());
+    REQUIRE(arrayRuntime.GetValue(getNode, "value").GetInt() == 22);
+
+    StringVariantMap initialMap;
+    initialMap["health"] = Variant(100);
+    BlueprintGraph mapGraph("MapNodes");
+    const BlueprintId containsNode = mapGraph.AddNode("Map.Contains", "Contains");
+    AddPin(mapGraph, containsNode, "map", BlueprintPinKind::Input, BlueprintDataType::Map, Variant(initialMap));
+    AddPin(mapGraph, containsNode, "key", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string("health")));
+    AddPin(mapGraph, containsNode, "contains", BlueprintPinKind::Output, BlueprintDataType::Bool);
+    BlueprintRuntime mapRuntime;
+    REQUIRE(mapRuntime.Execute(mapGraph, containsNode));
+    REQUIRE(mapRuntime.GetValue(containsNode, "contains").GetBool());
+
+    const BlueprintId setNode = mapGraph.AddNode("Map.Set", "Set");
+    AddPin(mapGraph, setNode, "execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard);
+    AddPin(mapGraph, setNode, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(mapGraph, setNode, "map", BlueprintPinKind::Input, BlueprintDataType::Map, Variant(initialMap));
+    AddPin(mapGraph, setNode, "key", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string("mana")));
+    AddPin(mapGraph, setNode, "value", BlueprintPinKind::Input, BlueprintDataType::Variant, Variant(50));
+    AddPin(mapGraph, setNode, "result", BlueprintPinKind::Output, BlueprintDataType::Map);
+    REQUIRE(mapRuntime.Execute(mapGraph, setNode));
+    const Variant updatedMap = mapRuntime.GetValue(setNode, "result");
+    const StringVariantMap& updatedEntries = updatedMap.GetStringVariantMap();
+    REQUIRE(updatedEntries.find("mana") != updatedEntries.end());
+}
+
+TEST_CASE("Blueprint delegates and signals round trip and execute", "[blueprint][events]")
+{
+    BlueprintGraph graph("Events");
+    BlueprintDelegate delegate;
+    delegate.name = "OnDamaged";
+    delegate.description = "Called when damage is received";
+    BlueprintPin amount;
+    amount.name = "amount";
+    amount.displayName = "amount";
+    amount.kind = BlueprintPinKind::Input;
+    amount.dataType = BlueprintDataType::Int;
+    delegate.parameters.push_back(amount);
+    REQUIRE(graph.AddDelegate(delegate));
+    REQUIRE(graph.GetDelegate("OnDamaged") != nullptr);
+    REQUIRE(graph.GetDelegates().size() == 1);
+    REQUIRE_FALSE(graph.AddDelegate(BlueprintDelegate{"OnDamaged", "", {amount, amount}}));
+
+    BlueprintGraph restored;
+    ea::string error;
+    REQUIRE(restored.FromString(graph.ToString(), &error));
+    REQUIRE(error.empty());
+    REQUIRE(restored.GetDelegates().size() == 1);
+    REQUIRE(restored.GetDelegate("OnDamaged")->parameters.size() == 1);
+    REQUIRE(restored.ToJSON()["schemaVersion"].GetUInt() == 5);
+
+    BlueprintGraph body("DelegateBody");
+    const BlueprintId entry = body.AddNode("Function.Entry", "Entry");
+    const BlueprintId set = body.AddNode("Variable.Set", "Set Called");
+    const BlueprintId result = body.AddNode("Function.Return", "Return");
+    AddPin(body, entry, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(body, set, "execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard);
+    AddPin(body, set, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(body, set, "value", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(9));
+    AddPin(body, result, "execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard);
+    body.GetNode(set)->properties["variableName"] = Variant(ea::string("called"));
+    REQUIRE(body.AddLink(entry, "then", set, "execute") != BLUEPRINT_INVALID_ID);
+    REQUIRE(body.AddLink(set, "then", result, "execute") != BLUEPRINT_INVALID_ID);
+
+    BlueprintFunction function;
+    function.name = "HandleDamage";
+    function.body = body.ToString();
+    REQUIRE(graph.AddFunction(function));
+
+    const BlueprintId bind = graph.AddNode("Delegate.Bind", "Bind Damage");
+    graph.GetNode(bind)->properties["delegateName"] = Variant(ea::string("OnDamaged"));
+    graph.GetNode(bind)->properties["functionName"] = Variant(ea::string("HandleDamage"));
+    BlueprintRuntime runtime;
+    REQUIRE(runtime.Execute(graph, bind));
+    REQUIRE(runtime.IsDelegateBound("OnDamaged"));
+    REQUIRE(runtime.InvokeDelegate(graph, "OnDamaged"));
+    REQUIRE(runtime.GetVariable("called").GetInt() == 9);
+    REQUIRE(runtime.UnbindDelegate("OnDamaged"));
+    REQUIRE_FALSE(runtime.IsDelegateBound("OnDamaged"));
+}
+
+TEST_CASE("Blueprint timelines interpolate and macros execute", "[blueprint][timeline][macro]")
+{
+    BlueprintGraph graph("TimelineMacro");
+    BlueprintTimeline timeline;
+    timeline.name = "Progress";
+    timeline.length = 2.0f;
+    timeline.keyframes.push_back({0.0f, Variant(0.0f)});
+    timeline.keyframes.push_back({2.0f, Variant(10.0f)});
+    REQUIRE(graph.AddTimeline(timeline));
+    REQUIRE(graph.GetTimeline("Progress") != nullptr);
+    REQUIRE_FALSE(graph.AddTimeline(BlueprintTimeline{"Invalid", "", 1.0f, false, {{1.0f, Variant(1)}, {0.5f, Variant(2)}}}));
+
+    BlueprintGraph macroBody("MacroBody");
+    const BlueprintId entry = macroBody.AddNode("Function.Entry", "Entry");
+    const BlueprintId set = macroBody.AddNode("Variable.Set", "Set Macro Called");
+    const BlueprintId result = macroBody.AddNode("Function.Return", "Return");
+    AddPin(macroBody, entry, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(macroBody, set, "execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard);
+    AddPin(macroBody, set, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(macroBody, set, "value", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(17));
+    AddPin(macroBody, result, "execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard);
+    macroBody.GetNode(set)->properties["variableName"] = Variant(ea::string("macroCalled"));
+    REQUIRE(macroBody.AddLink(entry, "then", set, "execute") != BLUEPRINT_INVALID_ID);
+    REQUIRE(macroBody.AddLink(set, "then", result, "execute") != BLUEPRINT_INVALID_ID);
+
+    BlueprintMacro macro;
+    macro.name = "SetMacroCalled";
+    macro.body = macroBody.ToString();
+    REQUIRE(graph.AddMacro(macro));
+    REQUIRE(graph.GetMacro("SetMacroCalled") != nullptr);
+
+    BlueprintGraph restored;
+    ea::string error;
+    REQUIRE(restored.FromString(graph.ToString(), &error));
+    REQUIRE(error.empty());
+    REQUIRE(restored.GetTimelines().size() == 1);
+    REQUIRE(restored.GetTimelines()[0].keyframes.size() == 2);
+    REQUIRE(restored.GetMacros().size() == 1);
+
+    BlueprintRuntime runtime;
+    REQUIRE(runtime.PlayTimeline(graph, "Progress"));
+    REQUIRE(runtime.IsTimelinePlaying("Progress"));
+    REQUIRE(runtime.GetTimelineValue(graph, "Progress").GetFloat() == Catch::Approx(0.0f));
+    REQUIRE(runtime.Tick(1.0f));
+    REQUIRE(runtime.GetTimelineValue(graph, "Progress").GetFloat() == Catch::Approx(5.0f));
+    REQUIRE(runtime.Tick(1.0f));
+    REQUIRE_FALSE(runtime.IsTimelinePlaying("Progress"));
+    REQUIRE(runtime.GetTimelineValue(graph, "Progress").GetFloat() == Catch::Approx(10.0f));
+
+    const BlueprintId call = graph.AddNode("Macro.Call", "Call Macro");
+    graph.GetNode(call)->properties["macroName"] = Variant(ea::string("SetMacroCalled"));
+    REQUIRE(runtime.Execute(graph, call));
+    REQUIRE(runtime.GetVariable("macroCalled").GetInt() == 17);
+}
+
 TEST_CASE("Blueprint resource round trips through an rbfx stream", "[blueprint][resource]")
 {
     const auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
@@ -327,14 +530,17 @@ TEST_CASE("Blueprint schema versioning migrates legacy graphs", "[blueprint][ser
     BlueprintGraph graph("SchemaTwo");
     const ea::string serialized = graph.ToString();
     REQUIRE(serialized.find("schemaVersion") != ea::string::npos);
-    REQUIRE(serialized.find("\"format\": 2") != ea::string::npos);
+    REQUIRE(serialized.find("\"format\": 5") != ea::string::npos);
 
     BlueprintGraph legacy;
     ea::string error;
-    REQUIRE(legacy.FromString(R"({"format":1,"name":"Legacy","nodes":[{"id":1,"typeName":"Event.OnStart","title":"Start"}]})", &error));
+    REQUIRE(legacy.FromString(R"({"format":2,"name":"Legacy","nodes":[{"id":1,"typeName":"Event.OnStart","title":"Start"}]})", &error));
     REQUIRE(error.empty());
     REQUIRE(legacy.GetName() == "Legacy");
     REQUIRE(legacy.GetNodes().size() == 1);
+    REQUIRE(legacy.GetStructs().empty());
+    REQUIRE(legacy.GetEnums().empty());
+    REQUIRE(legacy.ToString().find("\"schemaVersion\": 5") != ea::string::npos);
 
     BlueprintGraph unsupported;
     REQUIRE_FALSE(unsupported.FromString(R"({"schemaVersion":999,"name":"Future"})", &error));
@@ -356,6 +562,37 @@ TEST_CASE("Blueprint builtin registry exposes complete node signatures", "[bluep
     REQUIRE(branch->pins.size() == 4);
     REQUIRE(runtime.GetRegistry().Find("Math.ClampFloat") != nullptr);
     REQUIRE(runtime.GetRegistry().Find("Event.OnMouseClick") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Delegate.Bind") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Delegate.Call") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Signal.Connect") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Signal.Emit") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Timeline.Play") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Timeline.GetValue") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Macro.Call") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Physics.ApplyForce") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Physics.ApplyImpulse") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Physics.SetVelocity") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Physics.GetVelocity") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Physics.RayCast") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Physics.SetGravity") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Animation.Play") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Animation.Stop") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Animation.SetSpeed") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Animation.IsPlaying") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Animation.GetTime") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Audio.Play") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Audio.Stop") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Audio.SetVolume") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Audio.SetPitch") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Audio.IsPlaying") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Camera.SetFOV") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Camera.GetFOV") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Camera.SetOrtho") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Camera.ScreenToWorld") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Camera.WorldToScreen") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Material.SetParameter") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Material.GetParameter") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Material.SetTexture") != nullptr);
 }
 
 TEST_CASE("Blueprint reflection maps rbfx variant types", "[blueprint][reflection]")

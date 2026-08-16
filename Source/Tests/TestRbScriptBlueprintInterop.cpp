@@ -82,6 +82,35 @@ TEST_CASE("rbscript VM invokes registered native bindings", "[rbscript][interop]
     REQUIRE_FALSE(vm.GetResult().booleanValue);
 }
 
+TEST_CASE("rbscript and Blueprint interop converts collections", "[blueprint][rbscript][interop][collections]")
+{
+    VariantVector arrayVariant;
+    arrayVariant.push_back(Variant(3));
+    arrayVariant.push_back(Variant(ea::string("ready")));
+    const RbScriptValue arrayValue = RbScriptBlueprintInterop::FromVariant(Variant(arrayVariant));
+    REQUIRE(arrayValue.kind == RbScriptValueKind::Array);
+    REQUIRE(arrayValue.arrayValue);
+    REQUIRE(arrayValue.arrayValue->values.size() == 2);
+    REQUIRE(arrayValue.arrayValue->values[0].integerValue == 3);
+
+    const Variant arrayRoundTrip = RbScriptBlueprintInterop::ToVariant(arrayValue);
+    REQUIRE(arrayRoundTrip.GetType() == VAR_VARIANTVECTOR);
+    REQUIRE(arrayRoundTrip.GetVariantVector().size() == 2);
+    REQUIRE(arrayRoundTrip.GetVariantVector()[1].GetString() == "ready");
+
+    StringVariantMap mapVariant;
+    mapVariant["score"] = Variant(42);
+    mapVariant["active"] = Variant(true);
+    const RbScriptValue mapValue = RbScriptBlueprintInterop::FromVariant(Variant(mapVariant));
+    REQUIRE(mapValue.kind == RbScriptValueKind::Map);
+    REQUIRE(mapValue.mapValue);
+    REQUIRE(mapValue.mapValue->values.at("score").integerValue == 42);
+
+    const Variant mapRoundTrip = RbScriptBlueprintInterop::ToVariant(mapValue);
+    REQUIRE(mapRoundTrip.GetType() == VAR_STRINGVARIANTMAP);
+    REQUIRE(mapRoundTrip.GetStringVariantMap().at("active").GetBool());
+}
+
 TEST_CASE("Blueprint invokes exported rbscript functions", "[blueprint][rbscript][interop]")
 {
     RbScriptTypeRegistry registry;

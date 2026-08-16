@@ -197,6 +197,26 @@ bool RbScriptTypeRegistry::HasType(const ea::string& name) const
     return Resolve(name).IsValid();
 }
 
+ea::vector<ea::string> RbScriptTypeRegistry::GetTypeNames() const
+{
+    ea::vector<ea::string> result;
+    result.reserve(types_.size() + aliases_.size());
+    for (const auto& entry : types_)
+        result.push_back(entry.first);
+    for (const auto& entry : aliases_)
+        result.push_back(entry.first);
+    return result;
+}
+
+ea::vector<ea::string> RbScriptTypeRegistry::GetFunctionNames() const
+{
+    ea::vector<ea::string> result;
+    result.reserve(functions_.size());
+    for (const auto& entry : functions_)
+        result.push_back(entry.first);
+    return result;
+}
+
 unsigned RbScriptTypeRegistry::RegisterFromReflection(Context* context)
 {
     return RbScriptReflection::RegisterObjectReflection(context, *this);
@@ -364,6 +384,40 @@ RbScriptType RbScriptTypeChecker::InferExpression(const RbScriptExpression& expr
         return expression.children.empty() ? RbScriptType{} : InferExpression(*expression.children.front());
 
     case RbScriptExpressionKind::Member:
+        if (!expression.children.empty())
+        {
+            const RbScriptType object = InferExpression(*expression.children.front());
+            if (object.kind == RbScriptTypeKind::Array && expression.text == "length")
+                return registry_.Resolve("i32");
+        }
+        return registry_.Resolve("Variant");
+
+    case RbScriptExpressionKind::ArrayLiteral:
+    {
+        RbScriptType element = registry_.Resolve("Variant");
+        if (!expression.children.empty())
+            element = InferExpression(*expression.children.front());
+        return registry_.Resolve("Array<" + element.ToString() + ">");
+    }
+
+    case RbScriptExpressionKind::MapLiteral:
+    {
+        RbScriptType value = registry_.Resolve("Variant");
+        for (unsigned i = 1; i < expression.children.size(); i += 2)
+            value = InferExpression(*expression.children[i]);
+        return registry_.Resolve("Map<String, " + value.ToString() + ">");
+    }
+
+    case RbScriptExpressionKind::Index:
+        if (expression.children.size() == 2)
+        {
+            const RbScriptType container = InferExpression(*expression.children.front());
+            InferExpression(*expression.children.back());
+            if (container.kind == RbScriptTypeKind::Array)
+                return registry_.Resolve(container.elementType.empty() ? "Variant" : container.elementType);
+            if (container.kind == RbScriptTypeKind::Map)
+                return registry_.Resolve(container.elementType.empty() ? "Variant" : container.elementType);
+        }
         return registry_.Resolve("Variant");
 
     case RbScriptExpressionKind::Call:

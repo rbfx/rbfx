@@ -410,6 +410,7 @@ void BlueprintTab::RenderContent()
     if (ui::BeginChild("##BlueprintMain", ui::GetContentRegionAvail(), false))
     {
         RenderNodePalette();
+        RenderTypePanels();
         RenderGraphCanvas();
         RenderWatchWindow();
         ui::Separator();
@@ -789,6 +790,252 @@ void BlueprintTab::RenderDiagnostics()
     for (const BlueprintDiagnostic& diagnostic : runtime_.GetDiagnostics())
     {
         ui::TextColored({1.0f, 0.65f, 0.25f, 1.0f}, "Runtime [%s] %s", diagnostic.code.c_str(), diagnostic.message.c_str());
+    }
+}
+
+void BlueprintTab::RenderTypePanels()
+{
+    if (!showTypePanels_)
+        return;
+
+    if (!ui::CollapsingHeader("Blueprint Types", ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
+    ui::Text("Structs");
+    ui::InputText("New struct", &newStructName_);
+    ui::SameLine();
+    if (ui::Button("Add struct"))
+    {
+        BlueprintStructDef structure;
+        structure.name = newStructName_.empty() ? Format("Struct{}", graph_.GetStructs().size() + 1) : newStructName_;
+        structure.description = "User-defined Blueprint struct";
+        BlueprintStructField field;
+        field.name = "Value";
+        field.dataType = BlueprintDataType::Variant;
+        structure.fields.push_back(field);
+        BeginGraphEdit();
+        if (graph_.AddStruct(structure))
+            CommitGraphEdit(Format("Added struct {}", structure.name));
+        else
+            graphEditSnapshot_.clear();
+        newStructName_.clear();
+    }
+
+    for (const BlueprintStructDef& structure : graph_.GetStructs())
+    {
+        ui::PushID(structure.name.c_str());
+        if (ui::TreeNode(structure.name.c_str()))
+        {
+            ui::TextWrapped("%s", structure.description.c_str());
+            for (const BlueprintStructField& field : structure.fields)
+                ui::BulletText("%s : %s", field.name.c_str(), ToString(field.dataType).c_str());
+            if (ui::SmallButton("Add field"))
+            {
+                BeginGraphEdit();
+                if (BlueprintStructDef* editable = graph_.GetStruct(structure.name))
+                {
+                    BlueprintStructField field;
+                    field.name = Format("Field{}", editable->fields.size() + 1);
+                    field.dataType = BlueprintDataType::Variant;
+                    editable->fields.push_back(field);
+                    CommitGraphEdit(Format("Updated struct {}", structure.name));
+                }
+                else
+                    graphEditSnapshot_.clear();
+            }
+            ui::SameLine();
+            if (ui::SmallButton("Remove struct"))
+            {
+                BeginGraphEdit();
+                if (graph_.RemoveStruct(structure.name))
+                    CommitGraphEdit(Format("Removed struct {}", structure.name));
+                else
+                    graphEditSnapshot_.clear();
+                ui::TreePop();
+                ui::PopID();
+                break;
+            }
+            ui::TreePop();
+        }
+        ui::PopID();
+    }
+
+    ui::Separator();
+    ui::Text("Enums");
+    ui::InputText("New enum", &newEnumName_);
+    ui::SameLine();
+    if (ui::Button("Add enum"))
+    {
+        BlueprintEnumDef enumeration;
+        enumeration.name = newEnumName_.empty() ? Format("Enum{}", graph_.GetEnums().size() + 1) : newEnumName_;
+        enumeration.description = "User-defined Blueprint enum";
+        enumeration.values.push_back({"None", 0});
+        BeginGraphEdit();
+        if (graph_.AddEnum(enumeration))
+            CommitGraphEdit(Format("Added enum {}", enumeration.name));
+        else
+            graphEditSnapshot_.clear();
+        newEnumName_.clear();
+    }
+
+    for (const BlueprintEnumDef& enumeration : graph_.GetEnums())
+    {
+        ui::PushID(enumeration.name.c_str());
+        if (ui::TreeNode(enumeration.name.c_str()))
+        {
+            ui::TextWrapped("%s", enumeration.description.c_str());
+            for (const BlueprintEnumValue& value : enumeration.values)
+                ui::BulletText("%s = %d", value.name.c_str(), value.value);
+            if (ui::SmallButton("Add enum value"))
+            {
+                BeginGraphEdit();
+                if (BlueprintEnumDef* editable = graph_.GetEnum(enumeration.name))
+                {
+                    BlueprintEnumValue value;
+                    value.name = Format("Value{}", editable->values.size());
+                    value.value = static_cast<int>(editable->values.size());
+                    editable->values.push_back(value);
+                    CommitGraphEdit(Format("Updated enum {}", enumeration.name));
+                }
+                else
+                    graphEditSnapshot_.clear();
+            }
+            ui::SameLine();
+            if (ui::SmallButton("Remove enum"))
+            {
+                BeginGraphEdit();
+                if (graph_.RemoveEnum(enumeration.name))
+                    CommitGraphEdit(Format("Removed enum {}", enumeration.name));
+                else
+                    graphEditSnapshot_.clear();
+                ui::TreePop();
+                ui::PopID();
+                break;
+            }
+            ui::TreePop();
+        }
+        ui::PopID();
+    }
+
+    ui::Separator();
+    ui::Text("Delegates and signals");
+    ui::InputText("New delegate", &newDelegateName_);
+    ui::SameLine();
+    if (ui::Button("Add delegate"))
+    {
+        BlueprintDelegate delegate;
+        delegate.name = newDelegateName_.empty() ? Format("Signal{}", graph_.GetDelegates().size() + 1) : newDelegateName_;
+        delegate.description = "Blueprint delegate or signal";
+        BlueprintPin parameter;
+        parameter.name = "Value";
+        parameter.displayName = parameter.name;
+        parameter.kind = BlueprintPinKind::Input;
+        parameter.dataType = BlueprintDataType::Variant;
+        delegate.parameters.push_back(parameter);
+        BeginGraphEdit();
+        if (graph_.AddDelegate(delegate))
+            CommitGraphEdit(Format("Added delegate {}", delegate.name));
+        else
+            graphEditSnapshot_.clear();
+        newDelegateName_.clear();
+    }
+
+    for (const BlueprintDelegate& delegate : graph_.GetDelegates())
+    {
+        ui::PushID(delegate.name.c_str());
+        ui::BulletText("%s (%u parameter(s))", delegate.name.c_str(), delegate.parameters.size());
+        ui::SameLine();
+        if (ui::SmallButton("Add parameter"))
+        {
+            BeginGraphEdit();
+            if (BlueprintDelegate* editable = graph_.GetDelegate(delegate.name))
+            {
+                BlueprintPin parameter;
+                parameter.name = Format("Param{}", editable->parameters.size() + 1);
+                parameter.displayName = parameter.name;
+                parameter.kind = BlueprintPinKind::Input;
+                parameter.dataType = BlueprintDataType::Variant;
+                editable->parameters.push_back(parameter);
+                CommitGraphEdit(Format("Updated delegate {}", delegate.name));
+            }
+            else
+                graphEditSnapshot_.clear();
+        }
+        ui::SameLine();
+        if (ui::SmallButton("Remove delegate"))
+        {
+            BeginGraphEdit();
+            if (graph_.RemoveDelegate(delegate.name))
+                CommitGraphEdit(Format("Removed delegate {}", delegate.name));
+            else
+                graphEditSnapshot_.clear();
+            ui::PopID();
+            break;
+        }
+        ui::PopID();
+    }
+
+    ui::Separator();
+    ui::Text("Timelines");
+    ui::InputText("New timeline", &newTimelineName_);
+    ui::SameLine();
+    if (ui::Button("Add timeline"))
+    {
+        BlueprintTimeline timeline;
+        timeline.name = newTimelineName_.empty() ? Format("Timeline{}", graph_.GetTimelines().size() + 1) : newTimelineName_;
+        timeline.description = "Blueprint timeline";
+        timeline.keyframes.push_back({0.0f, Variant(0.0f)});
+        timeline.keyframes.push_back({1.0f, Variant(1.0f)});
+        BeginGraphEdit();
+        if (graph_.AddTimeline(timeline))
+            CommitGraphEdit(Format("Added timeline {}", timeline.name));
+        else
+            graphEditSnapshot_.clear();
+        newTimelineName_.clear();
+    }
+
+    for (const BlueprintTimeline& timeline : graph_.GetTimelines())
+    {
+        ui::PushID(timeline.name.c_str());
+        if (ui::TreeNode(timeline.name.c_str()))
+        {
+            BlueprintTimeline* editable = graph_.GetTimeline(timeline.name);
+            if (editable)
+            {
+                BeginGraphEdit();
+                bool changed = ui::DragFloat("Length", &editable->length, 0.01f, 0.01f, 3600.0f);
+                changed = ui::Checkbox("Looping", &editable->looping) || changed;
+                for (unsigned i = 0; i < editable->keyframes.size(); ++i)
+                {
+                    ui::PushID(static_cast<int>(i));
+                    changed = ui::DragFloat("Time", &editable->keyframes[i].time, 0.01f, 0.0f, editable->length) || changed;
+                    ui::SameLine();
+                    ui::Text("Value: %s", editable->keyframes[i].value.ToString().c_str());
+                    ui::PopID();
+                }
+                if (ui::SmallButton("Add keyframe"))
+                {
+                    editable->keyframes.push_back({editable->length, Variant(0.0f)});
+                    changed = true;
+                }
+                ui::SameLine();
+                if (ui::SmallButton("Remove timeline"))
+                {
+                    graph_.RemoveTimeline(timeline.name);
+                    changed = true;
+                    CommitGraphEdit(Format("Removed timeline {}", timeline.name));
+                    ui::TreePop();
+                    ui::PopID();
+                    break;
+                }
+                if (changed)
+                    CommitGraphEdit(Format("Updated timeline {}", timeline.name));
+                else
+                    graphEditSnapshot_.clear();
+            }
+            ui::TreePop();
+        }
+        ui::PopID();
     }
 }
 

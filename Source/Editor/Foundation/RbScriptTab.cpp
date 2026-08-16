@@ -123,6 +123,7 @@ RbScriptTab::RbScriptTab(Context* context)
 {
     BindHotkey(Hotkey_Compile, &RbScriptTab::CompileActiveDocument);
     BindHotkey(Hotkey_Save, &RbScriptTab::SaveCurrentResource);
+    typeRegistry_.RegisterFromReflection(context);
 }
 
 bool RbScriptTab::CanOpenResource(const ResourceFileDescriptor& desc)
@@ -168,6 +169,8 @@ void RbScriptTab::RefreshDocument(const ea::string& resourceName, bool compile)
         return;
 
     Document& document = iter->second;
+    document.debugVm.StopDebug();
+    document.chunk = RbScriptChunk{};
     RbScriptLexer lexer(document.source, resourceName);
     document.tokens = lexer.Tokenize();
     document.diagnostics = lexer.GetDiagnostics();
@@ -178,6 +181,8 @@ void RbScriptTab::RefreshDocument(const ea::string& resourceName, bool compile)
         RbScriptResource resource(context_);
         document.compiled = resource.CompileSource(document.source, resourceName);
         document.diagnostics = resource.GetDiagnostics();
+        if (document.compiled)
+            document.chunk = resource.GetChunk();
     }
 
     if (resourceName == GetActiveResourceName())
@@ -281,6 +286,71 @@ void RbScriptTab::RenderDiagnostics(const Document& document)
     }
 }
 
+void RbScriptTab::RenderDebugPanel(Document& document)
+{
+    ui::Separator();
+    ui::Text("Debugger");
+    if (!document.compiled)
+    {
+        ui::TextDisabled("Compile the document before starting a debug session.");
+        return;
+    }
+
+    if (ui::Button("Start"))
+    {
+        if (document.debugVm.BeginDebug(document.chunk))
+            status_ = "rbscript debug session started";
+        else
+            status_ = "rbscript debug session failed";
+    }
+    ui::SameLine();
+    if (ui::Button("Step") && document.debugVm.IsDebugging())
+    {
+        document.debugVm.StepDebug();
+        status_ = document.debugVm.HadError() ? "rbscript debug step failed" : "rbscript debug step complete";
+    }
+    ui::SameLine();
+    if (ui::Button("Continue") && document.debugVm.IsDebugging())
+    {
+        document.debugVm.ContinueDebug();
+        status_ = document.debugVm.HadError() ? "rbscript debug continue failed" : "rbscript debug continued";
+    }
+    ui::SameLine();
+    if (ui::Button("Stop") && document.debugVm.IsDebugging())
+    {
+        document.debugVm.StopDebug();
+        status_ = "rbscript debug session stopped";
+    }
+
+    int line = static_cast<int>(breakpointLine_);
+    ui::SetNextItemWidth(100.0f);
+    if (ui::InputInt("Breakpoint line", &line, 1, 10))
+        breakpointLine_ = line > 0 ? static_cast<unsigned>(line) : 1;
+    ui::SameLine();
+    if (ui::SmallButton("Add breakpoint"))
+        document.debugVm.SetBreakpoint(breakpointLine_);
+    ui::SameLine();
+    if (ui::SmallButton("Remove breakpoint"))
+        document.debugVm.RemoveBreakpoint(breakpointLine_);
+
+    if (document.debugVm.IsDebugging())
+    {
+        ui::Text("State: %s | line: %u", document.debugVm.IsDebugPaused() ? "paused" : "running",
+            document.debugVm.GetCurrentLine());
+        if (ui::BeginChild("##RbScriptDebugState", ImVec2{0.0f, 145.0f}, true))
+        {
+            ui::Text("Call stack");
+            for (const ea::string& frame : document.debugVm.GetCallStack())
+                ui::BulletText("%s", frame.c_str());
+            ui::Separator();
+            ui::Text("Locals");
+            for (const auto& local : document.debugVm.GetLocals())
+                ui::Text("%s = %s", local.first.c_str(), local.second.ToString().c_str());
+            ui::EndChild();
+        }
+    }
+}
+
 void RbScriptTab::RenderTokenPreview(const Document& document)
 {
     if (!showPreview_)
@@ -318,21 +388,28 @@ void RbScriptTab::RenderAutocomplete(const Document& document)
     if (searchText_.empty())
         return;
 
-    static const char* suggestions[] = {
+    ea::vector<ea::string> suggestions = {
         "module", "use", "script", "fn", "on", "async", "let", "var", "const",
-        "if", "else", "while", "return", "emit", "Vector2", "Vector3", "Quaternion",
-        "Color", "Node", "Component", "Resource", "Variant", "Array", "Map", "Optional",
+        "if", "else", "while", "return", "emit", "await", "match", "break", "continue",
+        "Vector2", "Vector3", "Quaternion", "Color", "Node", "Component", "Resource", "Variant",
+        "Array", "Map", "Optional",
     };
+    for (const ea::string& name : typeRegistry_.GetTypeNames())
+        suggestions.push_back(name);
+    for (const ea::string& name : typeRegistry_.GetFunctionNames())
+        suggestions.push_back(name);
 
     ui::Text("Suggestions");
-    for (const char* suggestion : suggestions)
+    unsigned shown = 0;
+    for (const ea::string& suggestion : suggestions)
     {
-        if (ea::string(suggestion).find(searchText_) != ea::string::npos)
-        {
-            ui::SameLine();
-            if (ui::SmallButton(suggestion))
-                status_ = Format("Suggestion: {}", suggestion);
-        }
+        if (suggestion.find(searchText_) == ea::string::npos)
+            continue;
+        if (shown++ >= 48)
+            break;
+        ui::SameLine();
+        if (ui::SmallButton(suggestion.c_str()))
+            status_ = Format("Suggestion: {}", suggestion);
     }
 }
 
@@ -367,6 +444,7 @@ void RbScriptTab::RenderContent()
     RenderAutocomplete(*document);
     RenderTokenPreview(*document);
     RenderDiagnostics(*document);
+    RenderDebugPanel(*document);
 }
 
 void RbScriptTab::RenderToolbar()

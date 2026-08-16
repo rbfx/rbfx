@@ -58,6 +58,8 @@ public:
     /// Return the current graph and node.
     const BlueprintGraph& GetGraph() const { return graph_; }
     const BlueprintNode& GetNode() const { return node_; }
+    /// Return the owning runtime for advanced node integrations.
+    BlueprintRuntime& GetRuntime() { return runtime_; }
 
     /// Read a connected input, falling back to the pin's default value.
     Variant GetInput(const ea::string& pinName) const;
@@ -161,6 +163,27 @@ public:
     /// Return the active Blueprint function call stack.
     const ea::vector<ea::string>& GetCallStack() const { return functionCallStack_; }
     const ea::vector<BlueprintDiagnostic>& GetDiagnostics() const { return diagnostics_; }
+
+    /// Bind a delegate or signal name to a Blueprint function name.
+    bool BindDelegate(const ea::string& delegateName, const ea::string& functionName);
+    /// Remove a delegate or signal binding.
+    bool UnbindDelegate(const ea::string& delegateName);
+    /// Return whether a delegate or signal currently has a binding.
+    bool IsDelegateBound(const ea::string& delegateName) const;
+    /// Invoke a bound Blueprint function through the current graph.
+    bool InvokeDelegate(const BlueprintGraph& graph, const ea::string& delegateName,
+        const StringVariantMap& inputs = {}, StringVariantMap* outputs = nullptr);
+    /// Invoke an inline Blueprint macro with the same parameter transport as a function.
+    bool InvokeMacro(const BlueprintGraph& graph, const ea::string& macroName,
+        const StringVariantMap& inputs = {}, StringVariantMap* outputs = nullptr);
+    /// Start, pause and stop a named Blueprint timeline.
+    bool PlayTimeline(const BlueprintGraph& graph, const ea::string& timelineName);
+    bool PauseTimeline(const ea::string& timelineName);
+    bool StopTimeline(const ea::string& timelineName);
+    /// Evaluate the current value of a named timeline at its playback position.
+    Variant GetTimelineValue(const BlueprintGraph& graph, const ea::string& timelineName) const;
+    /// Return whether a timeline is currently playing.
+    bool IsTimelinePlaying(const ea::string& timelineName) const;
     bool HadRuntimeError() const { return hadRuntimeError_; }
 
 private:
@@ -190,6 +213,10 @@ private:
     float latentRemaining_{};
     bool latentPending_{};
     ea::unordered_set<BlueprintId> breakpoints_;
+    ea::unordered_map<ea::string, ea::string> delegateBindings_;
+    ea::unordered_map<ea::string, float> timelinePositions_;
+    ea::unordered_set<ea::string> activeTimelines_;
+    const BlueprintGraph* timelineGraph_{};
     BlueprintRbScriptInvoker rbScriptInvoker_;
 };
 

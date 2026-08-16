@@ -46,6 +46,8 @@ BlueprintDataType RbScriptBlueprintInterop::ToBlueprintDataType(const RbScriptTy
     case RbScriptTypeKind::Vector3: return BlueprintDataType::Vector3;
     case RbScriptTypeKind::Quaternion: return BlueprintDataType::Quaternion;
     case RbScriptTypeKind::Color: return BlueprintDataType::Color;
+    case RbScriptTypeKind::Array: return BlueprintDataType::Array;
+    case RbScriptTypeKind::Map: return BlueprintDataType::Map;
     case RbScriptTypeKind::Node:
     case RbScriptTypeKind::Component:
     case RbScriptTypeKind::Resource:
@@ -70,6 +72,21 @@ RbScriptValue RbScriptBlueprintInterop::FromVariant(const Variant& value)
     case VAR_COLOR: return RbScriptValue::FromColor(value.GetColor());
     case VAR_PTR:
     case VAR_VOIDPTR: return RbScriptValue::FromPointer(value.GetPtr());
+    case VAR_VARIANTVECTOR:
+    {
+        ea::vector<RbScriptValue> values;
+        values.reserve(value.GetVariantVector().size());
+        for (const Variant& item : value.GetVariantVector())
+            values.push_back(FromVariant(item));
+        return RbScriptValue::FromArray(values);
+    }
+    case VAR_STRINGVARIANTMAP:
+    {
+        ea::unordered_map<ea::string, RbScriptValue> values;
+        for (const auto& item : value.GetStringVariantMap())
+            values[item.first] = FromVariant(item.second);
+        return RbScriptValue::FromMap(values);
+    }
     default: return RbScriptValue::Null();
     }
 }
@@ -86,6 +103,27 @@ Variant RbScriptBlueprintInterop::ToVariant(const RbScriptValue& value)
     case RbScriptValueKind::Vector3: return Variant(value.vector3Value);
     case RbScriptValueKind::Quaternion: return Variant(value.quaternionValue);
     case RbScriptValueKind::Color: return Variant(value.colorValue);
+    case RbScriptValueKind::Array:
+    {
+        VariantVector values;
+        if (value.arrayValue)
+        {
+            values.reserve(value.arrayValue->values.size());
+            for (const RbScriptValue& item : value.arrayValue->values)
+                values.push_back(ToVariant(item));
+        }
+        return Variant(values);
+    }
+    case RbScriptValueKind::Map:
+    {
+        StringVariantMap values;
+        if (value.mapValue)
+        {
+            for (const auto& item : value.mapValue->values)
+                values[item.first] = ToVariant(item.second);
+        }
+        return Variant(values);
+    }
     default: return Variant();
     }
 }

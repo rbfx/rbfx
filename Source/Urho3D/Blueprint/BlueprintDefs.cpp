@@ -52,6 +52,10 @@ ea::string ToString(BlueprintDataType value)
     case BlueprintDataType::Entity: return "entity";
     case BlueprintDataType::Object: return "object";
     case BlueprintDataType::Variant: return "variant";
+    case BlueprintDataType::Array: return "array";
+    case BlueprintDataType::Map: return "map";
+    case BlueprintDataType::Struct: return "struct";
+    case BlueprintDataType::Enum: return "enum";
     default: return "variant";
     }
 }
@@ -101,6 +105,10 @@ BlueprintDataType ParseBlueprintDataType(const ea::string& value)
     if (value == "quaternion") return BlueprintDataType::Quaternion;
     if (value == "entity") return BlueprintDataType::Entity;
     if (value == "object") return BlueprintDataType::Object;
+    if (value == "array") return BlueprintDataType::Array;
+    if (value == "map") return BlueprintDataType::Map;
+    if (value == "struct") return BlueprintDataType::Struct;
+    if (value == "enum") return BlueprintDataType::Enum;
     if (value == "wildcard") return BlueprintDataType::Wildcard;
     return BlueprintDataType::Variant;
 }

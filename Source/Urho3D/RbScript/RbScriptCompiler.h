@@ -39,6 +39,15 @@ enum class RbScriptOpcode
     Jump,
     JumpIfFalse,
     Emit,
+    ArrayNew,
+    ArrayGet,
+    ArraySet,
+    ArrayLength,
+    ArrayPush,
+    MapNew,
+    MapGet,
+    MapSet,
+    MapContains,
     Halt,
 };
 
@@ -78,6 +87,7 @@ struct URHO3D_API RbScriptCompiledFunction
     unsigned parameterCount{0};
     ea::vector<ea::string> parameterNames;
     ea::vector<RbScriptType> parameterTypes;
+    ea::vector<ea::string> localNames;
     unsigned localCount{0};
     bool asynchronous{false};
     bool blueprintCallable{false};

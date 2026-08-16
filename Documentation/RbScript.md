@@ -17,13 +17,13 @@ Le langage utilise une syntaxe à accolades de style C++, avec des fonctions dé
 | `RbScriptAst.h` | Représentation des modules, scripts, champs, paramètres, fonctions, événements, instructions et expressions. |
 | `RbScriptParser.h/.cpp` | Parseur récursif descendant avec précédence des expressions et diagnostics de syntaxe. |
 | `RbScriptType.h/.cpp` | Types intégrés, alias, génériques, signatures de fonctions et vérification statique. |
-| `RbScriptCompiler.h/.cpp` | Compilation de l’AST en instructions, constantes, fonctions compilées et informations de débogage. |
-| `RbScriptVM.h/.cpp` | Machine virtuelle à pile, frames d’appels, valeurs typées, appels natifs, événements et limites d’exécution. |
+| `RbScriptCompiler.h/.cpp` | Compilation de l’AST en instructions, constantes, fonctions compilées, noms de locals et informations de ligne pour le débogage source. |
+| `RbScriptVM.h/.cpp` | Machine virtuelle à pile, frames d’appels, valeurs typées scalaires/Array/Map, accès aux champs et membres, appels natifs, événements, limites d’exécution et contrôle de débogage. |
 | `RbScriptReflection.h/.cpp` | Projection des métadonnées `ObjectReflection` rbfx dans le registre de types rbscript. |
 | `RbScriptBindings.h/.cpp` | Fonctions natives de scène, navigation de nœuds, composants, monde, entrée et appels Blueprint. |
 | `RbScriptBlueprintInterop.h/.cpp` | Conversion de valeurs et appels bidirectionnels entre rbscript et Blueprint. |
 | `RbScriptResource.h/.cpp` | Ressource `.rbscript`, compilation au chargement, cache du bytecode, sauvegarde et rechargement conditionnel. |
-| `RbScriptTab.h/.cpp` | Onglet de code Foundation avec édition multiline, coloration lexicale, diagnostics, aperçu des tokens, compilation et undo/redo. |
+| `RbScriptTab.h/.cpp` | Onglet de code Foundation avec édition multiline, coloration lexicale, diagnostics, aperçu des tokens, autocomplétion issue de la réflexion, compilation, undo/redo et panneau de débogage. |
 
 Le module est ajouté à `Source/Urho3D/CMakeLists.txt` et est donc compilé comme une partie native d’Urho3D/rbfx. Il n’utilise pas un interpréteur externe ni une enveloppe C++ séparée.
 
@@ -85,7 +85,7 @@ fn compute_damage(base: f32, multiplier: f32) -> f32
 }
 ```
 
-Les déclarations peuvent utiliser les types intégrés `void`, `bool`, `i32`, `u32`, `f32`, `f64`, `String`, `Vector2`, `Vector3`, `Quaternion`, `Color`, `Node`, `Component`, `Resource` et `Variant`. Les alias `Float`, `Int`, `NodeBehavior` et `NodeRef` sont résolus par le registre. Les formes génériques `Array<T>`, `Map<K, V>` et `Optional<T>` sont également enregistrées.
+Les déclarations peuvent utiliser les types intégrés `void`, `bool`, `i32`, `u32`, `f32`, `f64`, `String`, `Vector2`, `Vector3`, `Quaternion`, `Color`, `Node`, `Component`, `Resource` et `Variant`. Les alias `Float`, `Int`, `NodeBehavior` et `NodeRef` sont résolus par le registre. Les formes génériques `Array<T>`, `Map<K, V>` et `Optional<T>` sont également enregistrées. Les littéraux de tableau utilisent `[value0, value1]`, les littéraux de map utilisent `{key: value}`, et l’indexation/mutation s’écrit `items[index]` ou `scores["player"]`. Les appels usuels `length`, `push` et `contains` sont abaissés vers les opcodes de collection dédiés.
 
 ## Pipeline de compilation
 
@@ -101,7 +101,7 @@ Une compilation échouée ne remplace pas le dernier chunk valide déjà conserv
 
 ## Types partagés avec rbfx
 
-Les valeurs scalaires, chaînes et types mathématiques rbfx sont transportés dans `RbScriptValue`. Les conversions interopérables comprennent notamment `bool`, entiers, flottants, `String`, `Vector2`, `Vector3`, `Quaternion`, `Color` et `Variant`. Les objets rbfx sont reliés au moteur par les callbacks natifs et par les métadonnées `ObjectReflection`, plutôt que par des pointeurs non typés exposés directement au script.
+Les valeurs scalaires, chaînes, types mathématiques rbfx et collections sont transportés dans `RbScriptValue`. `Array` repose sur un conteneur partagé de `RbScriptValue`, tandis que `Map` utilise des clés `String` et des valeurs `RbScriptValue`, ce qui autorise des structures récursives contrôlées par le VM. Les opcodes `ArrayNew`, `ArrayGet`, `ArraySet`, `ArrayLength`, `ArrayPush`, `MapNew`, `MapGet`, `MapSet` et `MapContains` valident les types, bornes et clés et produisent des diagnostics au lieu de laisser passer un accès invalide. Les conversions interopérables comprennent notamment `bool`, entiers, flottants, `String`, `Vector2`, `Vector3`, `Quaternion`, `Color`, `VariantVector` et `StringVariantMap`. Les objets rbfx sont reliés au moteur par les callbacks natifs et par les métadonnées `ObjectReflection`, plutôt que par des pointeurs non typés exposés directement au script.
 
 Le registre peut être enrichi depuis un `Context` rbfx :
 
@@ -117,6 +117,30 @@ Cette opération indexe les types et propriétés disponibles dans la réflexion
 Les fonctions natives enregistrées par `RbScriptBindings` fournissent les points d’accès principaux au gameplay : navigation vers le nœud propriétaire, recherche d’enfant, récupération d’un composant, accès au monde ou à la scène, entrée utilisateur et temporisation. Les fonctions sont représentées comme des signatures dans le registre et invoquées par le VM via un gestionnaire d’appels hôte.
 
 Les fonctions natives peuvent être étendues par le jeu en enregistrant un callback portant un nom stable et en contrôlant explicitement ses arguments, sa valeur de retour et les références de scène. Les erreurs de résolution ou de conversion sont rapportées dans les diagnostics VM au lieu d’être ignorées.
+
+## Collections et champs de script
+
+Les champs de script peuvent contenir des collections et sont accessibles par les mêmes opérations que les variables locales. Le VM implémente les opérations de chargement et de stockage des champs, membres et index, ce qui permet de conserver l’état gameplay entre plusieurs événements. Les conversions avec Blueprint restent récursives : un `Array` devient un `VariantVector` et un `Map<String, T>` devient un `StringVariantMap`, avec conversion récursive de chaque valeur.
+
+```rbscript
+script Inventory : Node
+{
+    var items: Array<String> = ["key", "potion"];
+    var quantities: Map<String, i32> = {"key": 1, "potion": 3};
+
+    fn add_item(name: String) -> void
+    {
+        quantities[name] = quantities[name] + 1;
+        items.push(name);
+    }
+}
+```
+
+Le type checker infère les types d’éléments des littéraux, vérifie les affectations indexées et conserve les paramètres génériques `Array<T>` et `Map<K,V>` jusqu’à la compilation. Les clés de map interopérables sont volontairement textuelles afin de correspondre sans ambiguïté aux `StringVariantMap` rbfx.
+
+## Débogage source
+
+`RbScriptVM` expose une session de débogage distincte de l’exécution normale. `SetBreakpoint`, `RemoveBreakpoint`, `BeginDebug`, `StepDebug`, `ContinueDebug` et `StopDebug` contrôlent les pauses par ligne source. `GetCurrentLine`, `GetLocals` et `GetCallStack` exposent la ligne courante, les valeurs locales nommées et les frames d’appels compilées. Les métadonnées du compilateur associent les instructions aux lignes et les indices de locals à leurs noms, de sorte que les diagnostics restent lisibles même lors d’appels imbriqués.
 
 ## Interopérabilité Blueprint
 
@@ -141,11 +165,11 @@ La sauvegarde écrit le texte source avec les APIs `File` rbfx. Le rechargement 
 
 L’onglet **rbscript** est enregistré automatiquement dans `EditorApplication`. Le navigateur de ressources reconnaît l’extension `.rbscript` comme `RbScriptResource` et route cette ressource vers `RbScriptTab`.
 
-L’onglet prend en charge l’ouverture de plusieurs ressources, l’édition via `InputTextMultiline`, la compilation automatique optionnelle, la sauvegarde, l’aperçu lexical coloré, l’affichage des diagnostics ligne/colonne, les raccourcis de compilation et de sauvegarde, ainsi que les snapshots undo/redo du texte. Une liste de suggestions fournit les mots-clés et les types intégrés connus du registre rbscript.
+L’onglet prend en charge l’ouverture de plusieurs ressources, l’édition via `InputTextMultiline`, la compilation automatique optionnelle, la sauvegarde, l’aperçu lexical coloré, l’affichage des diagnostics ligne/colonne, les raccourcis de compilation et de sauvegarde, ainsi que les snapshots undo/redo du texte. Le panneau d’autocomplétion combine mots-clés, types intégrés, alias, types issus de `ObjectReflection` et fonctions enregistrées dans `RbScriptTypeRegistry`. Le panneau de débogage permet de saisir une ligne de breakpoint, de démarrer, avancer, continuer ou arrêter une session et d’inspecter la ligne courante, les locals et la pile d’appels.
 
 ## Tests et validation
 
-La suite Catch2 du dépôt contient les tests du lexer, du parseur, du système de types, du compilateur, du VM, des bindings, de l’interopérabilité et de `RbScriptResource`. La validation Linux réalisée sur cette branche a donné **223 tests réussis sur 223**. Le binaire de l’éditeur `build-editor/bin/Debug/Editor` a également été construit avec succès après l’intégration de `RbScriptTab`.
+La suite Catch2 du dépôt contient les tests du lexer, du parseur, du système de types, du compilateur, du VM, des collections, des bindings, de l’interopérabilité et de `RbScriptResource`. La validation Linux réalisée sur cette branche a donné **230 tests réussis sur 230**. Elle couvre notamment l’exécution Array/Map et le débogage source. Le binaire de l’éditeur `build-editor/bin/Debug/Editor` a également été construit avec succès après l’intégration du panneau de débogage de `RbScriptTab`.
 
 Les commandes de validation sont :
 
@@ -171,11 +195,11 @@ cmake -S . -B build-editor \
 cmake --build build-editor --target Editor -j2
 ```
 
-La validation automatisée effectuée ici est Linux x86_64. Le code est conçu autour des APIs portables C++17 et rbfx, mais Windows et macOS doivent encore être compilés dans leurs environnements natifs avant de déclarer une validation officielle sur ces plateformes.
+La validation automatisée effectuée ici est Linux x86_64 : **230/230 tests** et compilation de l’éditeur. Le code est conçu autour des APIs portables C++17 et rbfx. Le workflow CI active les tests natifs sur macOS et ajoute `rbscript-validation` pour Linux GCC, Windows MSVC, macOS Clang ARM64 et macOS Clang x64 ; les résultats effectifs de ces runners sont publiés par GitHub Actions.
 
 ## Limites connues et prochaines extensions
 
-Le socle actuel fournit le langage, le typage, le bytecode, le VM, les bindings, l’interopérabilité, la ressource et l’éditeur. Les extensions de production restantes concernent principalement un débogueur rbscript visuel avec breakpoints et inspection de variables, une autocomplétion sémantique fondée sur l’AST et la réflexion, des tableaux et dictionnaires pleinement manipulables à l’exécution, les structs et enums utilisateur, des delegates/signals plus riches, ainsi que des bibliothèques gameplay dédiées à la physique, l’animation, l’audio et la caméra.
+Le socle actuel fournit le langage, le typage, le bytecode, le VM, les collections Array/Map, les champs/membres, les bindings, l’interopérabilité récursive, la ressource, le débogueur source et l’éditeur avec autocomplétion sémantique. Les extensions de profondeur encore envisageables concernent notamment l’inspection AST interactive, les watch expressions évaluables, le profiling par fonction, les types structurés rbscript et un système de modules/packages plus large ; elles peuvent être ajoutées sans modifier le contrat fondamental entre C++, Blueprint et rbscript.
 
 Ces extensions peuvent être ajoutées sans modifier le contrat fondamental : le C++ garde la responsabilité du moteur, Blueprint reste le graphe visuel et rbscript reste le langage textuel partagé par la réflexion rbfx et l’interopérabilité Blueprint.
 

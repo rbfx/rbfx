@@ -106,6 +106,67 @@ TEST_CASE("rbscript VM emits events and recovers with diagnostics", "[rbscript][
     REQUIRE(errorVm.GetDiagnostics()[0].code == "V3015");
 }
 
+TEST_CASE("rbscript VM executes Array and Map collections", "[rbscript][vm][collections]")
+{
+    RbScriptCompiler compiler;
+    const RbScriptChunk chunk = Compile(
+        "module Game.Collections;\n"
+        "script Collections : Node {\n"
+        "  fn main() -> i32 {\n"
+        "    var values: Array<i32> = [1, 2, 3];\n"
+        "    values[1] = 9;\n"
+        "    values.push(4);\n"
+        "    var scores: Map<String,i32> = {\"score\": values[1]};\n"
+        "    scores[\"bonus\"] = 2;\n"
+        "    if (scores.contains(\"bonus\")) { return values.length() + scores[\"score\"] + scores[\"bonus\"]; }\n"
+        "    return 0;\n"
+        "  }\n"
+        "}\n", compiler);
+
+    RbScriptVM vm;
+    REQUIRE(vm.Execute(chunk));
+    REQUIRE(!vm.HadError());
+    REQUIRE(vm.GetResult().kind == RbScriptValueKind::Integer);
+    REQUIRE(vm.GetResult().integerValue == 15);
+}
+
+TEST_CASE("rbscript VM supports source debugging", "[rbscript][vm][debugger]")
+{
+    RbScriptCompiler compiler;
+    const RbScriptChunk chunk = Compile(
+        "module Game.Debug;\n"
+        "script Debugger : Node {\n"
+        "  fn main() -> i32 {\n"
+        "    var value: i32 = 1;\n"
+        "    value = value + 2;\n"
+        "    return value;\n"
+        "  }\n"
+        "}\n", compiler);
+
+    RbScriptVM vm;
+    vm.SetBreakpoint(5);
+    REQUIRE(vm.BeginDebug(chunk));
+    REQUIRE(vm.IsDebugging());
+    REQUIRE(vm.IsDebugPaused());
+    REQUIRE(vm.GetCurrentLine() == 4);
+    REQUIRE(vm.GetCallStack().size() == 1);
+    REQUIRE(vm.GetCallStack()[0] == "Debugger::main");
+    REQUIRE(vm.StepDebug());
+    REQUIRE(vm.IsDebugPaused());
+    REQUIRE(vm.ContinueDebug());
+    REQUIRE(vm.IsDebugPaused());
+    REQUIRE(vm.GetCurrentLine() == 5);
+    REQUIRE(vm.GetLocals().at("value").integerValue == 1);
+
+    vm.RemoveBreakpoint(5);
+    REQUIRE(vm.ContinueDebug());
+    REQUIRE_FALSE(vm.IsDebugging());
+    REQUIRE(vm.GetResult().integerValue == 3);
+    vm.StopDebug();
+    REQUIRE_FALSE(vm.IsDebugPaused());
+    REQUIRE(vm.GetCallStack().empty());
+}
+
 TEST_CASE("rbscript VM enforces execution limits", "[rbscript][vm][diagnostics]")
 {
     RbScriptCompiler compiler;

@@ -8,6 +8,8 @@
 
 #include <Urho3D/RbScript/RbScriptDefs.h>
 #include <Urho3D/RbScript/RbScriptResource.h>
+#include <Urho3D/RbScript/RbScriptType.h>
+#include <Urho3D/RbScript/RbScriptVM.h>
 
 namespace Urho3D
 {
@@ -54,6 +56,8 @@ private:
         ea::string source;
         ea::vector<RbScriptToken> tokens;
         ea::vector<RbScriptDiagnostic> diagnostics;
+        RbScriptChunk chunk;
+        RbScriptVM debugVm;
         bool compiled{false};
         bool showPreview{true};
     };
@@ -64,6 +68,7 @@ private:
     void SaveDocument(const ea::string& resourceName);
     void CompileActiveDocument();
     void RenderDiagnostics(const Document& document);
+    void RenderDebugPanel(Document& document);
     void RenderTokenPreview(const Document& document);
     void RenderAutocomplete(const Document& document);
     void TokenizeDocument(Document& document);
@@ -81,6 +86,8 @@ private:
     bool showPreview_{true};
     bool autoCompile_{true};
     bool sourceFocused_{false};
+    unsigned breakpointLine_{1};
+    RbScriptTypeRegistry typeRegistry_;
 };
 
 } // namespace Urho3D

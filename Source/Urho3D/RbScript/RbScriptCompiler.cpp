@@ -195,6 +195,12 @@ void RbScriptCompiler::CompileFunction(const RbScriptScript& script, const RbScr
         Emit(RbScriptOpcode::Return, 0, 0, 0, function.span);
     }
     compiled.localCount = static_cast<unsigned>(context.locals.size());
+    compiled.localNames.resize(compiled.localCount);
+    for (const auto& local : context.locals)
+    {
+        if (local.second >= 0 && static_cast<unsigned>(local.second) < compiled.localNames.size())
+            compiled.localNames[local.second] = local.first;
+    }
     currentFunction_ = nullptr;
 }
 
@@ -384,6 +390,36 @@ void RbScriptCompiler::CompileExpression(const RbScriptExpression& expression)
             CompileExpression(*expression.children.front());
         Emit(RbScriptOpcode::LoadMember, AddConstant(MakeStringConstant(expression.text)), 0, 0, expression.span);
         break;
+
+    case RbScriptExpressionKind::ArrayLiteral:
+        for (const std::unique_ptr<RbScriptExpression>& child : expression.children)
+            CompileExpression(*child);
+        Emit(RbScriptOpcode::ArrayNew, static_cast<int>(expression.children.size()), 0, 0, expression.span);
+        break;
+
+    case RbScriptExpressionKind::MapLiteral:
+        if (expression.children.size() % 2 != 0)
+        {
+            AddDiagnostic("C3012", "Map literal must contain key/value pairs", expression.span);
+            Emit(RbScriptOpcode::LoadConstant, AddNullConstant(), 0, 0, expression.span);
+            break;
+        }
+        for (const std::unique_ptr<RbScriptExpression>& child : expression.children)
+            CompileExpression(*child);
+        Emit(RbScriptOpcode::MapNew, static_cast<int>(expression.children.size() / 2), 0, 0, expression.span);
+        break;
+
+    case RbScriptExpressionKind::Index:
+        if (expression.children.size() == 2)
+        {
+            CompileExpression(*expression.children[0]);
+            CompileExpression(*expression.children[1]);
+            Emit(RbScriptOpcode::ArrayGet, 0, 0, 0, expression.span);
+        }
+        else
+            Emit(RbScriptOpcode::LoadConstant, AddNullConstant(), 0, 0, expression.span);
+        break;
+
     case RbScriptExpressionKind::Invalid:
         Emit(RbScriptOpcode::LoadConstant, AddNullConstant(), 0, 0, expression.span);
         break;
@@ -400,9 +436,10 @@ void RbScriptCompiler::CompileAssignment(const RbScriptExpression& expression)
     }
 
     const RbScriptExpression& target = *expression.children.front();
-    CompileExpression(*expression.children.back());
+    const RbScriptExpression& value = *expression.children.back();
     if (target.kind == RbScriptExpressionKind::Identifier)
     {
+        CompileExpression(value);
         const int local = FindLocal(target.text);
         if (local >= 0)
         {
@@ -418,9 +455,23 @@ void RbScriptCompiler::CompileAssignment(const RbScriptExpression& expression)
             return;
         }
     }
+    else if (target.kind == RbScriptExpressionKind::Index && target.children.size() == 2)
+    {
+        CompileExpression(*target.children[0]);
+        CompileExpression(*target.children[1]);
+        CompileExpression(value);
+        Emit(RbScriptOpcode::ArraySet, 0, 0, 0, expression.span);
+        return;
+    }
+    else if (target.kind == RbScriptExpressionKind::Member && target.children.size() == 1)
+    {
+        CompileExpression(*target.children.front());
+        CompileExpression(value);
+        Emit(RbScriptOpcode::StoreMember, AddConstant(MakeStringConstant(target.text)), 0, 0, expression.span);
+        return;
+    }
 
-    AddDiagnostic("C3006", "Only local and script field assignments are supported", target.span);
-    Emit(RbScriptOpcode::Pop, 0, 0, 0, expression.span);
+    AddDiagnostic("C3006", "Only local, script field and collection assignments are supported", target.span);
     Emit(RbScriptOpcode::LoadConstant, AddNullConstant(), 0, 0, expression.span);
 }
 
@@ -433,7 +484,30 @@ void RbScriptCompiler::CompileCall(const RbScriptExpression& expression)
         return;
     }
 
-    const ea::string callee = GetCalleeName(*expression.children.front());
+    const RbScriptExpression& calleeExpression = *expression.children.front();
+    if (calleeExpression.kind == RbScriptExpressionKind::Member && calleeExpression.children.size() == 1)
+    {
+        const ea::string& method = calleeExpression.text;
+        const unsigned argumentCount = expression.children.size() - 1;
+        if ((method == "push" && argumentCount == 1) || (method == "length" && argumentCount == 0)
+            || (method == "contains" && argumentCount == 1) || (method == "get" && argumentCount == 1)
+            || (method == "set" && argumentCount == 2))
+        {
+            CompileExpression(*calleeExpression.children.front());
+            for (unsigned i = 1; i < expression.children.size(); ++i)
+                CompileExpression(*expression.children[i]);
+            RbScriptOpcode opcode = RbScriptOpcode::Nop;
+            if (method == "push") opcode = RbScriptOpcode::ArrayPush;
+            else if (method == "length") opcode = RbScriptOpcode::ArrayLength;
+            else if (method == "contains") opcode = RbScriptOpcode::MapContains;
+            else if (method == "get") opcode = RbScriptOpcode::MapGet;
+            else if (method == "set") opcode = RbScriptOpcode::MapSet;
+            Emit(opcode, 0, 0, 0, expression.span);
+            return;
+        }
+    }
+
+    const ea::string callee = GetCalleeName(calleeExpression);
     const int function = FindFunction(callee);
     if (function < 0 && (!registry_ || !registry_->FindFunction(callee)))
         AddDiagnostic("C3008", "Unknown function '" + callee + "'", expression.span);

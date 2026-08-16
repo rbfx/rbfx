@@ -44,6 +44,7 @@ private:
     void RenderNode(const BlueprintNode& node, const ImVec2& canvasOrigin, ImDrawList* drawList);
     void RenderLinks(const ImVec2& canvasOrigin, ImDrawList* drawList);
     void RenderDiagnostics();
+    void RenderTypePanels();
     void RenderNodePalette();
     void RenderCanvasContextMenu();
     void RenderNodeContextMenu();
@@ -108,6 +109,11 @@ private:
     bool showWatchWindow_{true};
     bool contextMenuRequested_{};
     bool nodeContextMenuRequested_{};
+    bool showTypePanels_{true};
+    ea::string newStructName_;
+    ea::string newEnumName_;
+    ea::string newDelegateName_;
+    ea::string newTimelineName_;
 };
 
 }

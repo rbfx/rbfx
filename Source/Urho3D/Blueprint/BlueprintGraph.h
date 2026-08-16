@@ -49,6 +49,16 @@ public:
     const ea::vector<BlueprintComment>& GetComments() const { return comments_; }
     /// Return all user-defined functions/subgraphs.
     const ea::vector<BlueprintFunction>& GetFunctions() const { return functions_; }
+    /// Return all user-defined Blueprint structs.
+    const ea::vector<BlueprintStructDef>& GetStructs() const { return structs_; }
+    /// Return all user-defined Blueprint enums.
+    const ea::vector<BlueprintEnumDef>& GetEnums() const { return enums_; }
+    /// Return all user-defined Blueprint delegates and signals.
+    const ea::vector<BlueprintDelegate>& GetDelegates() const { return delegates_; }
+    /// Return all user-defined timelines.
+    const ea::vector<BlueprintTimeline>& GetTimelines() const { return timelines_; }
+    /// Return all user-defined macros.
+    const ea::vector<BlueprintMacro>& GetMacros() const { return macros_; }
 
     /// Add or replace a comment box.
     bool AddComment(const BlueprintComment& comment);
@@ -62,6 +72,41 @@ public:
     /// Find a function/subgraph by name.
     BlueprintFunction* GetFunction(const ea::string& name);
     const BlueprintFunction* GetFunction(const ea::string& name) const;
+    /// Add or replace a user-defined Blueprint struct.
+    bool AddStruct(const BlueprintStructDef& structure);
+    /// Remove a user-defined Blueprint struct by name.
+    bool RemoveStruct(const ea::string& name);
+    /// Find a user-defined Blueprint struct by name.
+    BlueprintStructDef* GetStruct(const ea::string& name);
+    const BlueprintStructDef* GetStruct(const ea::string& name) const;
+    /// Add or replace a user-defined Blueprint enum.
+    bool AddEnum(const BlueprintEnumDef& enumeration);
+    /// Remove a user-defined Blueprint enum by name.
+    bool RemoveEnum(const ea::string& name);
+    /// Find a user-defined Blueprint enum by name.
+    BlueprintEnumDef* GetEnum(const ea::string& name);
+    const BlueprintEnumDef* GetEnum(const ea::string& name) const;
+    /// Add or replace a user-defined delegate or signal signature.
+    bool AddDelegate(const BlueprintDelegate& delegate);
+    /// Remove a delegate or signal by name.
+    bool RemoveDelegate(const ea::string& name);
+    /// Find a delegate or signal by name.
+    BlueprintDelegate* GetDelegate(const ea::string& name);
+    const BlueprintDelegate* GetDelegate(const ea::string& name) const;
+    /// Add or replace a user-defined timeline.
+    bool AddTimeline(const BlueprintTimeline& timeline);
+    /// Remove a timeline by name.
+    bool RemoveTimeline(const ea::string& name);
+    /// Find a timeline by name.
+    BlueprintTimeline* GetTimeline(const ea::string& name);
+    const BlueprintTimeline* GetTimeline(const ea::string& name) const;
+    /// Add or replace a user-defined macro.
+    bool AddMacro(const BlueprintMacro& macro);
+    /// Remove a macro by name.
+    bool RemoveMacro(const ea::string& name);
+    /// Find a macro by name.
+    BlueprintMacro* GetMacro(const ea::string& name);
+    const BlueprintMacro* GetMacro(const ea::string& name) const;
     /// Return nodes whose type, title or category contains the query.
     ea::vector<BlueprintId> SearchNodes(const ea::string& query) const;
     /// Apply a deterministic left-to-right automatic layout to nodes.
@@ -120,6 +165,11 @@ private:
     ea::vector<BlueprintVariable> variables_;
     ea::vector<BlueprintComment> comments_;
     ea::vector<BlueprintFunction> functions_;
+    ea::vector<BlueprintStructDef> structs_;
+    ea::vector<BlueprintEnumDef> enums_;
+    ea::vector<BlueprintDelegate> delegates_;
+    ea::vector<BlueprintTimeline> timelines_;
+    ea::vector<BlueprintMacro> macros_;
 };
 
 }

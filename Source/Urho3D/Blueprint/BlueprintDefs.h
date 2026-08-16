@@ -43,7 +43,11 @@ enum class BlueprintDataType
     Quaternion,
     Entity,
     Object,
-    Variant
+    Variant,
+    Array,
+    Map,
+    Struct,
+    Enum
 };
 
 /// Severity of a graph validation diagnostic.
@@ -129,6 +133,74 @@ struct URHO3D_API BlueprintComment
 
 /// Signature and serialized body of a user-defined Blueprint function/subgraph.
 struct URHO3D_API BlueprintFunction
+{
+    ea::string name;
+    ea::string description;
+    ea::vector<BlueprintPin> inputs;
+    ea::vector<BlueprintPin> outputs;
+    ea::string body;
+};
+
+/// A named field in a user-defined Blueprint struct.
+struct URHO3D_API BlueprintStructField
+{
+    ea::string name;
+    BlueprintDataType dataType{BlueprintDataType::Variant};
+    /// Optional user-defined type name for Struct and Enum fields.
+    ea::string typeName;
+    Variant defaultValue;
+};
+
+/// A user-defined value type composed of named fields.
+struct URHO3D_API BlueprintStructDef
+{
+    ea::string name;
+    ea::string description;
+    ea::vector<BlueprintStructField> fields;
+};
+
+/// A named constant in a user-defined Blueprint enum.
+struct URHO3D_API BlueprintEnumValue
+{
+    ea::string name;
+    int value{0};
+};
+
+/// A user-defined enumeration of named integer constants.
+struct URHO3D_API BlueprintEnumDef
+{
+    ea::string name;
+    ea::string description;
+    ea::vector<BlueprintEnumValue> values;
+};
+
+/// A typed callable signature used by Blueprint delegates and signals.
+struct URHO3D_API BlueprintDelegate
+{
+    ea::string name;
+    ea::string description;
+    ea::vector<BlueprintPin> parameters;
+};
+
+/// A value keyframe used by a Blueprint timeline.
+struct URHO3D_API BlueprintTimelineKeyframe
+{
+    float time{0.0f};
+    Variant value;
+};
+
+/// A named timeline with editable keyframes and optional looping.
+struct URHO3D_API BlueprintTimeline
+{
+    ea::string name;
+    ea::string description;
+    float length{1.0f};
+    bool looping{false};
+    ea::vector<BlueprintTimelineKeyframe> keyframes;
+};
+
+/// An inline Blueprint graph with macro semantics.
+struct URHO3D_API BlueprintMacro
 {
     ea::string name;
     ea::string description;

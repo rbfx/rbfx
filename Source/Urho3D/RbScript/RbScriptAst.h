@@ -24,6 +24,9 @@ enum class RbScriptExpressionKind
     Binary,
     Call,
     Member,
+    ArrayLiteral,
+    MapLiteral,
+    Index,
 };
 
 struct URHO3D_API RbScriptExpression

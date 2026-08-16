@@ -185,6 +185,26 @@ ea::vector<ea::string> RbScriptParser::ParseQualifiedName()
         if (part.kind == RbScriptTokenKind::Identifier)
             parts.push_back(part.lexeme);
     }
+
+    if (Match(RbScriptTokenKind::Less))
+    {
+        ea::string generic = JoinName(parts) + "<";
+        bool firstArgument = true;
+        while (!Check(RbScriptTokenKind::Greater) && !IsAtEnd())
+        {
+            if (!firstArgument)
+                Consume(RbScriptTokenKind::Comma, "E2012", "Expected ',' between generic type arguments");
+            const ea::vector<ea::string> argument = ParseQualifiedName();
+            if (!firstArgument)
+                generic += ",";
+            generic += JoinName(argument);
+            firstArgument = false;
+        }
+        Consume(RbScriptTokenKind::Greater, "E2013", "Expected '>' after generic type arguments");
+        generic += ">";
+        parts.clear();
+        parts.push_back(generic);
+    }
     return parts;
 }
 
@@ -642,6 +662,16 @@ std::unique_ptr<RbScriptExpression> RbScriptParser::ParsePostfix()
             result->span = SpanFrom(begin, end.span);
             expression = std::move(result);
         }
+        else if (Match(RbScriptTokenKind::LeftBracket))
+        {
+            const RbScriptSourceSpan begin = expression->span;
+            auto result = MakeExpression(RbScriptExpressionKind::Index, begin);
+            result->children.push_back(std::move(expression));
+            result->children.push_back(ParseExpression());
+            const RbScriptToken& end = Consume(RbScriptTokenKind::RightBracket, "E2104", "Expected ']' after index expression");
+            result->span = SpanFrom(begin, end.span);
+            expression = std::move(result);
+        }
         else
             break;
     }
@@ -651,6 +681,34 @@ std::unique_ptr<RbScriptExpression> RbScriptParser::ParsePostfix()
 std::unique_ptr<RbScriptExpression> RbScriptParser::ParsePrimary()
 {
     const RbScriptToken& token = Current();
+    if (Match(RbScriptTokenKind::LeftBracket))
+    {
+        auto result = MakeExpression(RbScriptExpressionKind::ArrayLiteral, token.span);
+        while (!Check(RbScriptTokenKind::RightBracket) && !IsAtEnd())
+        {
+            result->children.push_back(ParseExpression());
+            if (!Match(RbScriptTokenKind::Comma))
+                break;
+        }
+        const RbScriptToken& end = Consume(RbScriptTokenKind::RightBracket, "E2105", "Expected ']' after array literal");
+        result->span = SpanFrom(token.span, end.span);
+        return result;
+    }
+    if (Match(RbScriptTokenKind::LeftBrace))
+    {
+        auto result = MakeExpression(RbScriptExpressionKind::MapLiteral, token.span);
+        while (!Check(RbScriptTokenKind::RightBrace) && !IsAtEnd())
+        {
+            result->children.push_back(ParseExpression());
+            Consume(RbScriptTokenKind::Colon, "E2106", "Expected ':' between map key and value");
+            result->children.push_back(ParseExpression());
+            if (!Match(RbScriptTokenKind::Comma))
+                break;
+        }
+        const RbScriptToken& end = Consume(RbScriptTokenKind::RightBrace, "E2107", "Expected '}' after map literal");
+        result->span = SpanFrom(token.span, end.span);
+        return result;
+    }
     if (Match(RbScriptTokenKind::IntegerLiteral))
         return MakeExpression(RbScriptExpressionKind::IntegerLiteral, token.span, token.lexeme);
     if (Match(RbScriptTokenKind::FloatLiteral))
