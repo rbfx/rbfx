@@ -56,6 +56,7 @@ struct URHO3D_API RbScriptFunctionSignature
     RbScriptType returnType;
     ea::vector<RbScriptType> parameterTypes;
     bool asynchronous{false};
+    bool blueprintCallable{false};
 };
 
 class URHO3D_API RbScriptTypeRegistry

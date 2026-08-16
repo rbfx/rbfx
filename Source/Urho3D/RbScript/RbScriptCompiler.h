@@ -76,8 +76,11 @@ struct URHO3D_API RbScriptCompiledFunction
     ea::string returnType{"void"};
     unsigned entryPoint{0};
     unsigned parameterCount{0};
+    ea::vector<ea::string> parameterNames;
+    ea::vector<RbScriptType> parameterTypes;
     unsigned localCount{0};
     bool asynchronous{false};
+    bool blueprintCallable{false};
 };
 
 struct URHO3D_API RbScriptChunk

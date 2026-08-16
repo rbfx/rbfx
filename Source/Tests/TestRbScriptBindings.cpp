@@ -11,7 +11,7 @@ TEST_CASE("rbscript bindings register gameplay functions", "[rbscript][bindings]
 {
     RbScriptTypeRegistry registry;
     RbScriptBindings bindings;
-    REQUIRE(bindings.Register(registry) == 7);
+    REQUIRE(bindings.Register(registry) == 8);
 
     const RbScriptFunctionSignature* ownerSignature = registry.FindFunction("owner");
     REQUIRE(ownerSignature != nullptr);

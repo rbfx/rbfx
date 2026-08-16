@@ -46,6 +46,38 @@ RbScriptValue RbScriptValue::FromString(const ea::string& value)
     return result;
 }
 
+RbScriptValue RbScriptValue::FromVector2(const Vector2& value)
+{
+    RbScriptValue result;
+    result.kind = RbScriptValueKind::Vector2;
+    result.vector2Value = value;
+    return result;
+}
+
+RbScriptValue RbScriptValue::FromVector3(const Vector3& value)
+{
+    RbScriptValue result;
+    result.kind = RbScriptValueKind::Vector3;
+    result.vector3Value = value;
+    return result;
+}
+
+RbScriptValue RbScriptValue::FromQuaternion(const Quaternion& value)
+{
+    RbScriptValue result;
+    result.kind = RbScriptValueKind::Quaternion;
+    result.quaternionValue = value;
+    return result;
+}
+
+RbScriptValue RbScriptValue::FromColor(const Color& value)
+{
+    RbScriptValue result;
+    result.kind = RbScriptValueKind::Color;
+    result.colorValue = value;
+    return result;
+}
+
 RbScriptValue RbScriptValue::FromPointer(void* value)
 {
     RbScriptValue result;
@@ -63,6 +95,11 @@ bool RbScriptValue::IsTruthy() const
     case RbScriptValueKind::Integer: return integerValue != 0;
     case RbScriptValueKind::Float: return floatValue != 0.0;
     case RbScriptValueKind::String: return !stringValue.empty();
+    case RbScriptValueKind::Vector2:
+    case RbScriptValueKind::Vector3:
+    case RbScriptValueKind::Quaternion:
+    case RbScriptValueKind::Color:
+        return true;
     case RbScriptValueKind::Pointer: return pointerValue != nullptr;
     }
     return false;
@@ -92,6 +129,10 @@ ea::string RbScriptValue::ToString() const
     case RbScriptValueKind::Integer: return std::to_string(integerValue).c_str();
     case RbScriptValueKind::Float: return std::to_string(floatValue).c_str();
     case RbScriptValueKind::String: return stringValue;
+    case RbScriptValueKind::Vector2: return "Vector2";
+    case RbScriptValueKind::Vector3: return "Vector3";
+    case RbScriptValueKind::Quaternion: return "Quaternion";
+    case RbScriptValueKind::Color: return "Color";
     case RbScriptValueKind::Pointer: return pointerValue ? "pointer" : "null";
     }
     return {};
@@ -103,6 +144,27 @@ RbScriptVM::RbScriptVM()
 }
 
 bool RbScriptVM::Execute(const RbScriptChunk& chunk)
+{
+    return ExecuteEntry(chunk, chunk.entryFunction, {});
+}
+
+bool RbScriptVM::ExecuteFunction(const RbScriptChunk& chunk, const ea::string& functionName,
+    const ea::vector<RbScriptValue>& arguments)
+{
+    for (unsigned i = 0; i < chunk.functions.size(); ++i)
+    {
+        if (chunk.functions[i].name == functionName
+            || chunk.functions[i].scriptName + "::" + chunk.functions[i].name == functionName)
+            return ExecuteEntry(chunk, i, arguments);
+    }
+
+    diagnostics_.clear();
+    AddError("V3024", "The requested rbscript function was not found: '" + functionName + "'", {});
+    return false;
+}
+
+bool RbScriptVM::ExecuteEntry(const RbScriptChunk& chunk, unsigned functionIndex,
+    const ea::vector<RbScriptValue>& arguments)
 {
     valueStack_.clear();
     callStack_.clear();
@@ -117,17 +179,25 @@ bool RbScriptVM::Execute(const RbScriptChunk& chunk)
         AddError("V3001", "Cannot execute an empty rbscript chunk", {});
         return false;
     }
-    if (chunk.entryFunction >= chunk.functions.size())
+    if (functionIndex >= chunk.functions.size())
     {
         AddError("V3002", "The rbscript entry function is out of range", {});
         return false;
     }
 
-    const RbScriptCompiledFunction& entry = chunk.functions[chunk.entryFunction];
+    const RbScriptCompiledFunction& entry = chunk.functions[functionIndex];
+    if (arguments.size() != entry.parameterCount)
+    {
+        AddError("V3025", "Entry function argument count does not match its signature", {});
+        return false;
+    }
+
     CallFrame frame;
-    frame.functionIndex = chunk.entryFunction;
+    frame.functionIndex = functionIndex;
     frame.instructionPointer = entry.entryPoint;
     frame.locals.resize(entry.localCount);
+    for (unsigned i = 0; i < arguments.size(); ++i)
+        frame.locals[i] = arguments[i];
     callStack_.push_back(frame);
 
     while (!halted_ && !callStack_.empty())
@@ -481,11 +551,38 @@ bool RbScriptVM::StartCall(const RbScriptChunk& chunk, CallFrame& caller, const 
         AddError("V3019", "Invalid argument count for rbscript call", instruction.span);
         return false;
     }
-    if (instruction.operand0 < 0 || static_cast<unsigned>(instruction.operand0) >= chunk.functions.size())
+    if (instruction.operand0 < 0)
     {
-        AddError("V3020", "Cannot call an unresolved rbscript function", instruction.span);
-        valueStack_.resize(valueStack_.size() - static_cast<unsigned>(argumentCount));
-        return Push(RbScriptValue::Null(), instruction.span);
+        if (!nativeCallHandler_ || instruction.operand2 < 0
+            || static_cast<unsigned>(instruction.operand2) >= chunk.constants.size()
+            || chunk.constants[instruction.operand2].kind != RbScriptConstantKind::String)
+        {
+            AddError("V3020", "Cannot call an unresolved rbscript function", instruction.span);
+            valueStack_.resize(valueStack_.size() - static_cast<unsigned>(argumentCount));
+            return false;
+        }
+
+        const unsigned argumentBase = static_cast<unsigned>(valueStack_.size()) - static_cast<unsigned>(argumentCount);
+        ea::vector<RbScriptValue> arguments;
+        arguments.reserve(static_cast<unsigned>(argumentCount));
+        for (unsigned i = 0; i < static_cast<unsigned>(argumentCount); ++i)
+            arguments.push_back(valueStack_[argumentBase + i]);
+
+        RbScriptValue result;
+        const ea::string& functionName = chunk.constants[instruction.operand2].stringValue;
+        if (!nativeCallHandler_(functionName, arguments, result))
+        {
+            AddError("V3023", "Native rbscript function failed: '" + functionName + "'", instruction.span);
+            valueStack_.resize(argumentBase);
+            return false;
+        }
+        valueStack_.resize(argumentBase);
+        return Push(result, instruction.span);
+    }
+    if (static_cast<unsigned>(instruction.operand0) >= chunk.functions.size())
+    {
+        AddError("V3020", "Cannot call an rbscript function outside the chunk", instruction.span);
+        return false;
     }
     if (callStack_.size() >= callDepthLimit_)
     {

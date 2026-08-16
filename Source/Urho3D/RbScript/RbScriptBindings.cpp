@@ -36,7 +36,7 @@ bool RbScriptBindings::Invoke(const ea::string& name, const ea::vector<RbScriptV
     const RbScriptNativeFunction* function = Find(name);
     if (!function || !function->callback)
         return false;
-    if (arguments.size() != function->signature.parameterTypes.size())
+    if (name != "blueprint::call" && arguments.size() != function->signature.parameterTypes.size())
         return false;
     result = function->callback(arguments);
     return true;
@@ -100,6 +100,20 @@ void RbScriptBindings::RegisterBuiltins(RbScriptTypeRegistry& registry)
     {
         Node* scene = world_ ? static_cast<Node*>(world_) : (owner_ ? static_cast<Node*>(owner_->GetScene()) : nullptr);
         return RbScriptValue::FromPointer(scene);
+    });
+
+    RegisterFunction(registry, "blueprint::call", "Variant", {"String"}, [this](const ea::vector<RbScriptValue>& arguments)
+    {
+        if (!blueprintCallHandler_ || arguments.empty() || arguments.front().kind != RbScriptValueKind::String)
+            return RbScriptValue::Null();
+
+        ea::vector<RbScriptValue> callArguments;
+        for (unsigned i = 1; i < arguments.size(); ++i)
+            callArguments.push_back(arguments[i]);
+        RbScriptValue result;
+        if (!blueprintCallHandler_(arguments.front().stringValue, callArguments, result))
+            return RbScriptValue::Null();
+        return result;
     });
 }
 

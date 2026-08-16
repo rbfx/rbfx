@@ -130,8 +130,23 @@ void RbScriptCompiler::IndexFunctions(const RbScriptModule& module)
             functionIndices_[qualifiedName] = index;
             if (functionIndices_.find(function.name) == functionIndices_.end())
                 functionIndices_[function.name] = index;
-            chunk_.functions.push_back({function.name, script.name, function.returnType, 0,
-                static_cast<unsigned>(function.parameters.size()), 0, function.asynchronous});
+            RbScriptCompiledFunction compiled;
+            compiled.name = function.name;
+            compiled.scriptName = script.name;
+            compiled.returnType = function.returnType;
+            compiled.parameterCount = static_cast<unsigned>(function.parameters.size());
+            compiled.asynchronous = function.asynchronous;
+            for (const ea::string& attribute : function.attributes)
+            {
+                if (attribute == "blueprint_callable")
+                    compiled.blueprintCallable = true;
+            }
+            for (const RbScriptParameter& parameter : function.parameters)
+            {
+                compiled.parameterNames.push_back(parameter.name);
+                compiled.parameterTypes.push_back(registry_ ? registry_->Resolve(parameter.typeName) : RbScriptType{});
+            }
+            chunk_.functions.push_back(compiled);
         }
     }
 }
@@ -163,6 +178,13 @@ void RbScriptCompiler::CompileFunction(const RbScriptScript& script, const RbScr
     RbScriptCompiledFunction& compiled = chunk_.functions[functionIndex];
     compiled.entryPoint = static_cast<unsigned>(chunk_.instructions.size());
     compiled.parameterCount = static_cast<unsigned>(function.parameters.size());
+    compiled.parameterNames.clear();
+    compiled.parameterTypes.clear();
+    for (const RbScriptParameter& parameter : function.parameters)
+    {
+        compiled.parameterNames.push_back(parameter.name);
+        compiled.parameterTypes.push_back(registry_ ? registry_->Resolve(parameter.typeName) : RbScriptType{});
+    }
     const unsigned functionStart = compiled.entryPoint;
     CompileStatements(function.body);
 
@@ -418,7 +440,8 @@ void RbScriptCompiler::CompileCall(const RbScriptExpression& expression)
 
     for (unsigned i = 1; i < expression.children.size(); ++i)
         CompileExpression(*expression.children[i]);
-    Emit(RbScriptOpcode::Call, function, static_cast<int>(expression.children.size() - 1), 0, expression.span);
+    const int calleeNameConstant = function < 0 ? AddConstant(MakeStringConstant(callee)) : -1;
+    Emit(RbScriptOpcode::Call, function, static_cast<int>(expression.children.size() - 1), calleeNameConstant, expression.span);
 }
 
 void RbScriptCompiler::CompileBinary(const RbScriptExpression& expression)

@@ -17,6 +17,7 @@ class Serializable;
 
 /// Runtime callback implemented by a built-in node or a user extension.
 using BlueprintNodeExecutor = ea::function<void(class BlueprintExecutionContext&)>;
+using BlueprintRbScriptInvoker = ea::function<bool(const ea::string&, const StringVariantMap&, StringVariantMap&)>;
 
 /// Description and executable callback for a registered Blueprint node type.
 struct URHO3D_API BlueprintNodeDefinition
@@ -139,6 +140,17 @@ public:
     /// Return the node currently paused in the debugger.
     BlueprintId GetDebugCurrentNode() const { return debugCurrentNode_; }
 
+    /// Configure the host callback used by Function.RbScript nodes.
+    void SetRbScriptInvoker(BlueprintRbScriptInvoker invoker) { rbScriptInvoker_ = ea::move(invoker); }
+    /// Return whether an rbscript invoker is configured.
+    bool HasRbScriptInvoker() const { return static_cast<bool>(rbScriptInvoker_); }
+    /// Invoke a named Blueprint function directly from a host integration.
+    bool CallFunction(const BlueprintGraph& graph, const ea::string& functionName,
+        const StringVariantMap& inputs = {}, StringVariantMap* outputs = nullptr, unsigned maxSteps = 10000)
+    {
+        return ExecuteFunction(graph, functionName, inputs, outputs, maxSteps);
+    }
+
     /// Read runtime values after execution.
     Variant GetValue(BlueprintId nodeId, const ea::string& pinName) const;
     Variant GetVariable(const ea::string& name) const;
@@ -178,6 +190,7 @@ private:
     float latentRemaining_{};
     bool latentPending_{};
     ea::unordered_set<BlueprintId> breakpoints_;
+    BlueprintRbScriptInvoker rbScriptInvoker_;
 };
 
 }

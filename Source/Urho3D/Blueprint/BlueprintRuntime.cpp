@@ -67,6 +67,11 @@ ea::vector<BlueprintPin> BuiltinPins(const char* typeName)
     }
     else if (name == "Function.Return")
         executionInput();
+    else if (name == "Function.RbScript")
+    {
+        executionInput();
+        executionOutput();
+    }
     else if (name == "Math.AddFloat" || name == "Math.MultiplyFloat" || name == "Math.LessFloat"
         || name == "Math.SubtractFloat" || name == "Math.DivideFloat")
     {
@@ -361,6 +366,41 @@ void BlueprintRuntime::RegisterBuiltinNodes()
                 context.ContinueWith("then");
             }
         }, "Execute a user-defined Blueprint function/subgraph with typed input and output pins.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard)});
+
+    RegisterDefinition(registry_, "Function.RbScript", "Functions/RbScript", BlueprintExecutionMode::Immediate,
+        [this](BlueprintExecutionContext& context)
+        {
+            const auto iter = context.GetNode().properties.find("functionName");
+            if (iter == context.GetNode().properties.end() || iter->second.GetString().empty())
+            {
+                context.ReportError("BP210", "Function.RbScript requires a non-empty functionName property.");
+                return;
+            }
+            if (!rbScriptInvoker_)
+            {
+                context.ReportError("BP211", "Function.RbScript has no rbscript invoker configured.");
+                return;
+            }
+
+            StringVariantMap inputs;
+            for (const BlueprintPin& pin : context.GetNode().pins)
+            {
+                if (pin.kind == BlueprintPinKind::Input)
+                    inputs[pin.name] = context.GetInput(pin.name);
+            }
+
+            StringVariantMap outputs;
+            if (rbScriptInvoker_(iter->second.GetString(), inputs, outputs))
+            {
+                for (const auto& output : outputs)
+                    context.SetOutput(output.first, output.second);
+                context.ContinueWith("then");
+            }
+            else
+                context.ReportError("BP212", "The rbscript function invocation failed.");
+        }, "Invoke a compiled rbscript function through the configured host bridge.",
         {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
          RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard)});
 

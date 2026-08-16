@@ -221,6 +221,11 @@ bool RbScriptTypeChecker::Check(const RbScriptModule& module)
             signature.name = function.name;
             signature.returnType = registry_.Resolve(function.returnType);
             signature.asynchronous = function.asynchronous;
+            for (const ea::string& attribute : function.attributes)
+            {
+                if (attribute == "blueprint_callable")
+                    signature.blueprintCallable = true;
+            }
             for (const RbScriptParameter& parameter : function.parameters)
                 signature.parameterTypes.push_back(registry_.Resolve(parameter.typeName));
             functions_[function.name] = signature;

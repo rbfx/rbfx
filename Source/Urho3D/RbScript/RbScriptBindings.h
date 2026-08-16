@@ -15,6 +15,7 @@ class Node;
 class Scene;
 
 using RbScriptNativeCallback = ea::function<RbScriptValue(const ea::vector<RbScriptValue>&)>;
+using RbScriptBlueprintCallHandler = ea::function<bool(const ea::string&, const ea::vector<RbScriptValue>&, RbScriptValue&)>;
 
 struct URHO3D_API RbScriptNativeFunction
 {
@@ -30,6 +31,7 @@ public:
     unsigned Register(RbScriptTypeRegistry& registry);
     void SetOwner(Node* owner) { owner_ = owner; }
     void SetWorld(Scene* world) { world_ = world; }
+    void SetBlueprintCallHandler(RbScriptBlueprintCallHandler handler) { blueprintCallHandler_ = std::move(handler); }
     Node* GetOwner() const { return owner_; }
     Scene* GetWorld() const { return world_; }
 
@@ -45,6 +47,7 @@ private:
     Node* owner_{};
     Scene* world_{};
     ea::unordered_map<ea::string, RbScriptNativeFunction> functions_;
+    RbScriptBlueprintCallHandler blueprintCallHandler_;
 };
 
 } // namespace Urho3D

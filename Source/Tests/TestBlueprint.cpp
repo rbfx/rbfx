@@ -3,6 +3,8 @@
 
 #include <catch2/catch_amalgamated.hpp>
 
+#include "CommonUtils.h"
+
 #include <Urho3D/Blueprint/BlueprintReflection.h>
 #include <Urho3D/Blueprint/BlueprintResource.h>
 #include <Urho3D/Core/Context.h>
@@ -300,19 +302,19 @@ TEST_CASE("Blueprint debugger continues to a breakpoint and exposes watches", "[
 
 TEST_CASE("Blueprint resource round trips through an rbfx stream", "[blueprint][resource]")
 {
-    Context context;
+    const auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     BlueprintGraph sourceGraph("NativeAsset");
     const BlueprintId nodeId = sourceGraph.AddNode("Math.AddFloat", "Add");
     AddPin(sourceGraph, nodeId, "a", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(1.0f));
     AddPin(sourceGraph, nodeId, "b", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(2.0f));
 
-    BlueprintResource source(&context);
+    BlueprintResource source(context.Get());
     source.SetGraph(sourceGraph);
     VectorBuffer buffer;
     REQUIRE(source.Save(buffer));
     REQUIRE(buffer.GetSize() > 0);
 
-    BlueprintResource restored(&context);
+    BlueprintResource restored(context.Get());
     REQUIRE(buffer.Seek(0) == 0);
     REQUIRE(restored.BeginLoad(buffer));
     REQUIRE(restored.GetGraph().GetName() == "NativeAsset");
