@@ -32,6 +32,7 @@
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/RenderPipeline/RenderPath.h>
 #include <Urho3D/Resource/BinaryFile.h>
+#include <Urho3D/RbScript/RbScriptResource.h>
 #include <Urho3D/Resource/SerializableResource.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/XMLFile.h>
@@ -53,6 +54,12 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
             desc.AddObjectType<XMLFile>();
         if (ctx.jsonFile_)
             desc.AddObjectType<JSONFile>();
+    });
+
+    project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
+    {
+        if (desc.HasExtension({".rbscript"}))
+            desc.AddObjectType<RbScriptResource>();
     });
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)

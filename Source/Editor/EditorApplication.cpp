@@ -30,6 +30,7 @@
 #include "Foundation/InspectorTab/TextureCubeInspector.h"
 #include "Foundation/ModelViewTab.h"
 #include "Foundation/ResourceBrowserTab.h"
+#include "Foundation/RbScriptTab.h"
 #include "Foundation/ResourceBrowserTab/AssetPipelineFactory.h"
 #include "Foundation/ResourceBrowserTab/MaterialFactory.h"
 #include "Foundation/ResourceBrowserTab/SceneFactory.h"
@@ -97,6 +98,7 @@ EditorApplication::EditorApplication(Context* context)
     editorPluginManager_->AddPlugin("Foundation.AnimationView", &Foundation_AnimationViewTab);
     editorPluginManager_->AddPlugin("Foundation.Console", &Foundation_ConsoleTab);
     editorPluginManager_->AddPlugin("Foundation.Blueprint", &Foundation_BlueprintTab);
+    editorPluginManager_->AddPlugin("Foundation.RbScript", &Foundation_RbScriptTab);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser", &Foundation_ResourceBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowser", &Foundation_HierarchyBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.Settings", &Foundation_SettingsTab);
