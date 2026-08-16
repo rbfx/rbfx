@@ -53,7 +53,7 @@ cmake --build build --target Tests -j2
 ctest --test-dir build --output-on-failure
 ```
 
-La validation réalisée sur cette branche a donné **199 tests réussis sur 199** dans la suite complète. Les tests Blueprint ciblés couvrent désormais 14 cas et 163 assertions : recherche, commentaires, fonctions paramétrées, sous-graphes sérialisés, runtime latent, événements d’entrée, migration de schéma, ressource native, registre, réflexion et débogage. La compilation de l’éditeur produit également `build-editor/bin/Debug/Editor` sous Linux.
+La validation réalisée sur cette branche a donné **223 tests réussis sur 223** dans la suite complète. Les tests Blueprint et rbscript couvrent le graphe, les commentaires, les fonctions paramétrées, les sous-graphes sérialisés, le runtime latent, les événements d’entrée, la migration de schéma, les ressources natives, la réflexion, le débogage, le lexer, le parseur, le système de types, le compilateur, le VM, les bindings et l’interopérabilité. La compilation de l’éditeur produit également `build-editor/bin/Debug/Editor` sous Linux.
 
 ## Compatibilité des plateformes
 
@@ -94,6 +94,6 @@ Le type doit être stable car il est stocké dans le fichier `.blueprint`. Pour 
 
 Le cœur de l’expérience Blueprint est maintenant disponible et compilable. Les extensions restantes concernent surtout la profondeur fonctionnelle : nœuds spécialisés pour sprites, corps physiques, caméras, lumières, matériaux, sons et composants rbfx ; tableaux et dictionnaires ; timelines ; tâches asynchrones ; interfaces ; macros ; reroutage manuel des câbles ; et création/édition visuelle des signatures de fonctions directement dans l’éditeur.
 
-La prochaine étape de production sera d’ajouter une factory dédiée au Resource Browser pour créer et renommer les fichiers `.blueprint` depuis l’interface, ainsi que la liaison automatique du Blueprint à l’objet ou au Node sélectionné dans la scène. Le format est déjà versionné en **schéma 2** et accepte les fichiers historiques de format 1 ; les migrations futures pourront être ajoutées dans `BlueprintGraph::FromJSON`.
+La documentation complémentaire du langage textuel, du bytecode, du VM, des bindings et de l’éditeur rbscript se trouve dans [`Documentation/RbScript.md`](RbScript.md). La prochaine étape de production sera d’ajouter une factory dédiée au Resource Browser pour créer et renommer les fichiers `.blueprint` depuis l’interface, ainsi que la liaison automatique du Blueprint à l’objet ou au Node sélectionné dans la scène. Le format est déjà versionné en **schéma 2** et accepte les fichiers historiques de format 1 ; les migrations futures pourront être ajoutées dans `BlueprintGraph::FromJSON`.
 
 > Cette version constitue une **extension C++ native compilable, testée et intégrée à rbfx**, avec un runtime indépendant de l’interface et une base solide pour poursuivre les fonctionnalités de production sans fragiliser le cœur 2D/3D.
