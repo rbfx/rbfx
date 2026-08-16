@@ -64,6 +64,7 @@
 #endif
 #ifdef URHO3D_NETWORK
 #include "../Network/Network.h"
+#include "../Network/DedicatedServer.h"
 #endif
 #ifdef URHO3D_PHYSICS
 #include "../Physics/PhysicsWorld.h"
@@ -260,6 +261,7 @@ Engine::Engine(Context* context) :
     context_->RegisterSubsystem(new Localization(context_));
 #ifdef URHO3D_NETWORK
     context_->RegisterSubsystem(new Network(context_));
+    DedicatedServer::RegisterObject(context_);
 #endif
     // Required in headless mode as well.
     RegisterGraphicsLibrary(context_);

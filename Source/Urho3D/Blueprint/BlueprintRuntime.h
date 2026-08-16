@@ -15,6 +15,11 @@ class BlueprintRuntime;
 class Context;
 class Serializable;
 class WorldPartition;
+class RpcDispatcher;
+class RelevancyManager;
+class DedicatedServer;
+class Network;
+class AbstractConnection;
 
 /// Runtime callback implemented by a built-in node or a user extension.
 using BlueprintNodeExecutor = ea::function<void(class BlueprintExecutionContext&)>;
@@ -116,6 +121,17 @@ public:
     void SetWorldPartition(WorldPartition* worldPartition) { worldPartition_ = worldPartition; }
     /// Return the currently bound world-partition coordinator.
     WorldPartition* GetWorldPartition() const { return worldPartition_; }
+    /// Bind optional network services used by Net.* Blueprint nodes.
+    void SetRpcDispatcher(RpcDispatcher* dispatcher) { rpcDispatcher_ = dispatcher; }
+    RpcDispatcher* GetRpcDispatcher() const { return rpcDispatcher_; }
+    void SetRelevancyManager(RelevancyManager* manager) { relevancyManager_ = manager; }
+    RelevancyManager* GetRelevancyManager() const { return relevancyManager_; }
+    void SetDedicatedServer(DedicatedServer* server) { dedicatedServer_ = server; }
+    DedicatedServer* GetDedicatedServer() const { return dedicatedServer_; }
+    void SetNetwork(Network* network) { network_ = network; }
+    Network* GetNetwork() const { return network_; }
+    void SetRpcConnection(AbstractConnection* connection) { rpcConnection_ = connection; }
+    AbstractConnection* GetRpcConnection() const { return rpcConnection_; }
 
     /// Execute a graph from a node identifier.
     bool Execute(const BlueprintGraph& graph, BlueprintId entryNode,
@@ -206,6 +222,11 @@ private:
     BlueprintNodeRegistry registry_;
     Serializable* targetObject_{};
     WorldPartition* worldPartition_{};
+    RpcDispatcher* rpcDispatcher_{};
+    RelevancyManager* relevancyManager_{};
+    DedicatedServer* dedicatedServer_{};
+    Network* network_{};
+    AbstractConnection* rpcConnection_{};
     StringVariantMap values_;
     StringVariantMap variables_;
     ea::vector<BlueprintDiagnostic> diagnostics_;

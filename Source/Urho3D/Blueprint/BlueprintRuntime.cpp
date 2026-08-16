@@ -19,6 +19,9 @@
 #include <Urho3D/Physics2D/RigidBody2D.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/WorldPartition.h>
+#include <Urho3D/Replica/RpcDispatcher.h>
+#include <Urho3D/Replica/RelevancyManager.h>
+#include <Urho3D/Network/DedicatedServer.h>
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/Log.h>
@@ -1765,6 +1768,87 @@ void BlueprintRuntime::RegisterBuiltinNodes()
          RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
          RuntimePin("radius", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(100.0f)),
          RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Float)});
+
+    RegisterDefinition(registry_, "Net.SendRPC", "Network/RPC", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            RpcDispatcher* dispatcher = context.GetRuntime().GetRpcDispatcher();
+            if (!dispatcher)
+            {
+                context.ReportError("BPNET001", "Net.SendRPC requires an RpcDispatcher bound to the BlueprintRuntime.");
+                return;
+            }
+            const ea::string name = context.GetInput("name").GetString();
+            AbstractConnection* connection = context.GetRuntime().GetRpcConnection();
+            if (!connection && context.GetRuntime().GetNetwork())
+                connection = context.GetRuntime().GetNetwork()->GetServerConnection();
+            const bool sent = dispatcher->Send(connection, name, context.GetInput("arguments").GetStringVariantMap(),
+                context.GetInput("reliable").GetBool());
+            context.SetOutput("sent", sent);
+            if (sent)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPNET002", "Net.SendRPC could not send the RPC on the bound connection.");
+        }, "Send a typed RPC through the bound rbfx connection.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("name", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("arguments", BlueprintPinKind::Input, BlueprintDataType::Map, Variant(StringVariantMap{})),
+         RuntimePin("reliable", BlueprintPinKind::Input, BlueprintDataType::Bool, Variant(true)),
+         RuntimePin("sent", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Net.SetRelevancy", "Network/Interest", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            RelevancyManager* manager = context.GetRuntime().GetRelevancyManager();
+            if (!manager)
+            {
+                context.ReportError("BPNET003", "Net.SetRelevancy requires a RelevancyManager bound to the BlueprintRuntime.");
+                return;
+            }
+            const NetworkId objectId = ConstructComponentReference(context.GetInput("objectIndex").GetUInt(),
+                context.GetInput("objectVersion").GetUInt());
+            manager->SetObjectRule(objectId, context.GetInput("position").GetVector3(),
+                context.GetInput("radius").GetFloat(), context.GetInput("alwaysRelevant").GetBool());
+            context.SetOutput("applied", true);
+            context.ContinueWith("then");
+        }, "Set the spatial interest rule for a replicated object.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("objectIndex", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0u)),
+         RuntimePin("objectVersion", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0u)),
+         RuntimePin("position", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::ZERO)),
+         RuntimePin("radius", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(100.0f)),
+         RuntimePin("alwaysRelevant", BlueprintPinKind::Input, BlueprintDataType::Bool, Variant(false)),
+         RuntimePin("applied", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Net.GetPing", "Network/Diagnostics", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            unsigned ping = context.GetVariable("__net.ping").GetUInt();
+            if (AbstractConnection* connection = context.GetRuntime().GetRpcConnection())
+                ping = connection->GetPing();
+            else if (context.GetRuntime().GetNetwork() && context.GetRuntime().GetNetwork()->GetServerConnection())
+                ping = context.GetRuntime().GetNetwork()->GetServerConnection()->GetPing();
+            context.SetOutput("ping", ping);
+        }, "Return the latest measured round-trip latency in milliseconds.",
+        {RuntimePin("ping", BlueprintPinKind::Output, BlueprintDataType::Int)});
+
+    RegisterDefinition(registry_, "Net.IsServer", "Network/Role", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const DedicatedServer* server = context.GetRuntime().GetDedicatedServer();
+            context.SetOutput("value", server && server->IsRunning());
+        }, "Return whether the bound dedicated server is running.",
+        {RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Net.IsClient", "Network/Role", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            context.SetOutput("value", context.GetRuntime().GetNetwork()
+                && context.GetRuntime().GetNetwork()->GetServerConnection());
+        }, "Return whether the bound Network subsystem has a server connection.",
+        {RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Bool)});
 }
 
 bool BlueprintRuntime::Execute(const BlueprintGraph& graph, BlueprintId entryNode,
