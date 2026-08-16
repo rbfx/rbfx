@@ -38,6 +38,11 @@ private:
     void RenderNode(const BlueprintNode& node, const ImVec2& canvasOrigin, ImDrawList* drawList);
     void RenderLinks(const ImVec2& canvasOrigin, ImDrawList* drawList);
     void RenderDiagnostics();
+    void RenderNodePalette();
+    void RenderMinimap(const ImVec2& canvasOrigin, const ImVec2& canvasSize);
+    void RenderComments(const ImVec2& canvasOrigin, ImDrawList* drawList);
+    void RenderDebugToolbar();
+    void PerformAutoLayout();
     void SaveGraph();
     void LoadGraph();
     ea::string GetGraphFileName() const;
@@ -61,6 +66,13 @@ private:
     bool graphDirty_{};
     ea::string status_;
     ea::string graphFileName_;
+    ea::string nodeSearch_;
+    ea::vector<BlueprintId> searchResults_;
+    ea::vector<BlueprintId> breakpoints_;
+    BlueprintId debugCurrentNode_{BLUEPRINT_INVALID_ID};
+    bool showMinimap_{true};
+    bool showComments_{true};
+    bool debugPaused_{};
 };
 
 }

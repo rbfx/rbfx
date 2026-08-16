@@ -93,6 +93,7 @@ struct URHO3D_API BlueprintNode
     Vector2 position{Vector2::ZERO};
     BlueprintExecutionMode executionMode{BlueprintExecutionMode::Immediate};
     bool enabled{true};
+    BlueprintId commentId{BLUEPRINT_INVALID_ID};
     ea::vector<BlueprintPin> pins;
     StringVariantMap properties;
 };
@@ -114,6 +115,26 @@ struct URHO3D_API BlueprintVariable
     BlueprintDataType dataType{BlueprintDataType::Variant};
     Variant defaultValue;
     bool exposeOnInstance{false};
+};
+
+/// A movable comment box displayed behind nodes in the editor.
+struct URHO3D_API BlueprintComment
+{
+    BlueprintId id{BLUEPRINT_INVALID_ID};
+    ea::string text;
+    Vector2 position{Vector2::ZERO};
+    Vector2 size{Vector2{260.0f, 120.0f}};
+    unsigned color{0x664A78A8};
+};
+
+/// Signature and serialized body of a user-defined Blueprint function/subgraph.
+struct URHO3D_API BlueprintFunction
+{
+    ea::string name;
+    ea::string description;
+    ea::vector<BlueprintPin> inputs;
+    ea::vector<BlueprintPin> outputs;
+    ea::string body;
 };
 
 /// Result of graph validation.

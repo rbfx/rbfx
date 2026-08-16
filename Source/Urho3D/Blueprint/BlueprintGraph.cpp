@@ -13,6 +13,14 @@ namespace Urho3D
 namespace
 {
 
+ea::string LowerString(const ea::string& value)
+{
+    ea::string result(value);
+    for (unsigned i = 0; i < result.size(); ++i)
+        result[i] = static_cast<char>(ToLower(static_cast<unsigned char>(result[i])));
+    return result;
+}
+
 void SetError(ea::string* error, const ea::string& message)
 {
     if (error)
@@ -99,6 +107,9 @@ void BlueprintGraph::Clear()
     nodes_.clear();
     links_.clear();
     variables_.clear();
+    comments_.clear();
+    functions_.clear();
+    nextCommentId_ = 1;
 }
 
 BlueprintId BlueprintGraph::AllocateNodeId()
@@ -106,6 +117,13 @@ BlueprintId BlueprintGraph::AllocateNodeId()
     while (nextNodeId_ == BLUEPRINT_INVALID_ID || GetNode(nextNodeId_))
         ++nextNodeId_;
     return nextNodeId_++;
+}
+
+BlueprintId BlueprintGraph::AllocateCommentId()
+{
+    while (nextCommentId_ == BLUEPRINT_INVALID_ID || GetComment(nextCommentId_))
+        ++nextCommentId_;
+    return nextCommentId_++;
 }
 
 BlueprintId BlueprintGraph::AllocateLinkId()
@@ -343,7 +361,142 @@ const BlueprintVariable* BlueprintGraph::GetVariable(const ea::string& name) con
     return nullptr;
 }
 
-void BlueprintGraph::RemoveLinksForNode(BlueprintId nodeId)
+bool BlueprintGraph::AddComment(const BlueprintComment& comment)
+{
+    if (comment.text.empty())
+        return false;
+    BlueprintComment copy = comment;
+    if (copy.id == BLUEPRINT_INVALID_ID)
+        copy.id = AllocateCommentId();
+    else if (copy.id >= nextCommentId_)
+        nextCommentId_ = copy.id + 1;
+    if (BlueprintComment* existing = GetComment(copy.id))
+    {
+        *existing = copy;
+        return true;
+    }
+    comments_.push_back(copy);
+    return true;
+}
+
+bool BlueprintGraph::RemoveComment(BlueprintId commentId)
+{
+    for (unsigned i = 0; i < comments_.size(); ++i)
+    {
+        if (comments_[i].id == commentId)
+        {
+            comments_.erase_at(i);
+            for (BlueprintNode& node : nodes_)
+            {
+                if (node.commentId == commentId)
+                    node.commentId = BLUEPRINT_INVALID_ID;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+BlueprintComment* BlueprintGraph::GetComment(BlueprintId commentId)
+{
+    for (BlueprintComment& comment : comments_)
+    {
+        if (comment.id == commentId)
+            return &comment;
+    }
+    return nullptr;
+}
+
+const BlueprintComment* BlueprintGraph::GetComment(BlueprintId commentId) const
+{
+    for (const BlueprintComment& comment : comments_)
+    {
+        if (comment.id == commentId)
+            return &comment;
+    }
+    return nullptr;
+}
+
+bool BlueprintGraph::AddFunction(const BlueprintFunction& function)
+{
+    if (function.name.empty())
+        return false;
+    if (BlueprintFunction* existing = GetFunction(function.name))
+    {
+        *existing = function;
+        return true;
+    }
+    functions_.push_back(function);
+    return true;
+}
+
+BlueprintFunction* BlueprintGraph::GetFunction(const ea::string& name)
+{
+    for (BlueprintFunction& function : functions_)
+    {
+        if (function.name == name)
+            return &function;
+    }
+    return nullptr;
+}
+
+const BlueprintFunction* BlueprintGraph::GetFunction(const ea::string& name) const
+{
+    for (const BlueprintFunction& function : functions_)
+    {
+        if (function.name == name)
+            return &function;
+    }
+    return nullptr;
+}
+
+ea::vector<BlueprintId> BlueprintGraph::SearchNodes(const ea::string& query) const
+{
+    ea::vector<BlueprintId> result;
+    if (query.empty())
+        return result;
+    const ea::string needle = LowerString(query);
+    for (const BlueprintNode& node : nodes_)
+    {
+        if (LowerString(node.typeName).find(needle) != ea::string::npos ||
+            LowerString(node.title).find(needle) != ea::string::npos ||
+            LowerString(node.category).find(needle) != ea::string::npos)
+            result.push_back(node.id);
+    }
+    return result;
+}
+
+void BlueprintGraph::AutoLayout(float horizontalSpacing, float verticalSpacing)
+{
+    ea::unordered_map<BlueprintId, unsigned> levels;
+    for (const BlueprintNode& node : nodes_)
+        levels[node.id] = 0;
+    for (unsigned pass = 0; pass < nodes_.size(); ++pass)
+    {
+        bool changed = false;
+        for (const BlueprintLink& link : links_)
+        {
+            const unsigned nextLevel = levels[link.fromNode] + 1;
+            if (nextLevel > levels[link.toNode])
+            {
+                levels[link.toNode] = nextLevel;
+                changed = true;
+            }
+        }
+        if (!changed)
+            break;
+    }
+    ea::unordered_map<unsigned, unsigned> rows;
+    for (BlueprintNode& node : nodes_)
+    {
+        const unsigned level = levels[node.id];
+        const unsigned row = rows[level]++;
+        node.position = Vector2(level * horizontalSpacing, row * verticalSpacing);
+    }
+}
+
+void BlueprintGraph::RemoveLinksForNode
+(BlueprintId nodeId)
 {
     for (unsigned i = 0; i < links_.size();)
     {
@@ -440,6 +593,7 @@ JSONValue BlueprintGraph::ToJSON() const
         item.Set("y", node.position.y_);
         item.Set("executionMode", Urho3D::ToString(node.executionMode));
         item.Set("enabled", node.enabled);
+        item.Set("commentId", node.commentId);
 
         JSONValue pins(JSON_ARRAY);
         for (const BlueprintPin& pin : node.pins)
@@ -478,6 +632,40 @@ JSONValue BlueprintGraph::ToJSON() const
         variables.Push(ea::move(item));
     }
     root.Set("variables", ea::move(variables));
+
+    JSONValue comments(JSON_ARRAY);
+    for (const BlueprintComment& comment : comments_)
+    {
+        JSONValue item(JSON_OBJECT);
+        item.Set("id", comment.id);
+        item.Set("text", comment.text);
+        item.Set("x", comment.position.x_);
+        item.Set("y", comment.position.y_);
+        item.Set("width", comment.size.x_);
+        item.Set("height", comment.size.y_);
+        item.Set("color", comment.color);
+        comments.Push(ea::move(item));
+    }
+    root.Set("comments", ea::move(comments));
+
+    JSONValue functions(JSON_ARRAY);
+    for (const BlueprintFunction& function : functions_)
+    {
+        JSONValue item(JSON_OBJECT);
+        item.Set("name", function.name);
+        item.Set("description", function.description);
+        item.Set("body", function.body);
+        JSONValue inputs(JSON_ARRAY);
+        for (const BlueprintPin& pin : function.inputs)
+            inputs.Push(SerializePin(pin));
+        item.Set("inputs", ea::move(inputs));
+        JSONValue outputs(JSON_ARRAY);
+        for (const BlueprintPin& pin : function.outputs)
+            outputs.Push(SerializePin(pin));
+        item.Set("outputs", ea::move(outputs));
+        functions.Push(ea::move(item));
+    }
+    root.Set("functions", ea::move(functions));
     return root;
 }
 
@@ -510,6 +698,7 @@ bool BlueprintGraph::FromJSON(const JSONValue& value, ea::string* error)
             node.position = Vector2(item.Contains("x") ? item["x"].GetFloat() : 0.0f, item.Contains("y") ? item["y"].GetFloat() : 0.0f);
             node.executionMode = item.Contains("executionMode") ? ParseBlueprintExecutionMode(item["executionMode"].GetString()) : BlueprintExecutionMode::Immediate;
             node.enabled = !item.Contains("enabled") || item["enabled"].GetBool(true);
+            node.commentId = item.Contains("commentId") ? item["commentId"].GetUInt() : BLUEPRINT_INVALID_ID;
 
             if (item.Contains("pins") && item["pins"].IsArray())
             {
@@ -544,6 +733,50 @@ bool BlueprintGraph::FromJSON(const JSONValue& value, ea::string* error)
             parsed.links_.back().id = link.id == BLUEPRINT_INVALID_ID ? newId : link.id;
             if (parsed.links_.back().id >= parsed.nextLinkId_)
                 parsed.nextLinkId_ = parsed.links_.back().id + 1;
+        }
+    }
+
+    if (value.Contains("comments") && value["comments"].IsArray())
+    {
+        for (const JSONValue& item : value["comments"].GetArray())
+        {
+            BlueprintComment comment;
+            comment.id = item.Contains("id") ? item["id"].GetUInt() : BLUEPRINT_INVALID_ID;
+            comment.text = item.Contains("text") ? item["text"].GetString() : ea::string();
+            comment.position = Vector2(item.Contains("x") ? item["x"].GetFloat() : 0.0f, item.Contains("y") ? item["y"].GetFloat() : 0.0f);
+            comment.size = Vector2(item.Contains("width") ? item["width"].GetFloat() : 260.0f, item.Contains("height") ? item["height"].GetFloat() : 120.0f);
+            comment.color = item.Contains("color") ? item["color"].GetUInt() : 0x664A78A8;
+            if (!parsed.AddComment(comment))
+            {
+                SetError(error, "Blueprint comment has an empty text.");
+                return false;
+            }
+        }
+    }
+
+    if (value.Contains("functions") && value["functions"].IsArray())
+    {
+        for (const JSONValue& item : value["functions"].GetArray())
+        {
+            BlueprintFunction function;
+            function.name = item.Contains("name") ? item["name"].GetString() : ea::string();
+            function.description = item.Contains("description") ? item["description"].GetString() : ea::string();
+            function.body = item.Contains("body") ? item["body"].GetString() : ea::string();
+            if (item.Contains("inputs") && item["inputs"].IsArray())
+            {
+                for (const JSONValue& pin : item["inputs"].GetArray())
+                    function.inputs.push_back(DeserializePin(pin));
+            }
+            if (item.Contains("outputs") && item["outputs"].IsArray())
+            {
+                for (const JSONValue& pin : item["outputs"].GetArray())
+                    function.outputs.push_back(DeserializePin(pin));
+            }
+            if (!parsed.AddFunction(function))
+            {
+                SetError(error, "Blueprint function has an empty name.");
+                return false;
+            }
         }
     }
 

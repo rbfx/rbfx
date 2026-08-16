@@ -62,6 +62,7 @@ BlueprintTab::BlueprintTab(Context* context)
           EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter)
     , graph_("Main")
 {
+    runtime_.RegisterReflectedNodes(context);
     CreateDemoGraph();
     graphFileName_ = GetGraphFileName();
 }
@@ -111,6 +112,12 @@ void BlueprintTab::AddNodeFromToolbar(const ea::string& typeName)
     if (!node)
         return;
 
+    if (const BlueprintNodeDefinition* definition = runtime_.GetRegistry().Find(typeName))
+    {
+        node->executionMode = definition->executionMode;
+        node->pins = definition->pins;
+    }
+
     if (typeName == "Flow.Print")
     {
         AddPin(*node, "execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard);
@@ -153,6 +160,7 @@ void BlueprintTab::RenderContent()
 {
     if (ui::BeginChild("##BlueprintMain", ui::GetContentRegionAvail(), false))
     {
+        RenderNodePalette();
         RenderGraphCanvas();
         ui::Separator();
         RenderDiagnostics();
@@ -194,6 +202,37 @@ void BlueprintTab::RenderToolbar()
     ui::SameLine();
     if (ui::Button("Add Math"))
         AddNodeFromToolbar("Math.AddFloat");
+    ui::SameLine();
+    if (ui::Button("Auto Layout"))
+        PerformAutoLayout();
+    ui::SameLine();
+    if (ui::Button(showMinimap_ ? "Hide Minimap" : "Show Minimap"))
+        showMinimap_ = !showMinimap_;
+    ui::SameLine();
+    if (ui::Button(showComments_ ? "Hide Comments" : "Show Comments"))
+        showComments_ = !showComments_;
+    ui::SameLine();
+    if (ui::Button("Debug Start"))
+    {
+        debugPaused_ = runtime_.BeginDebug(graph_, "Event.OnStart");
+        debugCurrentNode_ = runtime_.GetDebugCurrentNode();
+        status_ = debugPaused_ ? "Debugger paused at entry" : "Unable to start debugger";
+    }
+    ui::SameLine();
+    if (ui::Button("Step") && runtime_.IsDebugActive())
+    {
+        debugPaused_ = runtime_.StepDebug();
+        debugCurrentNode_ = runtime_.GetDebugCurrentNode();
+        status_ = debugPaused_ ? "Debugger advanced one node" : "Debugger finished or stopped";
+    }
+    ui::SameLine();
+    if (ui::Button("Stop Debug"))
+    {
+        runtime_.StopDebug();
+        debugCurrentNode_ = BLUEPRINT_INVALID_ID;
+        debugPaused_ = false;
+        status_ = "Debugger stopped";
+    }
     ui::SameLine();
     ui::Text("Zoom %.2f", zoom_);
 }
@@ -262,9 +301,13 @@ void BlueprintTab::RenderGraphCanvas()
         }
     }
 
+    if (showComments_)
+        RenderComments(canvasOrigin, drawList);
     RenderLinks(canvasOrigin, drawList);
     for (const BlueprintNode& node : graph_.GetNodes())
         RenderNode(node, canvasOrigin, drawList);
+    if (showMinimap_)
+        RenderMinimap(canvasOrigin, canvasSize);
 }
 
 void BlueprintTab::RenderLinks(const ImVec2& canvasOrigin, ImDrawList* drawList)
@@ -315,7 +358,9 @@ void BlueprintTab::RenderNode(const BlueprintNode& node, const ImVec2& canvasOri
     const ImVec2 topLeft = GraphToScreen(node.position, canvasOrigin);
     const ImVec2 bottomRight = topLeft + ImVec2{NodeWidth * zoom_, GetNodeHeight(node) * zoom_};
     const bool selected = node.id == selectedNode_;
-    const ImU32 bodyColor = selected ? IM_COL32(55, 75, 105, 255) : IM_COL32(43, 48, 57, 255);
+    const bool debugCurrent = node.id == debugCurrentNode_ && runtime_.IsDebugActive();
+    const ImU32 bodyColor = debugCurrent ? IM_COL32(115, 78, 35, 255)
+        : selected ? IM_COL32(55, 75, 105, 255) : IM_COL32(43, 48, 57, 255);
     const ImU32 headerColor = selected ? IM_COL32(70, 110, 165, 255) : IM_COL32(55, 61, 72, 255);
     drawList->AddRectFilled(topLeft, bottomRight, bodyColor, 6.0f);
     drawList->AddRectFilled(topLeft, topLeft + ImVec2{NodeWidth * zoom_, HeaderHeight * zoom_}, headerColor, 6.0f,
@@ -359,6 +404,91 @@ void BlueprintTab::RenderDiagnostics()
     {
         ui::TextColored({1.0f, 0.65f, 0.25f, 1.0f}, "Runtime [%s] %s", diagnostic.code.c_str(), diagnostic.message.c_str());
     }
+}
+
+void BlueprintTab::RenderNodePalette()
+{
+    ui::Text("Blueprint Node Palette");
+    ui::SameLine();
+    ui::InputText("Search", &nodeSearch_);
+    if (nodeSearch_.empty())
+        return;
+
+    const ea::string query = nodeSearch_;
+    for (const BlueprintNodeDefinition& definition : runtime_.GetRegistry().GetDefinitions())
+    {
+        if (definition.typeName.find(query) == ea::string::npos
+            && definition.category.find(query) == ea::string::npos
+            && definition.description.find(query) == ea::string::npos)
+            continue;
+        if (ui::Button(definition.typeName.c_str()))
+        {
+            AddNodeFromToolbar(definition.typeName);
+            nodeSearch_.clear();
+            break;
+        }
+        ui::SameLine();
+    }
+    ui::NewLine();
+}
+
+void BlueprintTab::RenderComments(const ImVec2& canvasOrigin, ImDrawList* drawList)
+{
+    for (const BlueprintComment& comment : graph_.GetComments())
+    {
+        const ImVec2 topLeft = GraphToScreen(comment.position, canvasOrigin);
+        const ImVec2 size{comment.size.x_ * zoom_, comment.size.y_ * zoom_};
+        const ImVec2 bottomRight = topLeft + size;
+        drawList->AddRectFilled(topLeft, bottomRight, comment.color, 6.0f);
+        drawList->AddRect(topLeft, bottomRight, IM_COL32(190, 190, 205, 180), 6.0f, 0, 1.0f);
+        drawList->AddText(topLeft + ImVec2{8.0f, 6.0f} * zoom_, IM_COL32(245, 245, 250, 255), comment.text.c_str());
+    }
+}
+
+void BlueprintTab::RenderMinimap(const ImVec2& canvasOrigin, const ImVec2& canvasSize)
+{
+    const ImVec2 minimapSize{210.0f, 140.0f};
+    const ImVec2 topLeft = canvasOrigin + canvasSize - minimapSize - ImVec2{14.0f, 14.0f};
+    const ImVec2 bottomRight = topLeft + minimapSize;
+    ImDrawList* drawList = ui::GetWindowDrawList();
+    drawList->AddRectFilled(topLeft, bottomRight, IM_COL32(18, 20, 24, 230), 4.0f);
+    drawList->AddRect(topLeft, bottomRight, IM_COL32(105, 115, 130, 220), 4.0f);
+
+    if (graph_.GetNodes().empty())
+        return;
+
+    Vector2 minimum = graph_.GetNodes().front().position;
+    Vector2 maximum = minimum;
+    for (const BlueprintNode& node : graph_.GetNodes())
+    {
+        minimum.x_ = Min(minimum.x_, node.position.x_);
+        minimum.y_ = Min(minimum.y_, node.position.y_);
+        maximum.x_ = Max(maximum.x_, node.position.x_ + NodeWidth);
+        maximum.y_ = Max(maximum.y_, node.position.y_ + GetNodeHeight(node));
+    }
+    const Vector2 extent = maximum - minimum;
+    const float scale = Min((minimapSize.x - 16.0f) / Max(extent.x_, 1.0f), (minimapSize.y - 16.0f) / Max(extent.y_, 1.0f));
+    for (const BlueprintNode& node : graph_.GetNodes())
+    {
+        const ImVec2 nodeTopLeft = topLeft + ImVec2{8.0f + (node.position.x_ - minimum.x_) * scale,
+            8.0f + (node.position.y_ - minimum.y_) * scale};
+        const ImVec2 nodeSize{Max(5.0f, NodeWidth * scale), Max(4.0f, GetNodeHeight(node) * scale)};
+        const ImU32 color = node.id == debugCurrentNode_ ? IM_COL32(245, 175, 60, 255)
+            : node.id == selectedNode_ ? IM_COL32(90, 155, 235, 255) : IM_COL32(100, 105, 120, 255);
+        drawList->AddRectFilled(nodeTopLeft, nodeTopLeft + nodeSize, color, 2.0f);
+    }
+}
+
+void BlueprintTab::RenderDebugToolbar()
+{
+    ui::Text(runtime_.IsDebugActive() ? "Debug session active" : "Debug session inactive");
+}
+
+void BlueprintTab::PerformAutoLayout()
+{
+    graph_.AutoLayout();
+    graphDirty_ = true;
+    status_ = "Automatic node layout applied";
 }
 
 void BlueprintTab::RenderContextMenuItems()

@@ -11,6 +11,8 @@ namespace Urho3D
 {
 
 class BlueprintRuntime;
+class Context;
+class Serializable;
 
 /// Runtime callback implemented by a built-in node or a user extension.
 using BlueprintNodeExecutor = ea::function<void(class BlueprintExecutionContext&)>;
@@ -22,6 +24,8 @@ struct URHO3D_API BlueprintNodeDefinition
     ea::string category;
     ea::string description;
     BlueprintExecutionMode executionMode{BlueprintExecutionMode::Immediate};
+    /// Pins exposed when this definition is instantiated in the editor.
+    ea::vector<BlueprintPin> pins;
     BlueprintNodeExecutor execute;
 };
 
@@ -33,9 +37,9 @@ public:
     bool Register(const BlueprintNodeDefinition& definition);
     /// Remove a node definition.
     bool Unregister(const ea::string& typeName);
-    /// Find a node definition.
+    /// Find a node definition by serialized type name.
     const BlueprintNodeDefinition* Find(const ea::string& typeName) const;
-    /// Return all registered definitions.
+    /// Return all registered definitions for palette search and editor tooling.
     const ea::vector<BlueprintNodeDefinition>& GetDefinitions() const { return definitions_; }
 
 private:
@@ -63,10 +67,16 @@ public:
     void ContinueWith(const ea::string& executionPin);
     /// Return the selected execution output.
     const ea::string& GetContinuationPin() const { return continuationPin_; }
+    /// Return the Serializable object bound to the current execution, if any.
+    Serializable* GetTargetObject() const;
+    /// Add a runtime diagnostic associated with the current node.
+    void ReportError(const ea::string& code, const ea::string& message);
 
     /// Read or write a Blueprint graph variable.
     Variant GetVariable(const ea::string& name) const;
     void SetVariable(const ea::string& name, const Variant& value);
+    /// Execute a user-defined function/subgraph from the owning Blueprint graph.
+    bool CallFunction(const ea::string& functionName);
 
 private:
     BlueprintRuntime& runtime_;
@@ -89,6 +99,11 @@ public:
 
     /// Register the standard logic and math nodes.
     void RegisterBuiltinNodes();
+    /// Generate getter and setter nodes from rbfx ObjectReflection metadata.
+    unsigned RegisterReflectedNodes(Context* context);
+    /// Bind a scene node or component for reflected property nodes.
+    void SetTargetObject(Serializable* object) { targetObject_ = object; }
+    Serializable* GetTargetObject() const { return targetObject_; }
 
     /// Execute a graph from a node identifier.
     bool Execute(const BlueprintGraph& graph, BlueprintId entryNode,
@@ -96,6 +111,17 @@ public:
     /// Execute the first node with a matching type name.
     bool ExecuteEvent(const BlueprintGraph& graph, const ea::string& eventType,
         StringVariantMap variables = {}, unsigned maxSteps = 10000);
+
+    /// Start a resumable debug session at an event node.
+    bool BeginDebug(const BlueprintGraph& graph, const ea::string& eventType, StringVariantMap variables = {});
+    /// Execute only the current debug node and advance to the next execution node.
+    bool StepDebug();
+    /// Stop the active debug session.
+    void StopDebug();
+    /// Return whether a debug session is active.
+    bool IsDebugActive() const { return debugGraph_ != nullptr && debugCurrentNode_ != BLUEPRINT_INVALID_ID; }
+    /// Return the node currently paused in the debugger.
+    BlueprintId GetDebugCurrentNode() const { return debugCurrentNode_; }
 
     /// Read runtime values after execution.
     Variant GetValue(BlueprintId nodeId, const ea::string& pinName) const;
@@ -111,12 +137,18 @@ private:
     const BlueprintLink* FindIncomingLink(const BlueprintGraph& graph, BlueprintId nodeId, const ea::string& pinName) const;
     const BlueprintLink* FindOutgoingExecutionLink(const BlueprintGraph& graph, BlueprintId nodeId, const ea::string& pinName) const;
     void AddError(BlueprintId nodeId, const ea::string& code, const ea::string& message);
+    bool ExecuteFunction(const BlueprintGraph& ownerGraph, const ea::string& functionName, unsigned maxSteps = 10000);
 
     BlueprintNodeRegistry registry_;
+    Serializable* targetObject_{};
     StringVariantMap values_;
     StringVariantMap variables_;
     ea::vector<BlueprintDiagnostic> diagnostics_;
+    ea::vector<ea::string> functionCallStack_;
     bool hadRuntimeError_{false};
+    const BlueprintGraph* debugGraph_{};
+    BlueprintId debugCurrentNode_{BLUEPRINT_INVALID_ID};
+    unsigned debugSteps_{};
 };
 
 }

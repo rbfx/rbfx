@@ -45,6 +45,27 @@ public:
     const ea::vector<BlueprintLink>& GetLinks() const { return links_; }
     /// Return all graph variables.
     const ea::vector<BlueprintVariable>& GetVariables() const { return variables_; }
+    /// Return all graph comments.
+    const ea::vector<BlueprintComment>& GetComments() const { return comments_; }
+    /// Return all user-defined functions/subgraphs.
+    const ea::vector<BlueprintFunction>& GetFunctions() const { return functions_; }
+
+    /// Add or replace a comment box.
+    bool AddComment(const BlueprintComment& comment);
+    /// Remove a comment box and detach nodes assigned to it.
+    bool RemoveComment(BlueprintId commentId);
+    /// Find a comment by identifier.
+    BlueprintComment* GetComment(BlueprintId commentId);
+    const BlueprintComment* GetComment(BlueprintId commentId) const;
+    /// Add or replace a user-defined function/subgraph.
+    bool AddFunction(const BlueprintFunction& function);
+    /// Find a function/subgraph by name.
+    BlueprintFunction* GetFunction(const ea::string& name);
+    const BlueprintFunction* GetFunction(const ea::string& name) const;
+    /// Return nodes whose type, title or category contains the query.
+    ea::vector<BlueprintId> SearchNodes(const ea::string& query) const;
+    /// Apply a deterministic left-to-right automatic layout to nodes.
+    void AutoLayout(float horizontalSpacing = 320.0f, float verticalSpacing = 120.0f);
 
     /// Add a pin to an existing node.
     bool AddPin(BlueprintId nodeId, const BlueprintPin& pin);
@@ -85,6 +106,7 @@ public:
 private:
     BlueprintId AllocateNodeId();
     BlueprintId AllocateLinkId();
+    BlueprintId AllocateCommentId();
     bool IsPinCompatible(const BlueprintPin& source, const BlueprintPin& target) const;
     void RemoveLinksForNode(BlueprintId nodeId);
     void RemoveLinksForPin(BlueprintId nodeId, const ea::string& pinName);
@@ -92,9 +114,12 @@ private:
     ea::string name_;
     BlueprintId nextNodeId_{1};
     BlueprintId nextLinkId_{1};
+    BlueprintId nextCommentId_{1};
     ea::vector<BlueprintNode> nodes_;
     ea::vector<BlueprintLink> links_;
     ea::vector<BlueprintVariable> variables_;
+    ea::vector<BlueprintComment> comments_;
+    ea::vector<BlueprintFunction> functions_;
 };
 
 }
