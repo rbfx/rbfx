@@ -96,3 +96,25 @@ TEST_CASE("RenderGraph keeps imported resources out of transient aliasing", "[re
     REQUIRE(graph.GetCompiledResources()[0].aliasGroup == InvalidRenderGraphResource);
     REQUIRE(graph.GetCompiledResources()[0].desc.imported);
 }
+
+TEST_CASE("RenderGraph reports pass durations to the production profiler", "[rendergraph][profiler]")
+{
+    RenderGraph graph;
+    RenderGraphResourceDesc desc;
+    desc.name = "Color";
+    const RenderGraphResourceHandle color = graph.CreateResource(desc);
+
+    ea::vector<ea::string> names;
+    ea::vector<double> durations;
+    graph.SetPassProfiler([&](const ea::string& name, double milliseconds)
+    {
+        names.push_back(name);
+        durations.push_back(milliseconds);
+    });
+    graph.AddPass({"Measured", {{color, true}}, [](const RenderGraphPassContext&) {}});
+
+    REQUIRE(graph.Execute(3));
+    REQUIRE(names.size() == 1);
+    CHECK(names.front() == "Measured");
+    CHECK(durations.front() >= 0.0);
+}

@@ -20,6 +20,7 @@ class RelevancyManager;
 class DedicatedServer;
 class Network;
 class AbstractConnection;
+class ProductionProfiler;
 
 /// Runtime callback implemented by a built-in node or a user extension.
 using BlueprintNodeExecutor = ea::function<void(class BlueprintExecutionContext&)>;
@@ -132,6 +133,9 @@ public:
     Network* GetNetwork() const { return network_; }
     void SetRpcConnection(AbstractConnection* connection) { rpcConnection_ = connection; }
     AbstractConnection* GetRpcConnection() const { return rpcConnection_; }
+    /// Bind an optional production profiler used by Profiler.* Blueprint nodes.
+    void SetProductionProfiler(ProductionProfiler* profiler) { productionProfiler_ = profiler; }
+    ProductionProfiler* GetProductionProfiler() const { return productionProfiler_; }
 
     /// Execute a graph from a node identifier.
     bool Execute(const BlueprintGraph& graph, BlueprintId entryNode,
@@ -227,6 +231,7 @@ private:
     DedicatedServer* dedicatedServer_{};
     Network* network_{};
     AbstractConnection* rpcConnection_{};
+    ProductionProfiler* productionProfiler_{};
     StringVariantMap values_;
     StringVariantMap variables_;
     ea::vector<BlueprintDiagnostic> diagnostics_;

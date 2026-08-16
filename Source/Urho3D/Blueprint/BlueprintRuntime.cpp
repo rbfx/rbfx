@@ -22,6 +22,7 @@
 #include <Urho3D/Replica/RpcDispatcher.h>
 #include <Urho3D/Replica/RelevancyManager.h>
 #include <Urho3D/Network/DedicatedServer.h>
+#include <Urho3D/Profiler/ProductionProfiler.h>
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/Log.h>
@@ -1849,6 +1850,46 @@ void BlueprintRuntime::RegisterBuiltinNodes()
                 && context.GetRuntime().GetNetwork()->GetServerConnection());
         }, "Return whether the bound Network subsystem has a server connection.",
         {RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Profiler.BeginScope", "Profiler/CPU", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            ProductionProfiler* profiler = context.GetRuntime().GetProductionProfiler();
+            if (!profiler)
+            {
+                context.ReportError("BPPROF001", "Profiler.BeginScope requires a ProductionProfiler bound to the BlueprintRuntime.");
+                return;
+            }
+            profiler->BeginScope(context.GetInput("name").GetString());
+            context.ContinueWith("then");
+        }, "Begin a named hierarchical CPU profiler scope.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("name", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string()))});
+
+    RegisterDefinition(registry_, "Profiler.EndScope", "Profiler/CPU", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            ProductionProfiler* profiler = context.GetRuntime().GetProductionProfiler();
+            if (!profiler)
+            {
+                context.ReportError("BPPROF002", "Profiler.EndScope requires a ProductionProfiler bound to the BlueprintRuntime.");
+                return;
+            }
+            profiler->EndScope(context.GetInput("name").GetString());
+            context.ContinueWith("then");
+        }, "End the active CPU profiler scope.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("name", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string()))});
+
+    RegisterDefinition(registry_, "Profiler.GetFrameTime", "Profiler/CPU", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            ProductionProfiler* profiler = context.GetRuntime().GetProductionProfiler();
+            context.SetOutput("value", profiler ? static_cast<float>(profiler->GetLastFrameTimeMilliseconds()) : 0.0f);
+        }, "Read the latest captured frame time in milliseconds.",
+        {RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Float)});
 }
 
 bool BlueprintRuntime::Execute(const BlueprintGraph& graph, BlueprintId entryNode,

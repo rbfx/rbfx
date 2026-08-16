@@ -94,6 +94,8 @@ private:
 };
 
 /// Description of one render pass. Callbacks issue backend commands through the graph context.
+using RenderGraphPassProfiler = ea::function<void(const ea::string&, double)>;
+
 struct URHO3D_API RenderGraphPassDesc
 {
     ea::string name;
@@ -139,6 +141,8 @@ public:
     bool Compile();
     /// Execute compiled callbacks in dependency order.
     bool Execute(unsigned frameIndex = 0);
+    /// Install an optional duration sink for pass-level GPU/renderer instrumentation.
+    void SetPassProfiler(RenderGraphPassProfiler profiler) { passProfiler_ = ea::move(profiler); }
 
     bool IsCompiled() const { return compiled_; }
     const ea::string& GetLastError() const { return lastError_; }
@@ -164,6 +168,7 @@ private:
     ea::vector<RenderGraphCompiledResource> compiledResources_;
     ea::string lastError_;
     unsigned transientAliasGroupCount_{};
+    RenderGraphPassProfiler passProfiler_;
     bool compiled_{};
 };
 

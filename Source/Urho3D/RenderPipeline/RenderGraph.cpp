@@ -8,6 +8,8 @@
 
 #include <EASTL/algorithm.h>
 
+#include <chrono>
+
 namespace Urho3D
 {
 
@@ -266,8 +268,15 @@ bool RenderGraph::Execute(unsigned frameIndex)
         const auto& callback = passes_[passIndex].desc.execute;
         if (callback)
         {
+            const auto start = std::chrono::steady_clock::now();
             const RenderGraphPassContext context(*this, passIndex, frameIndex);
             callback(context);
+            if (passProfiler_)
+            {
+                const auto end = std::chrono::steady_clock::now();
+                const double durationMilliseconds = std::chrono::duration<double, std::milli>(end - start).count();
+                passProfiler_(passes_[passIndex].desc.name, durationMilliseconds);
+            }
         }
     }
     return true;
