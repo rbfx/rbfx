@@ -74,6 +74,7 @@
 #endif
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
+#include "../Resource/AssetPipeline.h"
 #include "../RenderPipeline/RenderPass.h"
 #include "../RenderPipeline/RenderPath.h"
 #include "../RenderPipeline/RenderPipeline.h"
@@ -279,6 +280,7 @@ Engine::Engine(Context* context) :
     RenderPipeline::RegisterObject(context_);
     RenderPath::RegisterObject(context_);
     RenderPass::RegisterObject(context_);
+    FullScreenShaderPass::RegisterObject(context_);
     AmbientOcclusionPass::RegisterObject(context_);
     AutoExposurePass::RegisterObject(context_);
     TemporalUpscalingPass::RegisterObject(context_);
@@ -286,9 +288,9 @@ Engine::Engine(Context* context) :
     ScreenSpaceReflectionsPass::RegisterObject(context_);
     CascadedShadowMapsPass::RegisterObject(context_);
     BloomPass::RegisterObject(context_);
-    FullScreenShaderPass::RegisterObject(context_);
     OutlineRenderPass::RegisterObject(context_);
     ToneMappingPass::RegisterObject(context_);
+    AssetImportSettingsResource::RegisterObject(context_);
 
 #ifdef URHO3D_IK
     RegisterIKLibrary(context_);
