@@ -21,6 +21,8 @@ class DedicatedServer;
 class Network;
 class AbstractConnection;
 class ProductionProfiler;
+class AnimationStateMachine;
+class Sequencer;
 
 /// Runtime callback implemented by a built-in node or a user extension.
 using BlueprintNodeExecutor = ea::function<void(class BlueprintExecutionContext&)>;
@@ -136,6 +138,12 @@ public:
     /// Bind an optional production profiler used by Profiler.* Blueprint nodes.
     void SetProductionProfiler(ProductionProfiler* profiler) { productionProfiler_ = profiler; }
     ProductionProfiler* GetProductionProfiler() const { return productionProfiler_; }
+    /// Bind an optional native animation state machine used by Anim.* Blueprint nodes.
+    void SetAnimationStateMachine(AnimationStateMachine* stateMachine) { animationStateMachine_ = stateMachine; }
+    AnimationStateMachine* GetAnimationStateMachine() const { return animationStateMachine_; }
+    /// Bind an optional cinematic sequencer used by Seq.* Blueprint nodes.
+    void SetSequencer(Sequencer* sequencer) { sequencer_ = sequencer; }
+    Sequencer* GetSequencer() const { return sequencer_; }
 
     /// Execute a graph from a node identifier.
     bool Execute(const BlueprintGraph& graph, BlueprintId entryNode,
@@ -232,6 +240,8 @@ private:
     Network* network_{};
     AbstractConnection* rpcConnection_{};
     ProductionProfiler* productionProfiler_{};
+    AnimationStateMachine* animationStateMachine_{};
+    Sequencer* sequencer_{};
     StringVariantMap values_;
     StringVariantMap variables_;
     ea::vector<BlueprintDiagnostic> diagnostics_;

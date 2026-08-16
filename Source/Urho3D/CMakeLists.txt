@@ -51,7 +51,7 @@ endmacro()
 
 define_engine_source_files (Container Core IO Math)
 
-define_engine_source_files (Audio Engine Graphics Input Plugins RenderAPI RenderPipeline Resource Scene Script Shader UI Utility Blueprint RbScript Profiler)
+define_engine_source_files (Audio Animation Engine Graphics Input Plugins RenderAPI RenderPipeline Resource Scene Script Shader UI Utility Blueprint RbScript Profiler)
 list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
 
 if (URHO3D_PARTICLE_GRAPH)

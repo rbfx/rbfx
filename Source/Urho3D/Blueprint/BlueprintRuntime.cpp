@@ -23,6 +23,8 @@
 #include <Urho3D/Replica/RelevancyManager.h>
 #include <Urho3D/Network/DedicatedServer.h>
 #include <Urho3D/Profiler/ProductionProfiler.h>
+#include <Urho3D/Animation/AnimationStateMachine.h>
+#include <Urho3D/Animation/Sequencer.h>
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/Log.h>
@@ -1056,6 +1058,117 @@ void BlueprintRuntime::RegisterBuiltinNodes()
         }, "Read the interpolated value of a Blueprint timeline.",
         {RuntimePin("timeline", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
          RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Variant)});
+
+    RegisterDefinition(registry_, "Anim.PlayStateMachine", "Animation/State Machine", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            AnimationStateMachine* machine = context.GetRuntime().GetAnimationStateMachine();
+            if (!machine)
+            {
+                context.ReportError("BP460", "Anim.PlayStateMachine requires an injected AnimationStateMachine.");
+                return;
+            }
+            const ea::string state = context.GetInput("state").GetString();
+            const bool played = machine->Start(state);
+            context.SetOutput("played", played);
+            if (played)
+                context.ContinueWith("then");
+        }, "Start an injected native animation state machine.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("state", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("played", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Anim.SetParameter", "Animation/State Machine", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            AnimationStateMachine* machine = context.GetRuntime().GetAnimationStateMachine();
+            if (!machine)
+            {
+                context.ReportError("BP461", "Anim.SetParameter requires an injected AnimationStateMachine.");
+                return;
+            }
+            const bool changed = machine->SetParameter(context.GetInput("parameter").GetString(), context.GetInput("value"));
+            context.SetOutput("changed", changed);
+            if (changed)
+                context.ContinueWith("then");
+        }, "Set a typed parameter consumed by animation transition conditions.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("parameter", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("value", BlueprintPinKind::Input, BlueprintDataType::Variant),
+         RuntimePin("changed", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Anim.GetCurrentState", "Animation/State Machine", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            AnimationStateMachine* machine = context.GetRuntime().GetAnimationStateMachine();
+            context.SetOutput("state", machine ? Variant(machine->GetCurrentState()) : Variant(ea::string()));
+        }, "Read the active state from the injected animation state machine.",
+        {RuntimePin("state", BlueprintPinKind::Output, BlueprintDataType::String)});
+
+    RegisterDefinition(registry_, "Seq.Play", "Animation/Sequencer", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Sequencer* sequencer = context.GetRuntime().GetSequencer();
+            if (!sequencer)
+            {
+                context.ReportError("BP470", "Seq.Play requires an injected Sequencer.");
+                return;
+            }
+            const bool played = sequencer->Play();
+            context.SetOutput("played", played);
+            if (played)
+                context.ContinueWith("then");
+        }, "Start the injected cinematic sequencer from time zero.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("played", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Seq.Pause", "Animation/Sequencer", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Sequencer* sequencer = context.GetRuntime().GetSequencer();
+            if (!sequencer)
+            {
+                context.ReportError("BP471", "Seq.Pause requires an injected Sequencer.");
+                return;
+            }
+            const bool paused = sequencer->Pause();
+            context.SetOutput("paused", paused);
+            if (paused)
+                context.ContinueWith("then");
+        }, "Pause the injected cinematic sequencer without losing its position.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("paused", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Seq.Seek", "Animation/Sequencer", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Sequencer* sequencer = context.GetRuntime().GetSequencer();
+            if (!sequencer)
+            {
+                context.ReportError("BP472", "Seq.Seek requires an injected Sequencer.");
+                return;
+            }
+            const bool moved = sequencer->Seek(context.GetInput("time").GetFloat());
+            context.SetOutput("moved", moved);
+            if (moved)
+                context.ContinueWith("then");
+        }, "Scrub the injected cinematic sequencer to a validated time.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("time", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(0.0f)),
+         RuntimePin("moved", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Seq.GetPosition", "Animation/Sequencer", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            Sequencer* sequencer = context.GetRuntime().GetSequencer();
+            context.SetOutput("time", sequencer ? Variant(sequencer->GetPosition()) : Variant(0.0f));
+        }, "Read the current cinematic sequencer position.",
+        {RuntimePin("time", BlueprintPinKind::Output, BlueprintDataType::Float)});
 
     RegisterDefinition(registry_, "Macro.Call", "Flow/Macro", BlueprintExecutionMode::Immediate,
         [](BlueprintExecutionContext& context)
