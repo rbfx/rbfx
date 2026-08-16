@@ -578,7 +578,10 @@ BlueprintValidationResult BlueprintGraph::Validate() const
 JSONValue BlueprintGraph::ToJSON() const
 {
     JSONValue root(JSON_OBJECT);
-    root.Set("format", 1);
+    // Schema 2 adds explicit comments/functions metadata while remaining compatible
+    // with the original format-1 graph files.
+    root.Set("format", 2);
+    root.Set("schemaVersion", 2);
     root.Set("name", name_);
 
     JSONValue nodes(JSON_ARRAY);
@@ -677,6 +680,15 @@ bool BlueprintGraph::FromJSON(const JSONValue& value, ea::string* error)
         return false;
     }
 
+    const unsigned schemaVersion = value.Contains("schemaVersion")
+        ? value["schemaVersion"].GetUInt()
+        : (value.Contains("format") ? value["format"].GetUInt() : 1u);
+    if (schemaVersion == 0 || schemaVersion > 2)
+    {
+        SetError(error, Format("Unsupported Blueprint schema version {}.", schemaVersion));
+        return false;
+    }
+
     BlueprintGraph parsed;
     parsed.name_ = value.Contains("name") ? value["name"].GetString() : ea::string();
 
@@ -692,7 +704,9 @@ bool BlueprintGraph::FromJSON(const JSONValue& value, ea::string* error)
 
             BlueprintNode node;
             node.id = item.Contains("id") ? item["id"].GetUInt() : BLUEPRINT_INVALID_ID;
-            node.typeName = item.Contains("type") ? item["type"].GetString() : ea::string();
+            // Format 1 used `type`; accept the legacy `typeName` spelling as well.
+            node.typeName = item.Contains("type") ? item["type"].GetString()
+                : (item.Contains("typeName") ? item["typeName"].GetString() : ea::string());
             node.title = item.Contains("title") ? item["title"].GetString() : node.typeName;
             node.category = item.Contains("category") ? item["category"].GetString() : ea::string();
             node.position = Vector2(item.Contains("x") ? item["x"].GetFloat() : 0.0f, item.Contains("y") ? item["y"].GetFloat() : 0.0f);

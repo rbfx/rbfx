@@ -4,7 +4,7 @@
 
 Cette branche ajoute à rbfx un premier socle de **visual scripting de type Blueprint** pour les projets 2D et 3D. Le système est séparé en deux parties : un modèle de graphe sérialisable et un runtime indépendant de l’interface de l’éditeur. Cette séparation permet d’exécuter un Blueprint dans le jeu, de le tester sans interface graphique et d’ajouter de nouveaux nœuds C++ sans modifier le canvas.
 
-Le moteur rbfx conserve ses capacités natives de rendu 2D/3D, scènes, composants, physique, audio, ressources et éditeur. Le module Blueprint ajoute une ressource JSON lisible, un registre de nœuds, une validation des connexions, un exécuteur déterministe et un onglet de graphe dans l’éditeur.
+Le moteur rbfx conserve ses capacités natives de rendu 2D/3D, scènes, composants, physique, audio, ressources et éditeur. Le module Blueprint ajoute une ressource `.blueprint` native, un registre de nœuds, une validation des connexions, un exécuteur déterministe et un onglet de graphe dans l’éditeur.
 
 ## Architecture
 
@@ -12,14 +12,15 @@ Le moteur rbfx conserve ses capacités natives de rendu 2D/3D, scènes, composan
 |---|---|
 | `BlueprintDefs.h/.cpp` | Identifiants, types de pins, types de données, nœuds, liens, variables, commentaires, fonctions et diagnostics. |
 | `BlueprintGraph.h/.cpp` | Conteneur du graphe, CRUD, validation, sérialisation JSON, recherche, placement automatique, commentaires et fonctions/sous-graphes. |
-| `BlueprintRuntime.h/.cpp` | Registre extensible, exécution déterministe, variables, appels de fonctions sérialisées, nœuds 2D/3D et débogage pas-à-pas. |
+| `BlueprintRuntime.h/.cpp` | Registre extensible, exécution déterministe, variables, fonctions paramétrées, événements d’entrée, Delay/Tick, nœuds 2D/3D et débogage avancé. |
 | `BlueprintReflection.h/.cpp` | Génération automatique de nœuds Get/Set à partir des métadonnées `ObjectReflection` rbfx. |
-| `BlueprintTab.h/.cpp` | Canvas ImGui intégré : zoom, déplacement, câbles Bézier, palette contextuelle filtrée, commentaires, minimap, auto-layout, sauvegarde et débogage. |
-| `TestBlueprint.cpp` | Tests Catch2 du graphe, JSON, recherche, layout, fonctions, runtime, réflexion et debugger. |
+| `BlueprintTab.h/.cpp` | Canvas ImGui intégré : zoom, déplacement, sélection multiple, câbles interactifs, palette contextuelle, copier-coller, duplication, suppression, snapshots undo/redo, commentaires, minimap, auto-layout, Watch Window et debug. |
+| `BlueprintResource.h/.cpp` | Ressource rbfx chargeable et sauvegardable via `ResourceCache`, avec enregistrement ObjectFactory. |
+| `TestBlueprint.cpp` | Tests Catch2 du graphe, JSON, migration de schéma, édition logique, fonctions paramétrées, runtime latent, ressource, réflexion, registre et debugger. |
 
 ## Nœuds intégrés
 
-Le registre fournit les nœuds de flux `Event.OnStart`, `Flow.Branch`, `Flow.Print`, les nœuds mathématiques `Math.AddFloat`, `Math.MultiplyFloat`, `Math.LessFloat`, les variables `Variable.Get` et `Variable.Set`, ainsi que `Function.Entry`, `Function.Return` et `Function.Call`. Les primitives de scène couvrent les positions, translations, rotations et échelles 2D/3D : `Scene.GetPosition2D/3D`, `SetPosition2D/3D`, `Translate2D/3D`, `GetRotation2D/3D`, `SetRotation2D/3D`, `GetScale2D/3D` et `SetScale2D/3D`. Le registre est ouvert : un module ou un jeu peut enregistrer ses propres nœuds avec un nom stable, une catégorie, une description, un mode d’exécution, des pins et une fonction C++.
+Le registre fournit les nœuds de flux `Event.OnStart`, `Event.OnKeyPressed`, `Event.OnMouseClick`, `Flow.Branch`, `Flow.Print` et `Flow.Delay`, les nœuds mathématiques `Math.AddFloat`, `Math.MultiplyFloat`, `Math.LessFloat`, `Math.SubtractFloat`, `Math.DivideFloat`, `Math.ClampFloat`, `Math.LerpFloat`, `Math.SinFloat`, `Math.CosFloat`, `Math.AddVector3` et `Math.ScaleVector3`, les variables `Variable.Get` et `Variable.Set`, ainsi que `Function.Entry`, `Function.Return` et `Function.Call`. Les primitives de scène couvrent les positions, translations, rotations et échelles 2D/3D : `Scene.GetPosition2D/3D`, `SetPosition2D/3D`, `Translate2D/3D`, `GetRotation2D/3D`, `SetRotation2D/3D`, `GetScale2D/3D` et `SetScale2D/3D`. Le registre est ouvert : un module ou un jeu peut enregistrer ses propres nœuds avec un nom stable, une catégorie, une description, un mode d’exécution, des pins et une fonction C++.
 
 Les pins d’exécution sont distincts des pins de données. Les pins de données prennent en charge les types Blueprint de base et les valeurs par défaut `Variant`. La validation détecte notamment les nœuds invalides, les pins en double, les liens manquants, les types incompatibles et les entrées multiples non autorisées.
 
@@ -52,11 +53,11 @@ cmake --build build --target Tests -j2
 ctest --test-dir build --output-on-failure
 ```
 
-La validation réalisée sur cette branche a donné **192 tests réussis sur 192** dans la première passe, puis les nouveaux scénarios avancés ont été recompilés et exécutés avec succès : recherche, commentaires, fonctions, auto-layout, sous-graphes sérialisés, débogage et mapping de réflexion. La compilation de l’éditeur produit également `build-editor/bin/Debug/Editor`.
+La validation réalisée sur cette branche a donné **193 tests réussis sur 193** dans la suite complète. Les tests Blueprint ciblés couvrent désormais 14 cas et 163 assertions : recherche, commentaires, fonctions paramétrées, sous-graphes sérialisés, runtime latent, événements d’entrée, migration de schéma, ressource native, registre, réflexion et débogage. La compilation de l’éditeur produit également `build-editor/bin/Debug/Editor`.
 
 ## Utilisation dans l’éditeur
 
-L’onglet **Blueprint** est enregistré automatiquement par `EditorApplication`. Il permet de créer un graphe de démonstration, de déplacer les nœuds, de zoomer et déplacer la vue, de rechercher les nœuds par type/titre/catégorie, d’afficher des commentaires et une minimap, d’appliquer un placement automatique, de valider le graphe, de l’enregistrer dans `Blueprints/Main.blueprint` et de l’exécuter avec le runtime intégré. La barre de débogage expose les commandes **Start**, **Step** et **Stop** et met en évidence le nœud courant.
+L’onglet **Blueprint** est enregistré automatiquement par `EditorApplication`. Il permet de créer un graphe, de sélectionner plusieurs nœuds, de les déplacer en groupe, de créer des liens par glisser-déposer entre pins compatibles, d’ouvrir une palette contextuelle au clic droit, de rechercher les nœuds par type/titre/catégorie, de dupliquer, copier, coller et supprimer, d’afficher des commentaires et une minimap, d’appliquer un placement automatique, de valider le graphe et de sauvegarder une ressource native dans `Blueprints/Main.blueprint`. Les raccourcis d’édition sont reliés aux snapshots undo/redo de l’éditeur. La barre de débogage expose **Start**, **Step**, **Continue** et **Stop**, permet d’activer les breakpoints et affiche la Watch Window ainsi que la pile d’appels.
 
 Les fonctions Blueprint sont stockées comme des sous-graphes JSON dans `BlueprintFunction::body`. Un nœud `Function.Call` les charge, valide leur `Function.Entry`, exécute leur flux et partage l’état des variables avec le graphe appelant. La pile d’appels est limitée et les appels récursifs sont diagnostiqués pour éviter les boucles non bornées.
 
@@ -83,8 +84,8 @@ Le type doit être stable car il est stocké dans le fichier `.blueprint`. Pour 
 
 ## Feuille de route
 
-Le socle fonctionnel est maintenant compilable et intégré, mais une version de production devra encore compléter l’écosystème de nœuds générés : composants rbfx spécialisés, sprites, corps physiques, caméras, lumières, matériaux, sons, entrées et événements. Les prochaines extensions naturelles sont les tableaux, timelines, nœuds latents, interfaces de fonctions, ports typés générés dans la palette, watch window et points d’arrêt persistants.
+Le cœur de l’expérience Blueprint est maintenant disponible et compilable. Les extensions restantes concernent surtout la profondeur fonctionnelle : nœuds spécialisés pour sprites, corps physiques, caméras, lumières, matériaux, sons et composants rbfx ; tableaux et dictionnaires ; timelines ; tâches asynchrones ; interfaces ; macros ; reroutage manuel des câbles ; et création/édition visuelle des signatures de fonctions directement dans l’éditeur.
 
-Le canvas peut encore évoluer vers une parité plus large avec Unreal Engine 5 : connexion interactive par glisser-déposer, menu contextuel au clic droit, suppression et copier-coller de nœuds, undo/redo via `UndoManager`, sélection multiple et reroutage de câbles.
+La prochaine étape de production sera d’ajouter une factory dédiée au Resource Browser pour créer et renommer les fichiers `.blueprint` depuis l’interface, ainsi que la liaison automatique du Blueprint à l’objet ou au Node sélectionné dans la scène. Le format est déjà versionné en **schéma 2** et accepte les fichiers historiques de format 1 ; les migrations futures pourront être ajoutées dans `BlueprintGraph::FromJSON`.
 
 > Cette version constitue une **extension C++ native compilable, testée et intégrée à rbfx**, avec un runtime indépendant de l’interface et une base solide pour poursuivre les fonctionnalités de production sans fragiliser le cœur 2D/3D.

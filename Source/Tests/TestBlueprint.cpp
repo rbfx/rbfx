@@ -4,6 +4,9 @@
 #include <catch2/catch_amalgamated.hpp>
 
 #include <Urho3D/Blueprint/BlueprintReflection.h>
+#include <Urho3D/Blueprint/BlueprintResource.h>
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Blueprint/BlueprintRuntime.h>
 
 using namespace Urho3D;
@@ -162,6 +165,90 @@ TEST_CASE("Blueprint runtime executes serialized Blueprint subgraphs", "[bluepri
     REQUIRE(runtime.GetVariable("called").GetInt() == 7);
 }
 
+TEST_CASE("Blueprint runtime transports function inputs and outputs", "[blueprint][functions]")
+{
+    BlueprintGraph body("ParameterizedBody");
+    const BlueprintId entryNode = body.AddNode("Function.Entry", "Entry");
+    const BlueprintId getNode = body.AddNode("Variable.Get", "Get Input");
+    const BlueprintId setNode = body.AddNode("Variable.Set", "Set Result");
+    const BlueprintId returnNode = body.AddNode("Function.Return", "Return");
+    AddPin(body, entryNode, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(body, getNode, "value", BlueprintPinKind::Output, BlueprintDataType::Int);
+    AddPin(body, setNode, "execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard);
+    AddPin(body, setNode, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(body, setNode, "value", BlueprintPinKind::Input, BlueprintDataType::Int);
+    AddPin(body, returnNode, "execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard);
+    body.GetNode(getNode)->properties["variableName"] = Variant(ea::string("input"));
+    body.GetNode(setNode)->properties["variableName"] = Variant(ea::string("result"));
+    REQUIRE(body.AddLink(entryNode, "then", setNode, "execute") != BLUEPRINT_INVALID_ID);
+    REQUIRE(body.AddLink(setNode, "then", returnNode, "execute") != BLUEPRINT_INVALID_ID);
+    REQUIRE(body.AddLink(getNode, "value", setNode, "value") != BLUEPRINT_INVALID_ID);
+
+    BlueprintFunction function;
+    function.name = "EchoInt";
+    function.body = body.ToString();
+    BlueprintPin input;
+    input.name = "input";
+    input.kind = BlueprintPinKind::Input;
+    input.dataType = BlueprintDataType::Int;
+    function.inputs.push_back(input);
+    BlueprintPin output;
+    output.name = "result";
+    output.kind = BlueprintPinKind::Output;
+    output.dataType = BlueprintDataType::Int;
+    function.outputs.push_back(output);
+
+    BlueprintGraph graph("FunctionParameters");
+    REQUIRE(graph.AddFunction(function));
+    const BlueprintId callNode = graph.AddNode("Function.Call", "Echo");
+    graph.GetNode(callNode)->properties["functionName"] = Variant(ea::string("EchoInt"));
+    AddPin(graph, callNode, "input", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(42));
+    AddPin(graph, callNode, "result", BlueprintPinKind::Output, BlueprintDataType::Int);
+
+    BlueprintRuntime runtime;
+    REQUIRE(runtime.Execute(graph, callNode));
+    REQUIRE_FALSE(runtime.HadRuntimeError());
+    REQUIRE(runtime.GetValue(callNode, "result").GetInt() == 42);
+}
+
+TEST_CASE("Blueprint runtime supports input events and latent execution", "[blueprint][runtime][latent]")
+{
+    BlueprintGraph inputGraph("InputEvents");
+    const BlueprintId keyNode = inputGraph.AddNode("Event.OnKeyPressed", "Key Pressed");
+    AddPin(inputGraph, keyNode, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(inputGraph, keyNode, "key", BlueprintPinKind::Output, BlueprintDataType::Int);
+
+    BlueprintRuntime inputRuntime;
+    StringVariantMap inputVariables;
+    inputVariables["__event.key"] = Variant(65);
+    REQUIRE(inputRuntime.ExecuteEvent(inputGraph, "Event.OnKeyPressed", inputVariables));
+    REQUIRE(inputRuntime.GetValue(keyNode, "key").GetInt() == 65);
+
+    BlueprintGraph graph("LatentFlow");
+    const BlueprintId eventNode = graph.AddNode("Event.OnStart", "Start");
+    const BlueprintId delayNode = graph.AddNode("Flow.Delay", "Delay");
+    const BlueprintId setNode = graph.AddNode("Variable.Set", "Complete");
+    AddPin(graph, eventNode, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(graph, delayNode, "execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard);
+    AddPin(graph, delayNode, "completed", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(graph, delayNode, "duration", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(0.5f));
+    AddPin(graph, setNode, "execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard);
+    AddPin(graph, setNode, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(graph, setNode, "value", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(1));
+    graph.GetNode(setNode)->properties["variableName"] = Variant(ea::string("completed"));
+    REQUIRE(graph.AddLink(eventNode, "then", delayNode, "execute") != BLUEPRINT_INVALID_ID);
+    REQUIRE(graph.AddLink(delayNode, "completed", setNode, "execute") != BLUEPRINT_INVALID_ID);
+
+    BlueprintRuntime runtime;
+    REQUIRE(runtime.ExecuteEvent(graph, "Event.OnStart"));
+    REQUIRE(runtime.IsLatent());
+    REQUIRE(runtime.Tick(0.25f));
+    REQUIRE(runtime.IsLatent());
+    REQUIRE(runtime.Tick(0.25f));
+    REQUIRE_FALSE(runtime.IsLatent());
+    REQUIRE(runtime.GetVariable("completed").GetInt() == 1);
+}
+
 TEST_CASE("Blueprint runtime supports step-by-step debugging", "[blueprint][debug]")
 {
     BlueprintGraph graph("DebugFlow");
@@ -184,6 +271,89 @@ TEST_CASE("Blueprint runtime supports step-by-step debugging", "[blueprint][debu
     REQUIRE_FALSE(runtime.IsDebugActive());
     runtime.StopDebug();
     REQUIRE_FALSE(runtime.IsDebugActive());
+}
+
+TEST_CASE("Blueprint debugger continues to a breakpoint and exposes watches", "[blueprint][debug]")
+{
+    BlueprintGraph graph("BreakpointFlow");
+    const BlueprintId eventNode = graph.AddNode("Event.OnStart", "Start");
+    const BlueprintId printNode = graph.AddNode("Flow.Print", "Print");
+    AddPin(graph, eventNode, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(graph, printNode, "execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard);
+    AddPin(graph, printNode, "then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard);
+    AddPin(graph, printNode, "message", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string("watch")));
+    REQUIRE(graph.AddLink(eventNode, "then", printNode, "execute") != BLUEPRINT_INVALID_ID);
+
+    BlueprintRuntime runtime;
+    runtime.SetBreakpoint(printNode);
+    REQUIRE(runtime.HasBreakpoint(printNode));
+    REQUIRE(runtime.BeginDebug(graph, "Event.OnStart"));
+    REQUIRE(runtime.ContinueDebug());
+    REQUIRE(runtime.IsDebugActive());
+    REQUIRE(runtime.GetDebugCurrentNode() == printNode);
+    REQUIRE(runtime.GetBreakpoints().size() == 1);
+    REQUIRE(runtime.ContinueDebug());
+    REQUIRE_FALSE(runtime.IsDebugActive());
+    runtime.SetBreakpoint(printNode, false);
+    REQUIRE_FALSE(runtime.HasBreakpoint(printNode));
+}
+
+TEST_CASE("Blueprint resource round trips through an rbfx stream", "[blueprint][resource]")
+{
+    Context context;
+    BlueprintGraph sourceGraph("NativeAsset");
+    const BlueprintId nodeId = sourceGraph.AddNode("Math.AddFloat", "Add");
+    AddPin(sourceGraph, nodeId, "a", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(1.0f));
+    AddPin(sourceGraph, nodeId, "b", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(2.0f));
+
+    BlueprintResource source(&context);
+    source.SetGraph(sourceGraph);
+    VectorBuffer buffer;
+    REQUIRE(source.Save(buffer));
+    REQUIRE(buffer.GetSize() > 0);
+
+    BlueprintResource restored(&context);
+    REQUIRE(buffer.Seek(0) == 0);
+    REQUIRE(restored.BeginLoad(buffer));
+    REQUIRE(restored.GetGraph().GetName() == "NativeAsset");
+    REQUIRE(restored.GetGraph().GetNodes().size() == 1);
+    REQUIRE(restored.GetGraph().GetNodes()[0].pins.size() == 2);
+}
+
+TEST_CASE("Blueprint schema versioning migrates legacy graphs", "[blueprint][serialization][migration]")
+{
+    BlueprintGraph graph("SchemaTwo");
+    const ea::string serialized = graph.ToString();
+    REQUIRE(serialized.find("schemaVersion") != ea::string::npos);
+    REQUIRE(serialized.find("\"format\": 2") != ea::string::npos);
+
+    BlueprintGraph legacy;
+    ea::string error;
+    REQUIRE(legacy.FromString(R"({"format":1,"name":"Legacy","nodes":[{"id":1,"typeName":"Event.OnStart","title":"Start"}]})", &error));
+    REQUIRE(error.empty());
+    REQUIRE(legacy.GetName() == "Legacy");
+    REQUIRE(legacy.GetNodes().size() == 1);
+
+    BlueprintGraph unsupported;
+    REQUIRE_FALSE(unsupported.FromString(R"({"schemaVersion":999,"name":"Future"})", &error));
+    REQUIRE_FALSE(error.empty());
+}
+
+TEST_CASE("Blueprint builtin registry exposes complete node signatures", "[blueprint][registry]")
+{
+    BlueprintRuntime runtime;
+    const BlueprintNodeDefinition* divide = runtime.GetRegistry().Find("Math.DivideFloat");
+    REQUIRE(divide != nullptr);
+    REQUIRE(divide->pins.size() == 3);
+    REQUIRE(divide->pins[0].name == "a");
+    REQUIRE(divide->pins[1].name == "b");
+    REQUIRE(divide->pins[2].name == "result");
+
+    const BlueprintNodeDefinition* branch = runtime.GetRegistry().Find("Flow.Branch");
+    REQUIRE(branch != nullptr);
+    REQUIRE(branch->pins.size() == 4);
+    REQUIRE(runtime.GetRegistry().Find("Math.ClampFloat") != nullptr);
+    REQUIRE(runtime.GetRegistry().Find("Event.OnMouseClick") != nullptr);
 }
 
 TEST_CASE("Blueprint reflection maps rbfx variant types", "[blueprint][reflection]")

@@ -38,6 +38,85 @@ BlueprintPin RuntimePin(const char* name, BlueprintPinKind kind, BlueprintDataTy
     return pin;
 }
 
+ea::vector<BlueprintPin> BuiltinPins(const char* typeName)
+{
+    const ea::string name(typeName);
+    ea::vector<BlueprintPin> pins;
+    const auto executionInput = [&]() { pins.push_back(RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard)); };
+    const auto executionOutput = [&](const char* pin = "then") {
+        pins.push_back(RuntimePin(pin, BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard));
+    };
+    const auto floatInput = [&](const char* pin) {
+        pins.push_back(RuntimePin(pin, BlueprintPinKind::Input, BlueprintDataType::Float, Variant(0.0f)));
+    };
+
+    if (name == "Event.OnStart")
+        executionOutput();
+    else if (name == "Flow.Branch")
+    {
+        executionInput();
+        pins.push_back(RuntimePin("true", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard));
+        pins.push_back(RuntimePin("false", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard));
+        pins.push_back(RuntimePin("condition", BlueprintPinKind::Input, BlueprintDataType::Bool, Variant(false)));
+    }
+    else if (name == "Flow.Print")
+    {
+        executionInput();
+        executionOutput();
+        pins.push_back(RuntimePin("message", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string("Message"))));
+    }
+    else if (name == "Function.Return")
+        executionInput();
+    else if (name == "Math.AddFloat" || name == "Math.MultiplyFloat" || name == "Math.LessFloat"
+        || name == "Math.SubtractFloat" || name == "Math.DivideFloat")
+    {
+        floatInput("a");
+        floatInput("b");
+        pins.push_back(RuntimePin("result", BlueprintPinKind::Output,
+            name == "Math.LessFloat" ? BlueprintDataType::Bool : BlueprintDataType::Float));
+    }
+    else if (name == "Math.ClampFloat")
+    {
+        floatInput("value");
+        floatInput("min");
+        floatInput("max");
+        pins.push_back(RuntimePin("result", BlueprintPinKind::Output, BlueprintDataType::Float));
+    }
+    else if (name == "Math.LerpFloat")
+    {
+        floatInput("a");
+        floatInput("b");
+        floatInput("t");
+        pins.push_back(RuntimePin("result", BlueprintPinKind::Output, BlueprintDataType::Float));
+    }
+    else if (name == "Math.SinFloat" || name == "Math.CosFloat")
+    {
+        floatInput("value");
+        pins.push_back(RuntimePin("result", BlueprintPinKind::Output, BlueprintDataType::Float));
+    }
+    else if (name == "Math.AddVector3")
+    {
+        pins.push_back(RuntimePin("a", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::ZERO)));
+        pins.push_back(RuntimePin("b", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::ZERO)));
+        pins.push_back(RuntimePin("result", BlueprintPinKind::Output, BlueprintDataType::Vector3));
+    }
+    else if (name == "Math.ScaleVector3")
+    {
+        pins.push_back(RuntimePin("value", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::ZERO)));
+        floatInput("scale");
+        pins.push_back(RuntimePin("result", BlueprintPinKind::Output, BlueprintDataType::Vector3));
+    }
+    else if (name == "Variable.Get")
+        pins.push_back(RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Variant));
+    else if (name == "Variable.Set")
+    {
+        executionInput();
+        executionOutput();
+        pins.push_back(RuntimePin("value", BlueprintPinKind::Input, BlueprintDataType::Variant));
+    }
+    return pins;
+}
+
 Node* GetTargetNode(BlueprintExecutionContext& context)
 {
     Serializable* target = context.GetTargetObject();
@@ -57,6 +136,8 @@ void RegisterDefinition(BlueprintNodeRegistry& registry, const char* typeName, c
     definition.typeName = typeName;
     definition.category = category;
     definition.executionMode = mode;
+    if (pins.empty())
+        pins = BuiltinPins(typeName);
     definition.pins = ea::move(pins);
     definition.execute = ea::move(executor);
     definition.description = description;
@@ -165,9 +246,15 @@ void BlueprintExecutionContext::SetVariable(const ea::string& name, const Varian
     variables_[name] = value;
 }
 
-bool BlueprintExecutionContext::CallFunction(const ea::string& functionName)
+bool BlueprintExecutionContext::CallFunction(const ea::string& functionName, const StringVariantMap& inputs,
+    StringVariantMap* outputs)
 {
-    return runtime_.ExecuteFunction(graph_, functionName);
+    return runtime_.ExecuteFunction(graph_, functionName, inputs, outputs);
+}
+
+void BlueprintExecutionContext::Delay(float seconds)
+{
+    runtime_.ScheduleDelay(seconds);
 }
 
 BlueprintRuntime::BlueprintRuntime()
@@ -201,6 +288,38 @@ void BlueprintRuntime::RegisterBuiltinNodes()
             context.ContinueWith("then");
         }, "Write a message to the engine log.");
 
+    RegisterDefinition(registry_, "Flow.Delay", "Flow Control", BlueprintExecutionMode::Latent,
+        [](BlueprintExecutionContext& context)
+        {
+            context.Delay(context.GetInput("duration").GetFloat());
+            context.ContinueWith("completed");
+        }, "Pause execution and resume on a later Tick.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("completed", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("duration", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(0.0f))});
+
+    RegisterDefinition(registry_, "Event.OnKeyPressed", "Events/Input", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            context.SetOutput("key", context.GetVariable("__event.key"));
+            context.ContinueWith("then");
+        }, "Input event carrying the pressed key in the __event.key variable.",
+        {RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("key", BlueprintPinKind::Output, BlueprintDataType::Int)});
+
+    RegisterDefinition(registry_, "Event.OnMouseClick", "Events/Input", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            context.SetOutput("button", context.GetVariable("__event.button"));
+            context.SetOutput("x", context.GetVariable("__event.x"));
+            context.SetOutput("y", context.GetVariable("__event.y"));
+            context.ContinueWith("then");
+        }, "Mouse event carrying button and coordinates in __event.button, __event.x and __event.y.",
+        {RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("button", BlueprintPinKind::Output, BlueprintDataType::Int),
+         RuntimePin("x", BlueprintPinKind::Output, BlueprintDataType::Int),
+         RuntimePin("y", BlueprintPinKind::Output, BlueprintDataType::Int)});
+
     RegisterDefinition(registry_, "Function.Entry", "Functions", BlueprintExecutionMode::Immediate,
         [](BlueprintExecutionContext& context)
         {
@@ -222,9 +341,26 @@ void BlueprintRuntime::RegisterBuiltinNodes()
                 context.ReportError("BP200", "Function.Call requires a non-empty functionName property.");
                 return;
             }
-            if (context.CallFunction(iter->second.GetString()))
+
+            StringVariantMap inputs;
+            const BlueprintFunction* function = context.GetGraph().GetFunction(iter->second.GetString());
+            if (function)
+            {
+                for (const BlueprintPin& pin : function->inputs)
+                {
+                    if (pin.kind != BlueprintPinKind::Input)
+                        continue;
+                    inputs[pin.name] = context.GetInput(pin.name);
+                }
+            }
+            StringVariantMap outputs;
+            if (context.CallFunction(iter->second.GetString(), inputs, &outputs))
+            {
+                for (const auto& output : outputs)
+                    context.SetOutput(output.first, output.second);
                 context.ContinueWith("then");
-        }, "Execute a user-defined Blueprint function/subgraph.",
+            }
+        }, "Execute a user-defined Blueprint function/subgraph with typed input and output pins.",
         {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
          RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard)});
 
@@ -245,6 +381,66 @@ void BlueprintRuntime::RegisterBuiltinNodes()
         {
             context.SetOutput("result", context.GetInput("a").GetFloat() < context.GetInput("b").GetFloat());
         }, "Compare two floating-point values.");
+
+    RegisterDefinition(registry_, "Math.SubtractFloat", "Math", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            context.SetOutput("result", context.GetInput("a").GetFloat() - context.GetInput("b").GetFloat());
+        }, "Subtract two floating-point values.");
+
+    RegisterDefinition(registry_, "Math.DivideFloat", "Math", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const float divisor = context.GetInput("b").GetFloat();
+            if (Equals(divisor, 0.0f))
+            {
+                context.ReportError("BP301", "Math.DivideFloat cannot divide by zero.");
+                return;
+            }
+            context.SetOutput("result", context.GetInput("a").GetFloat() / divisor);
+        }, "Divide two floating-point values with zero protection.");
+
+    RegisterDefinition(registry_, "Math.ClampFloat", "Math", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const float value = context.GetInput("value").GetFloat();
+            const float minimum = context.GetInput("min").GetFloat();
+            const float maximum = context.GetInput("max").GetFloat();
+            context.SetOutput("result", Clamp(value, minimum, maximum));
+        }, "Clamp a floating-point value to a range.");
+
+    RegisterDefinition(registry_, "Math.LerpFloat", "Math", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            const float a = context.GetInput("a").GetFloat();
+            const float b = context.GetInput("b").GetFloat();
+            const float t = context.GetInput("t").GetFloat();
+            context.SetOutput("result", Lerp(a, b, t));
+        }, "Linearly interpolate two floating-point values.");
+
+    RegisterDefinition(registry_, "Math.SinFloat", "Math", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            context.SetOutput("result", Sin(context.GetInput("value").GetFloat()));
+        }, "Compute the sine of a value in radians.");
+
+    RegisterDefinition(registry_, "Math.CosFloat", "Math", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            context.SetOutput("result", Cos(context.GetInput("value").GetFloat()));
+        }, "Compute the cosine of a value in radians.");
+
+    RegisterDefinition(registry_, "Math.AddVector3", "Math/Vector", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            context.SetOutput("result", context.GetInput("a").GetVector3() + context.GetInput("b").GetVector3());
+        }, "Add two Vector3 values.");
+
+    RegisterDefinition(registry_, "Math.ScaleVector3", "Math/Vector", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            context.SetOutput("result", context.GetInput("value").GetVector3() * context.GetInput("scale").GetFloat());
+        }, "Scale a Vector3 by a scalar.");
 
     RegisterDefinition(registry_, "Variable.Get", "Variables", BlueprintExecutionMode::Pure,
         [](BlueprintExecutionContext& context)
@@ -423,6 +619,10 @@ bool BlueprintRuntime::Execute(const BlueprintGraph& graph, BlueprintId entryNod
     variables_ = ea::move(variables);
     diagnostics_.clear();
     functionCallStack_.clear();
+    latentGraph_ = nullptr;
+    latentNextNode_ = BLUEPRINT_INVALID_ID;
+    latentRemaining_ = 0.0f;
+    latentPending_ = false;
     hadRuntimeError_ = false;
 
     const BlueprintValidationResult validation = graph.Validate();
@@ -457,7 +657,8 @@ bool BlueprintRuntime::ExecuteEvent(const BlueprintGraph& graph, const ea::strin
     return false;
 }
 
-bool BlueprintRuntime::ExecuteFunction(const BlueprintGraph& ownerGraph, const ea::string& functionName, unsigned maxSteps)
+bool BlueprintRuntime::ExecuteFunction(const BlueprintGraph& ownerGraph, const ea::string& functionName,
+    const StringVariantMap& inputs, StringVariantMap* outputs, unsigned maxSteps)
 {
     const BlueprintFunction* function = ownerGraph.GetFunction(functionName);
     if (!function)
@@ -509,10 +710,24 @@ bool BlueprintRuntime::ExecuteFunction(const BlueprintGraph& ownerGraph, const e
         return false;
     }
 
+    for (const auto& input : inputs)
+        variables_[input.first] = input.second;
+
     functionCallStack_.push_back(functionName);
     unsigned steps = 0;
     const bool result = ExecuteNode(body, entryNode, steps) && steps <= maxSteps;
     functionCallStack_.pop_back();
+
+    if (outputs)
+    {
+        outputs->clear();
+        for (const BlueprintPin& pin : function->outputs)
+        {
+            const auto value = variables_.find(pin.name);
+            if (value != variables_.end())
+                (*outputs)[pin.name] = value->second;
+        }
+    }
     return result && !hadRuntimeError_;
 }
 
@@ -593,6 +808,39 @@ void BlueprintRuntime::StopDebug()
     debugSteps_ = 0;
 }
 
+bool BlueprintRuntime::ContinueDebug(unsigned maxSteps)
+{
+    if (!IsDebugActive())
+        return false;
+
+    unsigned steps = 0;
+    while (IsDebugActive() && steps++ < maxSteps)
+    {
+        if (!StepDebug())
+            return false;
+        if (IsDebugActive() && HasBreakpoint(debugCurrentNode_))
+            return true;
+    }
+
+    if (IsDebugActive())
+    {
+        AddError(debugCurrentNode_, "BP105", "Blueprint debug continue exceeded the safety step limit.");
+        StopDebug();
+        return false;
+    }
+    return true;
+}
+
+void BlueprintRuntime::SetBreakpoint(BlueprintId nodeId, bool enabled)
+{
+    if (nodeId == BLUEPRINT_INVALID_ID)
+        return;
+    if (enabled)
+        breakpoints_.insert(nodeId);
+    else
+        breakpoints_.erase(nodeId);
+}
+
 bool BlueprintRuntime::ExecuteNode(const BlueprintGraph& graph, BlueprintId nodeId, unsigned& steps)
 {
     if (++steps > 10000)
@@ -625,7 +873,35 @@ bool BlueprintRuntime::ExecuteNode(const BlueprintGraph& graph, BlueprintId node
         return true;
 
     const BlueprintLink* next = FindOutgoingExecutionLink(graph, nodeId, context.GetContinuationPin());
+    if (definition->executionMode == BlueprintExecutionMode::Latent && latentPending_)
+    {
+        latentGraph_ = &graph;
+        latentNextNode_ = next ? next->toNode : BLUEPRINT_INVALID_ID;
+        return true;
+    }
     return next ? ExecuteNode(graph, next->toNode, steps) : true;
+}
+
+bool BlueprintRuntime::Tick(float deltaSeconds)
+{
+    if (!latentPending_ || !latentGraph_)
+        return false;
+
+    latentRemaining_ -= Max(0.0f, deltaSeconds);
+    if (latentRemaining_ > 0.0f)
+        return true;
+
+    const BlueprintGraph* graph = latentGraph_;
+    const BlueprintId nextNode = latentNextNode_;
+    latentGraph_ = nullptr;
+    latentNextNode_ = BLUEPRINT_INVALID_ID;
+    latentRemaining_ = 0.0f;
+    latentPending_ = false;
+
+    if (nextNode == BLUEPRINT_INVALID_ID)
+        return true;
+    unsigned steps = 0;
+    return ExecuteNode(*graph, nextNode, steps);
 }
 
 Variant BlueprintRuntime::EvaluateOutput(const BlueprintGraph& graph, BlueprintId nodeId,

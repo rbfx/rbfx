@@ -6,6 +6,7 @@
 #include "BlueprintGraph.h"
 #include <EASTL/functional.h>
 #include <EASTL/unordered_map.h>
+#include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {
@@ -76,7 +77,10 @@ public:
     Variant GetVariable(const ea::string& name) const;
     void SetVariable(const ea::string& name, const Variant& value);
     /// Execute a user-defined function/subgraph from the owning Blueprint graph.
-    bool CallFunction(const ea::string& functionName);
+    bool CallFunction(const ea::string& functionName, const StringVariantMap& inputs = {},
+        StringVariantMap* outputs = nullptr);
+    /// Pause execution for a duration and resume through BlueprintRuntime::Tick.
+    void Delay(float seconds);
 
 private:
     BlueprintRuntime& runtime_;
@@ -120,12 +124,30 @@ public:
     void StopDebug();
     /// Return whether a debug session is active.
     bool IsDebugActive() const { return debugGraph_ != nullptr && debugCurrentNode_ != BLUEPRINT_INVALID_ID; }
+    /// Advance a latent Blueprint execution by elapsed seconds.
+    bool Tick(float deltaSeconds);
+    /// Continue a debug session until completion or the next breakpoint.
+    bool ContinueDebug(unsigned maxSteps = 10000);
+    /// Enable or disable a breakpoint on a node.
+    void SetBreakpoint(BlueprintId nodeId, bool enabled = true);
+    /// Return whether a node has a breakpoint.
+    bool HasBreakpoint(BlueprintId nodeId) const { return breakpoints_.find(nodeId) != breakpoints_.end(); }
+    /// Return all active breakpoints.
+    const ea::unordered_set<BlueprintId>& GetBreakpoints() const { return breakpoints_; }
+    /// Return whether an execution is currently waiting on a latent node.
+    bool IsLatent() const { return latentPending_; }
     /// Return the node currently paused in the debugger.
     BlueprintId GetDebugCurrentNode() const { return debugCurrentNode_; }
 
     /// Read runtime values after execution.
     Variant GetValue(BlueprintId nodeId, const ea::string& pinName) const;
     Variant GetVariable(const ea::string& name) const;
+    /// Return node output values accumulated during execution for the Watch window.
+    const StringVariantMap& GetWatchValues() const { return values_; }
+    /// Return graph variables accumulated during execution for the Watch window.
+    const StringVariantMap& GetWatchVariables() const { return variables_; }
+    /// Return the active Blueprint function call stack.
+    const ea::vector<ea::string>& GetCallStack() const { return functionCallStack_; }
     const ea::vector<BlueprintDiagnostic>& GetDiagnostics() const { return diagnostics_; }
     bool HadRuntimeError() const { return hadRuntimeError_; }
 
@@ -137,7 +159,9 @@ private:
     const BlueprintLink* FindIncomingLink(const BlueprintGraph& graph, BlueprintId nodeId, const ea::string& pinName) const;
     const BlueprintLink* FindOutgoingExecutionLink(const BlueprintGraph& graph, BlueprintId nodeId, const ea::string& pinName) const;
     void AddError(BlueprintId nodeId, const ea::string& code, const ea::string& message);
-    bool ExecuteFunction(const BlueprintGraph& ownerGraph, const ea::string& functionName, unsigned maxSteps = 10000);
+    void ScheduleDelay(float seconds) { latentPending_ = true; latentRemaining_ = Max(0.0f, seconds); }
+    bool ExecuteFunction(const BlueprintGraph& ownerGraph, const ea::string& functionName,
+        const StringVariantMap& inputs = {}, StringVariantMap* outputs = nullptr, unsigned maxSteps = 10000);
 
     BlueprintNodeRegistry registry_;
     Serializable* targetObject_{};
@@ -149,6 +173,11 @@ private:
     const BlueprintGraph* debugGraph_{};
     BlueprintId debugCurrentNode_{BLUEPRINT_INVALID_ID};
     unsigned debugSteps_{};
+    const BlueprintGraph* latentGraph_{};
+    BlueprintId latentNextNode_{BLUEPRINT_INVALID_ID};
+    float latentRemaining_{};
+    bool latentPending_{};
+    ea::unordered_set<BlueprintId> breakpoints_;
 };
 
 }
