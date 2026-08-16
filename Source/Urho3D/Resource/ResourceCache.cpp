@@ -33,6 +33,7 @@
 #include <Urho3D/Resource/BackgroundLoader.h>
 #include <Urho3D/Resource/BinaryFile.h>
 #include <Urho3D/Blueprint/BlueprintResource.h>
+#include <Urho3D/RbScript/RbScriptResource.h>
 #include <Urho3D/Resource/Graph.h>
 #include <Urho3D/Resource/GraphNode.h>
 #include <Urho3D/Resource/Image.h>
@@ -877,6 +878,7 @@ void RegisterResourceLibrary(Context* context)
 {
     BinaryFile::RegisterObject(context);
     BlueprintResource::RegisterObject(context);
+    RbScriptResource::RegisterObject(context);
     Image::RegisterObject(context);
     ImageCube::RegisterObject(context);
     JSONFile::RegisterObject(context);
