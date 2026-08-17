@@ -28,6 +28,9 @@ class BehaviorTree;
 class EQS;
 class PerceptionSystem;
 class StateTree;
+class ShaderGraph;
+class VFXGraph;
+class AudioMixer;
 
 /// Runtime callback implemented by a built-in node or a user extension.
 using BlueprintNodeExecutor = ea::function<void(class BlueprintExecutionContext&)>;
@@ -160,6 +163,12 @@ public:
     PerceptionSystem* GetPerceptionSystem() const { return perceptionSystem_; }
     void SetStateTree(StateTree* stateTree) { stateTree_ = stateTree; }
     StateTree* GetStateTree() const { return stateTree_; }
+    void SetShaderGraph(ShaderGraph* shaderGraph) { shaderGraph_ = shaderGraph; }
+    ShaderGraph* GetShaderGraph() const { return shaderGraph_; }
+    void SetVFXGraph(VFXGraph* vfxGraph) { vfxGraph_ = vfxGraph; }
+    VFXGraph* GetVFXGraph() const { return vfxGraph_; }
+    void SetAudioMixer(AudioMixer* audioMixer) { audioMixer_ = audioMixer; }
+    AudioMixer* GetAudioMixer() const { return audioMixer_; }
 
     /// Execute a graph from a node identifier.
     bool Execute(const BlueprintGraph& graph, BlueprintId entryNode,
@@ -263,6 +272,9 @@ private:
     EQS* eqs_{};
     PerceptionSystem* perceptionSystem_{};
     StateTree* stateTree_{};
+    ShaderGraph* shaderGraph_{};
+    VFXGraph* vfxGraph_{};
+    AudioMixer* audioMixer_{};
     StringVariantMap values_;
     StringVariantMap variables_;
     ea::vector<BlueprintDiagnostic> diagnostics_;

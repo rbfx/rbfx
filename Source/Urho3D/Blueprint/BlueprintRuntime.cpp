@@ -30,6 +30,9 @@
 #include <Urho3D/AI/EQS.h>
 #include <Urho3D/AI/PerceptionSystem.h>
 #include <Urho3D/AI/StateTree.h>
+#include <Urho3D/Shader/ShaderGraph.h>
+#include <Urho3D/Particles/VFXGraph.h>
+#include <Urho3D/Audio/AudioMixer.h>
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/Log.h>
@@ -1253,6 +1256,90 @@ void BlueprintRuntime::RegisterBuiltinNodes()
          RuntimePin("radius", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(100.0f)),
          RuntimePin("best", BlueprintPinKind::Output, BlueprintDataType::Vector3),
          RuntimePin("found", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Shader.SetGraphParameter", "Rendering/Shader", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            ShaderGraph* graph = context.GetRuntime().GetShaderGraph();
+            if (!graph)
+            {
+                context.ReportError("BP490", "Shader.SetGraphParameter requires an injected ShaderGraph.");
+                return;
+            }
+            ShaderGraphParameter parameter;
+            parameter.name = context.GetInput("name").GetString();
+            const int type = context.GetInput("type").GetInt();
+            if (type < static_cast<int>(ShaderGraphValueType::Float) || type > static_cast<int>(ShaderGraphValueType::Texture2D))
+            {
+                context.ReportError("BP491", "Shader.SetGraphParameter received an invalid value type.");
+                return;
+            }
+            parameter.type = static_cast<ShaderGraphValueType>(type);
+            parameter.defaultValue = context.GetInput("value");
+            const bool changed = graph->SetParameter(parameter);
+            context.SetOutput("changed", changed);
+            if (changed)
+                context.ContinueWith("then");
+        }, "Set or replace a typed ShaderGraph material parameter.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("name", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("type", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("value", BlueprintPinKind::Input, BlueprintDataType::Variant),
+         RuntimePin("changed", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "VFX.Play", "Rendering/VFX", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            VFXGraph* graph = context.GetRuntime().GetVFXGraph();
+            if (!graph)
+            {
+                context.ReportError("BP492", "VFX.Play requires an injected VFXGraph.");
+                return;
+            }
+            context.SetOutput("started", graph->Play());
+            if (graph->IsPlaying())
+                context.ContinueWith("then");
+        }, "Start the injected VFX graph runtime.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("started", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "VFX.Stop", "Rendering/VFX", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            VFXGraph* graph = context.GetRuntime().GetVFXGraph();
+            if (!graph)
+            {
+                context.ReportError("BP493", "VFX.Stop requires an injected VFXGraph.");
+                return;
+            }
+            context.SetOutput("stopped", graph->Stop());
+            context.ContinueWith("then");
+        }, "Stop the injected VFX graph runtime.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("stopped", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Audio.SetBusVolume", "Audio/Mixer", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            AudioMixer* mixer = context.GetRuntime().GetAudioMixer();
+            if (!mixer)
+            {
+                context.ReportError("BP494", "Audio.SetBusVolume requires an injected AudioMixer.");
+                return;
+            }
+            const bool changed = mixer->SetBusVolume(context.GetInput("bus").GetString(), context.GetInput("volume").GetFloat());
+            context.SetOutput("changed", changed);
+            if (changed)
+                context.ContinueWith("then");
+        }, "Set the gain of an AudioMixer bus.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("bus", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string("Master"))),
+         RuntimePin("volume", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(1.0f)),
+         RuntimePin("changed", BlueprintPinKind::Output, BlueprintDataType::Bool)});
 
     RegisterDefinition(registry_, "Macro.Call", "Flow/Macro", BlueprintExecutionMode::Immediate,
         [](BlueprintExecutionContext& context)
