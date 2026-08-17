@@ -23,6 +23,7 @@
 #include "../Core/IniHelpers.h"
 #include "../Foundation/ResourceBrowserTab.h"
 
+#include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 
 #include <EASTL/sort.h>
@@ -129,6 +130,37 @@ void ResourceBrowserTab::InitializeDefaultFactories()
     {
         auto fs = GetSubsystem<FileSystem>();
         fs->CreateDirsRecursive(fileName);
+    }));
+
+    AddFactory(MakeShared<SimpleResourceFactory>(
+        context_, M_MIN_INT + 10, ICON_FA_CODE " rbscript", "NewScript.rbscript",
+        [this](const ea::string& fileName, const ea::string& resourceName)
+    {
+        auto fs = GetSubsystem<FileSystem>();
+        if (!fs->CreateDirsRecursive(GetPath(fileName)))
+        {
+            URHO3D_LOGERROR("Unable to create rbscript directory: {}", GetPath(fileName));
+            return;
+        }
+
+        File file(context_, fileName, FILE_WRITE);
+        if (!file.IsOpen())
+        {
+            URHO3D_LOGERROR("Unable to create rbscript file: {}", fileName);
+            return;
+        }
+
+        const ea::string source =
+            "// New rbscript file\\n"
+            "// Edit this script in the integrated rbscript editor.\\n\\n"
+            "script Main {\\n"
+            "    fn on_start() {\\n"
+            "    }\\n"
+            "}\\n";
+        file.Write(source.data(), source.size());
+
+        if (auto project = GetProject())
+            project->ProcessRequest(MakeShared<OpenResourceRequest>(context_, resourceName), this);
     }));
 }
 
@@ -1406,13 +1438,20 @@ void ResourceBrowserTab::CleanupResourceCache(const ea::string& resourceName)
 void ResourceBrowserTab::OpenEntryInEditor(const FileSystemEntry& entry)
 {
     auto project = GetProject();
+    if (!project)
+        return;
 
     const auto request = MakeShared<OpenResourceRequest>(context_, entry.resourceName_);
-    request->QueueProcessCallback([=]()
+    // Resource tabs, including RbScriptTab, handle their own files internally.
+    // Keep the external fallback only for file types without an editor tab.
+    if (!entry.resourceName_.ends_with(".rbscript", false))
     {
-        auto fs = GetSubsystem<FileSystem>();
-        fs->SystemOpen(entry.absolutePath_);
-    }, M_MIN_INT);
+        request->QueueProcessCallback([=]()
+        {
+            auto fs = GetSubsystem<FileSystem>();
+            fs->SystemOpen(entry.absolutePath_);
+        }, M_MIN_INT);
+    }
 
     project->ProcessRequest(request, this);
 }

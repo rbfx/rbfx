@@ -490,6 +490,20 @@ void BlueprintTab::RenderGraphCanvas()
     for (float y = startY; y < canvasSize.y; y += grid)
         drawList->AddLine(canvasOrigin + ImVec2{0, y}, canvasOrigin + ImVec2{canvasSize.x, y}, IM_COL32(38, 43, 51, 255));
 
+    // Open popups from the stable canvas window scope on the following frame.
+    // Opening directly while the InvisibleButton is processing the right click can
+    // make ImGui close the popup immediately when the item loses ownership.
+    if (contextMenuRequested_)
+    {
+        ui::OpenPopup("BlueprintCanvasContext");
+        contextMenuRequested_ = false;
+    }
+    if (nodeContextMenuRequested_)
+    {
+        ui::OpenPopup("BlueprintNodeContext");
+        nodeContextMenuRequested_ = false;
+    }
+
     const ImGuiIO& io = ui::GetIO();
     if (hovered && (ui::IsMouseDown(MOUSEB_MIDDLE) || ui::IsMouseDown(MOUSEB_RIGHT)))
     {
@@ -515,12 +529,12 @@ void BlueprintTab::RenderGraphCanvas()
         {
             contextNode_ = node->id;
             SelectNode(node->id, io.KeyCtrl);
-            ui::OpenPopup("BlueprintNodeContext");
+            nodeContextMenuRequested_ = true;
         }
         else
         {
             contextNode_ = BLUEPRINT_INVALID_ID;
-            ui::OpenPopup("BlueprintCanvasContext");
+            contextMenuRequested_ = true;
         }
     }
 
@@ -721,14 +735,18 @@ void BlueprintTab::RenderNodeContextMenu()
     if (ui::MenuItem("Duplicate", GetHotkeyLabel(Hotkey_Duplicate).c_str(), false, !selectedNodes_.empty()))
         DuplicateSelection();
     if (ui::MenuItem("Delete", GetHotkeyLabel(Hotkey_Delete).c_str(), false, !selectedNodes_.empty()))
+    {
         DeleteSelected();
+        ui::CloseCurrentPopup();
+    }
     if (ui::MenuItem("Toggle breakpoint", GetHotkeyLabel(Hotkey_Breakpoint).c_str(), false, selectedNode_ != BLUEPRINT_INVALID_ID))
         ToggleBreakpoint();
     ui::Separator();
     if (ui::MenuItem("Create node from here"))
     {
         contextGraphPosition_ = FindNode(contextNode_) ? FindNode(contextNode_)->position + Vector2{NodeWidth + 40.0f, 0.0f} : contextGraphPosition_;
-        ui::OpenPopup("BlueprintCanvasContext");
+        contextMenuRequested_ = true;
+        ui::CloseCurrentPopup();
     }
     ui::EndPopup();
 }

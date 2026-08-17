@@ -4,6 +4,7 @@
 #include "RbScriptTab.h"
 
 #include "../Core/IniHelpers.h"
+#include "ResourceBrowserTab.h"
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/File.h>
@@ -124,6 +125,64 @@ RbScriptTab::RbScriptTab(Context* context)
     BindHotkey(Hotkey_Compile, &RbScriptTab::CompileActiveDocument);
     BindHotkey(Hotkey_Save, &RbScriptTab::SaveCurrentResource);
     typeRegistry_.RegisterFromReflection(context);
+}
+
+void RbScriptTab::CreateNewScript()
+{
+    auto project = GetProject();
+    auto fs = GetSubsystem<FileSystem>();
+    if (!project || !fs)
+        return;
+
+    const ea::string scriptDirectory = AddTrailingSlash(project->GetDataPath()) + "Scripts";
+    if (!fs->CreateDirsRecursive(scriptDirectory))
+    {
+        status_ = "Unable to create Data/Scripts";
+        return;
+    }
+
+    ea::string resourceName = "Scripts/NewScript.rbscript";
+    unsigned suffix = 1;
+    while (fs->FileExists(AddTrailingSlash(project->GetDataPath()) + resourceName))
+        resourceName = Format("Scripts/NewScript{}.rbscript", suffix++);
+
+    const ea::string fileName = AddTrailingSlash(project->GetDataPath()) + resourceName;
+    File file(context_, fileName, FILE_WRITE);
+    if (!file.IsOpen())
+    {
+        status_ = Format("Unable to create {}", resourceName);
+        return;
+    }
+
+    const ea::string source =
+        "// rbscript source file\\n"
+        "// This file is created by the rbfx editor.\\n\\n"
+        "script Main {\\n"
+        "    fn on_start() {\\n"
+        "    }\\n"
+        "}\\n";
+    if (file.Write(source.data(), source.size()) != source.size())
+    {
+        status_ = Format("Unable to write {}", resourceName);
+        return;
+    }
+
+    project->ProcessRequest(MakeShared<OpenResourceRequest>(context_, resourceName), this);
+    status_ = Format("Created {}", resourceName);
+}
+
+void RbScriptTab::FocusResourceBrowser()
+{
+    if (auto project = GetProject())
+    {
+        if (auto browser = project->FindTab<ResourceBrowserTab>())
+        {
+            browser->Focus(true);
+            status_ = "Select a .rbscript file in the Resources tab";
+            return;
+        }
+    }
+    status_ = "Resource Browser is unavailable";
 }
 
 bool RbScriptTab::CanOpenResource(const ResourceFileDescriptor& desc)
@@ -418,7 +477,14 @@ void RbScriptTab::RenderContent()
     Document* document = GetActiveDocument();
     if (!document)
     {
-        ui::TextWrapped("Open a .rbscript resource from the Resource Browser to start editing.");
+        ui::TextWrapped("Create or open a .rbscript resource to start editing.");
+        if (ui::Button("New rbscript"))
+            CreateNewScript();
+        ui::SameLine();
+        if (ui::Button("Open in Resource Browser"))
+            FocusResourceBrowser();
+        if (!status_.empty())
+            ui::Text("%s", status_.c_str());
         return;
     }
 
@@ -449,6 +515,12 @@ void RbScriptTab::RenderContent()
 
 void RbScriptTab::RenderToolbar()
 {
+    if (ui::Button("New rbscript"))
+        CreateNewScript();
+    ui::SameLine();
+    if (ui::Button("Open Browser"))
+        FocusResourceBrowser();
+    ui::SameLine();
     if (ui::Button("Compile"))
         CompileActiveDocument();
     ui::SameLine();

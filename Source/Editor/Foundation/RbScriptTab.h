@@ -62,6 +62,8 @@ private:
         bool showPreview{true};
     };
 
+    void CreateNewScript();
+    void FocusResourceBrowser();
     void LoadDocument(const ea::string& resourceName);
     void RefreshDocument(const ea::string& resourceName, bool compile);
     void ApplySource(const ea::string& resourceName, const ea::string& source, bool compile);
