@@ -44,6 +44,8 @@
 #include <Urho3D/WorldFabric/WorldFabricCollaboration.h>
 #include <Urho3D/WorldFabric/WorldFabricAccessibility.h>
 #include <Urho3D/WorldFabric/WorldFabricLocalization.h>
+#include <Urho3D/WorldFabric/WorldFabricProfiler.h>
+#include <Urho3D/Resource/PlatformExportAdapter.h>
 #include <Urho3D/RbScript/RbScriptType.h>
 
 #include <Urho3D/Core/StringUtils.h>
@@ -2546,6 +2548,100 @@ void BlueprintRuntime::RegisterBuiltinNodes()
          RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
          RuntimePin("locale", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
          RuntimePin("changed", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Profiler.AnnotateNode", "Profiler/World Fabric", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricProfiler* profiler = context.GetRuntime().GetWorldFabricProfiler();
+            if (!profiler)
+            {
+                context.ReportError("BPPRF001", "Profiler.AnnotateNode requires a WorldFabricProfiler bound to the BlueprintRuntime.");
+                return;
+            }
+            ea::string error;
+            const bool annotated = profiler->AnnotateNode(context.GetInput("nodeId").GetUInt64(),
+                context.GetInput("duration").GetFloat(), context.GetInput("channel").GetString(), &error);
+            context.SetOutput("annotated", annotated);
+            context.SetOutput("error", error);
+            if (annotated)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPPRF002", error);
+        }, "Correlate a CPU, GPU, rbscript or custom duration with a World Fabric semantic node.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("nodeId", BlueprintPinKind::Input, BlueprintDataType::Int64,
+             Variant(static_cast<unsigned long long>(0))),
+         RuntimePin("duration", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(0.0f)),
+         RuntimePin("channel", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string("CPU"))),
+         RuntimePin("annotated", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("error", BlueprintPinKind::Output, BlueprintDataType::String)});
+
+    RegisterDefinition(registry_, "Profiler.GetNodeStats", "Profiler/World Fabric", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricProfiler* profiler = context.GetRuntime().GetWorldFabricProfiler();
+            if (!profiler)
+            {
+                context.ReportError("BPPRF003", "Profiler.GetNodeStats requires a WorldFabricProfiler bound to the BlueprintRuntime.");
+                return;
+            }
+            WorldFabricNodeProfile stats;
+            const bool found = profiler->GetNodeStats(context.GetInput("nodeId").GetUInt64(),
+                context.GetInput("channel").GetString(), stats);
+            context.SetOutput("found", found);
+            if (found)
+            {
+                context.SetOutput("key", stats.key);
+                context.SetOutput("calls", Variant(static_cast<unsigned long long>(stats.calls)));
+                context.SetOutput("total", Variant(static_cast<float>(stats.totalMilliseconds)));
+                context.SetOutput("average", Variant(static_cast<float>(stats.GetAverageMilliseconds())));
+                context.SetOutput("minimum", Variant(static_cast<float>(stats.minimumMilliseconds)));
+                context.SetOutput("maximum", Variant(static_cast<float>(stats.maximumMilliseconds)));
+            }
+        }, "Read deterministic profiling statistics correlated to a World Fabric node and channel.",
+        {RuntimePin("nodeId", BlueprintPinKind::Input, BlueprintDataType::Int64,
+             Variant(static_cast<unsigned long long>(0))),
+         RuntimePin("channel", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string("CPU"))),
+         RuntimePin("found", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("key", BlueprintPinKind::Output, BlueprintDataType::String),
+         RuntimePin("calls", BlueprintPinKind::Output, BlueprintDataType::Int64),
+         RuntimePin("total", BlueprintPinKind::Output, BlueprintDataType::Float),
+         RuntimePin("average", BlueprintPinKind::Output, BlueprintDataType::Float),
+         RuntimePin("minimum", BlueprintPinKind::Output, BlueprintDataType::Float),
+         RuntimePin("maximum", BlueprintPinKind::Output, BlueprintDataType::Float)});
+
+    RegisterDefinition(registry_, "Export.GetPlatform", "Export/Platform", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            int platform = context.GetInput("platform").GetInt();
+            platform = Max(0, Min(platform, static_cast<int>(PackagePlatform::iOS)));
+            const PackagePlatform selected = static_cast<PackagePlatform>(platform);
+            bool supported = false;
+            const StringVariantMap description = PlatformExportAdapter::Describe(selected, &supported);
+            context.SetOutput("platformName", description.at("platform"));
+            context.SetOutput("supported", supported);
+        }, "Resolve the registered multiplatform export adapter for a package platform.",
+        {RuntimePin("platform", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("platformName", BlueprintPinKind::Output, BlueprintDataType::String),
+         RuntimePin("supported", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Export.GetCapabilities", "Export/Platform", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            int platform = context.GetInput("platform").GetInt();
+            platform = Max(0, Min(platform, static_cast<int>(PackagePlatform::iOS)));
+            bool supported = false;
+            const StringVariantMap description = PlatformExportAdapter::Describe(
+                static_cast<PackagePlatform>(platform), &supported);
+            context.SetOutput("platformName", description.at("platform"));
+            context.SetOutput("supported", supported);
+            context.SetOutput("capabilities", Variant(description));
+        }, "Return deterministic capabilities for the selected multiplatform export adapter.",
+        {RuntimePin("platform", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("platformName", BlueprintPinKind::Output, BlueprintDataType::String),
+         RuntimePin("supported", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("capabilities", BlueprintPinKind::Output, BlueprintDataType::Map)});
 
     RegisterDefinition(registry_, "Net.SendRPC", "Network/RPC", BlueprintExecutionMode::Immediate,
         [](BlueprintExecutionContext& context)

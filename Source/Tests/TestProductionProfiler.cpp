@@ -1,5 +1,8 @@
 #include <Urho3D/Blueprint/BlueprintRuntime.h>
 #include <Urho3D/Profiler/ProductionProfiler.h>
+#include <Urho3D/WorldFabric/WorldFabric.h>
+#include <Urho3D/WorldFabric/WorldFabricProfiler.h>
+#include <Urho3D/Resource/PlatformExportAdapter.h>
 
 #include <catch2/catch_amalgamated.hpp>
 
@@ -94,4 +97,72 @@ TEST_CASE("Blueprint runtime exposes production profiler nodes", "[profiler][blu
     CHECK(runtime.GetRegistry().Find("Profiler.EndScope") != nullptr);
     CHECK(runtime.GetRegistry().Find("Profiler.GetFrameTime") != nullptr);
     CHECK(runtime.GetProductionProfiler() == &profiler);
+}
+
+TEST_CASE("World Fabric profiler correlates semantic nodes deterministically", "[profiler][worldfabric]")
+{
+    WorldFabricGraph graph;
+    const WorldFabricId playerNode = graph.AddNode("gameplay/player", WorldFabricNodeKind::Blueprint, "Player");
+    REQUIRE(playerNode != InvalidWorldFabricId);
+
+    ProductionProfiler productionProfiler;
+    WorldFabricProfiler profiler(&graph, &productionProfiler);
+    productionProfiler.BeginFrame(10);
+    ea::string error;
+    REQUIRE(profiler.AnnotateNode(playerNode, 1.25, "CPU", &error));
+    REQUIRE(profiler.AnnotateNode(playerNode, 2.75, "CPU", &error));
+    REQUIRE(profiler.AnnotateNode(playerNode, 0.5, "GPU", &error));
+    productionProfiler.EndFrame();
+
+    WorldFabricNodeProfile cpu;
+    REQUIRE(profiler.GetNodeStats(playerNode, "CPU", cpu));
+    CHECK(cpu.calls == 2);
+    CHECK(cpu.totalMilliseconds == Catch::Approx(4.0));
+    CHECK(cpu.GetAverageMilliseconds() == Catch::Approx(2.0));
+    CHECK(cpu.minimumMilliseconds == Catch::Approx(1.25));
+    CHECK(cpu.maximumMilliseconds == Catch::Approx(2.75));
+    CHECK(cpu.key == "gameplay/player");
+
+    WorldFabricNodeProfile gpu;
+    REQUIRE(profiler.GetNodeStats(playerNode, "GPU", gpu));
+    CHECK(gpu.calls == 1);
+    CHECK(gpu.totalMilliseconds == Catch::Approx(0.5));
+    const ProfilerReport report = productionProfiler.BuildReport();
+    CHECK(report.scopes.size() == 1);
+    REQUIRE(report.gpuPasses.size() == 1);
+    CHECK(report.gpuPasses.front().calls == 1);
+    CHECK(profiler.ComputeDigest() != 0);
+
+    const unsigned long long digest = profiler.ComputeDigest();
+    profiler.Reset();
+    CHECK(profiler.ComputeDigest() != digest);
+    CHECK_FALSE(profiler.AnnotateNode(InvalidWorldFabricId, 1.0, "CPU", &error));
+}
+
+TEST_CASE("Blueprint exposes World Fabric profiler and platform export nodes", "[profiler][packaging][blueprint]")
+{
+    BlueprintRuntime runtime;
+    runtime.RegisterBuiltinNodes();
+    CHECK(runtime.GetRegistry().Find("Profiler.AnnotateNode") != nullptr);
+    CHECK(runtime.GetRegistry().Find("Profiler.GetNodeStats") != nullptr);
+    CHECK(runtime.GetRegistry().Find("Export.GetPlatform") != nullptr);
+    CHECK(runtime.GetRegistry().Find("Export.GetCapabilities") != nullptr);
+}
+
+TEST_CASE("Platform export adapters describe supported targets", "[packaging][platform]")
+{
+    const PlatformExportAdapter* linuxAdapter = PlatformExportAdapter::Find(PackagePlatform::Linux);
+    REQUIRE(linuxAdapter != nullptr);
+    CHECK(linuxAdapter->GetName() == ea::string("Linux"));
+    CHECK(linuxAdapter->GetCapabilities().supportsGpu);
+    CHECK(linuxAdapter->GetCapabilities().architectures.size() == 2);
+
+    bool supported = false;
+    const StringVariantMap description = PlatformExportAdapter::Describe(PackagePlatform::WebAssembly, &supported);
+    CHECK(supported);
+    CHECK(description.at("platform").GetString() == "WebAssembly");
+    CHECK_FALSE(description.at("supportsThreads").GetBool());
+    CHECK(description.at("architectures").GetString() == "wasm32");
+
+    CHECK(PlatformExportAdapter::Find(PackagePlatform::Android) == nullptr);
 }

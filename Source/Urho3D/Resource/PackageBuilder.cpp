@@ -84,6 +84,7 @@ JSONValue PackageBuildProfile::ToJSON() const
     root.Set("optimization", PackageBuilder::ToString(optimization));
     root.Set("outputPath", outputPath);
     root.Set("reproducible", reproducible);
+    root.Set("worldFabricDigest", Format("{}", worldFabricDigest));
 
     JSONValue filters(JSON_ARRAY);
     for (const PackageAssetFilter& filter : assetFilters)
@@ -111,6 +112,24 @@ bool PackageBuildProfile::FromJSON(const JSONValue& value, ea::string* error)
     parsed.architecture = value.Contains("architecture") ? value["architecture"].GetString() : EMPTY_STRING;
     parsed.outputPath = value.Contains("outputPath") ? value["outputPath"].GetString() : EMPTY_STRING;
     parsed.reproducible = value.Contains("reproducible") ? value["reproducible"].GetBool(true) : true;
+    if (value.Contains("worldFabricDigest"))
+    {
+        if (value["worldFabricDigest"].IsString())
+        {
+            if (!ParseUnsignedString(value["worldFabricDigest"].GetString(), parsed.worldFabricDigest))
+            {
+                SetError(error, "Package build profile worldFabricDigest must be an unsigned integer.");
+                return false;
+            }
+        }
+        else if (value["worldFabricDigest"].IsNumber())
+            parsed.worldFabricDigest = static_cast<unsigned long long>(value["worldFabricDigest"].GetDouble());
+        else
+        {
+            SetError(error, "Package build profile worldFabricDigest must be a string or number.");
+            return false;
+        }
+    }
 
     if (!value.Contains("platform") || !PackageBuilder::FromString(value["platform"].GetString(), parsed.platform))
     {
@@ -179,6 +198,7 @@ JSONValue PackageManifest::ToJSON() const
     root.Set("profileName", profileName);
     root.Set("platform", PackageBuilder::ToString(platform));
     root.Set("architecture", architecture);
+    root.Set("worldFabricDigest", Format("{}", worldFabricDigest));
 
     ea::vector<PackageFileEntry> sortedFiles = files;
     ea::sort(sortedFiles.begin(), sortedFiles.end(), [](const PackageFileEntry& lhs, const PackageFileEntry& rhs)
@@ -214,6 +234,24 @@ bool PackageManifest::FromJSON(const JSONValue& value, ea::string* error)
     parsed.version = value.Contains("version") ? value["version"].GetUInt(1) : 1;
     parsed.profileName = value.Contains("profileName") ? value["profileName"].GetString() : EMPTY_STRING;
     parsed.architecture = value.Contains("architecture") ? value["architecture"].GetString() : EMPTY_STRING;
+    if (value.Contains("worldFabricDigest"))
+    {
+        if (value["worldFabricDigest"].IsString())
+        {
+            if (!ParseUnsignedString(value["worldFabricDigest"].GetString(), parsed.worldFabricDigest))
+            {
+                SetError(error, "Package manifest worldFabricDigest must be an unsigned integer.");
+                return false;
+            }
+        }
+        else if (value["worldFabricDigest"].IsNumber())
+            parsed.worldFabricDigest = static_cast<unsigned long long>(value["worldFabricDigest"].GetDouble());
+        else
+        {
+            SetError(error, "Package manifest worldFabricDigest must be a string or number.");
+            return false;
+        }
+    }
     if (!value.Contains("platform") || !PackageBuilder::FromString(value["platform"].GetString(), parsed.platform))
     {
         SetError(error, "Package manifest has an unsupported platform.");
@@ -394,6 +432,7 @@ bool PackageBuilder::BuildManifest(const PackageBuildProfile& profile, const ea:
     built.profileName = profile.name;
     built.platform = profile.platform;
     built.architecture = profile.architecture;
+    built.worldFabricDigest = profile.worldFabricDigest;
     for (const PackageFileEntry& candidate : candidates)
     {
         if (profile.IncludesAsset(candidate.sourcePath))

@@ -1,5 +1,6 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/PackageBuilder.h>
+#include <Urho3D/Resource/PlatformExportAdapter.h>
 
 #include <filesystem>
 #include <fstream>
@@ -87,6 +88,18 @@ int main(int argc, char** argv)
     PackageBuildProfile profile;
     ea::string error;
     if (!profile.FromJSON(profileJson, &error))
+    {
+        std::cerr << "PackageBuilder: " << error.c_str() << "\n";
+        return 5;
+    }
+    const PlatformExportAdapter* adapter = PlatformExportAdapter::Find(profile.platform);
+    if (!adapter)
+    {
+        std::cerr << "PackageBuilder: no export adapter is registered for platform '"
+                  << PackageBuilder::ToString(profile.platform).c_str() << "'.\n";
+        return 5;
+    }
+    if (!adapter->Validate(profile, &error))
     {
         std::cerr << "PackageBuilder: " << error.c_str() << "\n";
         return 5;

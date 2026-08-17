@@ -21,6 +21,7 @@ class DedicatedServer;
 class Network;
 class AbstractConnection;
 class ProductionProfiler;
+class WorldFabricProfiler;
 class AnimationStateMachine;
 class Sequencer;
 class Blackboard;
@@ -159,6 +160,9 @@ public:
     /// Bind an optional production profiler used by Profiler.* Blueprint nodes.
     void SetProductionProfiler(ProductionProfiler* profiler) { productionProfiler_ = profiler; }
     ProductionProfiler* GetProductionProfiler() const { return productionProfiler_; }
+    /// Bind semantic World Fabric profiling correlation to Profiler.* Blueprint nodes.
+    void SetWorldFabricProfiler(WorldFabricProfiler* profiler) { worldFabricProfiler_ = profiler; }
+    WorldFabricProfiler* GetWorldFabricProfiler() const { return worldFabricProfiler_; }
     /// Bind an optional native animation state machine used by Anim.* Blueprint nodes.
     void SetAnimationStateMachine(AnimationStateMachine* stateMachine) { animationStateMachine_ = stateMachine; }
     AnimationStateMachine* GetAnimationStateMachine() const { return animationStateMachine_; }
@@ -302,6 +306,7 @@ private:
     Network* network_{};
     AbstractConnection* rpcConnection_{};
     ProductionProfiler* productionProfiler_{};
+    WorldFabricProfiler* worldFabricProfiler_{};
     AnimationStateMachine* animationStateMachine_{};
     Sequencer* sequencer_{};
     Blackboard* blackboard_{};

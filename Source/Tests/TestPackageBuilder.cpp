@@ -1,4 +1,5 @@
 #include <Urho3D/Resource/PackageBuilder.h>
+#include <Urho3D/Resource/PlatformExportAdapter.h>
 
 #include <catch2/catch_amalgamated.hpp>
 
@@ -87,4 +88,42 @@ TEST_CASE("Package manifest validation rejects duplicate output paths", "[packag
     CHECK_FALSE(validation.valid);
     REQUIRE_FALSE(validation.errors.empty());
     CHECK(validation.errors.front().find("Duplicate") != ea::string::npos);
+}
+
+TEST_CASE("Package manifest preserves the World Fabric digest", "[packaging][worldfabric]")
+{
+    PackageBuildProfile profile;
+    profile.name = "LinuxWorldFabric";
+    profile.platform = PackagePlatform::Linux;
+    profile.architecture = "x64";
+    profile.worldFabricDigest = 0x123456789abcdef0ULL;
+
+    PackageManifest manifest;
+    ea::string error;
+    REQUIRE(PackageBuilder::BuildManifest(profile, {}, manifest, &error));
+    CHECK(error.empty());
+    CHECK(manifest.worldFabricDigest == profile.worldFabricDigest);
+
+    const JSONValue json = manifest.ToJSON();
+    CHECK(json["worldFabricDigest"].GetString() == "1311768467463790320");
+
+    PackageManifest loaded;
+    REQUIRE(loaded.FromJSON(json, &error));
+    CHECK(loaded.worldFabricDigest == profile.worldFabricDigest);
+}
+
+TEST_CASE("Platform export adapter rejects an incompatible architecture", "[packaging][platform]")
+{
+    PackageBuildProfile profile;
+    profile.platform = PackagePlatform::WebAssembly;
+    profile.architecture = "x64";
+    profile.outputPath = "Build/web";
+    const PlatformExportAdapter* adapter = PlatformExportAdapter::Find(profile.platform);
+    REQUIRE(adapter != nullptr);
+
+    ea::string error;
+    CHECK_FALSE(adapter->Validate(profile, &error));
+    const bool mentionsArchitecture = error.find("architecture") != ea::string::npos
+        || error.find("Architecture") != ea::string::npos;
+    CHECK(mentionsArchitecture);
 }

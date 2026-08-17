@@ -48,6 +48,8 @@ struct URHO3D_API PackageBuildProfile
     PackageOptimization optimization{PackageOptimization::Development};
     ea::string outputPath{"Build"};
     bool reproducible{true};
+    /// Optional semantic graph digest used to make World Fabric-aware exports reproducible.
+    unsigned long long worldFabricDigest{};
     ea::vector<PackageAssetFilter> assetFilters;
 
     JSONValue ToJSON() const;
@@ -70,6 +72,8 @@ struct URHO3D_API PackageManifest
     ea::string profileName;
     PackagePlatform platform{PackagePlatform::Linux};
     ea::string architecture;
+    /// Digest of the semantic graph used to produce this manifest, or zero when not bound.
+    unsigned long long worldFabricDigest{};
     ea::vector<PackageFileEntry> files;
 
     JSONValue ToJSON() const;
