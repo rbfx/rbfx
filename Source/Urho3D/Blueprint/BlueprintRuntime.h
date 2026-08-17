@@ -31,6 +31,15 @@ class StateTree;
 class ShaderGraph;
 class VFXGraph;
 class AudioMixer;
+class WorldFabricGraph;
+class HotReloadManager;
+class DeterministicSimulation;
+class BuildGraph;
+class GameplayTestRunner;
+class WorldFabricCollaboration;
+class WorldFabricAccessibility;
+class WorldFabricLocalization;
+class RbScriptTypeRegistry;
 
 /// Runtime callback implemented by a built-in node or a user extension.
 using BlueprintNodeExecutor = ea::function<void(class BlueprintExecutionContext&)>;
@@ -125,6 +134,8 @@ public:
     void RegisterBuiltinNodes();
     /// Generate getter and setter nodes from rbfx ObjectReflection metadata.
     unsigned RegisterReflectedNodes(Context* context);
+    /// Project an already populated rbscript registry into the bound World Fabric graph.
+    unsigned RegisterRbScriptReflection(const RbScriptTypeRegistry& registry);
     /// Bind a scene node or component for reflected property nodes.
     void SetTargetObject(Serializable* object) { targetObject_ = object; }
     Serializable* GetTargetObject() const { return targetObject_; }
@@ -132,6 +143,8 @@ public:
     void SetWorldPartition(WorldPartition* worldPartition) { worldPartition_ = worldPartition; }
     /// Return the currently bound world-partition coordinator.
     WorldPartition* GetWorldPartition() const { return worldPartition_; }
+    /// Synchronize the bound WorldPartition cells into the bound World Fabric graph.
+    unsigned SynchronizeWorldPartition();
     /// Bind optional network services used by Net.* Blueprint nodes.
     void SetRpcDispatcher(RpcDispatcher* dispatcher) { rpcDispatcher_ = dispatcher; }
     RpcDispatcher* GetRpcDispatcher() const { return rpcDispatcher_; }
@@ -169,6 +182,30 @@ public:
     VFXGraph* GetVFXGraph() const { return vfxGraph_; }
     void SetAudioMixer(AudioMixer* audioMixer) { audioMixer_ = audioMixer; }
     AudioMixer* GetAudioMixer() const { return audioMixer_; }
+    /// Bind the semantic World Fabric graph used by WorldFabric.* nodes.
+    void SetWorldFabric(WorldFabricGraph* worldFabric) { worldFabric_ = worldFabric; }
+    WorldFabricGraph* GetWorldFabric() const { return worldFabric_; }
+    /// Bind hot-reload coordination for C++, Blueprint, rbscript and resources.
+    void SetHotReloadManager(HotReloadManager* manager) { hotReloadManager_ = manager; }
+    HotReloadManager* GetHotReloadManager() const { return hotReloadManager_; }
+    /// Bind the fixed-step deterministic simulation used by gameplay and rollback nodes.
+    void SetDeterministicSimulation(DeterministicSimulation* simulation) { deterministicSimulation_ = simulation; }
+    DeterministicSimulation* GetDeterministicSimulation() const { return deterministicSimulation_; }
+    /// Bind the deterministic Build Graph used by import, shader, script, VFX and packaging tasks.
+    void SetBuildGraph(BuildGraph* buildGraph) { buildGraph_ = buildGraph; }
+    BuildGraph* GetBuildGraph() const { return buildGraph_; }
+    /// Bind the deterministic in-engine gameplay test runner.
+    void SetGameplayTestRunner(GameplayTestRunner* runner) { gameplayTestRunner_ = runner; }
+    GameplayTestRunner* GetGameplayTestRunner() const { return gameplayTestRunner_; }
+    /// Bind the versioned World Fabric collaboration session.
+    void SetWorldFabricCollaboration(WorldFabricCollaboration* collaboration) { worldFabricCollaboration_ = collaboration; }
+    WorldFabricCollaboration* GetWorldFabricCollaboration() const { return worldFabricCollaboration_; }
+    /// Bind runtime accessibility preferences shared by UI and gameplay.
+    void SetWorldFabricAccessibility(WorldFabricAccessibility* accessibility) { worldFabricAccessibility_ = accessibility; }
+    WorldFabricAccessibility* GetWorldFabricAccessibility() const { return worldFabricAccessibility_; }
+    /// Bind the deterministic localization catalog.
+    void SetWorldFabricLocalization(WorldFabricLocalization* localization) { worldFabricLocalization_ = localization; }
+    WorldFabricLocalization* GetWorldFabricLocalization() const { return worldFabricLocalization_; }
 
     /// Execute a graph from a node identifier.
     bool Execute(const BlueprintGraph& graph, BlueprintId entryNode,
@@ -275,6 +312,14 @@ private:
     ShaderGraph* shaderGraph_{};
     VFXGraph* vfxGraph_{};
     AudioMixer* audioMixer_{};
+    WorldFabricGraph* worldFabric_{};
+    HotReloadManager* hotReloadManager_{};
+    DeterministicSimulation* deterministicSimulation_{};
+    BuildGraph* buildGraph_{};
+    GameplayTestRunner* gameplayTestRunner_{};
+    WorldFabricCollaboration* worldFabricCollaboration_{};
+    WorldFabricAccessibility* worldFabricAccessibility_{};
+    WorldFabricLocalization* worldFabricLocalization_{};
     StringVariantMap values_;
     StringVariantMap variables_;
     ea::vector<BlueprintDiagnostic> diagnostics_;

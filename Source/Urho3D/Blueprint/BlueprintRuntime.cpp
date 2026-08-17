@@ -33,6 +33,18 @@
 #include <Urho3D/Shader/ShaderGraph.h>
 #include <Urho3D/Particles/VFXGraph.h>
 #include <Urho3D/Audio/AudioMixer.h>
+#include <Urho3D/WorldFabric/WorldFabric.h>
+#include <Urho3D/WorldFabric/WorldFabricReflection.h>
+#include <Urho3D/WorldFabric/WorldFabricWorldPartition.h>
+#include <Urho3D/WorldFabric/HotReloadManager.h>
+#include <Urho3D/WorldFabric/DeterministicSimulation.h>
+#include <Urho3D/WorldFabric/BuildGraph.h>
+#include <Urho3D/WorldFabric/ProceduralWorld.h>
+#include <Urho3D/WorldFabric/GameplayTestRunner.h>
+#include <Urho3D/WorldFabric/WorldFabricCollaboration.h>
+#include <Urho3D/WorldFabric/WorldFabricAccessibility.h>
+#include <Urho3D/WorldFabric/WorldFabricLocalization.h>
+#include <Urho3D/RbScript/RbScriptType.h>
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/Log.h>
@@ -435,7 +447,20 @@ Variant BlueprintRuntime::GetTimelineValue(const BlueprintGraph& graph, const ea
 
 unsigned BlueprintRuntime::RegisterReflectedNodes(Context* context)
 {
-    return BlueprintReflectionRegistry::RegisterNodes(context, registry_);
+    const unsigned registeredNodes = BlueprintReflectionRegistry::RegisterNodes(context, registry_);
+    if (worldFabric_)
+        return registeredNodes + WorldFabricReflection::RegisterObjectReflection(context, *worldFabric_);
+    return registeredNodes;
+}
+
+unsigned BlueprintRuntime::RegisterRbScriptReflection(const RbScriptTypeRegistry& registry)
+{
+    return worldFabric_ ? WorldFabricReflection::RegisterRbScriptReflection(registry, *worldFabric_) : 0;
+}
+
+unsigned BlueprintRuntime::SynchronizeWorldPartition()
+{
+    return worldFabric_ && worldPartition_ ? WorldFabricWorldPartition::Synchronize(worldPartition_, *worldFabric_) : 0;
 }
 
 void BlueprintRuntime::RegisterBuiltinNodes()
@@ -2053,6 +2078,474 @@ void BlueprintRuntime::RegisterBuiltinNodes()
          RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
          RuntimePin("radius", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(100.0f)),
          RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Float)});
+
+    RegisterDefinition(registry_, "Tests.RunGameplay", "Production/Validation", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            GameplayTestRunner* runner = context.GetRuntime().GetGameplayTestRunner();
+            if (!runner)
+            {
+                context.ReportError("BPTEST001", "Tests.RunGameplay requires a GameplayTestRunner bound to the BlueprintRuntime.");
+                return;
+            }
+            ea::string error;
+            const bool success = runner->Run(context.GetInput("tag").GetString(), &error);
+            context.SetOutput("success", success);
+            context.SetOutput("passed", Variant(static_cast<int>(runner->GetPassedCount())));
+            context.SetOutput("failed", Variant(static_cast<int>(runner->GetFailedCount())));
+            context.SetOutput("error", error);
+            if (success)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPTEST002", error);
+        }, "Run deterministic in-engine gameplay tests and expose the result to Blueprint.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("tag", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("success", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("passed", BlueprintPinKind::Output, BlueprintDataType::Int),
+         RuntimePin("failed", BlueprintPinKind::Output, BlueprintDataType::Int),
+         RuntimePin("error", BlueprintPinKind::Output, BlueprintDataType::String)});
+
+    RegisterDefinition(registry_, "Build.Execute", "Production/Build Graph", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            BuildGraph* buildGraph = context.GetRuntime().GetBuildGraph();
+            if (!buildGraph)
+            {
+                context.ReportError("BPBG001", "Build.Execute requires a BuildGraph bound to the BlueprintRuntime.");
+                return;
+            }
+            ea::vector<ea::string> executed;
+            ea::string error;
+            const bool success = buildGraph->Execute(&executed, &error);
+            context.SetOutput("success", success);
+            context.SetOutput("executedTasks", Variant(static_cast<int>(executed.size())));
+            context.SetOutput("error", error);
+            if (success)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPBG002", error);
+        }, "Execute the validated deterministic build graph and its cached tasks.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("success", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("executedTasks", BlueprintPinKind::Output, BlueprintDataType::Int),
+         RuntimePin("error", BlueprintPinKind::Output, BlueprintDataType::String)});
+
+    RegisterDefinition(registry_, "Procedural.Generate", "World/Procedural", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldPartition* partition = context.GetRuntime().GetWorldPartition();
+            if (!partition)
+            {
+                context.ReportError("BPPW001", "Procedural.Generate requires a WorldPartition bound to the BlueprintRuntime.");
+                return;
+            }
+            ProceduralWorldSettings settings;
+            settings.seed = context.GetInput("seed").GetUInt();
+            settings.minX = context.GetInput("minX").GetInt();
+            settings.maxX = context.GetInput("maxX").GetInt();
+            settings.minY = context.GetInput("minY").GetInt();
+            settings.maxY = context.GetInput("maxY").GetInt();
+            settings.cellSize = context.GetInput("cellSize").GetFloat();
+            settings.cellRadius = context.GetInput("cellRadius").GetFloat();
+            settings.memoryCost = context.GetInput("memoryCost").GetUInt();
+            settings.lodLevels = context.GetInput("lodLevels").GetUInt();
+            settings.sceneTemplate = context.GetInput("sceneTemplate").GetString();
+            ea::vector<ProceduralCellInfo> generated;
+            ea::string error;
+            const bool success = ProceduralWorldGenerator::Generate(*partition, settings, &generated, &error);
+            context.SetOutput("success", success);
+            context.SetOutput("cellCount", Variant(static_cast<int>(generated.size())));
+            context.SetOutput("error", error);
+            if (success)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPPW002", error);
+        }, "Generate deterministic WorldPartition cells from a seed and stream them by distance.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("seed", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(1)),
+         RuntimePin("minX", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(-8)),
+         RuntimePin("maxX", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(8)),
+         RuntimePin("minY", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(-8)),
+         RuntimePin("maxY", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(8)),
+         RuntimePin("cellSize", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(128.0f)),
+         RuntimePin("cellRadius", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(90.0f)),
+         RuntimePin("memoryCost", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(1024)),
+         RuntimePin("lodLevels", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(4)),
+         RuntimePin("sceneTemplate", BlueprintPinKind::Input, BlueprintDataType::String,
+             Variant(ea::string("Scenes/ProceduralCell.xml"))),
+         RuntimePin("success", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("cellCount", BlueprintPinKind::Output, BlueprintDataType::Int),
+         RuntimePin("error", BlueprintPinKind::Output, BlueprintDataType::String)});
+
+    RegisterDefinition(registry_, "HotReload.Reload", "Production/Hot Reload", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            HotReloadManager* manager = context.GetRuntime().GetHotReloadManager();
+            if (!manager)
+            {
+                context.ReportError("BPHR001", "HotReload.Reload requires a HotReloadManager bound to the BlueprintRuntime.");
+                return;
+            }
+            HotReloadRequest request;
+            request.key = context.GetInput("key").GetString();
+            request.kind = static_cast<HotReloadAssetKind>(Max(0, Min(context.GetInput("kind").GetInt(),
+                static_cast<int>(HotReloadAssetKind::Resource))));
+            request.version = context.GetInput("version").GetUInt();
+            request.payload = context.GetInput("payload").GetStringVariantMap();
+            request.preserveState = context.GetInput("preserveState").GetBool();
+            const HotReloadResult result = manager->Reload(request);
+            context.SetOutput("success", result.success);
+            context.SetOutput("stateRestored", result.stateRestored);
+            context.SetOutput("restoredValues", Variant(result.restoredValues));
+            context.SetOutput("error", result.error);
+            if (result.success)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPHR002", result.error);
+        }, "Reload C++, Blueprint, rbscript or resource content while preserving runtime state.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("key", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("kind", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("version", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(1u)),
+         RuntimePin("payload", BlueprintPinKind::Input, BlueprintDataType::Map, Variant(StringVariantMap{})),
+         RuntimePin("preserveState", BlueprintPinKind::Input, BlueprintDataType::Bool, Variant(true)),
+         RuntimePin("success", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("stateRestored", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("restoredValues", BlueprintPinKind::Output, BlueprintDataType::Int),
+         RuntimePin("error", BlueprintPinKind::Output, BlueprintDataType::String)});
+
+    RegisterDefinition(registry_, "Deterministic.GetFrame", "Production/Determinism", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            if (DeterministicSimulation* simulation = context.GetRuntime().GetDeterministicSimulation())
+                context.SetOutput("frame", Variant(simulation->GetCurrentFrame()));
+        }, "Read the current fixed-step deterministic simulation frame.",
+        {RuntimePin("frame", BlueprintPinKind::Output, BlueprintDataType::Int)});
+
+    RegisterDefinition(registry_, "Deterministic.GetDigest", "Production/Determinism", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            if (DeterministicSimulation* simulation = context.GetRuntime().GetDeterministicSimulation())
+                context.SetOutput("digest", Variant(static_cast<unsigned long long>(simulation->ComputeStateDigest())));
+        }, "Read the deterministic state digest used by rollback and replay validation.",
+        {RuntimePin("digest", BlueprintPinKind::Output, BlueprintDataType::Int64)});
+
+    RegisterDefinition(registry_, "Deterministic.Restore", "Production/Determinism", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            DeterministicSimulation* simulation = context.GetRuntime().GetDeterministicSimulation();
+            if (!simulation)
+            {
+                context.ReportError("BPD001", "Deterministic.Restore requires a DeterministicSimulation bound to the BlueprintRuntime.");
+                return;
+            }
+            const bool restored = simulation->Restore(context.GetInput("frame").GetUInt());
+            context.SetOutput("restored", restored);
+            if (restored)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPD002", "Deterministic.Restore could not find the requested frame in the bounded history.");
+        }, "Restore a deterministic gameplay snapshot for rollback or replay.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("frame", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0u)),
+         RuntimePin("restored", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "WorldFabric.AddNode", "World Fabric/Graph", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricGraph* graph = context.GetRuntime().GetWorldFabric();
+            if (!graph)
+            {
+                context.ReportError("BPWF001", "WorldFabric.AddNode requires a WorldFabricGraph bound to the BlueprintRuntime.");
+                return;
+            }
+            const ea::string key = context.GetInput("key").GetString();
+            if (key.empty())
+            {
+                context.ReportError("BPWF002", "WorldFabric.AddNode requires a non-empty semantic key.");
+                return;
+            }
+            int kind = context.GetInput("kind").GetInt();
+            kind = Max(0, Min(kind, static_cast<int>(WorldFabricNodeKind::Custom)));
+            const WorldFabricId id = graph->AddNode(key, static_cast<WorldFabricNodeKind>(kind),
+                context.GetInput("type").GetString(), context.GetInput("metadata").GetStringVariantMap());
+            context.SetOutput("id", Variant(static_cast<unsigned long long>(id)));
+            context.SetOutput("created", id != InvalidWorldFabricId);
+            if (id != InvalidWorldFabricId)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPWF003", graph->GetLastError());
+        }, "Add or update a stable semantic node in the World Fabric graph.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("key", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("kind", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("type", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("metadata", BlueprintPinKind::Input, BlueprintDataType::Map, Variant(StringVariantMap{})),
+         RuntimePin("id", BlueprintPinKind::Output, BlueprintDataType::Int64),
+         RuntimePin("created", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+    RegisterDefinition(registry_, "WorldFabric.AddDependency", "World Fabric/Graph", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricGraph* graph = context.GetRuntime().GetWorldFabric();
+            if (!graph)
+            {
+                context.ReportError("BPWF004", "WorldFabric.AddDependency requires a WorldFabricGraph bound to the BlueprintRuntime.");
+                return;
+            }
+            int kind = context.GetInput("kind").GetInt();
+            kind = Max(0, Min(kind, static_cast<int>(WorldFabricDependencyKind::BuildsFrom)));
+            const bool added = graph->AddDependency(context.GetInput("node").GetUInt64(),
+                context.GetInput("dependency").GetUInt64(), static_cast<WorldFabricDependencyKind>(kind),
+                context.GetInput("label").GetString());
+            context.SetOutput("added", added);
+            if (added)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPWF005", graph->GetLastError());
+        }, "Add a typed dependency edge to the World Fabric graph.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("node", BlueprintPinKind::Input, BlueprintDataType::Int64, Variant(static_cast<unsigned long long>(0))),
+         RuntimePin("dependency", BlueprintPinKind::Input, BlueprintDataType::Int64, Variant(static_cast<unsigned long long>(0))),
+         RuntimePin("kind", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("label", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("added", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+    RegisterDefinition(registry_, "WorldFabric.Validate", "World Fabric/Graph", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricGraph* graph = context.GetRuntime().GetWorldFabric();
+            if (!graph)
+            {
+                context.ReportError("BPWF006", "WorldFabric.Validate requires a WorldFabricGraph bound to the BlueprintRuntime.");
+                return;
+            }
+            ea::string error;
+            const bool valid = graph->Validate(&error);
+            context.SetOutput("valid", valid);
+            context.SetOutput("error", error);
+        }, "Validate semantic identifiers, dependencies and cycles.",
+        {RuntimePin("valid", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("error", BlueprintPinKind::Output, BlueprintDataType::String)});
+    RegisterDefinition(registry_, "WorldFabric.GetDigest", "World Fabric/Graph", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricGraph* graph = context.GetRuntime().GetWorldFabric();
+            if (graph)
+                context.SetOutput("digest", Variant(static_cast<unsigned long long>(graph->ComputeDigest())));
+        }, "Read the deterministic semantic graph digest used by caches and snapshots.",
+        {RuntimePin("digest", BlueprintPinKind::Output, BlueprintDataType::Int64)});
+
+    RegisterDefinition(registry_, "WorldFabric.SyncWorldPartition", "World Fabric/Streaming", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            const unsigned count = context.GetRuntime().SynchronizeWorldPartition();
+            if (count == 0 && (!context.GetRuntime().GetWorldFabric() || !context.GetRuntime().GetWorldPartition()))
+            {
+                context.ReportError("BPWF007", "WorldFabric.SyncWorldPartition requires both WorldPartition and WorldFabricGraph services.");
+                return;
+            }
+            context.SetOutput("cells", Variant(count));
+            context.ContinueWith("then");
+        }, "Synchronize live WorldPartition cells and scene dependencies into World Fabric.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("cells", BlueprintPinKind::Output, BlueprintDataType::Int)});
+
+    RegisterDefinition(registry_, "Collab.SubmitOperation", "Collaboration/Graph", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricCollaboration* collaboration = context.GetRuntime().GetWorldFabricCollaboration();
+            if (!collaboration)
+            {
+                context.ReportError("BPCOL001", "Collab.SubmitOperation requires a WorldFabricCollaboration bound to the BlueprintRuntime.");
+                return;
+            }
+            const ea::string clientId = context.GetInput("clientId").GetString();
+            if (clientId.empty())
+            {
+                context.ReportError("BPCOL002", "Collab.SubmitOperation requires a non-empty client identifier.");
+                return;
+            }
+
+            // Registering a client is idempotent from the Blueprint user's perspective;
+            // the collaboration service still enforces its known-client invariant.
+            collaboration->AddClient(clientId);
+            int kind = context.GetInput("kind").GetInt();
+            kind = Max(0, Min(kind, static_cast<int>(WorldFabricOperationKind::SetMetadata)));
+
+            WorldFabricOperation operation;
+            operation.clientId = clientId;
+            operation.kind = static_cast<WorldFabricOperationKind>(kind);
+            operation.key = context.GetInput("key").GetString();
+            operation.metadataKey = context.GetInput("metadataKey").GetString();
+            operation.metadataValue = context.GetInput("metadataValue");
+            if (operation.kind == WorldFabricOperationKind::AddNode)
+                operation.node = InvalidWorldFabricId;
+            else
+                operation.node = WorldFabricGraph::MakeStableId(operation.key);
+
+            ea::string error;
+            const bool success = collaboration->Submit(operation, &error);
+            context.SetOutput("success", success);
+            context.SetOutput("revision", Variant(static_cast<unsigned long long>(collaboration->GetRevision())));
+            context.SetOutput("error", error);
+            if (success)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPCOL003", error.empty() ? collaboration->GetLastError() : error);
+        }, "Submit a deterministic, versioned World Fabric graph operation from a collaboration client.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("clientId", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("kind", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("key", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("metadataKey", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("metadataValue", BlueprintPinKind::Input, BlueprintDataType::Variant),
+         RuntimePin("success", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("revision", BlueprintPinKind::Output, BlueprintDataType::Int64),
+         RuntimePin("error", BlueprintPinKind::Output, BlueprintDataType::String)});
+
+    RegisterDefinition(registry_, "Collab.LockNode", "Collaboration/Graph", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricCollaboration* collaboration = context.GetRuntime().GetWorldFabricCollaboration();
+            if (!collaboration)
+            {
+                context.ReportError("BPCOL004", "Collab.LockNode requires a WorldFabricCollaboration bound to the BlueprintRuntime.");
+                return;
+            }
+            const WorldFabricId node = context.GetInput("nodeId").GetUInt64();
+            const ea::string clientId = context.GetInput("clientId").GetString();
+            if (!clientId.empty())
+                collaboration->AddClient(clientId);
+            const bool locked = collaboration->Lock(node, clientId);
+            context.SetOutput("locked", locked);
+            if (locked)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPCOL005", collaboration->GetLastError());
+        }, "Acquire an optimistic edit lock for a World Fabric node.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("nodeId", BlueprintPinKind::Input, BlueprintDataType::Int64, Variant(static_cast<unsigned long long>(0))),
+         RuntimePin("clientId", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("locked", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Collab.GetRevision", "Collaboration/Graph", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricCollaboration* collaboration = context.GetRuntime().GetWorldFabricCollaboration();
+            if (!collaboration)
+            {
+                context.ReportError("BPCOL006", "Collab.GetRevision requires a WorldFabricCollaboration bound to the BlueprintRuntime.");
+                return;
+            }
+            context.SetOutput("revision", Variant(static_cast<unsigned long long>(collaboration->GetRevision())));
+        }, "Read the current deterministic collaboration revision.",
+        {RuntimePin("revision", BlueprintPinKind::Output, BlueprintDataType::Int64)});
+
+    RegisterDefinition(registry_, "Accessibility.SetFeature", "Accessibility", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricAccessibility* accessibility = context.GetRuntime().GetWorldFabricAccessibility();
+            if (!accessibility)
+            {
+                context.ReportError("BPACC001", "Accessibility.SetFeature requires a WorldFabricAccessibility bound to the BlueprintRuntime.");
+                return;
+            }
+            int feature = context.GetInput("feature").GetInt();
+            feature = Max(0, Min(feature, static_cast<int>(AccessibilityFeature::ScreenReader)));
+            const bool changed = accessibility->SetFeature(static_cast<AccessibilityFeature>(feature),
+                context.GetInput("enabled").GetBool());
+            context.SetOutput("changed", changed);
+            context.ContinueWith("then");
+        }, "Enable or disable a runtime accessibility feature.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("feature", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("enabled", BlueprintPinKind::Input, BlueprintDataType::Bool, Variant(true)),
+         RuntimePin("changed", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Accessibility.IsFeatureEnabled", "Accessibility", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricAccessibility* accessibility = context.GetRuntime().GetWorldFabricAccessibility();
+            if (!accessibility)
+            {
+                context.ReportError("BPACC002", "Accessibility.IsFeatureEnabled requires a WorldFabricAccessibility bound to the BlueprintRuntime.");
+                return;
+            }
+            int feature = context.GetInput("feature").GetInt();
+            feature = Max(0, Min(feature, static_cast<int>(AccessibilityFeature::ScreenReader)));
+            context.SetOutput("enabled", accessibility->IsFeatureEnabled(static_cast<AccessibilityFeature>(feature)));
+        }, "Read whether an accessibility feature is enabled.",
+        {RuntimePin("feature", BlueprintPinKind::Input, BlueprintDataType::Int, Variant(0)),
+         RuntimePin("enabled", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Accessibility.SetTextScale", "Accessibility", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricAccessibility* accessibility = context.GetRuntime().GetWorldFabricAccessibility();
+            if (!accessibility)
+            {
+                context.ReportError("BPACC003", "Accessibility.SetTextScale requires a WorldFabricAccessibility bound to the BlueprintRuntime.");
+                return;
+            }
+            const bool changed = accessibility->SetTextScale(context.GetInput("scale").GetFloat());
+            context.SetOutput("changed", changed);
+            if (changed)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPACC004", "Accessibility.SetTextScale accepts finite values in the range [0.5, 3.0].");
+        }, "Set the accessible UI text scale within the supported runtime range.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("scale", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(1.0f)),
+         RuntimePin("changed", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "Localize.Translate", "Localization", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricLocalization* localization = context.GetRuntime().GetWorldFabricLocalization();
+            if (!localization)
+            {
+                context.ReportError("BPLOC001", "Localize.Translate requires a WorldFabricLocalization bound to the BlueprintRuntime.");
+                return;
+            }
+            context.SetOutput("text", localization->Translate(context.GetInput("key").GetString(),
+                context.GetInput("fallback").GetString()));
+        }, "Resolve localized text through the active locale, fallback locale and explicit fallback.",
+        {RuntimePin("key", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("fallback", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("text", BlueprintPinKind::Output, BlueprintDataType::String)});
+
+    RegisterDefinition(registry_, "Localize.SetLocale", "Localization", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            WorldFabricLocalization* localization = context.GetRuntime().GetWorldFabricLocalization();
+            if (!localization)
+            {
+                context.ReportError("BPLOC002", "Localize.SetLocale requires a WorldFabricLocalization bound to the BlueprintRuntime.");
+                return;
+            }
+            const bool changed = localization->SetLocale(context.GetInput("locale").GetString());
+            context.SetOutput("changed", changed);
+            if (changed)
+                context.ContinueWith("then");
+            else
+                context.ReportError("BPLOC003", "Localize.SetLocale requires a locale registered in the localization catalog.");
+        }, "Select a registered runtime localization locale.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("locale", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("changed", BlueprintPinKind::Output, BlueprintDataType::Bool)});
 
     RegisterDefinition(registry_, "Net.SendRPC", "Network/RPC", BlueprintExecutionMode::Immediate,
         [](BlueprintExecutionContext& context)
