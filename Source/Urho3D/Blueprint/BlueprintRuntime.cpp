@@ -25,6 +25,11 @@
 #include <Urho3D/Profiler/ProductionProfiler.h>
 #include <Urho3D/Animation/AnimationStateMachine.h>
 #include <Urho3D/Animation/Sequencer.h>
+#include <Urho3D/AI/Blackboard.h>
+#include <Urho3D/AI/BehaviorTree.h>
+#include <Urho3D/AI/EQS.h>
+#include <Urho3D/AI/PerceptionSystem.h>
+#include <Urho3D/AI/StateTree.h>
 
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/IO/Log.h>
@@ -1169,6 +1174,85 @@ void BlueprintRuntime::RegisterBuiltinNodes()
             context.SetOutput("time", sequencer ? Variant(sequencer->GetPosition()) : Variant(0.0f));
         }, "Read the current cinematic sequencer position.",
         {RuntimePin("time", BlueprintPinKind::Output, BlueprintDataType::Float)});
+
+    RegisterDefinition(registry_, "AI.RunBehaviorTree", "Gameplay/AI", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            BehaviorTree* tree = context.GetRuntime().GetBehaviorTree();
+            if (!tree)
+            {
+                context.ReportError("BP480", "AI.RunBehaviorTree requires an injected BehaviorTree.");
+                return;
+            }
+            BehaviorTreeTickContext tick;
+            tick.blackboard = context.GetRuntime().GetBlackboard();
+            tick.deltaSeconds = Max(context.GetInput("deltaSeconds").GetFloat(), 0.0f);
+            const BehaviorStatus status = tree->Tick(tick);
+            context.SetOutput("status", Variant(static_cast<int>(status)));
+            context.SetOutput("running", status == BehaviorStatus::Running);
+            context.SetOutput("succeeded", status == BehaviorStatus::Success);
+            if (status != BehaviorStatus::Failure && status != BehaviorStatus::Invalid)
+                context.ContinueWith("then");
+        }, "Tick the injected gameplay behavior tree.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("deltaSeconds", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(0.016f)),
+         RuntimePin("status", BlueprintPinKind::Output, BlueprintDataType::Int),
+         RuntimePin("running", BlueprintPinKind::Output, BlueprintDataType::Bool),
+         RuntimePin("succeeded", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "AI.SetBlackboardValue", "Gameplay/AI", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            Blackboard* blackboard = context.GetRuntime().GetBlackboard();
+            if (!blackboard)
+            {
+                context.ReportError("BP481", "AI.SetBlackboardValue requires an injected Blackboard.");
+                return;
+            }
+            const bool changed = blackboard->Set(context.GetInput("key").GetString(), context.GetInput("value"));
+            context.SetOutput("changed", changed);
+            if (changed)
+                context.ContinueWith("then");
+        }, "Write a typed value into the injected AI Blackboard.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("key", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("value", BlueprintPinKind::Input, BlueprintDataType::Variant),
+         RuntimePin("changed", BlueprintPinKind::Output, BlueprintDataType::Bool)});
+
+    RegisterDefinition(registry_, "AI.GetBlackboardValue", "Gameplay/AI", BlueprintExecutionMode::Pure,
+        [](BlueprintExecutionContext& context)
+        {
+            Blackboard* blackboard = context.GetRuntime().GetBlackboard();
+            context.SetOutput("value", blackboard ? blackboard->Get(context.GetInput("key").GetString()) : Variant());
+        }, "Read a value from the injected AI Blackboard.",
+        {RuntimePin("key", BlueprintPinKind::Input, BlueprintDataType::String, Variant(ea::string())),
+         RuntimePin("value", BlueprintPinKind::Output, BlueprintDataType::Variant)});
+
+    RegisterDefinition(registry_, "AI.QueryEQS", "Gameplay/AI", BlueprintExecutionMode::Immediate,
+        [](BlueprintExecutionContext& context)
+        {
+            EQS* eqs = context.GetRuntime().GetEQS();
+            if (!eqs)
+            {
+                context.ReportError("BP482", "AI.QueryEQS requires an injected EQS service.");
+                return;
+            }
+            const EQSQueryResult result = eqs->Query(context.GetInput("origin").GetVector3(),
+                Max(context.GetInput("radius").GetFloat(), 0.0f), context.GetRuntime().GetBlackboard());
+            const EQSResultItem* best = result.GetBest();
+            context.SetOutput("best", best ? Variant(best->item.position) : Variant(Vector3::ZERO));
+            context.SetOutput("found", result.found);
+            if (result.found)
+                context.ContinueWith("then");
+        }, "Run a deterministic spatial Environment Query and return its best item.",
+        {RuntimePin("execute", BlueprintPinKind::ExecutionInput, BlueprintDataType::Wildcard),
+         RuntimePin("then", BlueprintPinKind::ExecutionOutput, BlueprintDataType::Wildcard),
+         RuntimePin("origin", BlueprintPinKind::Input, BlueprintDataType::Vector3, Variant(Vector3::ZERO)),
+         RuntimePin("radius", BlueprintPinKind::Input, BlueprintDataType::Float, Variant(100.0f)),
+         RuntimePin("best", BlueprintPinKind::Output, BlueprintDataType::Vector3),
+         RuntimePin("found", BlueprintPinKind::Output, BlueprintDataType::Bool)});
 
     RegisterDefinition(registry_, "Macro.Call", "Flow/Macro", BlueprintExecutionMode::Immediate,
         [](BlueprintExecutionContext& context)

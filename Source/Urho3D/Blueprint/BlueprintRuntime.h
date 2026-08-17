@@ -23,6 +23,11 @@ class AbstractConnection;
 class ProductionProfiler;
 class AnimationStateMachine;
 class Sequencer;
+class Blackboard;
+class BehaviorTree;
+class EQS;
+class PerceptionSystem;
+class StateTree;
 
 /// Runtime callback implemented by a built-in node or a user extension.
 using BlueprintNodeExecutor = ea::function<void(class BlueprintExecutionContext&)>;
@@ -144,6 +149,17 @@ public:
     /// Bind an optional cinematic sequencer used by Seq.* Blueprint nodes.
     void SetSequencer(Sequencer* sequencer) { sequencer_ = sequencer; }
     Sequencer* GetSequencer() const { return sequencer_; }
+    /// Bind the optional gameplay AI services used by AI.* Blueprint nodes.
+    void SetBlackboard(Blackboard* blackboard) { blackboard_ = blackboard; }
+    Blackboard* GetBlackboard() const { return blackboard_; }
+    void SetBehaviorTree(BehaviorTree* behaviorTree) { behaviorTree_ = behaviorTree; }
+    BehaviorTree* GetBehaviorTree() const { return behaviorTree_; }
+    void SetEQS(EQS* eqs) { eqs_ = eqs; }
+    EQS* GetEQS() const { return eqs_; }
+    void SetPerceptionSystem(PerceptionSystem* perception) { perceptionSystem_ = perception; }
+    PerceptionSystem* GetPerceptionSystem() const { return perceptionSystem_; }
+    void SetStateTree(StateTree* stateTree) { stateTree_ = stateTree; }
+    StateTree* GetStateTree() const { return stateTree_; }
 
     /// Execute a graph from a node identifier.
     bool Execute(const BlueprintGraph& graph, BlueprintId entryNode,
@@ -242,6 +258,11 @@ private:
     ProductionProfiler* productionProfiler_{};
     AnimationStateMachine* animationStateMachine_{};
     Sequencer* sequencer_{};
+    Blackboard* blackboard_{};
+    BehaviorTree* behaviorTree_{};
+    EQS* eqs_{};
+    PerceptionSystem* perceptionSystem_{};
+    StateTree* stateTree_{};
     StringVariantMap values_;
     StringVariantMap variables_;
     ea::vector<BlueprintDiagnostic> diagnostics_;
