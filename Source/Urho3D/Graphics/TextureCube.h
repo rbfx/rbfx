@@ -28,6 +28,8 @@
 #include "../Math/SphericalHarmonics.h"
 #include "../Resource/ImageCube.h"
 
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
@@ -67,6 +69,9 @@ public:
     /// Get image data from a face's zero mip level. Only RGB and RGBA textures are supported.
     SharedPtr<Image> GetImage(CubeMapFace face);
 
+    /// Return spherical harmonics of the texture, if the source image provided them on load.
+    ea::optional<SphericalHarmonicsDot9> GetSphericalHarmonics() const { return sphericalHarmonics_; }
+
     /// Return render surface for one face.
     /// @property{get_renderSurfaces}
     RenderSurface* GetRenderSurface(CubeMapFace face) const { return Texture::GetRenderSurface(face); }
@@ -74,6 +79,8 @@ public:
 private:
     /// Face image files acquired during BeginLoad.
     SharedPtr<ImageCube> loadImageCube_;
+    /// Spherical harmonics, copied from the source image on load.
+    ea::optional<SphericalHarmonicsDot9> sphericalHarmonics_;
 };
 
 }

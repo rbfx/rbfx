@@ -395,14 +395,35 @@ void Zone::UpdateCachedData()
         SphericalHarmonicsDot9 sh;
         if (zoneTexture_)
         {
-            const ea::string& zoneTextureName = zoneTexture_->GetName();
-            auto cache = GetSubsystem<ResourceCache>();
-            auto zoneImage = !zoneTextureName.empty() ? cache->GetTempResource<ImageCube>(zoneTextureName) : nullptr;
-            if (zoneImage)
-                sh = zoneImage->GetOrCreateSphericalHarmonics();
+            // Use spherical harmonics of the texture, if they were precalculated on load.
+            ea::optional<SphericalHarmonicsDot9> precalculated;
+            TextureCube* zoneTextureCube = zoneTexture_->Cast<TextureCube>();
+            if (zoneTextureCube)
+                precalculated = zoneTextureCube->GetSphericalHarmonics();
+
+            if (precalculated)
+                sh = *precalculated;
             else
-                URHO3D_LOGWARNING(
-                    "Cannot extract spherical harmonics from Zone texture without corresponding resource in cache");
+            {
+                // Fall back to loading the source images and calculating from them.
+                const ea::string& zoneTextureName = zoneTexture_->GetName();
+                auto cache = GetSubsystem<ResourceCache>();
+                SharedPtr<ImageCube> zoneImage;
+                if (!zoneTextureName.empty())
+                    zoneImage = cache->GetTempResource<ImageCube>(zoneTextureName);
+
+                if (zoneImage)
+                {
+                    URHO3D_LOGWARNING(
+                        "Spherical harmonics of cubemap '{}' are not precalculated, so they are calculated again "
+                        "from images on disk. Add <sh calculate=\"true\" /> to the cubemap XML to avoid this.",
+                        zoneTextureName);
+                    sh = zoneImage->GetOrCreateSphericalHarmonics();
+                }
+                else
+                    URHO3D_LOGWARNING(
+                        "Cannot extract spherical harmonics from Zone texture without corresponding resource in cache");
+            }
         }
 
         cachedTextureLighting_.Restore(sh);

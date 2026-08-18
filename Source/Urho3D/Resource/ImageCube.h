@@ -79,6 +79,8 @@ public:
     SphericalHarmonicsColor9 CalculateSphericalHarmonics() const;
     /// Return cached spherical harmonics or recalculate from image if cache is not available.
     SphericalHarmonicsDot9 GetOrCreateSphericalHarmonics() const;
+    /// Return spherical harmonics, if the loaded file provided or requested them.
+    ea::optional<SphericalHarmonicsDot9> GetSphericalHarmonics() const { return cachedSphericalHarmonics_; }
 
     /// Project UV onto cube.
     static Vector3 ProjectUVOnCube(CubeMapFace face, const Vector2& uv);
