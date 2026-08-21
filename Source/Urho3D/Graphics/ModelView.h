@@ -10,6 +10,8 @@
 #include "Urho3D/Math/BoundingBox.h"
 #include "Urho3D/Math/Color.h"
 
+#include <cassert>
+
 namespace Urho3D
 {
 

@@ -403,7 +403,8 @@ void Zone::UpdateCachedData()
                 {
                     URHO3D_LOGWARNING(
                         "Texture '{}' does not contain cached spherical harmonics. "
-                        "Add <sh ... /> tag to the texture XML file.");
+                        "Add <sh ... /> tag to the texture XML file.",
+                        zoneTextureCube->GetName());
                 }
             }
         }
