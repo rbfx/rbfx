@@ -395,34 +395,16 @@ void Zone::UpdateCachedData()
         SphericalHarmonicsDot9 sh;
         if (zoneTexture_)
         {
-            // Use spherical harmonics of the texture, if they were precalculated on load.
-            ea::optional<SphericalHarmonicsDot9> precalculated;
-            TextureCube* zoneTextureCube = zoneTexture_->Cast<TextureCube>();
-            if (zoneTextureCube)
-                precalculated = zoneTextureCube->GetSphericalHarmonics();
-
-            if (precalculated)
-                sh = *precalculated;
-            else
+            if (TextureCube* zoneTextureCube = zoneTexture_->Cast<TextureCube>())
             {
-                // Fall back to loading the source images and calculating from them.
-                const ea::string& zoneTextureName = zoneTexture_->GetName();
-                auto cache = GetSubsystem<ResourceCache>();
-                SharedPtr<ImageCube> zoneImage;
-                if (!zoneTextureName.empty())
-                    zoneImage = cache->GetTempResource<ImageCube>(zoneTextureName);
-
-                if (zoneImage)
+                if (const auto& shCached = zoneTextureCube->GetSphericalHarmonics())
+                    sh = *shCached;
+                else
                 {
                     URHO3D_LOGWARNING(
-                        "Spherical harmonics of cubemap '{}' are not precalculated, so they are calculated again "
-                        "from images on disk. Add <sh calculate=\"true\" /> to the cubemap XML to avoid this.",
-                        zoneTextureName);
-                    sh = zoneImage->GetOrCreateSphericalHarmonics();
+                        "Texture '{}' does not contain cached spherical harmonics. "
+                        "Add <sh ... /> tag to the texture XML file.");
                 }
-                else
-                    URHO3D_LOGWARNING(
-                        "Cannot extract spherical harmonics from Zone texture without corresponding resource in cache");
             }
         }
 

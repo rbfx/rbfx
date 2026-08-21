@@ -70,7 +70,7 @@ public:
     SharedPtr<Image> GetImage(CubeMapFace face);
 
     /// Return spherical harmonics of the texture, if the source image provided them on load.
-    ea::optional<SphericalHarmonicsDot9> GetSphericalHarmonics() const { return sphericalHarmonics_; }
+    const ea::optional<SphericalHarmonicsDot9>& GetSphericalHarmonics() const { return sphericalHarmonics_; }
 
     /// Return render surface for one face.
     /// @property{get_renderSurfaces}

@@ -75,8 +75,6 @@ void TextureCube::RegisterObject(Context* context)
 
 bool TextureCube::BeginLoad(Deserializer& source)
 {
-    sphericalHarmonics_.reset();
-
     auto* cache = GetSubsystem<ResourceCache>();
     auto graphics = GetSubsystem<Graphics>();
 
@@ -91,7 +89,6 @@ bool TextureCube::BeginLoad(Deserializer& source)
     if (!loadImageCube_)
         return false;
 
-    // ImageCube might have precalculated spherical harmonics. Copy them, because ImageCube eventually gets deleted.
     sphericalHarmonics_ = loadImageCube_->GetSphericalHarmonics();
 
     // Update dependencies
