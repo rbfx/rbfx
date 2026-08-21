@@ -79,6 +79,7 @@ bool ImageCube::BeginLoad(Deserializer& source)
     }
 
     faceImages_.clear();
+    cachedSphericalHarmonics_.reset();
 
     XMLElement textureElem = parametersXml_->GetRoot();
     XMLElement imageElem = textureElem.GetChild("image");
@@ -191,20 +192,6 @@ bool ImageCube::BeginLoad(Deserializer& source)
         }
     }
 
-    // Load spherical harmonics, if present.
-    cachedSphericalHarmonics_.reset();
-    if (XMLElement shElement = textureElem.GetChild("sh"))
-    {
-        cachedSphericalHarmonics_ = SphericalHarmonicsDot9{};
-        cachedSphericalHarmonics_->Ar_ = shElement.GetVector4("ar");
-        cachedSphericalHarmonics_->Ag_ = shElement.GetVector4("ag");
-        cachedSphericalHarmonics_->Ab_ = shElement.GetVector4("ab");
-        cachedSphericalHarmonics_->Br_ = shElement.GetVector4("br");
-        cachedSphericalHarmonics_->Bg_ = shElement.GetVector4("bg");
-        cachedSphericalHarmonics_->Bb_ = shElement.GetVector4("bb");
-        cachedSphericalHarmonics_->C_ = shElement.GetVector4("c");
-    }
-
     // Precalculate mip levels if async loading
     if (GetAsyncLoadState() == ASYNC_LOADING)
     {
@@ -230,6 +217,24 @@ bool ImageCube::BeginLoad(Deserializer& source)
 
             if (faceImage->GetWidth() != width_ || faceImage->GetHeight() != width_)
                 return false;
+        }
+    }
+
+    // Load spherical harmonics, if present, or calculate automatically if that is requested.
+    if (XMLElement shElement = textureElem.GetChild("sh"))
+    {
+        if (shElement.GetBool("calculate"))
+            cachedSphericalHarmonics_ = SphericalHarmonicsDot9(CalculateSphericalHarmonics());
+        else
+        {
+            cachedSphericalHarmonics_ = SphericalHarmonicsDot9{};
+            cachedSphericalHarmonics_->Ar_ = shElement.GetVector4("ar");
+            cachedSphericalHarmonics_->Ag_ = shElement.GetVector4("ag");
+            cachedSphericalHarmonics_->Ab_ = shElement.GetVector4("ab");
+            cachedSphericalHarmonics_->Br_ = shElement.GetVector4("br");
+            cachedSphericalHarmonics_->Bg_ = shElement.GetVector4("bg");
+            cachedSphericalHarmonics_->Bb_ = shElement.GetVector4("bb");
+            cachedSphericalHarmonics_->C_ = shElement.GetVector4("c");
         }
     }
 

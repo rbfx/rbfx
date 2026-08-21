@@ -395,14 +395,17 @@ void Zone::UpdateCachedData()
         SphericalHarmonicsDot9 sh;
         if (zoneTexture_)
         {
-            const ea::string& zoneTextureName = zoneTexture_->GetName();
-            auto cache = GetSubsystem<ResourceCache>();
-            auto zoneImage = !zoneTextureName.empty() ? cache->GetTempResource<ImageCube>(zoneTextureName) : nullptr;
-            if (zoneImage)
-                sh = zoneImage->GetOrCreateSphericalHarmonics();
-            else
-                URHO3D_LOGWARNING(
-                    "Cannot extract spherical harmonics from Zone texture without corresponding resource in cache");
+            if (TextureCube* zoneTextureCube = zoneTexture_->Cast<TextureCube>())
+            {
+                if (const auto& shCached = zoneTextureCube->GetSphericalHarmonics())
+                    sh = *shCached;
+                else
+                {
+                    URHO3D_LOGWARNING(
+                        "Texture '{}' does not contain cached spherical harmonics. "
+                        "Add <sh ... /> tag to the texture XML file.");
+                }
+            }
         }
 
         cachedTextureLighting_.Restore(sh);

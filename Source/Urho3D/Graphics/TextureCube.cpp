@@ -89,6 +89,8 @@ bool TextureCube::BeginLoad(Deserializer& source)
     if (!loadImageCube_)
         return false;
 
+    sphericalHarmonics_ = loadImageCube_->GetSphericalHarmonics();
+
     // Update dependencies
     for (Image* image : loadImageCube_->GetImages())
     {
