@@ -28,6 +28,7 @@
 #include "Urho3D/IO/FileSystem.h"
 #include "Urho3D/IO/Log.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <fcntl.h>
 #include <thread>
