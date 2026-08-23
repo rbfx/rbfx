@@ -259,7 +259,12 @@ void Shader::ProcessSource(ea::string& code, FileTime& timeStamp, Deserializer& 
             // Add included code or error directive
             AbstractFilePtr includeFile = cache->GetFile(includeFileName);
             if (includeFile)
+            {
+                code += "/// ";
+                code += includeFile->GetAbsoluteName();
+                code += "\n";
                 ProcessSource(code, timeStamp, *includeFile);
+            }
             else
                 code += Format("#error Missing include file <{}>\n", includeFileName);
 
