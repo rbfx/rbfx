@@ -1241,7 +1241,7 @@ void NavigationMesh::CollectTileGeometry(NavBuildData& build, const Matrix3x4& r
                         for (unsigned index : indices)
                             build.indices_.push_back(index + destVertexStart);
 
-                        build.areaIds_.insert(build.areaIds_.end(), std::size(indices) / 3, geometryInfo.areaId_);
+                        build.areaIds_.insert(build.areaIds_.end(), ea::size(indices) / 3, geometryInfo.areaId_);
                     }
                     break;
 

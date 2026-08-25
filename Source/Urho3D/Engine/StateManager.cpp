@@ -378,7 +378,7 @@ void StateManager::Reset()
         DeactivateState();
     }
     ea::queue<QueueItem> emptyQueue;
-    std::swap(stateQueue_, emptyQueue);
+    ea::swap(stateQueue_, emptyQueue);
 
     SetTransitionState(TransitionState::Sustain);
     if (hasState)

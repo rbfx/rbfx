@@ -34,7 +34,7 @@ namespace Urho3D
 
 MountedDirectory::MountedDirectory(Context* context, const ea::string& directory, ea::string scheme)
     : WatchableMountPoint(context)
-    , scheme_(std::move(scheme))
+    , scheme_(ea::move(scheme))
     , directory_(SanitizeDirName(directory))
     , name_(scheme_.empty() ? directory_ : (scheme_ + "://" + directory_))
 {

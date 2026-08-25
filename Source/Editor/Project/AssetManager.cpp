@@ -356,7 +356,7 @@ StringVector AssetManager::GetTransformerTypes(const AssetPipelineDesc& pipeline
         result.push_back(transformer->GetTypeName());
 
     ea::sort(result.begin(), result.end());
-    result.erase(std::unique(result.begin(), result.end()), result.end());
+    result.erase(ea::unique(result.begin(), result.end()), result.end());
 
     return result;
 }
@@ -560,7 +560,7 @@ void AssetManager::InitializeAssetPipelines()
     ea::set_symmetric_difference(
         assetPipelineFiles_.begin(), assetPipelineFiles_.end(),
         newAssetPipelineFiles.begin(), newAssetPipelineFiles.end(),
-        std::back_inserter(changedPipelines));
+        ea::back_inserter(changedPipelines));
 
     for (const auto& [resourceName, _] : changedPipelines)
         InvalidateAssetsInPath(GetPath(resourceName));

@@ -291,7 +291,7 @@ SharedPtr<Animation> RetargetAnimationsTransformer::RetargetAnimation(const Reta
         // Create target track and populate keyframes
         AnimationTrack* targetTrack = targetAnimation->CreateTrack(targetBone.name_);
         targetTrack->channelMask_ = sourceTrack->channelMask_;
-        targetTrack->keyFrames_ = std::move(targetKeyFrames);
+        targetTrack->keyFrames_ = ea::move(targetKeyFrames);
     }
 
     // Resolve IK chains to stabilize animations
@@ -402,7 +402,7 @@ SharedPtr<Animation> RetargetAnimationsTransformer::RetargetAnimation(const Reta
 
                 // IK solver only provides rotation keyframes for now.
                 targetTrack->channelMask_ = CHANNEL_ROTATION;
-                targetTrack->keyFrames_ = std::move(ikTrack.keyFrames_);
+                targetTrack->keyFrames_ = ea::move(ikTrack.keyFrames_);
             }
         }
 #else

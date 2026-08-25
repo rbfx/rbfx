@@ -63,7 +63,7 @@ void PlaceholderResourceInspector::InspectResources(const ea::vector<ResourceFil
     }
     else
     {
-        const unsigned numFolders = std::count_if(resources.begin(), resources.end(),
+        const unsigned numFolders = ea::count_if(resources.begin(), resources.end(),
             [](const ResourceFileDescriptor& desc) { return desc.isDirectory_; });
         const unsigned numFiles = resources.size() - numFolders;
         multipleResources_ = MultipleResources{numFiles, numFolders};

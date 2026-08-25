@@ -140,7 +140,7 @@ struct ContainerTypesAggregate
 
     auto Tie() const
     {
-        return std::tie(string_, vectorOfFloats_, byteFloatVector_, mapOfFloats_, variantMap_, variantVector_, variantBuffer_);
+        return ea::tie(string_, vectorOfFloats_, byteFloatVector_, mapOfFloats_, variantMap_, variantVector_, variantBuffer_);
     }
 
     bool operator ==(const ContainerTypesAggregate& rhs) const
@@ -176,7 +176,7 @@ struct SerializationTestStruct
     SharedPtr<Material> material_;
     ResourceRef materialRef_;
 
-    auto Tie() const { return std::tie(plain_, container_, variant_, material_, materialRef_); }
+    auto Tie() const { return ea::tie(plain_, container_, variant_, material_, materialRef_); }
     bool operator ==(const SerializationTestStruct& rhs) const { return Tie() == rhs.Tie(); }
 };
 

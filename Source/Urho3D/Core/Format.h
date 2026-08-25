@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <EASTL/iterator.h>
 #include <EASTL/string.h>
 
 #if _MSC_VER
@@ -47,7 +48,7 @@ template <typename... Args>
 ea::string Format(ea::string_view formatString, const Args&... args)
 {
     ea::string ret;
-    fmt::vformat_to(std::back_inserter(ret), ToFmtStringView(formatString), fmt::make_format_args(args...));
+    fmt::vformat_to(ea::back_inserter(ret), ToFmtStringView(formatString), fmt::make_format_args(args...));
     return ret;
 }
 

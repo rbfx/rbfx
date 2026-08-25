@@ -83,7 +83,7 @@ public:
 
     void Swap(SharedPtrBase& rhs) noexcept
     {
-        std::swap(refCounted_, rhs.refCounted_);
+        ea::swap(refCounted_, rhs.refCounted_);
     }
 
     const InterfaceType* GetRefCounted() const noexcept { return refCounted_; }
@@ -132,8 +132,8 @@ public:
 
     void Swap(SharedPtrBase& rhs) noexcept
     {
-        std::swap(refCounted_, rhs.refCounted_);
-        std::swap(ptr_, rhs.ptr_);
+        ea::swap(refCounted_, rhs.refCounted_);
+        ea::swap(ptr_, rhs.ptr_);
     }
 
     const RefCounted* GetRefCounted() const noexcept { return refCounted_; }
@@ -246,7 +246,7 @@ public:
     void Swap(WeakPtrBase& rhs) noexcept
     {
         WeakPtrRefCountBase::Swap(rhs);
-        std::swap(refCounted_, rhs.refCounted_);
+        ea::swap(refCounted_, rhs.refCounted_);
     }
 
     const InterfaceType* GetRefCounted() const noexcept { return refCounted_; }
@@ -294,8 +294,8 @@ public:
     void Swap(WeakPtrBase& rhs) noexcept
     {
         WeakPtrRefCountBase::Swap(rhs);
-        std::swap(refCounted_, rhs.refCounted_);
-        std::swap(ptr_, rhs.ptr_);
+        ea::swap(refCounted_, rhs.refCounted_);
+        ea::swap(ptr_, rhs.ptr_);
     }
 
     const RefCounted* GetRefCounted() const noexcept { return refCounted_; }

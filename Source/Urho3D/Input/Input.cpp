@@ -1539,7 +1539,7 @@ SDL_JoystickID Input::FindAccelerometerJoystickId() const
 {
     // Check if "accelerometer as joystick" option enabled in SDL (it is ON by default)
     const auto accelerometerAsJoystick = SDL_GetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK);
-    if (!accelerometerAsJoystick || std::string_view("0") != accelerometerAsJoystick)
+    if (!accelerometerAsJoystick || ea::string_view("0") != accelerometerAsJoystick)
     {
         // Find and ignore virtual joystick id.
         // SDL defines a virtual joystick as having 3 axis and no buttons or hats.

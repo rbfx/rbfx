@@ -151,7 +151,7 @@ public:
         , newValues_(newValues)
     {
         using namespace ea;
-        ea::transform(begin(nodes), end(nodes), std::back_inserter(nodeIds_),
+        ea::transform(begin(nodes), end(nodes), ea::back_inserter(nodeIds_),
             [](Node* node) { return node->GetID(); });
 
         URHO3D_ASSERT(nodeIds_.size() == oldValues_.size());
@@ -189,7 +189,7 @@ public:
         , newValues_(newValues)
     {
         using namespace ea;
-        ea::transform(begin(components), end(components), std::back_inserter(componentIds_),
+        ea::transform(begin(components), end(components), ea::back_inserter(componentIds_),
             [](Component* component) { return component->GetID(); });
 
         URHO3D_ASSERT(componentIds_.size() == oldValues_.size());

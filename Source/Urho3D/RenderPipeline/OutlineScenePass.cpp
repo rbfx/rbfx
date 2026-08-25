@@ -56,7 +56,7 @@ OutlineScenePass::OutlineScenePass(RenderPipelineInterface* renderPipeline,
         DrawableProcessorPassFlag::BatchCallback | DrawableProcessorPassFlag::PipelineStateCallback | flags,
         "base") // Pass here doesn't matter
 {
-    ea::transform(outlinedPasses.begin(), outlinedPasses.end(), std::back_inserter(outlinedPasses_),
+    ea::transform(outlinedPasses.begin(), outlinedPasses.end(), ea::back_inserter(outlinedPasses_),
         [](const ea::string& pass) { return Technique::GetPassIndex(pass); });
 
     const PipelineStateOutputDesc outputDesc{

@@ -284,7 +284,7 @@ template <class T> struct CustomVariantValueTraits
     /// Move value.
     static void Move(T& dest, T& src)
     {
-        dest = std::move(src);
+        dest = ea::move(src);
     }
     /// Compare values.
     static bool Compare(const T& lhs, const T& rhs)
@@ -348,7 +348,7 @@ template <class T> struct CustomVariantValueTraits<ea::unique_ptr<T>>
     /// Copy value.
     static void Copy(ea::unique_ptr<T>& dest, const ea::unique_ptr<T>& src) { dest = ea::make_unique<T>(*src); }
     /// Move value.
-    static void Move(ea::unique_ptr<T>& dest, ea::unique_ptr<T>& src) { dest = std::move(src); }
+    static void Move(ea::unique_ptr<T>& dest, ea::unique_ptr<T>& src) { dest = ea::move(src); }
     /// Compare types.
     static bool Compare(const ea::unique_ptr<T>& lhs, const ea::unique_ptr<T>& rhs) { return CustomVariantValueTraits<T>::Compare(*lhs, *rhs); }
     /// Check whether the value is zero.
@@ -410,7 +410,7 @@ public:
 
     void CloneTo(void* dest) const override { new (dest) ClassName(value_); }
 
-    void RelocateTo(void* dest) override { new (dest) ClassName(std::move(value_)); }
+    void RelocateTo(void* dest) override { new (dest) ClassName(ea::move(value_)); }
 
     unsigned GetSize() const override { return sizeof(ClassName); }
 

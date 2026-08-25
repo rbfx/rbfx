@@ -1280,7 +1280,7 @@ void ResourceBrowserTab::BeginEntryDelete(const FileSystemEntry& entry)
 void ResourceBrowserTab::BeginRightSelectionDelete()
 {
     delete_.entryRefs_.clear();
-    ea::transform(right_.selectedPaths_.begin(), right_.selectedPaths_.end(), std::back_inserter(delete_.entryRefs_),
+    ea::transform(right_.selectedPaths_.begin(), right_.selectedPaths_.end(), ea::back_inserter(delete_.entryRefs_),
         [this](const ea::string& resourcePath) { return EntryReference{left_.selectedRoot_, resourcePath}; });
     ea::sort(delete_.entryRefs_.begin(), delete_.entryRefs_.end());
 
