@@ -640,7 +640,7 @@ void Graphics::OnWindowResized()
 
     VariantMap& eventData = GetEventDataMap();
     eventData[P_WIDTH] = GetWidth();
-    eventData[P_HEIGHT] = GetWidth();
+    eventData[P_HEIGHT] = GetHeight();
     eventData[P_FULLSCREEN] = GetFullscreen();
     eventData[P_BORDERLESS] = GetBorderless();
     eventData[P_RESIZABLE] = GetResizable();
