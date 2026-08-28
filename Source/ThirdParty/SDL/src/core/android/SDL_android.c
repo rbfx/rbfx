@@ -718,20 +718,31 @@ JNIEXPORT void JNICALL SDL_JAVA_CONTROLLER_INTERFACE(nativeSetupJNI)(JNIEnv *env
 /* SDL main function prototype */
 typedef int (*SDL_main_func)(int argc, char *argv[]);
 
+static SDL_main_func SDL_external_main = 0;
+
+/* Custom SDL_main_callback */
+JNIEXPORT void SetExternalSdlMain(SDL_main_func external_main)
+{
+    SDL_external_main = external_main;
+}
+
 /* Start up the SDL app */
 JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv *env, jclass cls, jstring library, jstring function, jobject array)
 {
     int status = -1;
-    const char *library_file;
-    void *library_handle;
+    const char *library_file = 0;
+    void *library_handle = 0;
+    const char *function_name = 0;
 
     __android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeRunMain()");
 
     /* Save JNIEnv of SDLThread */
     Android_JNI_SetEnv(env);
 
-    library_file = (*env)->GetStringUTFChars(env, library, NULL);
-    library_handle = dlopen(library_file, RTLD_GLOBAL);
+    SDL_main_func SDL_main = SDL_external_main;
+    if (!SDL_main) {
+        library_file = (*env)->GetStringUTFChars(env, library, NULL);
+        library_handle = dlopen(library_file, RTLD_GLOBAL);
 
     if (!library_handle) {
         /* When deploying android app bundle format uncompressed native libs may not extract from apk to filesystem.
@@ -743,85 +754,95 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv *env, jclass cls,
         }
     }
 
-    if (library_handle) {
-        const char *function_name;
-        SDL_main_func SDL_main;
+        if (library_handle) {
 
-        function_name = (*env)->GetStringUTFChars(env, function, NULL);
-        SDL_main = (SDL_main_func)dlsym(library_handle, function_name);
-        if (SDL_main) {
-            int i;
-            int argc;
-            int len;
-            char **argv;
-            SDL_bool isstack;
-
-            /* Prepare the arguments. */
-            // Urho3D: Remove any assumption on the arguments, except that the first argument will be the program name set by SDLActivity or its subclass
-            len = (*env)->GetArrayLength(env, array);
-            argv = SDL_small_alloc(char *, len + 1, &isstack);  /* !!! FIXME: check for NULL */
-            argc = 0;
-            for (i = 0; i < len; ++i) {
-                const char *utf;
-                char *arg = NULL;
-                jstring string = (*env)->GetObjectArrayElement(env, array, i);
-                if (string) {
-                    utf = (*env)->GetStringUTFChars(env, string, 0);
-                    if (utf) {
-                        arg = SDL_strdup(utf);
-                        (*env)->ReleaseStringUTFChars(env, string, utf);
-                    }
-                    (*env)->DeleteLocalRef(env, string);
-                }
-                if (!arg) {
-                    arg = SDL_strdup("");
-                }
-                argv[argc++] = arg;
-            }
-            argv[argc] = NULL;
-
-            // Urho3D: Set the files dir
-            jobject context = (*env)->CallStaticObjectMethod(env, mActivityClass, midGetContext);
-            jmethodID mid = (*env)->GetMethodID(env, (*env)->GetObjectClass(env, context),
-                "getFilesDir", "()Ljava/io/File;");
-            jobject dir = (*env)->CallObjectMethod(env, context, mid);
-            mid = (*env)->GetMethodID(env, (*env)->GetObjectClass(env, dir),
-                "getAbsolutePath", "()Ljava/lang/String;");
-            jstring filesDir = (jstring)(*env)->CallObjectMethod(env, dir, mid);
-
-            const char *str;
-            str = (*env)->GetStringUTFChars(env, filesDir, 0);
-            if (str)
-            {
-                if (mFilesDir)
-                    free(mFilesDir);
-
-                size_t length = strlen(str) + 1;
-                mFilesDir = (char*)malloc(length);
-                memcpy(mFilesDir, str, length);
-                (*env)->ReleaseStringUTFChars(env, filesDir, str);
-            }
-
-            /* Run the application. */
-            status = SDL_main(argc, argv);
-
-            /* Release the arguments. */
-            for (i = 0; i < argc; ++i) {
-                SDL_free(argv[i]);
-            }
-            SDL_small_free(argv, isstack);
-
-        } else {
-            __android_log_print(ANDROID_LOG_ERROR, "SDL", "nativeRunMain(): Couldn't find function %s in library %s", function_name, library_file);
+            function_name = (*env)->GetStringUTFChars(env, function, NULL);
+            SDL_main = (SDL_main_func)dlsym(library_handle, function_name);
         }
-        (*env)->ReleaseStringUTFChars(env, function, function_name);
+        else {
+            __android_log_print(ANDROID_LOG_ERROR, "SDL", "nativeRunMain(): Couldn't load library %s", library_file);
+        }
+    }
+    else {
+            __android_log_print(ANDROID_LOG_ERROR, "SDL", "nativeRunMain(): Using SDL_main provided externaly instead of one from %s", library_file);
+    }
+    if (SDL_main) {
+        int i;
+        int argc;
+        int len;
+        char **argv;
+        SDL_bool isstack;
 
-        dlclose(library_handle);
+        /* Prepare the arguments. */
+        // Urho3D: Remove any assumption on the arguments, except that the first argument will be the program name set by SDLActivity or its subclass
+        len = (*env)->GetArrayLength(env, array);
+        argv = SDL_small_alloc(char *, len + 1, &isstack);  /* !!! FIXME: check for NULL */
+        argc = 0;
+        for (i = 0; i < len; ++i) {
+            const char *utf;
+            char *arg = NULL;
+            jstring string = (*env)->GetObjectArrayElement(env, array, i);
+            if (string) {
+                utf = (*env)->GetStringUTFChars(env, string, 0);
+                if (utf) {
+                    arg = SDL_strdup(utf);
+                    (*env)->ReleaseStringUTFChars(env, string, utf);
+                }
+                (*env)->DeleteLocalRef(env, string);
+            }
+            if (!arg) {
+                arg = SDL_strdup("");
+            }
+            argv[argc++] = arg;
+        }
+        argv[argc] = NULL;
+
+        // Urho3D: Set the files dir
+        jobject context = (*env)->CallStaticObjectMethod(env, mActivityClass, midGetContext);
+        jmethodID mid = (*env)->GetMethodID(env, (*env)->GetObjectClass(env, context),
+                "getFilesDir", "()Ljava/io/File;");
+        jobject dir = (*env)->CallObjectMethod(env, context, mid);
+        mid = (*env)->GetMethodID(env, (*env)->GetObjectClass(env, dir),
+                "getAbsolutePath", "()Ljava/lang/String;");
+        jstring filesDir = (jstring)(*env)->CallObjectMethod(env, dir, mid);
+
+        const char *str;
+        str = (*env)->GetStringUTFChars(env, filesDir, 0);
+        if (str)
+        {
+            if (mFilesDir)
+                free(mFilesDir);
+
+            size_t length = strlen(str) + 1;
+            mFilesDir = (char*)malloc(length);
+            memcpy(mFilesDir, str, length);
+            (*env)->ReleaseStringUTFChars(env, filesDir, str);
+        }
+
+        /* Run the application. */
+        status = SDL_main(argc, argv);
+
+        /* Release the arguments. */
+        for (i = 0; i < argc; ++i) {
+            SDL_free(argv[i]);
+        }
+        SDL_small_free(argv, isstack);
 
     } else {
-        __android_log_print(ANDROID_LOG_ERROR, "SDL", "nativeRunMain(): Couldn't load library %s", library_file);
+        __android_log_print(ANDROID_LOG_ERROR, "SDL", "nativeRunMain(): Couldn't find function %s in library %s", function_name, library_file);
     }
-    (*env)->ReleaseStringUTFChars(env, library, library_file);
+
+    if (function_name) {
+        (*env)->ReleaseStringUTFChars(env, function, function_name);
+    }
+
+    if (library_handle) {
+        dlclose(library_handle);
+    }
+
+    if (library_file) {
+        (*env)->ReleaseStringUTFChars(env, library, library_file);
+    }
 
     /* This is a Java thread, it doesn't need to be Detached from the JVM.
      * Set to mThreadKey value to NULL not to call pthread_create destructor 'Android_JNI_ThreadDestroyed' */
