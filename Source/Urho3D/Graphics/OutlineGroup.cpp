@@ -83,6 +83,7 @@ void OutlineGroup::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Color", GetColor, SetColor, Color, Color::WHITE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Render Order", GetRenderOrder, SetRenderOrder, unsigned, DEFAULT_RENDER_ORDER, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Debug", IsDebug, SetDebug, bool, false, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Binder Tag", GetBinderTag, SetBinderTag, ea::string, EMPTY_STRING, AM_DEFAULT);
     // TODO: Not resolved on load
     URHO3D_ACCESSOR_ATTRIBUTE("Drawables", GetDrawablesAttr, SetDrawablesAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT);
 }
