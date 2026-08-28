@@ -211,15 +211,15 @@ void ParticleEmitter::Update(const FrameInfo& frame)
             billboard.rotation_ += lastTimeStep_ * particle.rotationSpeed_;
 
             // Scaling
-            float sizeAdd = effect_->GetSizeAdd();
-            float sizeMul = effect_->GetSizeMul();
-            if (sizeAdd != 0.0f || sizeMul != 1.0f)
+            Vector2 sizeAdd = effect_->GetSizeAdd();
+            Vector2 sizeMul = effect_->GetSizeMul();
+            if (sizeAdd != Vector2::ZERO || sizeMul != Vector2::ONE)
             {
                 particle.scale_ += lastTimeStep_ * sizeAdd;
-                if (particle.scale_ < 0.0f)
-                    particle.scale_ = 0.0f;
-                if (sizeMul != 1.0f)
-                    particle.scale_ *= (lastTimeStep_ * (sizeMul - 1.0f)) + 1.0f;
+                if (particle.scale_.x_ < 0.0f && particle.scale_.y_ < 0.0f)
+                    particle.scale_ = Vector2::ZERO;
+                if (sizeMul != Vector2::ONE)
+                    particle.scale_ *= (lastTimeStep_ * (sizeMul - Vector2::ONE)) + Vector2::ONE;
                 billboard.size_ = particle.size_ * particle.scale_;
             }
 
@@ -374,7 +374,7 @@ void ParticleEmitter::SetParticlesAttr(const VariantVector& value)
         i->size_ = value[index++].GetVector2();
         i->timer_ = value[index++].GetFloat();
         i->timeToLive_ = value[index++].GetFloat();
-        i->scale_ = value[index++].GetFloat();
+        i->scale_ = value[index++].GetVector2();
         i->rotationSpeed_ = value[index++].GetFloat();
         i->colorIndex_ = (unsigned)value[index++].GetInt();
         i->texIndex_ = (unsigned)value[index++].GetInt();
@@ -513,7 +513,7 @@ bool ParticleEmitter::EmitNewParticle()
     particle.size_ = effect_->GetRandomSize();
     particle.timer_ = 0.0f;
     particle.timeToLive_ = effect_->GetRandomTimeToLive();
-    particle.scale_ = 1.0f;
+    particle.scale_ = Vector2::ONE;
     particle.rotationSpeed_ = effect_->GetRandomRotationSpeed();
     particle.colorIndex_ = 0;
     particle.texIndex_ = 0;

@@ -85,8 +85,8 @@ ParticleEffect::ParticleEffect(Context* context) :
     rotationMax_(0.0f),
     rotationSpeedMin_(0.0f),
     rotationSpeedMax_(0.0f),
-    sizeAdd_(0.0f),
-    sizeMul_(1.0f),
+    sizeAdd_(0.0f, 0.0f),
+    sizeMul_(1.0f, 1.0f),
     faceCameraMode_(FC_ROTATE_XYZ)
 {
 }
@@ -160,8 +160,8 @@ bool ParticleEffect::Load(const XMLElement& source)
     rotationMax_ = 0.0f;
     rotationSpeedMin_ = 0.0f;
     rotationSpeedMax_ = 0.0f;
-    sizeAdd_ = 0.0f;
-    sizeMul_ = 1.0f;
+    sizeAdd_ = Vector2::ZERO;
+    sizeMul_ = Vector2::ONE;
     colorFrames_.clear();
     textureFrames_.clear();
     faceCameraMode_ = FC_ROTATE_XYZ;
@@ -276,9 +276,9 @@ bool ParticleEffect::Load(const XMLElement& source)
     {
         XMLElement deltaElem = source.GetChild("sizedelta");
         if (deltaElem.HasAttribute("add"))
-            sizeAdd_ = deltaElem.GetFloat("add");
+            sizeAdd_ = deltaElem.GetVector2("add");
         if (deltaElem.HasAttribute("mul"))
-            sizeMul_ = deltaElem.GetFloat("mul");
+            sizeMul_ = deltaElem.GetVector2("mul");
     }
 
     if (source.HasChild("color"))
@@ -405,8 +405,8 @@ bool ParticleEffect::Save(XMLElement& dest) const
     childElem.SetFloat("max", rotationSpeedMax_);
 
     childElem = dest.CreateChild("sizedelta");
-    childElem.SetFloat("add", sizeAdd_);
-    childElem.SetFloat("mul", sizeMul_);
+    childElem.SetVector2("add", sizeAdd_);
+    childElem.SetVector2("mul", sizeMul_);
 
     childElem = dest.CreateChild("faceCameraMode");
     childElem.SetAttribute("value", faceCameraModeNames[faceCameraMode_]);
@@ -578,12 +578,12 @@ void ParticleEffect::SetMaxRotationSpeed(float speed)
 }
 
 
-void ParticleEffect::SetSizeAdd(float sizeAdd)
+void ParticleEffect::SetSizeAdd(Vector2 sizeAdd)
 {
     sizeAdd_ = sizeAdd;
 }
 
-void ParticleEffect::SetSizeMul(float sizeMul)
+void ParticleEffect::SetSizeMul(Vector2 sizeMul)
 {
     sizeMul_ = sizeMul;
 }
