@@ -257,7 +257,16 @@ bool SplashScreen::QueueSceneResourcesAsync(const ea::string& fileName)
         else if (extension == ".json")
             return scene_->LoadAsyncJSON(file, LOAD_RESOURCES_ONLY);
         else
-            return scene_->LoadAsync(file, LOAD_RESOURCES_ONLY);
+        {
+            constexpr BinaryMagic sceneBinaryMagic{{'U', 'S', 'C', 'N'}};
+            const InternalResourceFormat format = PeekResourceFormat(*file, sceneBinaryMagic);
+            switch (format)
+            {
+            case InternalResourceFormat::Xml: return scene_->LoadAsyncXML(file, LOAD_RESOURCES_ONLY);
+            case InternalResourceFormat::Json: return scene_->LoadAsyncJSON(file, LOAD_RESOURCES_ONLY);
+            default: return scene_->LoadAsync(file, LOAD_RESOURCES_ONLY);
+            }
+        }
     }
     return false;
 }
