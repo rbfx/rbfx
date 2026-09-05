@@ -296,7 +296,7 @@ void WorkQueue::Initialize(unsigned numThreads)
             const std::string threadName = fmt::format("Worker {}", i);
             PostTaskForThread([=]() { SetProfilerThreadName(threadName.c_str()); }, TaskPriority::Immediate, i);
         }
-        CompleteAll();
+        taskScheduler_->WaitforAll();
 
         URHO3D_LOGINFO("Created {} worker thread{}", numThreads, numThreads > 1 ? "s" : "");
     }
