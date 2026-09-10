@@ -43,11 +43,11 @@ template <class T>
 constexpr bool IsRefCountedType = ea::is_base_of_v<RefCounted, T>;
 
 /// Base class for shared pointer.
-template <class InterfaceType, class RefCountedType, class Enabled = void>
+template <class InterfaceType, class RefCountedType, bool SameType = std::is_same_v<InterfaceType, RefCountedType>>
 class SharedPtrBase;
 
 template <class InterfaceType>
-class SharedPtrBase<InterfaceType, InterfaceType, void>
+class SharedPtrBase<InterfaceType, InterfaceType, true>
 {
 public:
     SharedPtrBase() noexcept = default;
@@ -94,8 +94,8 @@ private:
     InterfaceType* refCounted_{};
 };
 
-template <class InterfaceType>
-class SharedPtrBase<InterfaceType, RefCounted, ea::enable_if_t<!IsRefCountedType<InterfaceType>>>
+template <class InterfaceType, class RefCountedType>
+class SharedPtrBase<InterfaceType, RefCountedType, false>
 {
 public:
     SharedPtrBase() noexcept = default;
@@ -136,12 +136,12 @@ public:
         ea::swap(ptr_, rhs.ptr_);
     }
 
-    const RefCounted* GetRefCounted() const noexcept { return refCounted_; }
-    RefCounted* GetMutableRefCounted() const noexcept { return const_cast<RefCounted*>(refCounted_); }
+    const RefCountedType* GetRefCounted() const noexcept { return refCounted_; }
+    RefCountedType* GetMutableRefCounted() const noexcept { return const_cast<RefCounted*>(refCounted_); }
     InterfaceType* GetPointer() const noexcept { return ptr_; }
 
 private:
-    const RefCounted* refCounted_{};
+    const RefCountedType* refCounted_{};
     InterfaceType* ptr_{};
 };
 
@@ -208,11 +208,11 @@ private:
 };
 
 /// Base class for weak pointer.
-template <class InterfaceType, class RefCountedType, class Enabled = void>
+template <class InterfaceType, class RefCountedType, bool SameType = std::is_same_v<InterfaceType, RefCountedType>>
 class WeakPtrBase;
 
 template <class InterfaceType>
-class WeakPtrBase<InterfaceType, InterfaceType, void> : public WeakPtrRefCountBase
+class WeakPtrBase<InterfaceType, InterfaceType, true> : public WeakPtrRefCountBase
 {
 public:
     WeakPtrBase() noexcept = default;
@@ -257,8 +257,8 @@ private:
     InterfaceType* refCounted_{};
 };
 
-template <class InterfaceType>
-class WeakPtrBase<InterfaceType, RefCounted, ea::enable_if_t<!IsRefCountedType<InterfaceType>>>
+template <class InterfaceType, class RefCountedType>
+class WeakPtrBase<InterfaceType, RefCountedType, false>
     : public WeakPtrRefCountBase
 {
 public:
@@ -281,7 +281,7 @@ public:
         rhs.ptr_ = nullptr;
     }
 
-    WeakPtrBase(RefCount* refCount, InterfaceType* ptr, const RefCounted* refCounted) noexcept
+    WeakPtrBase(RefCount* refCount, InterfaceType* ptr, const RefCountedType* refCounted) noexcept
         : WeakPtrRefCountBase(ptr ? refCount : nullptr)
         , refCounted_(ptr ? refCounted : nullptr)
         , ptr_(ptr)
@@ -298,12 +298,12 @@ public:
         ea::swap(ptr_, rhs.ptr_);
     }
 
-    const RefCounted* GetRefCounted() const noexcept { return refCounted_; }
-    RefCounted* GetMutableRefCounted() const noexcept { return const_cast<RefCounted*>(refCounted_); }
+    const RefCountedType* GetRefCounted() const noexcept { return refCounted_; }
+    RefCountedType* GetMutableRefCounted() const noexcept { return const_cast<RefCountedType*>(refCounted_); }
     InterfaceType* GetPointer() const noexcept { return ptr_; }
 
 private:
-    const RefCounted* refCounted_{};
+    const RefCountedType* refCounted_{};
     InterfaceType* ptr_{};
 };
 
