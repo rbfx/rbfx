@@ -200,6 +200,7 @@ private:
 
     VectorBuffer componentBuffer_;
     VectorBuffer buffer_;
+    ea::string debugInfoBuffer_;
 
     float reportedLoss_{};
 };

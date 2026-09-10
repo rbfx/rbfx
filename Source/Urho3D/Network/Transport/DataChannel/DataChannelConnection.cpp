@@ -27,7 +27,7 @@ DataChannelConnection::DataChannelConnection(Context* context)
 
 DataChannelConnection::~DataChannelConnection()
 {
-    if (state_ != NetworkConnection::State::Disconnected)
+    if (state_ != NetworkConnectionState::Disconnected)
     {
         URHO3D_LOGWARNING("DataChannelConnection was not properly disconnected before destruction. Forcing disconnect.");
     }
@@ -63,7 +63,7 @@ bool DataChannelConnection::Connect(const URL& url)
 
 void DataChannelConnection::Disconnect()
 {
-    if (state_ == State::Disconnected || state_ == State::Disconnecting)
+    if (state_ == NetworkConnectionState::Disconnected || state_ == NetworkConnectionState::Disconnecting)
         return;
 
     if (peer_)
@@ -71,9 +71,9 @@ void DataChannelConnection::Disconnect()
         BaseClassName::Disconnect();
 
 #if URHO3D_PLATFORM_WEB
-        bool wasConnected = state_ == State::Connected;
+        bool wasConnected = state_ == NetworkConnectionState::Connected;
 #endif
-        state_ = State::Disconnecting;
+        state_ = NetworkConnectionState::Disconnecting;
 #ifndef URHO3D_PLATFORM_WEB
         peer_->resetCallbacks();
         peer_->close();
@@ -86,19 +86,19 @@ void DataChannelConnection::Disconnect()
     }
 }
 
-bool DataChannelConnection::SendData(const MemoryBuffer& data, PacketTypeFlags type)
+bool DataChannelConnection::SendData(ConstByteSpan data, PacketTypeFlags type)
 {
-    if (state_ != NetworkConnection::State::Connected)
+    if (state_ != NetworkConnectionState::Connected)
     {
         URHO3D_LOGDEBUG("Network message was not sent: connection is not connected.");
         return false;
     }
 
-    const unsigned dataSize = data.GetSize() - data.GetPosition();
-    if (dataSize > GetMaxMessageSize() + NetworkMessageHeaderSize)
+    const unsigned dataSize = data.size();
+    if (dataSize > GetMaxMessageSize())
     {
         URHO3D_LOGERROR("DataChannel tried to send {} bytes of data, which is more than max allowed {} bytes of data per message.",
-            dataSize, GetMaxMessageSize() + NetworkMessageHeaderSize);
+            dataSize, GetMaxMessageSize());
         return false;
     }
 
@@ -110,7 +110,7 @@ bool DataChannelConnection::SendData(const MemoryBuffer& data, PacketTypeFlags t
         if (dc->isOpen())
         {
             static_assert(sizeof(rtc::byte) == sizeof(unsigned char));
-            dc->send(reinterpret_cast<const rtc::byte*>(data.GetData() + data.GetPosition()), dataSize);
+            dc->send(reinterpret_cast<const rtc::byte*>(data.data()), dataSize);
             return true;
         }
     }
@@ -125,20 +125,20 @@ bool DataChannelConnection::SendData(const MemoryBuffer& data, PacketTypeFlags t
 
 unsigned DataChannelConnection::GetMaxMessageSize() const
 {
-    if (state_ != State::Connected || !dataChannels_[0])
+    if (state_ != NetworkConnectionState::Connected || !dataChannels_[0])
         return 0;
 
 #if URHO3D_PLATFORM_WEB
-    return MaxNetworkPacketSize - NetworkMessageHeaderSize;
+    return MaxNetworkPacketSize;
 #else
-    return static_cast<unsigned>(dataChannels_[0]->maxMessageSize()) - NetworkMessageHeaderSize;
+    return static_cast<unsigned>(dataChannels_[0]->maxMessageSize());
 #endif
 }
 
 void DataChannelConnection::OnDataChannelConnected(int index)
 {
     // Web builds may call this callback multiple times for an already open datachannel!
-    if (state_ == State::Connected)
+    if (state_ == NetworkConnectionState::Connected)
         return;
 
     for (int i = 0; i < URHO3D_ARRAYSIZE(dataChannels_); i++)
@@ -152,7 +152,7 @@ void DataChannelConnection::OnDataChannelConnected(int index)
         address_ = peer_->remoteAddress().value().c_str();
 #endif
 
-    DoOnConnected();
+    DispatchConnected();
 
     if (auto* server = static_cast<DataChannelServer*>(GetServer()))
         server->DoOnConnected(this);
@@ -165,10 +165,10 @@ void DataChannelConnection::OnDataChannelConnected(int index)
 void DataChannelConnection::OnDataChannelDisconnected(int index, bool notifyCallbacks)
 {
     // Web builds may call this callback multiple times for an already open datachannel!
-    if (state_ == State::Disconnected)
+    if (state_ == NetworkConnectionState::Disconnected)
         return;
 
-    state_ = State::Disconnecting;
+    state_ = NetworkConnectionState::Disconnecting;
 
 #ifndef URHO3D_PLATFORM_WEB
     if (dataChannels_[index])
@@ -177,7 +177,7 @@ void DataChannelConnection::OnDataChannelDisconnected(int index, bool notifyCall
     dataChannels_[index] = nullptr;
     for (int i = 0; i < URHO3D_ARRAYSIZE(dataChannels_); i++)
     {
-        if (dataChannels_[i] && state_ != State::Connecting)
+        if (dataChannels_[i] && state_ != NetworkConnectionState::Connecting)
             return;
     }
 
@@ -185,7 +185,7 @@ void DataChannelConnection::OnDataChannelDisconnected(int index, bool notifyCall
     SharedPtr<DataChannelConnection> self(this);    // Keep self alive during disconnect
     if (notifyCallbacks)
     {
-        DoOnDisconnected();
+        DispatchDisconnected();
     }
 
     if (auto* server = static_cast<DataChannelServer*>(GetServer()))
@@ -203,7 +203,7 @@ void DataChannelConnection::OnDataChannelDisconnected(int index, bool notifyCall
 void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std::shared_ptr<rtc::WebSocket> websocket)
 {
     SetServer(server);
-    state_ = State::Connecting;
+    state_ = NetworkConnectionState::Connecting;
     websocket_ = websocket;
     websocketWasOpened_ = server != nullptr;
 
@@ -242,8 +242,9 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
             dc->onClosed(std::bind(&DataChannelConnection::OnDataChannelDisconnected, this, i, true));
             dc->onMessage([this](const rtc::binary& data)
             {
-                MemoryBuffer message(data.data(), static_cast<unsigned>(data.size()));
-                DoOnData(message);
+                const ConstByteSpan message(reinterpret_cast<const unsigned char*>(data.data()),
+                    static_cast<ConstByteSpan::index_type>(data.size()));
+                DispatchDataReceived(message);
             }, [](rtc::string) {});
         }
     }
@@ -264,8 +265,9 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
         dc->onClosed(std::bind(&DataChannelConnection::OnDataChannelDisconnected, this, packetType, true));
         dc->onMessage([this](const rtc::binary& data)
         {
-            MemoryBuffer message(data.data(), static_cast<unsigned>(data.size()));
-            DoOnData(message);
+            const ConstByteSpan message(reinterpret_cast<const unsigned char*>(data.data()),
+                static_cast<ConstByteSpan::index_type>(data.size()));
+            DispatchDataReceived(message);
         }, [](rtc::string) {});
     });
     websocket->onOpen([this]() { websocketWasOpened_ = true; });

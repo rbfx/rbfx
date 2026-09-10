@@ -29,7 +29,7 @@ class NetworkConnection;
 ///     NetworkMessageLogger logger_;
 ///
 /// public:
-///     void SendMessage(NetworkMessageId messageId, const MemoryBuffer& data,
+///     void SendMessage(NetworkMessageId messageId, ConstByteSpan data,
 ///         PacketTypeFlags type, ea::string_view debugInfo)
 ///     {
 ///         // Log the outgoing message before sending
@@ -37,7 +37,7 @@ class NetworkConnection;
 ///         BaseClassName::SendMessage(messageId, data, type, debugInfo);
 ///     }
 ///
-///     bool OnMessage(NetworkMessageId messageId, MemoryBuffer& msg)
+///     bool OnMessage(NetworkMessageId messageId, ConstByteSpan msg)
 ///     {
 ///         // Log the received message
 ///         logger_.LogReceivedMessage(messageId, msg);
@@ -64,12 +64,12 @@ public:
 
     /// Log a sent network message.
     /// Can be overridden for custom logging behavior (e.g., file output, remote logging).
-    virtual void LogSentMessage(NetworkMessageId messageId, const MemoryBuffer& data, PacketTypeFlags packetType,
+    virtual void LogSentMessage(NetworkMessageId messageId, ConstByteSpan data, PacketTypeFlags packetType,
         ea::string_view debugInfo = {});
     /// Log a received network message.
     /// Can be overridden for custom logging behavior (e.g., file output, remote logging).
     virtual void LogReceivedMessage(
-        NetworkMessageId messageId, const MemoryBuffer& data, ea::string_view debugInfo = {});
+        NetworkMessageId messageId, ConstByteSpan data, ea::string_view debugInfo = {});
 
 private:
     bool isEnabled_ = true;

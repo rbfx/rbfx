@@ -143,7 +143,7 @@ void AdvancedNetworkingServer::ProcessSingleRaycast(const ServerRaycastInfo& ray
         : ea::nullopt;
     WriteRaycastResult(msg, scene_->ToAbsoluteWorldPosition(origin), hitPosition);
     if (raycastInfo.clientConnection_)
-        raycastInfo.clientConnection_->SendMessage(MSG_ADVANCEDNETWORKING_RAYHIT, msg, PacketType::UnreliableUnordered);
+        raycastInfo.clientConnection_->SendMessage(MSG_ADVANCEDNETWORKING_RAYHIT, msg.GetBuffer(), PacketType::UnreliableUnordered);
 }
 
 unsigned AdvancedNetworkingServer::GetClientCount() const
@@ -195,7 +195,7 @@ void AdvancedNetworkingServer::HandleServerConnected(NetworkConnection* connecti
     }
 
     advancedConnection->GetReplicatedPeer()->SetReplicationManager(replicationManager);
-    advancedConnection->onMessage_.SubscribeWithSender(this, &AdvancedNetworkingServer::HandleNetworkMessage);
+    advancedConnection->OnMessageReceived.SubscribeWithSender(this, &AdvancedNetworkingServer::HandleNetworkMessage);
 
     Node* object = CreateControllableObject(advancedConnection->GetReplicatedPeer());
     serverObjects_[connection] = object;
@@ -217,7 +217,7 @@ void AdvancedNetworkingServer::HandleServerDisconnected(NetworkConnection* conne
 }
 
 void AdvancedNetworkingServer::HandleNetworkMessage(Urho3D::NetworkConnection* connection,
-    NetworkMessageId messageId, MemoryBuffer& message, bool& handled)
+    NetworkMessageId messageId, ConstByteSpan message, bool& handled)
 {
     if (messageId != MSG_ADVANCEDNETWORKING_RAYCAST)
         return;
@@ -226,7 +226,8 @@ void AdvancedNetworkingServer::HandleNetworkMessage(Urho3D::NetworkConnection* c
     if (!advancedConnection)
         return;
 
-    const ServerRaycastInfo raycastInfo = ReadRaycastRequest(connection, advancedConnection->GetReplicatedPeer(), message);
+    MemoryBuffer buffer{message};
+    const ServerRaycastInfo raycastInfo = ReadRaycastRequest(connection, advancedConnection->GetReplicatedPeer(), buffer);
     serverRaycasts_.push_back(raycastInfo);
     handled = true;
 }

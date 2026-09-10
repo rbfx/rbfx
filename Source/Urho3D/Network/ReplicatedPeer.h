@@ -76,7 +76,7 @@ private:
     void OnDisconnected();
 
     /// Potentially consume a network message. Return true if consumed.
-    void ProcessReplicationMessage(NetworkMessageId messageId, MemoryBuffer& msg, bool& handled);
+    void ProcessReplicationMessage(NetworkMessageId messageId, ConstByteSpan msg, bool& handled);
     /// Send pending replication-related messages, if any.
     void SendReplicationMessages();
 

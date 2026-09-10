@@ -38,7 +38,7 @@ AdvancedNetworkingClientConnection::AdvancedNetworkingClientConnection(Scene* sc
     , scene_(scene)
     , ui_(ui)
 {
-    onMessage_.SubscribeWithSender(this, &AdvancedNetworkingClientConnection::HandleNetworkMessage);
+    OnMessageReceived.SubscribeWithSender(this, &AdvancedNetworkingClientConnection::HandleNetworkMessage);
 
     cameraNode_ = scene->GetChild("Camera");
     hitMarkersNode_ = scene->GetChild("Hit Markers");
@@ -128,7 +128,7 @@ bool AdvancedNetworkingClientConnection::SendRaycastRequest(const DoubleVector3&
 
     VectorBuffer msg;
     WriteRaycastRequest(msg, origin, target, replicaTime, inputTime);
-    SendMessage(MSG_ADVANCEDNETWORKING_RAYCAST, msg, PacketType::UnreliableUnordered);
+    SendMessage(MSG_ADVANCEDNETWORKING_RAYCAST, msg.GetBuffer(), PacketType::UnreliableUnordered);
     return true;
 }
 
@@ -282,12 +282,13 @@ void AdvancedNetworkingClientConnection::AddHitMarker(const DoubleVector3& posit
 }
 
 void AdvancedNetworkingClientConnection::HandleNetworkMessage(Urho3D::NetworkConnection* connection,
-    NetworkMessageId messageId, MemoryBuffer& message, bool& handled)
+    NetworkMessageId messageId, ConstByteSpan message, bool& handled)
 {
     if (messageId != MSG_ADVANCEDNETWORKING_RAYHIT)
         return;
 
-    const ea::optional<DoubleVector3> hitPosition = ReadRaycastResult(message);
+    MemoryBuffer buffer{message};
+    const ea::optional<DoubleVector3> hitPosition = ReadRaycastResult(buffer);
     if (hitPosition)
         AddHitMarker(*hitPosition, true);
     handled = true;

@@ -98,7 +98,7 @@ TEST_CASE("NetworkLoadableScene sends pending load request once connection is es
     bool serverLoadedSuccessfully{};
     unsigned serverFinishedCount{};
     serverLoadableScene->onRemoteLoadSceneFinished_.Subscribe(serverLoadableScene.Get(),
-        [&](const ea::string& sceneFileName, bool success, MemoryBuffer&)
+        [&](const ea::string& sceneFileName, bool success, ConstByteSpan)
         {
             serverFinishedSceneName = sceneFileName;
             serverLoadedSuccessfully = success;
@@ -156,7 +156,7 @@ TEST_CASE("NetworkLoadableScene switches between in-memory binary scenes")
 
     unsigned serverFinishedCount{};
     serverLoadableScene->onRemoteLoadSceneFinished_.Subscribe(serverLoadableScene.Get(),
-        [&](const ea::string&, bool success, MemoryBuffer&)
+        [&](const ea::string&, bool success, ConstByteSpan)
         {
             REQUIRE(success);
             ++serverFinishedCount;
@@ -204,7 +204,7 @@ TEST_CASE("NetworkLoadableScene may reject client load request")
     auto clientLoadableScene = MakeShared<NetworkLoadableScene>(clientConnection);
 
     clientLoadableScene->onLoadSceneRequestReceived_.Subscribe(clientLoadableScene.Get(),
-        [](const ea::string&, MemoryBuffer&, bool& accept)
+        [](const ea::string&, ConstByteSpan, bool& accept)
         {
             accept = false;
         });
@@ -221,7 +221,7 @@ TEST_CASE("NetworkLoadableScene may reject client load request")
     bool serverFinished{};
     bool serverSuccess{true};
     serverLoadableScene->onRemoteLoadSceneFinished_.Subscribe(serverLoadableScene.Get(),
-        [&](const ea::string&, bool success, MemoryBuffer&)
+        [&](const ea::string&, bool success, ConstByteSpan)
         {
             serverFinished = true;
             serverSuccess = success;
@@ -272,7 +272,7 @@ TEST_CASE("NetworkLoadableScene reports failure when scene resource is missing")
     bool serverFinished{};
     bool serverSuccess{true};
     serverLoadableScene->onRemoteLoadSceneFinished_.Subscribe(serverLoadableScene.Get(),
-        [&](const ea::string&, bool success, MemoryBuffer&)
+        [&](const ea::string&, bool success, ConstByteSpan)
         {
             serverFinished = true;
             serverSuccess = success;

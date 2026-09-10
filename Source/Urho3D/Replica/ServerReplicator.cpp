@@ -380,7 +380,8 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
 
 void ClientReplicationState::SendRemoveObjects()
 {
-    MultiMessageWriter writer{*peer_->GetConnection(), buffer_, MSG_REMOVE_OBJECTS, PacketType::ReliableOrdered};
+    MultiMessageWriter writer{
+        *peer_->GetConnection(), buffer_, debugInfoBuffer_, MSG_REMOVE_OBJECTS, PacketType::ReliableOrdered};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -405,7 +406,8 @@ void ClientReplicationState::SendRemoveObjects()
 
 void ClientReplicationState::SendAddObjects()
 {
-    LargeMessageWriter writer{*peer_->GetConnection(), buffer_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
+    LargeMessageWriter writer{
+        *peer_->GetConnection(), buffer_, debugInfoBuffer_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -441,7 +443,8 @@ void ClientReplicationState::SendAddObjects()
 
 void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationState& sharedState)
 {
-    LargeMessageWriter writer{*peer_->GetConnection(), buffer_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
+    LargeMessageWriter writer{*peer_->GetConnection(), buffer_, debugInfoBuffer_,
+        MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -481,7 +484,8 @@ void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationSt
 void ClientReplicationState::SendUpdateObjectsUnreliable(
     NetworkFrame currentFrame, const SharedReplicationState& sharedState)
 {
-    MultiMessageWriter writer{*peer_->GetConnection(), buffer_, MSG_UPDATE_OBJECTS_UNRELIABLE, PacketType::UnreliableUnordered};
+    MultiMessageWriter writer{*peer_->GetConnection(), buffer_, debugInfoBuffer_, MSG_UPDATE_OBJECTS_UNRELIABLE,
+        PacketType::UnreliableUnordered};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();

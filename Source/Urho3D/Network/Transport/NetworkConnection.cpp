@@ -1,3 +1,7 @@
+// Copyright (c) 2017-2026 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
+
 #include "Urho3D/Network/Transport/NetworkConnection.h"
 
 #include "Urho3D/Core/Assert.h"
@@ -15,14 +19,12 @@ namespace Urho3D
 
 NetworkConnection::NetworkConnection(Context* context)
     : Object(context)
-    , workQueue_(context->GetSubsystem<WorkQueue>())
 {
-    URHO3D_ASSERT(workQueue_);
 }
 
-void NetworkConnection::OnConnected()
+void NetworkConnection::HandleConnected()
 {
-    onConnected_(this);
+    OnConnected(this);
 
     using namespace ClientConnected;
     auto& eventData = GetEventDataMap();
@@ -32,9 +34,9 @@ void NetworkConnection::OnConnected()
     SendEvent(E_CLIENTCONNECTED, eventData);
 }
 
-void NetworkConnection::OnDisconnected()
+void NetworkConnection::HandleDisconnected()
 {
-    onDisconnected_(this);
+    OnDisconnected(this);
 
     using namespace ClientDisconnected;
     auto& eventData = GetEventDataMap();
@@ -57,74 +59,60 @@ void NetworkConnection::Disconnect()
 
 unsigned NetworkConnection::GetMaxMessageSize() const
 {
-    return ea::min(MaxNetworkMessageSize, maxPacketSize_ - NetworkMessageHeaderSize);
+    return MaxNetworkPacketSize;
 }
 
-bool NetworkConnection::SendData(const MemoryBuffer& data, PacketTypeFlags type)
+bool NetworkConnection::SendData(ConstByteSpan data, PacketTypeFlags type)
 {
     using namespace ClientSendData;
     auto& eventData = GetEventDataMap();
     eventData[P_CONNECTION] = this;
     eventData[P_TYPE] = type.AsInteger();
-    eventData[P_SIZE] = static_cast<int>(data.GetSize());
-    eventData[P_DATA] = data.GetData();
+    eventData[P_SIZE] = static_cast<int>(data.size());
+    eventData[P_DATA] = const_cast<unsigned char*>(data.data());
     eventData[P_HANDLED] = false;
     SendEvent(E_CLIENTSENDDATA, eventData);
 
     bool outHandled = eventData[P_HANDLED].GetBool();
     if (!outHandled)
-        onSendData_(this, data, type, outHandled);
+        OnSendData(this, data, type, outHandled);
 
     return !outHandled;
 }
 
 bool NetworkConnection::SendMessage(
-    NetworkMessageId messageId, const MemoryBuffer& data, PacketTypeFlags type, ea::string_view debugInfo)
+    NetworkMessageId messageId, ConstByteSpan data, PacketTypeFlags type, ea::string_view debugInfo)
 {
-    debugInfo_ = debugInfo;
-
     using namespace ClientSendMessage;
     auto& eventData = GetEventDataMap();
     eventData[P_CONNECTION] = this;
     eventData[P_MESSAGEID] = static_cast<int>(messageId);
     eventData[P_TYPE] = type.AsInteger();
-    eventData[P_SIZE] = static_cast<int>(data.GetSize());
-    eventData[P_DATA] = data.GetData();
+    eventData[P_SIZE] = static_cast<int>(data.size());
+    eventData[P_DATA] = const_cast<unsigned char*>(data.data());
     eventData[P_HANDLED] = false;
     SendEvent(E_CLIENTSENDMESSAGE, eventData);
 
     bool outHandled = eventData[P_HANDLED].GetBool();
 
     if (!outHandled)
-        onSendMessage_(this, messageId, data, type, outHandled);
+        OnSendMessage(this, messageId, data, type, debugInfo, outHandled);
 
     if (outHandled)
         return false;
 
-    auto& buffer = outgoing_;
-    buffer.WriteVLE(messageId);
+    outgoing_.WriteVLE(messageId);
+    if (!data.empty())
+        outgoing_.Write(data.data(), data.size());
 
-    if (data.GetSize() > 0)
-        buffer.Write(data.GetData(), data.GetSize());
-
-    const bool sent = SendData(buffer, type);
-    buffer.Clear();
+    const bool sent = SendData(outgoing_.GetBuffer(), type);
+    outgoing_.Clear();
     return sent;
 }
 
-VectorBuffer& NetworkConnection::BeginMessage(NetworkMessageId messageId, ea::string_view debugInfo)
+unsigned NetworkConnection::GetMaxPayloadSize() const
 {
-    debugInfo_ = debugInfo;
-    auto& buffer = outgoing_;
-    buffer.WriteVLE(messageId);
-    return buffer;
-}
-
-void NetworkConnection::EndMessage(PacketTypeFlags type)
-{
-    auto& buffer = outgoing_;
-    SendData(buffer, type);
-    buffer.Clear();
+    return ea::max(NetworkMessageHeaderSize, GetMaxMessageSize()) - NetworkMessageHeaderSize;
 }
 
 void NetworkConnection::SetServer(NetworkServer* server)
@@ -132,80 +120,84 @@ void NetworkConnection::SetServer(NetworkServer* server)
     server_ = server;
 }
 
-void NetworkConnection::DoOnConnected()
+void NetworkConnection::DispatchConnected()
 {
-    SharedPtr<NetworkConnection> ref(this);
-    TaskFunction&& cb = [self = std::move(ref)](unsigned, WorkQueue*)
+    SharedPtr<NetworkConnection> self(this);
+    auto workQueue = context_->GetSubsystem<WorkQueue>();
+    workQueue->RunTaskOnMainThread([self = std::move(self)]()
     {
-        self->state_ = State::Connected;
-        self->OnConnected();
-    };
-    workQueue_->RunTaskOnMainThread(cb);
+        self->state_ = NetworkConnectionState::Connected;
+        self->HandleConnected();
+    });
 }
 
-void NetworkConnection::DoOnDisconnected()
+void NetworkConnection::DispatchDisconnected()
 {
-    SharedPtr<NetworkConnection> ref(this);
-    TaskFunction&& cb = [self = std::move(ref)](unsigned, WorkQueue*)
+    SharedPtr<NetworkConnection> self(this);
+    auto workQueue = context_->GetSubsystem<WorkQueue>();
+    workQueue->RunTaskOnMainThread([self = std::move(self)]()
     {
-        self->state_ = State::Disconnected;
-        self->OnDisconnected();
-    };
-    workQueue_->RunTaskOnMainThread(cb);
+        self->state_ = NetworkConnectionState::Disconnected;
+        self->HandleDisconnected();
+    });
 }
 
-void NetworkConnection::DoOnData(MemoryBuffer& message)
+void NetworkConnection::DispatchDataReceived(ConstByteSpan message)
 {
     if (!processDataOnMainThread_ || Thread::IsMainThread())
     {
         using namespace ClientData;
         auto& eventData = GetEventDataMap();
         eventData[P_CONNECTION] = this;
-        eventData[P_SIZE] = static_cast<int>(message.GetSize());
-        eventData[P_DATA] = message.GetData();
+        eventData[P_SIZE] = static_cast<int>(message.size());
+        eventData[P_DATA] = const_cast<unsigned char*>(message.data());
         eventData[P_HANDLED] = false;
         SendEvent(E_CLIENTDATA, eventData);
 
         bool outHandled = eventData[P_HANDLED].GetBool();
 
         if (!outHandled)
-            onData_(this, message, outHandled);
+            OnDataReceived(this, message, outHandled);
 
         if (!outHandled)
-            OnData(message);
+            HandleDataReceived(message);
     }
     else
         QueueIncomingPacket(message);
 }
 
-bool NetworkConnection::OnData(MemoryBuffer& message)
+bool NetworkConnection::HandleDataReceived(ConstByteSpan message)
 {
-    const auto msgId = static_cast<NetworkMessageId>(message.ReadVLE());
+    MemoryBuffer messageBuffer{message};
+    const auto msgId = static_cast<NetworkMessageId>(messageBuffer.ReadVLE());
+    const ConstByteSpan payload{
+        messageBuffer.GetData() + messageBuffer.GetPosition(), messageBuffer.GetSize() - messageBuffer.GetPosition()};
 
     using namespace ClientMessage;
     auto& eventData = GetEventDataMap();
     eventData[P_CONNECTION] = this;
     eventData[P_MESSAGEID] = static_cast<int>(msgId);
-    eventData[P_SIZE] = static_cast<int>(message.GetSize() - message.GetPosition());
-    eventData[P_DATA] = message.GetData() + message.GetPosition();
+    eventData[P_SIZE] = static_cast<int>(payload.size());
+    eventData[P_DATA] = const_cast<unsigned char*>(payload.data());
     eventData[P_HANDLED] = false;
     SendEvent(E_CLIENTMESSAGE, eventData);
 
     bool outHandled = eventData[P_HANDLED].GetBool();
 
     if (!outHandled)
-        onMessage_(this, msgId, message, outHandled);
+        OnMessageReceived(this, msgId, payload, outHandled);
 
     if (outHandled)
         return true;
 
-    return OnMessage(msgId, message);
+    return HandleMessageReceived(msgId, payload);
 }
 
-void NetworkConnection::QueueIncomingPacket(const MemoryBuffer& message)
+void NetworkConnection::QueueIncomingPacket(ConstByteSpan message)
 {
-    VectorBuffer buffer;
     {
+        VectorBuffer buffer;
+
         MutexLock lock(mutex_);
         if (!buffers_.empty())
         {
@@ -214,8 +206,8 @@ void NetworkConnection::QueueIncomingPacket(const MemoryBuffer& message)
         }
 
         buffer.Clear();
-        if (message.GetSize() > 0)
-            buffer.Write(message.GetData(), message.GetSize());
+        if (!message.empty())
+            buffer.Write(message.data(), message.size());
         incoming_.push_back(ea::move(buffer));
 
         // First packet schedules a callback on main thread. If more packets arrive after that time,
@@ -224,9 +216,9 @@ void NetworkConnection::QueueIncomingPacket(const MemoryBuffer& message)
             return;
     }
 
-    SharedPtr<NetworkConnection> ref(this);
-    TaskFunction&& cb = [self = std::move(ref)](unsigned, WorkQueue*) { self->ProcessQueuedPackets(); };
-    workQueue_->PostTaskForMainThread(cb);
+    SharedPtr<NetworkConnection> self(this);
+    auto workQueue = context_->GetSubsystem<WorkQueue>();
+    workQueue->PostTaskForMainThread([self = std::move(self)]() { self->ProcessQueuedPackets(); });
 }
 
 void NetworkConnection::ProcessQueuedPackets()
@@ -238,11 +230,8 @@ void NetworkConnection::ProcessQueuedPackets()
     }
 
     // Process back buffer packets while network thread can continue queuing new packets to front buffer
-    for (auto& packet : incomingBack_)
-    {
-        MemoryBuffer message(packet);
-        DoOnData(message);
-    }
+    for (const auto& packet : incomingBack_)
+        DispatchDataReceived(packet.GetBuffer());
 
     // Recycle back buffer vectors
     {

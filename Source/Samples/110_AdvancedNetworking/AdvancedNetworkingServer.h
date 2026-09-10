@@ -36,7 +36,7 @@ private:
     void HandleServerConnected(NetworkConnection* connection);
     void HandleServerDisconnected(NetworkConnection* connection);
     void HandleNetworkMessage(Urho3D::NetworkConnection* connection, NetworkMessageId messageId,
-        Urho3D::MemoryBuffer& message, bool& handled);
+        Urho3D::ConstByteSpan message, bool& handled);
 
     WeakPtr<Scene> scene_;
     ea::unordered_map<NetworkConnection*, WeakPtr<Node>> serverObjects_;

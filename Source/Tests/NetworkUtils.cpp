@@ -75,23 +75,23 @@ bool InMemoryConnection::Connect(const URL& url)
 
 void InMemoryConnection::Disconnect()
 {
-    if (state_ == State::Disconnected)
+    if (state_ == NetworkConnectionState::Disconnected)
         return;
 
-    state_ = State::Disconnected;
-    this->OnDisconnected();
+    state_ = NetworkConnectionState::Disconnected;
+    this->HandleDisconnected();
 }
 
-bool InMemoryConnection::SendData(const MemoryBuffer& data, PacketTypeFlags type)
+bool InMemoryConnection::SendData(ConstByteSpan data, PacketTypeFlags type)
 {
     (void)type;
     if (!this->IsConnected() || !peer_)
         return false;
 
     VectorBuffer packet;
-    const unsigned size = data.GetSize() - data.GetPosition();
+    const unsigned size = data.size();
     if (size != 0)
-        packet.Write(data.GetData() + data.GetPosition(), size);
+        packet.Write(data.data(), size);
     outgoing_.push_back(ea::move(packet));
     return true;
 }
@@ -108,7 +108,7 @@ void InMemoryConnection::SetServerSide(NetworkServer* server)
 
 void InMemoryConnection::DispatchConnected()
 {
-    this->DoOnConnected();
+    BaseClassName::DispatchConnected();
 }
 
 unsigned InMemoryConnection::FlushOutgoing()
@@ -120,8 +120,7 @@ unsigned InMemoryConnection::FlushOutgoing()
     auto outgoing = ea::move(outgoing_);
     for (auto& packet : outgoing)
     {
-        MemoryBuffer message(packet.GetData(), packet.GetSize());
-        peer_->DoOnData(message);
+        peer_->DispatchDataReceived(packet.GetBuffer());
         ++numPackets;
     }
     return numPackets;
@@ -140,8 +139,7 @@ ManualConnection::ManualConnection(Context* context, ReplicationManager* sink, u
     , sink_(sink)
     , random_(seed)
 {
-    SetMaxPacketSize(MaxNetworkPacketSize);
-    state_ = State::Connected; // Always connected
+    state_ = NetworkConnectionState::Connected; // Always connected
 }
 
 void ManualConnection::IncrementTime(unsigned delta)
@@ -155,15 +153,10 @@ void ManualConnection::IncrementTime(unsigned delta)
     SendUnorderedMessages(messages_[true][false]);
 }
 
-bool ManualConnection::SendData(const MemoryBuffer& data, PacketTypeFlags packetType)
+bool ManualConnection::SendData(ConstByteSpan data, PacketTypeFlags packetType)
 {
-    const unsigned dataSize = data.GetSize() - data.GetPosition();
-    if (!dataSize)
+    if (data.empty())
         return false;
-
-    MemoryBuffer packet{data.GetData() + data.GetPosition(), dataSize};
-    const auto messageId = static_cast<NetworkMessageId>(packet.ReadVLE());
-    const unsigned payloadSize = packet.GetSize() - packet.GetPosition();
 
     const double currentDropRatio = droppedMessages_ / ea::max(1.0, static_cast<double>(totalUnreliableMessages_));
     const double currentShuffleRatio = shuffledMessages_ / ea::max(1.0, static_cast<double>(totalUnorderedMessages_));
@@ -194,8 +187,7 @@ bool ManualConnection::SendData(const MemoryBuffer& data, PacketTypeFlags packet
 
     InternalMessage& msg = *outgoingQueue.emplace(outgoingQueue.begin() + index);
     msg.receiveTime_ = currentTime_ + GetPing();
-    msg.messageId_ = messageId;
-    msg.data_.assign(packet.GetData() + packet.GetPosition(), packet.GetData() + packet.GetPosition() + payloadSize);
+    msg.data_.assign(data.begin(), data.end());
     return true;
 }
 
@@ -212,8 +204,14 @@ unsigned ManualConnection::GetPing()
 
 void ManualConnection::DeliverMessage(const InternalMessage& msg)
 {
-    MemoryBuffer memoryBuffer(msg.data_);
-    sink_->ProcessMessage(sinkConnection_, msg.messageId_, memoryBuffer);
+    HandleDataReceived(msg.data_);
+}
+
+bool ManualConnection::HandleMessageReceived(NetworkMessageId messageId, ConstByteSpan message)
+{
+    MemoryBuffer memoryBuffer(message);
+    sink_->ProcessMessage(sinkConnection_, messageId, memoryBuffer);
+    return true;
 }
 
 void ManualConnection::SendOrderedMessages(ea::vector<InternalMessage>& messages)

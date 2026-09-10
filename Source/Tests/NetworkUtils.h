@@ -80,7 +80,7 @@ public:
 
     bool Connect(const URL& url) override;
     void Disconnect() override;
-    bool SendData(const MemoryBuffer& data, PacketTypeFlags type = PacketType::ReliableOrdered) override;
+    bool SendData(ConstByteSpan data, PacketTypeFlags type = PacketType::ReliableOrdered) override;
 
     void SetPeer(InMemoryConnection* peer);
     void SetServerSide(NetworkServer* server);
@@ -109,7 +109,8 @@ public:
     bool Connect(const URL& url) override { return true; }
     void Disconnect() override {}
 
-    bool SendData(const MemoryBuffer& data, PacketTypeFlags packetType = PacketType::ReliableOrdered) override;
+    bool SendData(ConstByteSpan data, PacketTypeFlags packetType = PacketType::ReliableOrdered) override;
+    bool HandleMessageReceived(NetworkMessageId messageId, ConstByteSpan message) override;
     ea::string ToString() const override { return "Manual Connection"; }
     bool IsClockSynchronized() const override { return true; }
     unsigned RemoteToLocalTime(unsigned time) const override { return time; }
@@ -124,7 +125,6 @@ private:
     struct InternalMessage
     {
         unsigned receiveTime_{};
-        NetworkMessageId messageId_{};
         ByteVector data_;
     };
 

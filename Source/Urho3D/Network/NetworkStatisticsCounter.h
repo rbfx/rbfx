@@ -74,21 +74,21 @@ public:
 
         connection_ = connection;
 
-        connection->onSendData_.SubscribeWithSender(connection,
-            [this](NetworkConnection* sender, const MemoryBuffer& data, PacketTypeFlags type, bool& handled)
+        connection->OnSendData.SubscribeWithSender(connection,
+            [this](NetworkConnection* sender, ConstByteSpan data, PacketTypeFlags type, bool& handled)
         {
             (void)sender;
             (void)type;
             if (!handled)
-                AddOutgoingPacket(data.GetSize());
+                AddOutgoingPacket(data.size());
         });
 
-        connection->onData_.SubscribeWithSender(connection,
-            [this](NetworkConnection* sender, MemoryBuffer& message, bool& handled)
+        connection->OnDataReceived.SubscribeWithSender(connection,
+            [this](NetworkConnection* sender, ConstByteSpan message, bool& handled)
         {
             (void)sender;
             (void)handled;
-            AddIncomingPacket(message.GetSize());
+            AddIncomingPacket(message.size());
         });
     }
 

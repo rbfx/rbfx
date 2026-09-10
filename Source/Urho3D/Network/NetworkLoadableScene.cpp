@@ -58,7 +58,7 @@ void NetworkLoadableScene::OnPrepareLoadSceneRequest(const ea::string& sceneFile
     onPrepareLoadSceneRequest_(this, sceneFileName, request);
 }
 
-void NetworkLoadableScene::OnLoadSceneRequestReceived(const ea::string& sceneFileName, MemoryBuffer& request, bool& accept)
+void NetworkLoadableScene::OnLoadSceneRequestReceived(const ea::string& sceneFileName, ConstByteSpan request, bool& accept)
 {
     onLoadSceneRequestReceived_(this, sceneFileName, request, accept);
 }
@@ -73,7 +73,7 @@ void NetworkLoadableScene::OnLoadSceneFinished(const ea::string& sceneFileName, 
     onLoadSceneFinished_(this, sceneFileName, success, response);
 }
 
-void NetworkLoadableScene::OnRemoteLoadSceneFinished(const ea::string& sceneFileName, bool success, MemoryBuffer& response)
+void NetworkLoadableScene::OnRemoteLoadSceneFinished(const ea::string& sceneFileName, bool success, ConstByteSpan response)
 {
     onRemoteLoadSceneFinished_(this, sceneFileName, success, response);
 }
@@ -89,9 +89,9 @@ void NetworkLoadableScene::Attach(
 
     if (connection_)
     {
-        connection_->onMessage_.Unsubscribe(this);
-        connection_->onConnected_.Unsubscribe(this);
-        connection_->onDisconnected_.Unsubscribe(this);
+        connection_->OnMessageReceived.Unsubscribe(this);
+        connection_->OnConnected.Unsubscribe(this);
+        connection_->OnDisconnected.Unsubscribe(this);
     }
 
     connection_ = connection;
@@ -100,9 +100,9 @@ void NetworkLoadableScene::Attach(
     if (!connection)
         return;
 
-    connection->onMessage_.SubscribeWithSender(this, &NetworkLoadableScene::ProcessNetworkMessage);
-    connection->onConnected_.SubscribeWithSender(this, &NetworkLoadableScene::HandleConnectionConnected);
-    connection->onDisconnected_.SubscribeWithSender(this, &NetworkLoadableScene::HandleConnectionDisconnected);
+    connection->OnMessageReceived.SubscribeWithSender(this, &NetworkLoadableScene::ProcessNetworkMessage);
+    connection->OnConnected.SubscribeWithSender(this, &NetworkLoadableScene::HandleConnectionConnected);
+    connection->OnDisconnected.SubscribeWithSender(this, &NetworkLoadableScene::HandleConnectionDisconnected);
 }
 
 void NetworkLoadableScene::SetScene(Scene* scene)
@@ -165,11 +165,11 @@ void NetworkLoadableScene::RequestRemoteLoadScene()
 
     expectedSceneName_ = sceneFileName;
     loadState_ = LoadState::AwaitingRemoteLoadResult;
-    connection_->SendMessage(MSG_LOAD_SCENE, request, PacketType::ReliableOrdered);
+    connection_->SendMessage(MSG_LOAD_SCENE, request.GetBuffer(), PacketType::ReliableOrdered);
 }
 
 void NetworkLoadableScene::ProcessNetworkMessage(
-    NetworkConnection* connection, NetworkMessageId messageId, MemoryBuffer& message, bool& handled)
+    NetworkConnection* connection, NetworkMessageId messageId, ConstByteSpan message, bool& handled)
 {
     if (handled || connection != connection_)
         return;
@@ -191,8 +191,9 @@ void NetworkLoadableScene::ProcessNetworkMessage(
     }
 }
 
-void NetworkLoadableScene::ProcessLoadSceneRequest(MemoryBuffer& message)
+void NetworkLoadableScene::ProcessLoadSceneRequest(ConstByteSpan message)
 {
+    MemoryBuffer messageBuffer{message};
     if (!connection_)
         return;
 
@@ -208,10 +209,11 @@ void NetworkLoadableScene::ProcessLoadSceneRequest(MemoryBuffer& message)
         return;
     }
 
-    const ea::string sceneFileName = message.ReadString();
+    const ea::string sceneFileName = messageBuffer.ReadString();
 
     bool accept = true;
-    OnLoadSceneRequestReceived(sceneFileName, message, accept);
+    OnLoadSceneRequestReceived(sceneFileName,
+        ConstByteSpan{messageBuffer.GetData() + messageBuffer.GetPosition(), messageBuffer.GetSize() - messageBuffer.GetPosition()}, accept);
 
     if (!accept)
     {
@@ -223,8 +225,9 @@ void NetworkLoadableScene::ProcessLoadSceneRequest(MemoryBuffer& message)
         FinishLocalLoad(false);
 }
 
-void NetworkLoadableScene::ProcessLoadSceneResult(MemoryBuffer& message)
+void NetworkLoadableScene::ProcessLoadSceneResult(ConstByteSpan message)
 {
+    MemoryBuffer messageBuffer{message};
     if (!connection_)
         return;
 
@@ -240,13 +243,13 @@ void NetworkLoadableScene::ProcessLoadSceneResult(MemoryBuffer& message)
         return;
     }
 
-    const ea::string sceneFileName = message.ReadString();
-    if (message.GetSize() - message.GetPosition() < sizeof(unsigned char))
+    const ea::string sceneFileName = messageBuffer.ReadString();
+    if (messageBuffer.GetSize() - messageBuffer.GetPosition() < sizeof(unsigned char))
     {
         HandleProtocolError("MSG_SCENE_LOAD_RESULT payload is too short: missing success flag");
         return;
     }
-    const bool success = message.ReadBool();
+    const bool success = messageBuffer.ReadBool();
 
     if (sceneFileName != expectedSceneName_)
     {
@@ -260,7 +263,8 @@ void NetworkLoadableScene::ProcessLoadSceneResult(MemoryBuffer& message)
     if (success)
         AssignConnectionReplicationManager(replicationConnection_, scene_);
 
-    OnRemoteLoadSceneFinished(sceneFileName, success, message);
+    OnRemoteLoadSceneFinished(sceneFileName,
+        success, ConstByteSpan{messageBuffer.GetData() + messageBuffer.GetPosition(), messageBuffer.GetSize() - messageBuffer.GetPosition()});
 }
 
 bool NetworkLoadableScene::StartLocalLoad(const ea::string& sceneFileName)
@@ -353,7 +357,7 @@ void NetworkLoadableScene::SendLocalLoadResult(const ea::string& sceneFileName, 
     if (response.GetSize() != 0)
         message.Write(response.GetData(), response.GetSize());
 
-    connection_->SendMessage(MSG_SCENE_LOAD_RESULT, message, PacketType::ReliableOrdered);
+    connection_->SendMessage(MSG_SCENE_LOAD_RESULT, message.GetBuffer(), PacketType::ReliableOrdered);
 }
 
 void NetworkLoadableScene::HandleConnectionConnected(NetworkConnection* connection)

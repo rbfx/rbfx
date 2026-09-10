@@ -205,7 +205,7 @@ void Chat::HandleSend(StringHash /*eventType*/, VariantMap& eventData)
         VectorBuffer msg;
         msg.WriteString(text);
         // Send the chat message as in-order and reliable
-        clientConnection_->SendMessage(MSG_CHAT, msg);
+        clientConnection_->SendMessage(MSG_CHAT, msg.GetBuffer());
         // Empty the text edit after sending
         textEdit_->SetText(EMPTY_STRING);
     }
@@ -223,9 +223,9 @@ void Chat::HandleConnect(StringHash /*eventType*/, VariantMap& eventData)
     if (!clientConnection_)
     {
         clientConnection_ = MakeShared<DataChannelConnection>(context_);
-        clientConnection_->onConnected_.Subscribe(this, &Chat::HandleClientConnected);
-        clientConnection_->onDisconnected_.Subscribe(this, &Chat::HandleClientDisconnected);
-        clientConnection_->onMessage_.SubscribeWithSender(this, &Chat::HandleNetworkMessage);
+        clientConnection_->OnConnected.Subscribe(this, &Chat::HandleClientConnected);
+        clientConnection_->OnDisconnected.Subscribe(this, &Chat::HandleClientDisconnected);
+        clientConnection_->OnMessageReceived.SubscribeWithSender(this, &Chat::HandleNetworkMessage);
     }
 
     if (!clientConnection_->IsDisconnected())
@@ -275,7 +275,7 @@ void Chat::HandleServerConnected(NetworkConnection* connection)
 {
     serverConnections_.push_back(WeakPtr<NetworkConnection>{});
     serverConnections_.back() = connection;
-    connection->onMessage_.SubscribeWithSender(this, &Chat::HandleNetworkMessage);
+    connection->OnMessageReceived.SubscribeWithSender(this, &Chat::HandleNetworkMessage);
     UpdateButtons();
 }
 
@@ -301,12 +301,13 @@ void Chat::HandleClientDisconnected()
     UpdateButtons();
 }
 
-void Chat::HandleNetworkMessage(NetworkConnection* connection, NetworkMessageId messageId, MemoryBuffer& message, bool& handled)
+void Chat::HandleNetworkMessage(NetworkConnection* connection, NetworkMessageId messageId, ConstByteSpan message, bool& handled)
 {
     if (messageId != MSG_CHAT)
         return;
 
-    ea::string text = message.ReadString();
+    MemoryBuffer buffer{message};
+    ea::string text = buffer.ReadString();
 
     if (server_ && server_->IsListening() && IsServerConnection(connection))
     {
@@ -323,7 +324,7 @@ void Chat::HandleNetworkMessage(NetworkConnection* connection, NetworkMessageId 
         for (const auto& serverConnection : serverConnections_)
         {
             if (auto connectionPtr = serverConnection.Lock())
-                connectionPtr->SendMessage(MSG_CHAT, sendMsg);
+                connectionPtr->SendMessage(MSG_CHAT, sendMsg.GetBuffer());
         }
     }
 

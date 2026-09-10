@@ -67,7 +67,7 @@ enum NetworkMessageId : uint32_t
 
 /// Conservative limit for the size of the packet transmitted over underlying transport.
 /// Real limit may be higher.
-/// @see ReplicatedPeer::GetMaxPacketSize
+/// @see ReplicatedPeer::GetMaxMessageSize
 static constexpr unsigned MaxNetworkPacketSize = 1024;
 /// Maximum possible size of network message payload. Transport limitations are not considered.
 /// Real limit may be lower.

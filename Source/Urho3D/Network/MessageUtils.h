@@ -19,8 +19,8 @@ namespace Urho3D
 class URHO3D_API LargeMessageWriter
 {
 public:
-    LargeMessageWriter(
-        NetworkConnection& connection, VectorBuffer& buffer, NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId);
+    LargeMessageWriter(NetworkConnection& connection, VectorBuffer& buffer, ea::string& debugInfo,
+        NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId);
     ~LargeMessageWriter();
 
     void Discard();
@@ -62,7 +62,8 @@ private:
 class URHO3D_API MultiMessageWriter
 {
 public:
-    MultiMessageWriter(NetworkConnection& connection, VectorBuffer& buffer, NetworkMessageId messageId, PacketTypeFlags packetType);
+    MultiMessageWriter(NetworkConnection& connection, VectorBuffer& buffer, ea::string& debugInfo,
+        NetworkMessageId messageId, PacketTypeFlags packetType);
     ~MultiMessageWriter();
 
     /// Complete shared header that is going to be sent for each individual message. Could be empty.
@@ -106,9 +107,11 @@ void WriteSerializedMessage(NetworkConnection& connection, NetworkMessageId mess
     const ea::string& debugInfo = EMPTY_STRING;
 #endif
 
-    auto& buffer = connection.BeginMessage(messageId, debugInfo);
+    static thread_local VectorBuffer buffer;
+    buffer.Clear();
     message.Save(buffer);
-    connection.EndMessage(messageType);
+
+    connection.SendMessage(messageId, buffer.GetBuffer(), messageType, debugInfo);
 }
 
 } // namespace Urho3D

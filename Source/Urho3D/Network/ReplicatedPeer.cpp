@@ -24,10 +24,10 @@ ReplicatedPeer::ReplicatedPeer(NetworkConnection* connection, unsigned pingInter
     URHO3D_ASSERT(connection);
 
     listener_.SubscribeToEvent(E_POSTUPDATE, [this]() { SendReplicationMessages(); });
-    auto&& handleSendReplicationMessages = [this](NetworkMessageId messageId, MemoryBuffer& msg, bool& handled) { ProcessReplicationMessage(messageId, msg, handled); };
-    connection_->onMessage_.Subscribe(&listener_, handleSendReplicationMessages);
-    connection_->onConnected_.Subscribe(&listener_, [this]() { OnConnected(); });
-    connection_->onDisconnected_.Subscribe(&listener_, [this](bool) { OnDisconnected(); });
+    auto&& handleSendReplicationMessages = [this](NetworkMessageId messageId, ConstByteSpan msg, bool& handled) { ProcessReplicationMessage(messageId, msg, handled); };
+    connection_->OnMessageReceived.Subscribe(&listener_, handleSendReplicationMessages);
+    connection_->OnConnected.Subscribe(&listener_, [this]() { OnConnected(); });
+    connection_->OnDisconnected.Subscribe(&listener_, [this](bool) { OnDisconnected(); });
 }
 
 void ReplicatedPeer::SetReplicationManager(ReplicationManager* replicationManager)
@@ -53,21 +53,22 @@ SharedPtr<ReplicatedPeer, RefCounted> ReplicatedPeer::AsSharedPtr()
     return SharedPtr<ReplicatedPeer, RefCounted>(this, connection_);
 }
 
-void ReplicatedPeer::ProcessReplicationMessage(NetworkMessageId messageId, MemoryBuffer& msg, bool& handled)
+void ReplicatedPeer::ProcessReplicationMessage(NetworkMessageId messageId, ConstByteSpan msg, bool& handled)
 {
     if (handled || !replicationManager_)
         return;
 
+    MemoryBuffer messageReader{msg};
+
     if (messageId == MSG_CLOCK_SYNC)
     {
-        ClockSynchronizerMessage clockMessage;
-        clockMessage.Load(msg);
+        const auto clockMessage = ReadSerializedMessage<ClockSynchronizerMessage>(messageReader);
         GetClock().ProcessMessage(clockMessage);
         handled = true;
     }
 
     if (replicationManager_)
-        handled |= replicationManager_->ProcessMessage(static_cast<ReplicatedPeer*>(this), messageId, msg);
+        handled |= replicationManager_->ProcessMessage(static_cast<ReplicatedPeer*>(this), messageId, messageReader);
 }
 
 void ReplicatedPeer::SendReplicationMessages()

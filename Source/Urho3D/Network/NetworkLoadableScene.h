@@ -125,7 +125,7 @@ public:
     /// Sent before sending load-scene request on the server. Handlers may append custom payload.
     Signal<void(const ea::string& sceneFileName, VectorBuffer& request), NetworkLoadableScene> onPrepareLoadSceneRequest_;
     /// Sent when load-scene request is received on the client. Handlers may inspect payload and reject the request.
-    Signal<void(const ea::string& sceneFileName, MemoryBuffer& request, bool& accept), NetworkLoadableScene>
+    Signal<void(const ea::string& sceneFileName, ConstByteSpan request, bool& accept), NetworkLoadableScene>
         onLoadSceneRequestReceived_;
     /// Sent when local scene loading starts on the client.
     Signal<void(const ea::string& sceneFileName), NetworkLoadableScene> onLoadSceneStarted_;
@@ -133,20 +133,20 @@ public:
     Signal<void(const ea::string& sceneFileName, bool& success, VectorBuffer& response), NetworkLoadableScene>
         onLoadSceneFinished_;
     /// Sent on the server when remote scene loading finishes.
-    Signal<void(const ea::string& sceneFileName, bool success, MemoryBuffer& response), NetworkLoadableScene>
+    Signal<void(const ea::string& sceneFileName, bool success, ConstByteSpan response), NetworkLoadableScene>
         onRemoteLoadSceneFinished_;
 
 protected:
     /// Called before sending load-scene request (server side). You may append custom payload.
     virtual void OnPrepareLoadSceneRequest(const ea::string& sceneFileName, VectorBuffer& request);
     /// Called on client when load-scene request is received. Set accept=false to reject.
-    virtual void OnLoadSceneRequestReceived(const ea::string& sceneFileName, MemoryBuffer& request, bool& accept);
+    virtual void OnLoadSceneRequestReceived(const ea::string& sceneFileName, ConstByteSpan request, bool& accept);
     /// Called when local loading starts on client.
     virtual void OnLoadSceneStarted(const ea::string& sceneFileName);
     /// Called when local loading finishes on client. You may modify success and append response payload.
     virtual void OnLoadSceneFinished(const ea::string& sceneFileName, bool& success, VectorBuffer& response);
     /// Called on server when client reports scene loading result.
-    virtual void OnRemoteLoadSceneFinished(const ea::string& sceneFileName, bool success, MemoryBuffer& response);
+    virtual void OnRemoteLoadSceneFinished(const ea::string& sceneFileName, bool success, ConstByteSpan response);
 
 private:
     enum class LoadState
@@ -159,9 +159,9 @@ private:
     bool IsServerSideConnection() const;
     void HandleProtocolError(ea::string_view reason);
     void RequestRemoteLoadScene();
-    void ProcessNetworkMessage(NetworkConnection* connection, NetworkMessageId messageId, MemoryBuffer& message, bool& handled);
-    void ProcessLoadSceneRequest(MemoryBuffer& message);
-    void ProcessLoadSceneResult(MemoryBuffer& message);
+    void ProcessNetworkMessage(NetworkConnection* connection, NetworkMessageId messageId, ConstByteSpan message, bool& handled);
+    void ProcessLoadSceneRequest(ConstByteSpan message);
+    void ProcessLoadSceneResult(ConstByteSpan message);
 
     bool StartLocalLoad(const ea::string& sceneFileName);
     void FinishLocalLoad(bool success);

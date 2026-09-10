@@ -284,8 +284,8 @@ void AdvancedNetworking::ConnectToServer(const ea::string& address, unsigned sho
     StopNetworking();
 
     clientConnection_ = MakeShared<AdvancedNetworkingClientConnection>(scene_, ui_);
-    clientConnection_->onConnected_.Subscribe(this, [this]() { HandleClientConnectionState(true); });
-    clientConnection_->onDisconnected_.Subscribe(this, [this]() { HandleClientConnectionState(false); });
+    clientConnection_->OnConnected.Subscribe(this, [this]() { HandleClientConnectionState(true); });
+    clientConnection_->OnDisconnected.Subscribe(this, [this]() { HandleClientConnectionState(false); });
     freeFlyController_->SetEnabled(false);
     ui_->SetClientConnected(clientConnection_->Connect(address, port));
 }

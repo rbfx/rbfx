@@ -54,7 +54,7 @@ public:
     /// Address may be a full URL and port may be set to 0. Otherwise, port is appended to address.
     bool Connect(const URL& url) override;
     void Disconnect() override;
-    bool SendData(const MemoryBuffer& data, PacketTypeFlags type = PacketType::ReliableOrdered) override;
+    bool SendData(ConstByteSpan data, PacketTypeFlags type = PacketType::ReliableOrdered) override;
     unsigned GetMaxMessageSize() const override;
 
 protected:

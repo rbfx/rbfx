@@ -43,7 +43,7 @@ private:
     ea::optional<Vector3> RaycastImportantGeometries(const Ray& ray) const;
     void AddHitMarker(const DoubleVector3& position, bool isConfirmed);
     void HandleNetworkMessage(Urho3D::NetworkConnection* connection, NetworkMessageId messageId,
-        Urho3D::MemoryBuffer& message, bool& handled);
+        Urho3D::ConstByteSpan message, bool& handled);
 
     WeakPtr<Urho3D::Scene> scene_;
     WeakPtr<Urho3D::Node> cameraNode_;

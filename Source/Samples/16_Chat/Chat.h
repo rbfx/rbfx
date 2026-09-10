@@ -100,7 +100,7 @@ private:
     /// Handle client connection closed.
     void HandleClientDisconnected();
     /// Handle an incoming network message.
-    void HandleNetworkMessage(NetworkConnection* connection, NetworkMessageId messageId, MemoryBuffer& message, bool& handled);
+    void HandleNetworkMessage(NetworkConnection* connection, NetworkMessageId messageId, ConstByteSpan message, bool& handled);
     /// Return whether a connection belongs to the local server.
     bool IsServerConnection(NetworkConnection* connection) const;
     /// Strings printed so far.

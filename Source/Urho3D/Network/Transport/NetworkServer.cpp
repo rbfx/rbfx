@@ -82,33 +82,31 @@ void NetworkServer::DoOnConnected(NetworkConnection* connection)
 {
     SharedPtr<NetworkServer> self(this);
     SharedPtr<NetworkConnection> ref(connection);
-    TaskFunction&& cb = [self = std::move(self), connection = std::move(ref)](unsigned, WorkQueue*) { self->OnConnected(connection); };
-    workQueue_->RunTaskOnMainThread(ea::move(cb));
+    workQueue_->RunTaskOnMainThread(
+        [self = std::move(self), connection = std::move(ref)]() { self->OnConnected(connection); });
 }
 
 void NetworkServer::DoOnDisconnected(NetworkConnection* connection)
 {
     SharedPtr<NetworkServer> self(this);
     SharedPtr<NetworkConnection> ref(connection);
-    TaskFunction&& cb = [self = std::move(self), connection = std::move(ref)](unsigned, WorkQueue*) {
+    workQueue_->RunTaskOnMainThread([self = std::move(self), connection = std::move(ref)]()
+    {
         self->OnDisconnected(connection);
         self->RemoveConnection(connection);
-    };
-    workQueue_->RunTaskOnMainThread(ea::move(cb));
+    });
 }
 
 void NetworkServer::DoOnListenStart()
 {
     SharedPtr<NetworkServer> self(this);
-    TaskFunction&& cb = [self = std::move(self)](unsigned, WorkQueue*) { self->OnListenStart(); };
-    workQueue_->RunTaskOnMainThread(ea::move(cb));
+    workQueue_->RunTaskOnMainThread([self = std::move(self)]() { self->OnListenStart(); });
 }
 
 void NetworkServer::DoOnListenStop()
 {
     SharedPtr<NetworkServer> self(this);
-    TaskFunction&& cb = [self = std::move(self)](unsigned, WorkQueue*) { self->OnListenStop(); };
-    workQueue_->RunTaskOnMainThread(ea::move(cb));
+    workQueue_->RunTaskOnMainThread([self = std::move(self)]() { self->OnListenStop(); });
 }
 
 const ea::vector<SharedPtr<NetworkConnection>>& NetworkServer::GetConnections() const
@@ -128,19 +126,19 @@ void NetworkServer::AddConnection(NetworkConnection* connection)
 {
     SharedPtr<NetworkServer> self(this);
     SharedPtr<NetworkConnection> ref(connection);
-    TaskFunction&& cb = [self = std::move(self), connection = std::move(ref)](unsigned, WorkQueue*) { self->connections_.push_back(connection); };
-    workQueue_->RunTaskOnMainThread(ea::move(cb));
+    workQueue_->RunTaskOnMainThread(
+        [self = std::move(self), connection = std::move(ref)]() { self->connections_.push_back(connection); });
 }
 
 void NetworkServer::RemoveConnection(NetworkConnection* connection)
 {
     SharedPtr<NetworkServer> self(this);
     SharedPtr<NetworkConnection> ref(connection);
-    TaskFunction&& cb = [self = std::move(self), connection = std::move(ref)](unsigned, WorkQueue*) {
+    workQueue_->RunTaskOnMainThread([self = std::move(self), connection = std::move(ref)]()
+    {
         auto&& pred = [connection](const SharedPtr<NetworkConnection>& conn) { return conn.Get() == connection; };
         ea::erase_if(self->connections_, pred);
-    };
-    workQueue_->RunTaskOnMainThread(ea::move(cb));
+    });
 }
 
 } // namespace Urho3D

@@ -163,6 +163,7 @@ private:
     VectorBuffer componentBuffer_;
     VectorBuffer inputBuffer_;
     VectorBuffer outputBuffer_;
+    ea::string debugInfoBuffer_;
 };
 
 }

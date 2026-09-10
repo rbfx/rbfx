@@ -409,8 +409,8 @@ void ClientReplica::OnNetworkUpdate()
 
 void ClientReplica::SendObjectsFeedbackUnreliable(NetworkFrame feedbackFrame)
 {
-    MultiMessageWriter writer{
-        *peer_->GetConnection(), outputBuffer_, MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered};
+    MultiMessageWriter writer{*peer_->GetConnection(), outputBuffer_, debugInfoBuffer_, MSG_OBJECTS_FEEDBACK_UNRELIABLE,
+        PacketType::UnreliableUnordered};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
