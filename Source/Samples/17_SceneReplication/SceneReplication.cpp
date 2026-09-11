@@ -34,8 +34,8 @@
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Network/NetworkStatisticsCounter.h>
 #include <Urho3D/Network/ReplicatedPeer.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
+#include <Urho3D/Network/DataChannel/DataChannelConnection.h>
+#include <Urho3D/Network/DataChannel/DataChannelServer.h>
 #include <Urho3D/Network/NetworkConnection.h>
 #include <Urho3D/Network/URL.h>
 #include <Urho3D/Physics/CollisionShape.h>

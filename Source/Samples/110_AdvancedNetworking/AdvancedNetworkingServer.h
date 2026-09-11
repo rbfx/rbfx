@@ -7,7 +7,7 @@
 
 #include "AdvancedNetworkingRaycast.h"
 
-#include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
+#include <Urho3D/Network/DataChannel/DataChannelServer.h>
 
 #include <EASTL/unordered_map.h>
 #include <EASTL/vector.h>

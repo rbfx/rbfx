@@ -2,12 +2,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "Urho3D/Network/Transport/DataChannel/DataChannelServer.h"
+#include "Urho3D/Network/DataChannel/DataChannelServer.h"
 
 #include "Urho3D/Core/Assert.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/IO/Log.h"
-#include "Urho3D/Network/Transport/DataChannel/DataChannelConnection.h"
+#include "Urho3D/Network/DataChannel/DataChannelConnection.h"
 #include "Urho3D/Network/NetworkConnection.h"
 
 #ifndef URHO3D_PLATFORM_WEB

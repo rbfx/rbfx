@@ -6,7 +6,7 @@
 #pragma once
 
 #include <Urho3D/Network/ReplicatedPeer.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
+#include <Urho3D/Network/DataChannel/DataChannelConnection.h>
 
 using namespace Urho3D;
 
