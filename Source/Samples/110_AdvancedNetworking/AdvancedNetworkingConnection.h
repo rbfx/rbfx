@@ -21,9 +21,9 @@ public:
     {
     }
 
-    SharedPtr<ReplicatedPeer, RefCounted> GetReplicatedPeer()
+    ReplicatedPeerPtr GetReplicatedPeer()
     {
-        return SharedPtr<ReplicatedPeer, RefCounted>(&replicatedPeer_, this);
+        return ReplicatedPeerPtr(&replicatedPeer_, this);
     }
 
 private:

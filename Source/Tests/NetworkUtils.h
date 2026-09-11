@@ -26,6 +26,7 @@
 #include "Urho3D/Network/NetworkServer.h"
 #include <Urho3D/Container/ByteVector.h>
 #include <Urho3D/Math/RandomEngine.h>
+#include <Urho3D/Network/NetworkDefs.h>
 #include <Urho3D/Network/ReplicatedPeer.h>
 #include <Urho3D/Replica/ReplicationManager.h>
 
@@ -174,7 +175,7 @@ public:
     void SimulateEngineFrame(float timeStep);
     void SimulateTime(float time, unsigned millisecondsInQuant = MillisecondsInQuant);
 
-    SharedPtr<ReplicatedPeer, RefCounted> GetServerToClientConnection(Scene* clientScene);
+    ReplicatedPeerPtr GetServerToClientConnection(Scene* clientScene);
 
     RandomEngine& GetRandom() { return random_; }
 

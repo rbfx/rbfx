@@ -9,6 +9,7 @@
 #include "Urho3D/Network/ClockSynchronizer.h"
 #include "Urho3D/Network/MessageUtils.h"
 #include "Urho3D/Network/NetworkConnection.h"
+#include "Urho3D/Network/NetworkDefs.h"
 #include "Urho3D/Replica/ReplicationManager.h"
 
 #include "Urho3D/DebugNew.h"
@@ -57,9 +58,9 @@ void ReplicatedPeer::SetReplicationManager(ReplicationManager* replicationManage
         OnConnected();
 }
 
-SharedPtr<ReplicatedPeer, RefCounted> ReplicatedPeer::AsSharedPtr()
+ReplicatedPeerPtr ReplicatedPeer::AsSharedPtr()
 {
-    return SharedPtr<ReplicatedPeer, RefCounted>(this, connection_);
+    return ReplicatedPeerPtr(this, connection_);
 }
 
 void ReplicatedPeer::OnMessageReceived(NetworkMessageId messageId, ConstByteSpan msg, bool& handled)

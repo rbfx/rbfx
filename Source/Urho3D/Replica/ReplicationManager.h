@@ -33,6 +33,7 @@
 #include "../Replica/ServerReplicator.h"
 #include "../Scene/TrackedComponent.h"
 #include "Urho3D/Container/RefCounted.h"
+#include "Urho3D/Network/NetworkDefs.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>
@@ -40,7 +41,6 @@
 namespace Urho3D
 {
 
-class ReplicatedPeer;
 class Network;
 class NetworkObject;
 struct NetworkSetting;
@@ -106,11 +106,11 @@ public:
     /// Start new server from current state.
     void StartServer();
     /// Start new client from specified connection. Removes all existing objects.
-    void StartClient(SharedPtr<ReplicatedPeer, RefCounted> connectionToServer);
+    void StartClient(ReplicatedPeerPtr connectionToServer);
     /// Process network message either as client or as server.
     bool ProcessMessage(ReplicatedPeer* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
     /// Process connection dropped. Removes client connection for server, converts scene to standalone for client.
-    void DropConnection(SharedPtr<ReplicatedPeer, RefCounted> connection);
+    void DropConnection(ReplicatedPeerPtr connection);
 
     /// Attributes.
     /// @{
@@ -157,7 +157,7 @@ private:
 
     struct ClientData
     {
-        WeakPtr<ReplicatedPeer, RefCounted> peer_;
+        ReplicatedPeerWeakPtr peer_;
         ea::optional<MsgSceneClock> initialClock_;
         ea::optional<VariantMap> serverSettings_;
         ea::optional<unsigned> ackMagic_;

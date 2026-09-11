@@ -9,6 +9,7 @@
 #include "Urho3D/Core/Signal.h"
 #include "Urho3D/IO/MemoryBuffer.h"
 #include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Network/NetworkDefs.h"
 #include "Urho3D/Network/Protocol.h"
 #include "Urho3D/Network/ReplicatedPeer.h"
 
@@ -26,7 +27,7 @@ class URHO3D_API ServerSceneLoader : public Object
     URHO3D_OBJECT(ServerSceneLoader, Object);
 
 public:
-    ServerSceneLoader(NetworkConnection* connection, const SharedPtr<ReplicatedPeer, RefCounted>& replicatedPeer);
+    ServerSceneLoader(NetworkConnection* connection, const ReplicatedPeerPtr& replicatedPeer);
 
     /// Set scene to be (re)loaded on the client side.
     void SetScene(Scene* scene, const StringVariantMap& params = Variant::emptyStringVariantMap);
@@ -41,7 +42,7 @@ private:
 
 private:
     WeakPtr<NetworkConnection> connection_{};
-    SharedPtr<ReplicatedPeer, RefCounted> replicatedPeer_{};
+    ReplicatedPeerPtr replicatedPeer_{};
     SharedPtr<Scene> scene_;
     StringVariantMap params_;
 
@@ -54,7 +55,7 @@ class URHO3D_API ClientSceneLoader : public Object
     URHO3D_OBJECT(ClientSceneLoader, Object);
 
 public:
-    ClientSceneLoader(NetworkConnection* connection, const SharedPtr<ReplicatedPeer, RefCounted>& replicatedPeer);
+    ClientSceneLoader(NetworkConnection* connection, const ReplicatedPeerPtr& replicatedPeer);
 
     /// Set scene that receives load requests.
     void SetScene(Scene* scene);
@@ -72,7 +73,7 @@ private:
 
 private:
     WeakPtr<NetworkConnection> connection_{};
-    SharedPtr<ReplicatedPeer, RefCounted> replicatedPeer_{};
+    ReplicatedPeerPtr replicatedPeer_{};
     SharedPtr<Scene> scene_;
     LoadRequestedCallback onLoadRequested_;
 };

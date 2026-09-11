@@ -24,6 +24,7 @@
 
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Network/NetworkDefs.h>
 #include <Urho3D/Replica/NetworkObject.h>
 #include <Urho3D/Scene/Scene.h>
 
@@ -37,7 +38,7 @@ NetworkObject::NetworkObject(Context* context)
 
 NetworkObject::~NetworkObject() = default;
 
-void NetworkObject::SetOwner(SharedPtr<ReplicatedPeer, RefCounted> owner)
+void NetworkObject::SetOwner(ReplicatedPeerPtr owner)
 {
     if (networkMode_ != NetworkObjectMode::Standalone)
     {

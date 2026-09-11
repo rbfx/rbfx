@@ -29,6 +29,7 @@
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
 #include "../Network/ClockSynchronizer.h"
+#include "../Network/NetworkDefs.h"
 #include "../Replica/ClientInputStatistics.h"
 #include "../Replica/NetworkId.h"
 #include "../Replica/TickSynchronizer.h"
@@ -42,7 +43,6 @@
 namespace Urho3D
 {
 
-class ReplicatedPeer;
 class Network;
 class NetworkObject;
 class NetworkObjectRegistry;
@@ -112,7 +112,7 @@ class ClientSynchronizationState : public RefCounted
 {
 public:
     ClientSynchronizationState(
-        NetworkObjectRegistry* objectRegistry, SharedPtr<ReplicatedPeer, RefCounted> connection, const VariantMap& settings);
+        NetworkObjectRegistry* objectRegistry, ReplicatedPeerPtr connection, const VariantMap& settings);
 
     /// Begin network frame. Overtime indicates how much time has passed since actual frame start time.
     void BeginNetworkFrame(NetworkFrame currentFrame, float overtime);
@@ -135,7 +135,7 @@ protected:
     void OnInputReceived(NetworkFrame inputFrame);
 
     const WeakPtr<NetworkObjectRegistry> objectRegistry_;
-    const WeakPtr<ReplicatedPeer, RefCounted> peer_;
+    const ReplicatedPeerWeakPtr peer_;
     VariantMap settings_;
     const unsigned updateFrequency_{};
 
@@ -169,7 +169,7 @@ struct ClientReplicationState : public ClientSynchronizationState
 {
 public:
     ClientReplicationState(
-        NetworkObjectRegistry* objectRegistry, SharedPtr<ReplicatedPeer, RefCounted> connection, const VariantMap& settings);
+        NetworkObjectRegistry* objectRegistry, ReplicatedPeerPtr connection, const VariantMap& settings);
 
     /// Perform network update from the perspective of this client connection.
     void UpdateNetworkObjects(SharedReplicationState& sharedState);
@@ -214,8 +214,8 @@ public:
     explicit ServerReplicator(Scene* scene);
     ~ServerReplicator() override;
 
-    void AddConnection(SharedPtr<ReplicatedPeer, RefCounted> connection);
-    void RemoveConnection(SharedPtr<ReplicatedPeer, RefCounted> connection);
+    void AddConnection(ReplicatedPeerPtr connection);
+    void RemoveConnection(ReplicatedPeerPtr connection);
     bool ProcessMessage(ReplicatedPeer* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
     void ProcessSceneUpdate(StringHash eventType);
     void ReportInputLoss(ReplicatedPeer* connection, float percentLoss);

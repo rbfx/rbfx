@@ -14,6 +14,7 @@
 #include "Urho3D/Network/Network.h"
 #include "Urho3D/Network/NetworkEvents.h"
 #include "Urho3D/Network/ReplicatedPeer.h"
+#include "Urho3D/Network/NetworkDefs.h"
 #include "Urho3D/Replica/NetworkObject.h"
 #include "Urho3D/Replica/NetworkSettingsConsts.h"
 #include "Urho3D/Replica/ReplicationManager.h"
@@ -26,7 +27,7 @@ namespace Urho3D
 {
 
 ClientReplicaClock::ClientReplicaClock(
-    Scene* scene, WeakPtr<ReplicatedPeer, RefCounted> connection, const MsgSceneClock& initialClock,
+    Scene* scene, ReplicatedPeerWeakPtr connection, const MsgSceneClock& initialClock,
     const VariantMap& serverSettings)
     : Object(scene->GetContext())
     , scene_(scene)
@@ -112,7 +113,7 @@ NetworkTime ClientReplicaClock::ToInputTime(const NetworkTime& serverTime) const
 }
 
 ClientReplica::ClientReplica(
-    Scene* scene, WeakPtr<ReplicatedPeer, RefCounted> connection, const MsgSceneClock& initialClock,
+    Scene* scene, ReplicatedPeerWeakPtr connection, const MsgSceneClock& initialClock,
     const VariantMap& serverSettings)
     : ClientReplicaClock(scene, connection, initialClock, serverSettings)
     , network_(GetSubsystem<Network>())

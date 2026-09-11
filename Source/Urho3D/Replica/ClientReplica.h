@@ -27,6 +27,7 @@
 #include "Urho3D/Container/ByteVector.h"
 #include "Urho3D/IO/MemoryBuffer.h"
 #include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Network/NetworkDefs.h"
 #include "Urho3D/Network/NetworkConnection.h"
 #include "Urho3D/Replica/TickSynchronizer.h"
 #include "Urho3D/Replica/NetworkId.h"
@@ -40,7 +41,6 @@
 namespace Urho3D
 {
 
-class ReplicatedPeer;
 class Network;
 class NetworkObjectRegistry;
 class NetworkObject;
@@ -52,7 +52,7 @@ struct NetworkSetting;
 class URHO3D_API ClientReplicaClock : public Object
 {
 public:
-    ClientReplicaClock(Scene* scene, WeakPtr<ReplicatedPeer, RefCounted> connection,
+    ClientReplicaClock(Scene* scene, ReplicatedPeerWeakPtr connection,
         const MsgSceneClock& initialClock, const VariantMap& serverSettings);
     ~ClientReplicaClock();
 
@@ -92,7 +92,7 @@ protected:
     void UpdateClientClocks(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates);
 
     const WeakPtr<Scene> scene_;
-    const WeakPtr<ReplicatedPeer, RefCounted> peer_;
+    const ReplicatedPeerWeakPtr peer_;
 
 private:
     SoftNetworkTime InitializeSoftTime() const;
@@ -127,7 +127,7 @@ class URHO3D_API ClientReplica : public ClientReplicaClock
     URHO3D_OBJECT(ClientReplica, ClientReplicaClock);
 
 public:
-    ClientReplica(Scene* scene, WeakPtr<ReplicatedPeer, RefCounted> connection,
+    ClientReplica(Scene* scene, ReplicatedPeerWeakPtr connection,
         const MsgSceneClock& initialClock, const VariantMap& serverSettings);
     ~ClientReplica() override;
 

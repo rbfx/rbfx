@@ -12,6 +12,7 @@
 #include "Urho3D/Network/MessageUtils.h"
 #include "Urho3D/Network/Network.h"
 #include "Urho3D/Network/ReplicatedPeer.h"
+#include "Urho3D/Network/NetworkDefs.h"
 #include "Urho3D/Replica/NetworkObject.h"
 #include "Urho3D/Replica/NetworkSettingsConsts.h"
 #include "Urho3D/Scene/Scene.h"
@@ -340,7 +341,7 @@ void ReplicationManager::StartServer()
     URHO3D_LOGINFO("Started server for scene replication");
 }
 
-void ReplicationManager::StartClient(SharedPtr<ReplicatedPeer, RefCounted> connectionToServer)
+void ReplicationManager::StartClient(ReplicatedPeerPtr connectionToServer)
 {
     Stop();
 
@@ -407,7 +408,7 @@ bool ReplicationManager::ProcessMessage(
     return false;
 }
 
-void ReplicationManager::DropConnection(SharedPtr<ReplicatedPeer, RefCounted> connection)
+void ReplicationManager::DropConnection(ReplicatedPeerPtr connection)
 {
     if (server_)
         server_->RemoveConnection(connection);

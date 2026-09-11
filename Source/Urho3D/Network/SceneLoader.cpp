@@ -12,6 +12,7 @@
 #include "Urho3D/Network/Protocol.h"
 #include "Urho3D/Network/ReplicatedPeer.h"
 #include "Urho3D/Network/NetworkConnection.h"
+#include "Urho3D/Network/NetworkDefs.h"
 #include "Urho3D/Replica/ReplicationManager.h"
 #include "Urho3D/Scene/Scene.h"
 #include "Urho3D/Scene/SceneEvents.h"
@@ -34,7 +35,7 @@ ReplicationManager* GetSceneReplicationManager(Scene* scene)
 } // namespace
 
 ServerSceneLoader::ServerSceneLoader(
-    NetworkConnection* connection, const SharedPtr<ReplicatedPeer, RefCounted>& replicatedPeer)
+    NetworkConnection* connection, const ReplicatedPeerPtr& replicatedPeer)
     : Object(connection->GetContext())
     , connection_(connection)
     , replicatedPeer_(replicatedPeer)
@@ -109,7 +110,7 @@ void ServerSceneLoader::OnMessageReceived(
 }
 
 ClientSceneLoader::ClientSceneLoader(
-    NetworkConnection* connection, const SharedPtr<ReplicatedPeer, RefCounted>& replicatedPeer)
+    NetworkConnection* connection, const ReplicatedPeerPtr& replicatedPeer)
     : Object(connection->GetContext())
     , connection_(connection)
     , replicatedPeer_(replicatedPeer)

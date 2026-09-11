@@ -28,6 +28,7 @@
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Network/Network.h>
+#include <Urho3D/Network/NetworkDefs.h>
 #include <Urho3D/Replica/StaticNetworkObject.h>
 #include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
@@ -361,7 +362,7 @@ void NetworkSimulator::SimulateTimeCallback(
     }
 }
 
-SharedPtr<ReplicatedPeer, RefCounted> NetworkSimulator::GetServerToClientConnection(Scene* clientScene)
+ReplicatedPeerPtr NetworkSimulator::GetServerToClientConnection(Scene* clientScene)
 {
     const auto iter = FindClientIter(clientScene);
     return iter != clients_.end() ? iter->serverToClient_ : nullptr;

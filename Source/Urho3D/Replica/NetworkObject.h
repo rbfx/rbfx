@@ -26,6 +26,7 @@
 
 #include <Urho3D/Container/FlagSet.h>
 #include <Urho3D/Core/Assert.h>
+#include <Urho3D/Network/NetworkDefs.h>
 #include <Urho3D/Network/ReplicatedPeer.h>
 #include <Urho3D/Replica/NetworkCallbacks.h>
 #include <Urho3D/Replica/ReplicationManager.h>
@@ -36,8 +37,6 @@
 
 namespace Urho3D
 {
-
-class ReplicatedPeer;
 
 enum class NetworkObjectMode
 {
@@ -71,7 +70,7 @@ public:
     ~NetworkObject() override;
 
     /// Server-only: set owner connection which is allowed to send feedback for this object.
-    void SetOwner(SharedPtr<ReplicatedPeer, RefCounted> owner);
+    void SetOwner(ReplicatedPeerPtr owner);
 
     static void RegisterObject(Context* context);
 
@@ -129,7 +128,7 @@ private:
 
     /// ReplicationManager corresponding to the NetworkObject.
     NetworkObjectMode networkMode_{};
-    WeakPtr<ReplicatedPeer, RefCounted> ownerConnection_{};
+    ReplicatedPeerWeakPtr ownerConnection_{};
 
     /// NetworkObject hierarchy
     /// @{

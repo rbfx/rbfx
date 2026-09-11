@@ -9,6 +9,7 @@
 #include "Urho3D/Core/Object.h"
 #include "Urho3D/Core/Timer.h"
 #include "Urho3D/Network/ClockSynchronizer.h"
+#include "Urho3D/Network/NetworkDefs.h"
 #include "Urho3D/Network/Protocol.h"
 #include "Urho3D/Replica/ReplicationManager.h"
 
@@ -79,7 +80,7 @@ private:
         }
     };
 
-    SharedPtr<ReplicatedPeer, RefCounted> AsSharedPtr();
+    ReplicatedPeerPtr AsSharedPtr();
     void OnConnected();
     void OnDisconnected();
 

@@ -13,6 +13,7 @@
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/Math/RandomEngine.h"
 #include "Urho3D/Network/ReplicatedPeer.h"
+#include "Urho3D/Network/NetworkDefs.h"
 #include "Urho3D/Network/MessageUtils.h"
 #include "Urho3D/Network/Network.h"
 #include "Urho3D/Network/NetworkEvents.h"
@@ -193,7 +194,7 @@ ConstByteSpan SharedReplicationState::GetSpanData(const DeltaBufferSpan& span) c
 }
 
 ClientSynchronizationState::ClientSynchronizationState(
-    NetworkObjectRegistry* objectRegistry, SharedPtr<ReplicatedPeer, RefCounted> connection, const VariantMap& settings)
+    NetworkObjectRegistry* objectRegistry, ReplicatedPeerPtr connection, const VariantMap& settings)
     : objectRegistry_(objectRegistry)
     , peer_(connection)
     , settings_(settings)
@@ -306,7 +307,7 @@ unsigned ClientSynchronizationState::MakeMagic() const
 }
 
 ClientReplicationState::ClientReplicationState(
-    NetworkObjectRegistry* objectRegistry, SharedPtr<ReplicatedPeer, RefCounted> connection, const VariantMap& settings)
+    NetworkObjectRegistry* objectRegistry, ReplicatedPeerPtr connection, const VariantMap& settings)
     : ClientSynchronizationState(objectRegistry, connection, settings)
 {
 }
@@ -692,7 +693,7 @@ void ServerReplicator::OnNetworkUpdate()
         clientState->SendMessages(currentFrame_, *sharedState_);
 }
 
-void ServerReplicator::AddConnection(SharedPtr<ReplicatedPeer, RefCounted> connection)
+void ServerReplicator::AddConnection(ReplicatedPeerPtr connection)
 {
     if (connections_.contains(connection))
     {
@@ -707,7 +708,7 @@ void ServerReplicator::AddConnection(SharedPtr<ReplicatedPeer, RefCounted> conne
     URHO3D_LOGINFO("Connection {} is added", connection->ToString());
 }
 
-void ServerReplicator::RemoveConnection(SharedPtr<ReplicatedPeer, RefCounted> connection)
+void ServerReplicator::RemoveConnection(ReplicatedPeerPtr connection)
 {
     if (!connections_.contains(connection))
     {
