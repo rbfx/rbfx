@@ -1951,3 +1951,40 @@ template <class T> const T* CustomVariantValue::GetValuePtr() const
 }
 
 }
+
+#ifndef SWIG
+// Support formatting for Urho3D::Variant.
+template <> struct fmt::formatter<Urho3D::Variant>
+{
+    constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator
+    {
+        auto it = ctx.begin();
+
+        if (it != ctx.end() && *it == 'r')
+        {
+            rawStringOnly_ = true;
+            ++it;
+        }
+
+        if (it != ctx.end() && *it != '}')
+            throw fmt::format_error("invalid format specifier for Urho3D::Variant");
+
+        return it;
+    }
+
+    auto format(const Urho3D::Variant& value, format_context& ctx) const -> format_context::iterator
+    {
+        if (rawStringOnly_)
+        {
+            return fmt::format_to(ctx.out(), "{}", value.ToString());
+        }
+        else
+        {
+            return fmt::format_to(
+                ctx.out(), "[{}] \"{}\"", Urho3D::Variant::GetTypeName(value.GetType()), value.ToString());
+        }
+    }
+
+    bool rawStringOnly_{};
+};
+#endif

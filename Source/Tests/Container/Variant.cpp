@@ -91,3 +91,13 @@ TEST_CASE("Variant is move-assigned")
         REQUIRE(value.GetCustomPtr<TestLargeObject>()->c_ == "12345678901234567890");
     }
 }
+
+TEST_CASE("Variant is printable")
+{
+    CHECK(Format("{}", Variant{10}) == "[Int] \"10\"");
+    CHECK(Format("{:r}", Variant{10}) == "10");
+    CHECK(Format("{}", Variant{"test"}) == "[String] \"test\"");
+    CHECK(Format("{:r}", Variant{"test"}) == "test");
+    CHECK(Format("{}", Variant{}) == "[None] \"\"");
+    CHECK(Format("{:r}", Variant{}) == "");
+}
