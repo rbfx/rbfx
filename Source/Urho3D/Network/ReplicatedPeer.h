@@ -19,25 +19,30 @@ namespace Urho3D
 
 class NetworkConnection;
 
+struct URHO3D_API ReplicatedPeerSettings
+{
+    unsigned pingIntervalMs_{250};
+    unsigned maxPingMs_{10000};
+    unsigned clockBufferSize_{40};
+    unsigned pingBufferSize_{10};
+    ea::function<unsigned()> getTimestamp_;
+};
+
 /// Replication-oriented interface attached to transport connection.
 class URHO3D_API ReplicatedPeer
 {
 public:
-    explicit ReplicatedPeer(NetworkConnection* connection, unsigned pingIntervalMs=250, unsigned maxPingMs=10000, unsigned clockBufferSize=40,
-        unsigned pingBufferSize=10
-#ifndef SWIG
-        , ea::function<unsigned()> getTimestamp = [] { return Time::GetSystemTime(); }
-#endif
-        );
-    virtual ~ReplicatedPeer() = default;
+    explicit ReplicatedPeer(NetworkConnection* connection, const ReplicatedPeerSettings& settings = {});
+    virtual ~ReplicatedPeer();
 
     /// Return unique peer ID.
     unsigned GetObjectID() const { return idFamily_.GetObjectID(); }
     /// Return associated network connection.
     NetworkConnection* GetConnection() const { return connection_; }
 
-    /// Set replication manager used for automatic message handling. This effectively enables replication-related message processing and sending.
-    /// You may unset replication manager to suspend connection from participating in scene replication.
+    /// Set replication manager used for automatic message handling. This effectively enables replication-related
+    /// message processing and sending. You may unset replication manager to suspend connection
+    /// from participating in scene replication.
     void SetReplicationManager(ReplicationManager* replicationManager);
     /// Return replication manager used for automatic message handling.
     ReplicationManager* GetReplicationManager() const { return replicationManager_; }
@@ -68,7 +73,10 @@ private:
         URHO3D_OBJECT(ReplicatedPeer::Listener, Object);
 
     public:
-        explicit Listener(Context* context) : Object(context) {}
+        explicit Listener(Context* context)
+            : Object(context)
+        {
+        }
     };
 
     SharedPtr<ReplicatedPeer, RefCounted> AsSharedPtr();
@@ -76,7 +84,7 @@ private:
     void OnDisconnected();
 
     /// Potentially consume a network message. Return true if consumed.
-    void ProcessReplicationMessage(NetworkMessageId messageId, ConstByteSpan msg, bool& handled);
+    void OnMessageReceived(NetworkMessageId messageId, ConstByteSpan msg, bool& handled);
     /// Send pending replication-related messages, if any.
     void SendReplicationMessages();
 

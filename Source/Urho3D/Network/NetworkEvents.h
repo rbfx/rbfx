@@ -65,12 +65,6 @@ URHO3D_EVENT(E_NETWORKUPDATE, NetworkUpdate)
     URHO3D_PARAM(P_ISSERVER, IsServer);                 // bool
 }
 
-/// Network update has been sent on the client or server.
-URHO3D_EVENT(E_NETWORKUPDATESENT, NetworkUpdateSent)
-{
-    URHO3D_PARAM(P_ISSERVER, IsServer);                 // bool
-}
-
 /// When LAN discovery found hosted server.
 URHO3D_EVENT(E_NETWORKHOSTDISCOVERED, NetworkHostDiscovered)
 {

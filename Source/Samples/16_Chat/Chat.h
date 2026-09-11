@@ -29,8 +29,8 @@ namespace Urho3D
 {
 
 class Button;
-class DataChannelConnection;
-class DataChannelServer;
+class NetworkConnection;
+class NetworkServer;
 class LineEdit;
 class MemoryBuffer;
 class NetworkConnection;
@@ -120,9 +120,9 @@ private:
     /// Start server button.
     SharedPtr<Button> startServerButton_;
     /// Local data channel server.
-    SharedPtr<DataChannelServer> server_;
+    SharedPtr<NetworkServer> server_;
     /// Client connection to a data channel server.
-    SharedPtr<DataChannelConnection> clientConnection_;
+    SharedPtr<NetworkConnection> clientConnection_;
     /// Server-side connections.
     ea::vector<WeakPtr<NetworkConnection>> serverConnections_;
 };

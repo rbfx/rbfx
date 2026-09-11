@@ -31,9 +31,9 @@
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Network/Protocol.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
+#include <Urho3D/Network/Network.h>
 #include <Urho3D/Network/NetworkConnection.h>
+#include <Urho3D/Network/NetworkServer.h>
 #include <Urho3D/Network/URL.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
@@ -222,7 +222,8 @@ void Chat::HandleConnect(StringHash /*eventType*/, VariantMap& eventData)
 
     if (!clientConnection_)
     {
-        clientConnection_ = MakeShared<DataChannelConnection>(context_);
+        auto network = GetSubsystem<Network>();
+        clientConnection_ = network->CreateConnection();
         clientConnection_->OnConnected.Subscribe(this, &Chat::HandleClientConnected);
         clientConnection_->OnDisconnected.Subscribe(this, &Chat::HandleClientDisconnected);
         clientConnection_->OnMessageReceived.SubscribeWithSender(this, &Chat::HandleNetworkMessage);
@@ -260,7 +261,8 @@ void Chat::HandleStartServer(StringHash /*eventType*/, VariantMap& eventData)
 {
     if (!server_)
     {
-        server_ = MakeShared<DataChannelServer>(context_);
+        auto network = GetSubsystem<Network>();
+        server_ = network->CreateServer();
         server_->OnConnected.Subscribe(this, &Chat::HandleServerConnected);
         server_->OnDisconnected.Subscribe(this, &Chat::HandleServerDisconnected);
     }

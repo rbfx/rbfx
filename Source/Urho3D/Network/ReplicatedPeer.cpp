@@ -2,11 +2,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
+#include "Urho3D/Network/ReplicatedPeer.h"
+
 #include "Urho3D/Core/Assert.h"
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Network/ClockSynchronizer.h"
 #include "Urho3D/Network/MessageUtils.h"
-#include "Urho3D/Network/ReplicatedPeer.h"
 #include "Urho3D/Network/NetworkConnection.h"
 #include "Urho3D/Replica/ReplicationManager.h"
 
@@ -15,19 +16,27 @@
 namespace Urho3D
 {
 
-ReplicatedPeer::ReplicatedPeer(NetworkConnection* connection, unsigned pingIntervalMs, unsigned maxPingMs, unsigned clockBufferSize,
-        unsigned pingBufferSize, ea::function<unsigned()> getTimestamp)
+ReplicatedPeer::ReplicatedPeer(NetworkConnection* connection, const ReplicatedPeerSettings& settings)
     : connection_(connection)
-    , clock_(pingIntervalMs, maxPingMs, clockBufferSize, pingBufferSize, getTimestamp)
+    , clock_(settings.pingIntervalMs_, settings.maxPingMs_, settings.clockBufferSize_, settings.pingBufferSize_,
+          settings.getTimestamp_ ? settings.getTimestamp_ : &Time::GetSystemTime)
     , listener_(connection->GetContext())
 {
     URHO3D_ASSERT(connection);
 
     listener_.SubscribeToEvent(E_POSTUPDATE, [this]() { SendReplicationMessages(); });
-    auto&& handleSendReplicationMessages = [this](NetworkMessageId messageId, ConstByteSpan msg, bool& handled) { ProcessReplicationMessage(messageId, msg, handled); };
-    connection_->OnMessageReceived.Subscribe(&listener_, handleSendReplicationMessages);
+    connection_->OnMessageReceived.Subscribe(&listener_,
+        [this](NetworkMessageId id, ConstByteSpan data, bool& handled) { OnMessageReceived(id, data, handled); });
     connection_->OnConnected.Subscribe(&listener_, [this]() { OnConnected(); });
     connection_->OnDisconnected.Subscribe(&listener_, [this](bool) { OnDisconnected(); });
+
+    URHO3D_LOGINFO("Replicated peer #{} is created for {} connection \"{}\"", GetObjectID(),
+        connection->GetServer() != nullptr ? "server" : "client", connection->GetAddress());
+}
+
+ReplicatedPeer::~ReplicatedPeer()
+{
+    URHO3D_LOGINFO("Replicated peer #{} is destroyed", GetObjectID());
 }
 
 void ReplicatedPeer::SetReplicationManager(ReplicationManager* replicationManager)
@@ -53,9 +62,9 @@ SharedPtr<ReplicatedPeer, RefCounted> ReplicatedPeer::AsSharedPtr()
     return SharedPtr<ReplicatedPeer, RefCounted>(this, connection_);
 }
 
-void ReplicatedPeer::ProcessReplicationMessage(NetworkMessageId messageId, ConstByteSpan msg, bool& handled)
+void ReplicatedPeer::OnMessageReceived(NetworkMessageId messageId, ConstByteSpan msg, bool& handled)
 {
-    if (handled || !replicationManager_)
+    if (handled)
         return;
 
     MemoryBuffer messageReader{msg};
@@ -73,7 +82,7 @@ void ReplicatedPeer::ProcessReplicationMessage(NetworkMessageId messageId, Const
 
 void ReplicatedPeer::SendReplicationMessages()
 {
-    if (!connection_ || !connection_->IsConnected() || !replicationManager_)
+    if (!connection_ || !connection_->IsConnected())
         return;
 
     while (const auto clockMessage = GetClock().PollMessage())
@@ -95,9 +104,15 @@ void ReplicatedPeer::OnConnected()
         return;
 
     if (replicationManager_->IsServer())
+    {
+        URHO3D_LOGINFO("Replicated peer #{} is attached to server-side scene", GetObjectID());
         replicationManager_->GetServerReplicator()->AddConnection(AsSharedPtr());
+    }
     else
+    {
+        URHO3D_LOGINFO("Replicated peer #{} is attached to client-side scene", GetObjectID());
         replicationManager_->StartClient(AsSharedPtr());
+    }
 }
 
 void ReplicatedPeer::OnDisconnected()
@@ -108,6 +123,7 @@ void ReplicatedPeer::OnDisconnected()
         return;
 
     replicationManager_->DropConnection(AsSharedPtr());
+    URHO3D_LOGINFO("Replicated peer #{} is detached from the scene", GetObjectID());
 }
 
 } // namespace Urho3D

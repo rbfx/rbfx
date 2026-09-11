@@ -1,48 +1,34 @@
-//
 // Copyright (c) 2008-2022 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2022-2026 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Profiler.h"
-#include "../Engine/EngineEvents.h"
-#include "../Network/Network.h"
-#include "../Network/NetworkEvents.h"
-#include "../Network/Transport/DataChannel/DataChannelConnection.h"
-#include "../Network/Transport/DataChannel/DataChannelServer.h"
-#include "../Replica/BehaviorNetworkObject.h"
-#include "../Replica/FilteredByDistance.h"
-#include "../Replica/FilteredByOwner.h"
-#include "../Replica/NetworkObject.h"
-#include "../Replica/PredictedKinematicController.h"
-#include "../Replica/ReplicatedAnimation.h"
-#include "../Replica/ReplicatedParent.h"
-#include "../Replica/ReplicatedTransform.h"
-#include "../Replica/ReplicationManager.h"
-#include "../Replica/StaticNetworkObject.h"
-#include "../Replica/TrackedAnimatedModel.h"
+#include "Urho3D/Network/Network.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Engine/EngineEvents.h"
+#include "Urho3D/Network/NetworkConnection.h"
+#include "Urho3D/Network/NetworkEvents.h"
+#include "Urho3D/Network/NetworkServer.h"
+#include "Urho3D/Network/Transport/DataChannel/DataChannelConnection.h"
+#include "Urho3D/Network/Transport/DataChannel/DataChannelServer.h"
+#include "Urho3D/Replica/BehaviorNetworkObject.h"
+#include "Urho3D/Replica/FilteredByDistance.h"
+#include "Urho3D/Replica/FilteredByOwner.h"
+#include "Urho3D/Replica/NetworkObject.h"
+#include "Urho3D/Replica/PredictedKinematicController.h"
+#include "Urho3D/Replica/ReplicatedAnimation.h"
+#include "Urho3D/Replica/ReplicatedParent.h"
+#include "Urho3D/Replica/ReplicatedTransform.h"
+#include "Urho3D/Replica/ReplicationManager.h"
+#include "Urho3D/Replica/StaticNetworkObject.h"
+#include "Urho3D/Replica/TrackedAnimatedModel.h"
+
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -71,6 +57,20 @@ void Network::SetUpdateFps(unsigned fps)
     updateAcc_ = 0.0f;
 }
 
+SharedPtr<NetworkConnection> Network::CreateConnection(StringHash type)
+{
+    if (type.IsEmpty())
+        type = DataChannelConnection::TypeId;
+    return DynamicCast<NetworkConnection>(context_->CreateObject(type));
+}
+
+SharedPtr<NetworkServer> Network::CreateServer(StringHash type)
+{
+    if (type.IsEmpty())
+        type = DataChannelServer::TypeId;
+    return DynamicCast<NetworkServer>(context_->CreateObject(type));
+}
+
 void Network::Update(float timeStep)
 {
     URHO3D_PROFILE("UpdateNetwork");
@@ -95,14 +95,10 @@ void Network::PostUpdate(float timeStep)
 
     // Update periodically on the server
     if (updateNow_)
-    {
         SendNetworkUpdateEvent(E_NETWORKUPDATE, true);
-        SendNetworkUpdateEvent(E_NETWORKUPDATESENT, true);
-    }
 
     // Always update on the client
     SendNetworkUpdateEvent(E_NETWORKUPDATE, false);
-    SendNetworkUpdateEvent(E_NETWORKUPDATESENT, false);
 }
 
 void Network::HandleBeginFrame(VariantMap& eventData)
@@ -179,4 +175,4 @@ void RegisterNetworkLibrary(Context* context)
     DataChannelServer::RegisterObject(context);
 }
 
-}
+} // namespace Urho3D
