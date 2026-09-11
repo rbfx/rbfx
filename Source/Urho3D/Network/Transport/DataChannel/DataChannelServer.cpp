@@ -82,7 +82,7 @@ bool DataChannelServer::Listen(const URL& url)
         dcConnection->InitializeFromSocket(this, ws);
     });
 
-    DoOnListenStart();
+    DispatchListenStart();
     return true;
 #else
     return false;
@@ -112,7 +112,7 @@ void DataChannelServer::Stop()
 
     auto webSocketServer = ea::move(webSocketServer_);
     webSocketServer->stop();
-    DoOnListenStop();
+    DispatchListenStop();
 #endif
 }
 

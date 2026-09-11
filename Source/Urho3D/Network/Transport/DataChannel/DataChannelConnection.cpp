@@ -155,7 +155,7 @@ void DataChannelConnection::OnDataChannelConnected(int index)
     DispatchConnected();
 
     if (auto* server = static_cast<DataChannelServer*>(GetServer()))
-        server->DoOnConnected(this);
+        server->DispatchConnected(SharedPtr<DataChannelConnection>(this));
 
     // Signaling server connection is no longer needed.
     websocket_->close();
@@ -189,7 +189,7 @@ void DataChannelConnection::OnDataChannelDisconnected(int index, bool notifyCall
     }
 
     if (auto* server = static_cast<DataChannelServer*>(GetServer()))
-        server->DoOnDisconnected(this);
+        server->DispatchDisconnected(self);
 
     if (websocket_)
     {

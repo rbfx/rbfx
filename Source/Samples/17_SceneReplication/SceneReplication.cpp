@@ -662,8 +662,8 @@ void SceneReplication::HandleStartServer(StringHash eventType, VariantMap& event
     {
         server_ = MakeShared<DataChannelServer>(context_);
         server_->SetConnectionFactory([this]() { return MakeShared<ReplicatedDataChannelConnection>(context_); });
-        server_->onConnected_.Subscribe(this, &SceneReplication::HandleServerConnected);
-        server_->onDisconnected_.Subscribe(this, &SceneReplication::HandleServerDisconnected);
+        server_->OnConnected.Subscribe(this, &SceneReplication::HandleServerConnected);
+        server_->OnDisconnected.Subscribe(this, &SceneReplication::HandleServerDisconnected);
     }
 
     // Initialize server side replication for this scene.

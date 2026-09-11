@@ -33,8 +33,8 @@ AdvancedNetworkingServer::AdvancedNetworkingServer(Scene* scene)
     , scene_(scene)
 {
     SetConnectionFactory([this]() { return MakeShared<AdvancedNetworkingConnection>(context_); });
-    onConnected_.Subscribe(this, &AdvancedNetworkingServer::HandleServerConnected);
-    onDisconnected_.Subscribe(this, &AdvancedNetworkingServer::HandleServerDisconnected);
+    OnConnected.Subscribe(this, &AdvancedNetworkingServer::HandleServerConnected);
+    OnDisconnected.Subscribe(this, &AdvancedNetworkingServer::HandleServerDisconnected);
     SubscribeToEvent(E_POSTUPDATE, &AdvancedNetworkingServer::ProcessRaycasts);
 }
 

@@ -1,8 +1,7 @@
-// Copyright (c) 2017-2025 the rbfx project.
+// Copyright (c) 2017-2026 the rbfx project.
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "Urho3D/Network/Network.h"
 #include "Urho3D/Network/Transport/NetworkServer.h"
 
 #include "Urho3D/Container/Ptr.h"
@@ -10,6 +9,7 @@
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/Thread.h"
 #include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Network/Network.h"
 #include "Urho3D/Network/NetworkEvents.h"
 
 #include <EASTL/algorithm.h>
@@ -21,9 +21,7 @@ namespace Urho3D
 
 NetworkServer::NetworkServer(Context* context)
     : Object(context)
-    , workQueue_(context->GetSubsystem<WorkQueue>())
 {
-    URHO3D_ASSERT(workQueue_);
 }
 
 void NetworkServer::NotifyStopping()
@@ -32,9 +30,9 @@ void NetworkServer::NotifyStopping()
         network->OnServerStopping(this);
 }
 
-void NetworkServer::OnConnected(NetworkConnection* connection)
+void NetworkServer::HandleConnected(const SharedPtr<NetworkConnection>& connection)
 {
-    onConnected_(this, connection);
+    OnConnected(this, connection);
 
     using namespace ServerClientConnected;
     auto& eventData = GetEventDataMap();
@@ -45,9 +43,9 @@ void NetworkServer::OnConnected(NetworkConnection* connection)
     SendEvent(E_SERVERCLIENTCONNECTED, eventData);
 }
 
-void NetworkServer::OnDisconnected(NetworkConnection* connection)
+void NetworkServer::HandleDisconnected(const SharedPtr<NetworkConnection>& connection)
 {
-    onDisconnected_(this, connection);
+    OnDisconnected(this, connection);
 
     using namespace ServerClientDisconnected;
     auto& eventData = GetEventDataMap();
@@ -56,11 +54,13 @@ void NetworkServer::OnDisconnected(NetworkConnection* connection)
     eventData[P_ADDRESS] = connection->GetAddress();
     eventData[P_PORT] = connection->GetPort();
     SendEvent(E_SERVERCLIENTDISCONNECTED, eventData);
+
+    RemoveConnection(connection);
 }
 
-void NetworkServer::OnListenStart()
+void NetworkServer::HandleListenStart()
 {
-    onListenStart_(this);
+    OnListenStart(this);
 
     using namespace ServerListenStart;
     auto& eventData = GetEventDataMap();
@@ -68,9 +68,9 @@ void NetworkServer::OnListenStart()
     SendEvent(E_SERVERLISTENSTART, eventData);
 }
 
-void NetworkServer::OnListenStop()
+void NetworkServer::HandleListenStop()
 {
-    onListenStop_(this);
+    OnListenStop(this);
 
     using namespace ServerListenStop;
     auto& eventData = GetEventDataMap();
@@ -78,35 +78,32 @@ void NetworkServer::OnListenStop()
     SendEvent(E_SERVERLISTENSTOP, eventData);
 }
 
-void NetworkServer::DoOnConnected(NetworkConnection* connection)
+void NetworkServer::DispatchConnected(const SharedPtr<NetworkConnection>& connection)
 {
     SharedPtr<NetworkServer> self(this);
-    SharedPtr<NetworkConnection> ref(connection);
-    workQueue_->RunTaskOnMainThread(
-        [self = std::move(self), connection = std::move(ref)]() { self->OnConnected(connection); });
+    auto workQueue = context_->GetSubsystem<WorkQueue>();
+    workQueue->RunTaskOnMainThread([self = std::move(self), connection]() { self->HandleConnected(connection); });
 }
 
-void NetworkServer::DoOnDisconnected(NetworkConnection* connection)
+void NetworkServer::DispatchDisconnected(const SharedPtr<NetworkConnection>& connection)
 {
     SharedPtr<NetworkServer> self(this);
-    SharedPtr<NetworkConnection> ref(connection);
-    workQueue_->RunTaskOnMainThread([self = std::move(self), connection = std::move(ref)]()
-    {
-        self->OnDisconnected(connection);
-        self->RemoveConnection(connection);
-    });
+    auto workQueue = context_->GetSubsystem<WorkQueue>();
+    workQueue->RunTaskOnMainThread([self = std::move(self), connection]() { self->HandleDisconnected(connection); });
 }
 
-void NetworkServer::DoOnListenStart()
+void NetworkServer::DispatchListenStart()
 {
     SharedPtr<NetworkServer> self(this);
-    workQueue_->RunTaskOnMainThread([self = std::move(self)]() { self->OnListenStart(); });
+    auto workQueue = context_->GetSubsystem<WorkQueue>();
+    workQueue->RunTaskOnMainThread([self = std::move(self)]() { self->HandleListenStart(); });
 }
 
-void NetworkServer::DoOnListenStop()
+void NetworkServer::DispatchListenStop()
 {
     SharedPtr<NetworkServer> self(this);
-    workQueue_->RunTaskOnMainThread([self = std::move(self)]() { self->OnListenStop(); });
+    auto workQueue = context_->GetSubsystem<WorkQueue>();
+    workQueue->RunTaskOnMainThread([self = std::move(self)]() { self->HandleListenStop(); });
 }
 
 const ea::vector<SharedPtr<NetworkConnection>>& NetworkServer::GetConnections() const
@@ -118,27 +115,23 @@ SharedPtr<NetworkConnection> NetworkServer::CreateConnection()
 {
     URHO3D_ASSERT(connectionFactory_);
     SharedPtr<NetworkConnection> connection = connectionFactory_();
-    AddConnection(connection);
+
+    auto workQueue = context_->GetSubsystem<WorkQueue>();
+    SharedPtr<NetworkServer> self(this);
+    workQueue->RunTaskOnMainThread([self = std::move(self), connection]() { self->AddConnection(connection); });
+
     return connection;
 }
 
-void NetworkServer::AddConnection(NetworkConnection* connection)
+void NetworkServer::AddConnection(const SharedPtr<NetworkConnection>& connection)
 {
-    SharedPtr<NetworkServer> self(this);
-    SharedPtr<NetworkConnection> ref(connection);
-    workQueue_->RunTaskOnMainThread(
-        [self = std::move(self), connection = std::move(ref)]() { self->connections_.push_back(connection); });
+    connections_.push_back(connection);
 }
 
-void NetworkServer::RemoveConnection(NetworkConnection* connection)
+void NetworkServer::RemoveConnection(const SharedPtr<NetworkConnection>& connection)
 {
-    SharedPtr<NetworkServer> self(this);
-    SharedPtr<NetworkConnection> ref(connection);
-    workQueue_->RunTaskOnMainThread([self = std::move(self), connection = std::move(ref)]()
-    {
-        auto&& pred = [connection](const SharedPtr<NetworkConnection>& conn) { return conn.Get() == connection; };
-        ea::erase_if(self->connections_, pred);
-    });
+    auto pred = [connection](const SharedPtr<NetworkConnection>& elem) { return elem == connection; };
+    ea::erase_if(connections_, pred);
 }
 
 } // namespace Urho3D

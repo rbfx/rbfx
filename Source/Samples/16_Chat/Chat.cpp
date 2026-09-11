@@ -261,8 +261,8 @@ void Chat::HandleStartServer(StringHash /*eventType*/, VariantMap& eventData)
     if (!server_)
     {
         server_ = MakeShared<DataChannelServer>(context_);
-        server_->onConnected_.Subscribe(this, &Chat::HandleServerConnected);
-        server_->onDisconnected_.Subscribe(this, &Chat::HandleServerDisconnected);
+        server_->OnConnected.Subscribe(this, &Chat::HandleServerConnected);
+        server_->OnDisconnected.Subscribe(this, &Chat::HandleServerDisconnected);
     }
 
     const URL listenUrl(Format("ws://0.0.0.0:{}", CHAT_SERVER_PORT));

@@ -101,7 +101,7 @@ protected:
     /// Called once, when connection is fully set up and data is ready to be sent and received.
     /// Is called from the main thread.
     virtual void HandleConnected();
-    /// Called once, when connection disconnect was initiated (only if onConnected_ was also called).
+    /// Called once, when connection disconnect was initiated (only if OnConnected was also called).
     /// Is called from the main thread.
     virtual void HandleDisconnected();
     /// Called when a new data is received. May be called from non-main thread depending on configuration.

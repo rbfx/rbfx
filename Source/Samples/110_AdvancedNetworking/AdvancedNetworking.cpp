@@ -272,8 +272,8 @@ void AdvancedNetworking::StartServer(unsigned short port)
     StopNetworking();
 
     server_ = MakeShared<AdvancedNetworkingServer>(scene_);
-    server_->onListenStart_.Subscribe(this, [this]() { HandleClientConnectionState(false); });
-    server_->onListenStop_.Subscribe(this, [this]() { HandleClientConnectionState(false); });
+    server_->OnListenStart.Subscribe(this, [this]() { HandleClientConnectionState(false); });
+    server_->OnListenStop.Subscribe(this, [this]() { HandleClientConnectionState(false); });
     auto* replicationManager = scene_->GetComponent<ReplicationManager>();
     replicationManager->StartServer();
     ui_->SetServerRunning(server_->Start(port));
