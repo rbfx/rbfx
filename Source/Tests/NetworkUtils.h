@@ -101,7 +101,10 @@ class ManualConnection : public NetworkConnection, public ReplicatedPeer
 public:
     static unsigned systemTime;
 
-    ManualConnection(Context* context, ReplicationManager* sink, unsigned seed);
+    ManualConnection(Context* context, unsigned seed);
+
+    static ea::pair<SharedPtr<ManualConnection>, SharedPtr<ManualConnection>> CreatePair(
+        Context* context, RandomEngine& random);
 
     void SetSinkConnection(ReplicatedPeer* sinkConnection) { sinkConnection_ = sinkConnection; }
     void SetQuality(const ConnectionQuality& quality) { quality_ = quality; }
@@ -133,7 +136,6 @@ private:
     void SendOrderedMessages(ea::vector<InternalMessage>& messages);
     void SendUnorderedMessages(ea::vector<InternalMessage>& messages);
 
-    ReplicationManager* sink_{};
     ReplicatedPeer* sinkConnection_{};
     RandomEngine random_;
 

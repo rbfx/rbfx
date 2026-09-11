@@ -133,13 +133,22 @@ unsigned InMemoryConnection::GetNumPendingPackets() const
 
 unsigned ManualConnection::systemTime = 0;
 
-ManualConnection::ManualConnection(Context* context, ReplicationManager* sink, unsigned seed)
+ManualConnection::ManualConnection(Context* context, unsigned seed)
     : NetworkConnection(context)
     , ReplicatedPeer(this)
-    , sink_(sink)
     , random_(seed)
 {
     state_ = NetworkConnectionState::Connected; // Always connected
+}
+
+ea::pair<SharedPtr<ManualConnection>, SharedPtr<ManualConnection>> ManualConnection::CreatePair(
+    Context* context, RandomEngine& random)
+{
+    const auto first = MakeShared<ManualConnection>(context, random.GetUInt());
+    const auto second = MakeShared<ManualConnection>(context, random.GetUInt());
+    first->SetSinkConnection(second);
+    second->SetSinkConnection(first);
+    return ea::make_pair(first, second);
 }
 
 void ManualConnection::IncrementTime(unsigned delta)
@@ -209,8 +218,9 @@ void ManualConnection::DeliverMessage(const InternalMessage& msg)
 
 bool ManualConnection::HandleMessageReceived(NetworkMessageId messageId, ConstByteSpan message)
 {
-    MemoryBuffer memoryBuffer(message);
-    sink_->ProcessMessage(sinkConnection_, messageId, memoryBuffer);
+    NetworkConnection* destConnection = sinkConnection_->GetConnection();
+    bool isHandled = false;
+    destConnection->OnMessageReceived(destConnection, messageId, message, isHandled);
     return true;
 }
 
@@ -261,16 +271,14 @@ void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& qu
     PerClient data;
     data.clientScene_ = clientScene;
     data.clientReplicationManager_ = clientScene->GetOrCreateComponent<ReplicationManager>();
-    data.clientToServer_ = MakeShared<ManualConnection>(context_, serverReplicationManager_, random_.GetUInt());
-    data.serverToClient_ = MakeShared<ManualConnection>(context_, data.clientReplicationManager_, random_.GetUInt());
 
-    data.clientToServer_->SetSinkConnection(data.serverToClient_);
+    ea::tie(data.clientToServer_, data.serverToClient_) = ManualConnection::CreatePair(context_, random_);
+
     data.clientToServer_->SetQuality(quality);
-    data.serverToClient_->SetSinkConnection(data.clientToServer_);
     data.serverToClient_->SetQuality(quality);
 
-    data.clientReplicationManager_->StartClient(data.clientToServer_);
-    serverReplicationManager_->GetServerReplicator()->AddConnection(data.serverToClient_);
+    data.clientToServer_->SetReplicationManager(data.clientReplicationManager_);
+    data.serverToClient_->SetReplicationManager(serverReplicationManager_);
 
     clients_.push_back(data);
 }
