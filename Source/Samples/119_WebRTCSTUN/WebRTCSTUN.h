@@ -50,7 +50,7 @@ private:
     void HandleServerDisconnected(NetworkConnection* connection);
     void HandleClientConnected();
     void HandleClientDisconnected();
-    void HandleNetworkMessage(NetworkConnection*, NetworkMessageId, MemoryBuffer&, bool&);
+    void HandleNetworkMessage(NetworkConnection*, NetworkMessageId, ConstByteSpan, bool&);
 
     void TryConnect(const ea::string& address);
     void TryConnectRelay(const ea::string& roomId, const ea::string& relayUrl);

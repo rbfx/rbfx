@@ -21,9 +21,9 @@
 #include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Network/Protocol.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
-#include <Urho3D/Network/Transport/NetworkConnection.h>
+#include <Urho3D/Network/DataChannel/DataChannelConnection.h>
+#include <Urho3D/Network/DataChannel/DataChannelServer.h>
+#include <Urho3D/Network/NetworkConnection.h>
 #include <Urho3D/Network/URL.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -124,11 +124,6 @@ static ea::string ClassifyAddr(const ea::string& a)
     return "WAN";
 }
 
-/// Convert vector<string> to vector<string_view> for passing to span-based APIs.
-static ea::vector<ea::string_view> AsViews(const ea::vector<ea::string>& v)
-{
-    return {v.begin(), v.end()};
-}
 } // namespace
 
 WebRTCSTUN::WebRTCSTUN(Context* c)
@@ -277,7 +272,7 @@ void WebRTCSTUN::HandleSend(StringHash, VariantMap&)
 
     if (clientConnection_ && clientConnection_->IsConnected())
     {
-        clientConnection_->SendMessage(MSG_CHAT, msg);
+        clientConnection_->SendMessage(MSG_CHAT, msg.GetBuffer());
         ShowChatText("[You -> Server] " + text);
     }
     else if (server_ && (server_->IsListening() || !relayConnections_.empty()))
@@ -285,7 +280,7 @@ void WebRTCSTUN::HandleSend(StringHash, VariantMap&)
         for (const auto& weakConn : serverConnections_)
         {
             if (auto conn = weakConn.Lock())
-                conn->SendMessage(MSG_CHAT, msg);
+                conn->SendMessage(MSG_CHAT, msg.GetBuffer());
         }
         ShowChatText("[Server -> All] " + text);
     }
@@ -315,10 +310,10 @@ void WebRTCSTUN::TryConnect(const ea::string& addr)
     if (!clientConnection_)
     {
         clientConnection_ = MakeShared<DataChannelConnection>(context_);
-        clientConnection_->SetIceServers(AsViews(LoadIceServers(context_)));
-        clientConnection_->onConnected_.Subscribe(this, &WebRTCSTUN::HandleClientConnected);
-        clientConnection_->onDisconnected_.Subscribe(this, &WebRTCSTUN::HandleClientDisconnected);
-        clientConnection_->onMessage_.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
+        clientConnection_->SetIceServers(LoadIceServers(context_));
+        clientConnection_->OnConnected.Subscribe(this, &WebRTCSTUN::HandleClientConnected);
+        clientConnection_->OnDisconnected.Subscribe(this, &WebRTCSTUN::HandleClientDisconnected);
+        clientConnection_->OnMessageReceived.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
     }
 
     // Allow "host:port" syntax, default to DefaultPort
@@ -343,11 +338,11 @@ void WebRTCSTUN::HandleStartServer(StringHash, VariantMap&)
     if (!server_)
     {
         server_ = MakeShared<DataChannelServer>(context_);
-        server_->SetIceServers(AsViews(LoadIceServers(context_)));
-        server_->onListenStart_.Subscribe(this, &WebRTCSTUN::HandleServerListenStart);
-        server_->onListenStop_.Subscribe(this, &WebRTCSTUN::HandleServerListenStop);
-        server_->onConnected_.Subscribe(this, &WebRTCSTUN::HandleServerConnected);
-        server_->onDisconnected_.Subscribe(this, &WebRTCSTUN::HandleServerDisconnected);
+        server_->SetIceServers(LoadIceServers(context_));
+        server_->OnListenStart.Subscribe(this, &WebRTCSTUN::HandleServerListenStart);
+        server_->OnListenStop.Subscribe(this, &WebRTCSTUN::HandleServerListenStop);
+        server_->OnConnected.Subscribe(this, &WebRTCSTUN::HandleServerConnected);
+        server_->OnDisconnected.Subscribe(this, &WebRTCSTUN::HandleServerDisconnected);
     }
 
     // Allow optional port override from text field
@@ -402,11 +397,11 @@ void WebRTCSTUN::HandleStartRelay(StringHash, VariantMap&)
     if (!server_)
     {
         server_ = MakeShared<DataChannelServer>(context_);
-        server_->SetIceServers(AsViews(LoadIceServers(context_)));
-        server_->onListenStart_.Subscribe(this, &WebRTCSTUN::HandleServerListenStart);
-        server_->onListenStop_.Subscribe(this, &WebRTCSTUN::HandleServerListenStop);
-        server_->onConnected_.Subscribe(this, &WebRTCSTUN::HandleServerConnected);
-        server_->onDisconnected_.Subscribe(this, &WebRTCSTUN::HandleServerDisconnected);
+        server_->SetIceServers(LoadIceServers(context_));
+        server_->OnListenStart.Subscribe(this, &WebRTCSTUN::HandleServerListenStart);
+        server_->OnListenStop.Subscribe(this, &WebRTCSTUN::HandleServerListenStop);
+        server_->OnConnected.Subscribe(this, &WebRTCSTUN::HandleServerConnected);
+        server_->OnDisconnected.Subscribe(this, &WebRTCSTUN::HandleServerDisconnected);
     }
 
     URHO3D_LOGINFO("Joining relay room '{}' as host via {}...", rid, relayUrl);
@@ -428,8 +423,8 @@ void WebRTCSTUN::HandleStartRelay(StringHash, VariantMap&)
         {
             URHO3D_LOGINFO("Relay: Paired!");
             auto dc = MakeShared<DataChannelConnection>(context_);
-            dc->SetIceServers(AsViews(LoadIceServers(context_)));
-            dc->onMessage_.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
+            dc->SetIceServers(LoadIceServers(context_));
+            dc->OnMessageReceived.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
             dc->InitializeWithWebSocket(ws, server_);
             HookIceLogging(dc);
             relayConnections_.push_back(dc);
@@ -476,10 +471,10 @@ void WebRTCSTUN::TryConnectRelay(const ea::string& rid, const ea::string& relayU
     if (!clientConnection_)
     {
         clientConnection_ = MakeShared<DataChannelConnection>(context_);
-        clientConnection_->SetIceServers(AsViews(LoadIceServers(context_)));
-        clientConnection_->onConnected_.Subscribe(this, &WebRTCSTUN::HandleClientConnected);
-        clientConnection_->onDisconnected_.Subscribe(this, &WebRTCSTUN::HandleClientDisconnected);
-        clientConnection_->onMessage_.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
+        clientConnection_->SetIceServers(LoadIceServers(context_));
+        clientConnection_->OnConnected.Subscribe(this, &WebRTCSTUN::HandleClientConnected);
+        clientConnection_->OnDisconnected.Subscribe(this, &WebRTCSTUN::HandleClientDisconnected);
+        clientConnection_->OnMessageReceived.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
     }
 
     URHO3D_LOGINFO("Joining relay room '{}' as client via {}... (attempt {})", rid, relayUrl, retryCount_ + 1);
@@ -593,7 +588,7 @@ void WebRTCSTUN::HandleServerConnected(NetworkConnection* connection)
     serverConnections_.push_back(WeakPtr<NetworkConnection>{});
     serverConnections_.back() = connection;
     serverClientIds_.push_back(clientId);
-    connection->onMessage_.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
+    connection->OnMessageReceived.SubscribeWithSender(this, &WebRTCSTUN::HandleNetworkMessage);
 
     if (auto* dc = dynamic_cast<DataChannelConnection*>(connection))
     {
@@ -621,7 +616,7 @@ void WebRTCSTUN::HandleServerConnected(NetworkConnection* connection)
     {
         auto conn = weakConn.Lock();
         if (conn && conn.Get() != connection)
-            conn->SendMessage(MSG_SYS, sysMsg);
+            conn->SendMessage(MSG_SYS, sysMsg.GetBuffer());
     }
 
     UpdateButtons();
@@ -651,7 +646,7 @@ void WebRTCSTUN::HandleServerDisconnected(NetworkConnection* connection)
         for (const auto& weakConn : serverConnections_)
         {
             if (auto conn = weakConn.Lock())
-                conn->SendMessage(MSG_SYS, sysMsg);
+                conn->SendMessage(MSG_SYS, sysMsg.GetBuffer());
         }
     }
 
@@ -690,8 +685,9 @@ void WebRTCSTUN::HandleClientDisconnected()
 }
 
 void WebRTCSTUN::HandleNetworkMessage(
-    NetworkConnection* connection, NetworkMessageId messageId, MemoryBuffer& message, bool& handled)
+    NetworkConnection* connection, NetworkMessageId messageId, ConstByteSpan data, bool& handled)
 {
+    MemoryBuffer message{data};
     if (messageId == MSG_SYS)
     {
         ShowChatText(message.ReadString());
@@ -725,7 +721,7 @@ void WebRTCSTUN::HandleNetworkMessage(
         {
             auto conn = weakConn.Lock();
             if (conn && conn.Get() != connection)
-                conn->SendMessage(MSG_CHAT, sendMsg);
+                conn->SendMessage(MSG_CHAT, sendMsg.GetBuffer());
         }
     }
     else
