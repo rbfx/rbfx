@@ -7,7 +7,7 @@
 #include "Urho3D/Container/Ptr.h"
 #include "Urho3D/Core/Object.h"
 #include "Urho3D/Core/Signal.h"
-#include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Network/NetworkConnection.h"
 #include "Urho3D/Network/URL.h"
 
 #include <EASTL/functional.h>

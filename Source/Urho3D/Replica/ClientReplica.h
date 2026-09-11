@@ -27,7 +27,7 @@
 #include "Urho3D/Container/ByteVector.h"
 #include "Urho3D/IO/MemoryBuffer.h"
 #include "Urho3D/IO/VectorBuffer.h"
-#include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Network/NetworkConnection.h"
 #include "Urho3D/Replica/TickSynchronizer.h"
 #include "Urho3D/Replica/NetworkId.h"
 #include "Urho3D/Replica/NetworkTime.h"

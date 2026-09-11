@@ -2,7 +2,7 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "Urho3D/Network/Transport/NetworkServer.h"
+#include "Urho3D/Network/NetworkServer.h"
 
 #include "Urho3D/Container/Ptr.h"
 #include "Urho3D/Core/Assert.h"

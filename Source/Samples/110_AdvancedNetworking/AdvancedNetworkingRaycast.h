@@ -9,7 +9,7 @@
 #include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Network/Protocol.h>
 #include <Urho3D/Network/ReplicatedPeer.h>
-#include <Urho3D/Network/Transport/NetworkConnection.h>
+#include <Urho3D/Network/NetworkConnection.h>
 #include <Urho3D/Replica/NetworkTime.h>
 
 using namespace Urho3D;

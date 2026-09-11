@@ -5,7 +5,7 @@
 #include "Urho3D/Precompiled.h"
 
 #include "Urho3D/Network/MessageUtils.h"
-#include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Network/NetworkConnection.h"
 
 #include "Urho3D/DebugNew.h"
 

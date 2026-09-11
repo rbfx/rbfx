@@ -36,7 +36,7 @@
 #include <Urho3D/Network/ReplicatedPeer.h>
 #include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
 #include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
-#include <Urho3D/Network/Transport/NetworkConnection.h>
+#include <Urho3D/Network/NetworkConnection.h>
 #include <Urho3D/Network/URL.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Physics/PhysicsEvents.h>

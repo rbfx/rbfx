@@ -8,7 +8,7 @@
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/Network/Transport/DataChannel/DataChannelConnection.h"
-#include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Network/NetworkConnection.h"
 
 #ifndef URHO3D_PLATFORM_WEB
     #include <rtc/websocketserver.hpp>

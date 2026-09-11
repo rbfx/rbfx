@@ -6,7 +6,7 @@
 
 #include "Urho3D/Core/Object.h"
 #include "Urho3D/Core/Signal.h"
-#include "Urho3D/Network/Transport/NetworkServer.h"
+#include "Urho3D/Network/NetworkServer.h"
 
 #include <rtc/configuration.hpp>
 

@@ -33,7 +33,7 @@
 #include <Urho3D/Network/Protocol.h>
 #include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
 #include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
-#include <Urho3D/Network/Transport/NetworkConnection.h>
+#include <Urho3D/Network/NetworkConnection.h>
 #include <Urho3D/Network/URL.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>

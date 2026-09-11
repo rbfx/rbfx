@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "Urho3D/Network/Transport/NetworkConnection.h"
-#include "Urho3D/Network/Transport/NetworkServer.h"
+#include "Urho3D/Network/NetworkConnection.h"
+#include "Urho3D/Network/NetworkServer.h"
 #include <Urho3D/Container/ByteVector.h>
 #include <Urho3D/Math/RandomEngine.h>
 #include <Urho3D/Network/ReplicatedPeer.h>

@@ -7,7 +7,7 @@
 #include "Urho3D/Network/ClockSynchronizer.h"
 #include "Urho3D/Network/MessageUtils.h"
 #include "Urho3D/Network/ReplicatedPeer.h"
-#include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Network/NetworkConnection.h"
 #include "Urho3D/Replica/ReplicationManager.h"
 
 #include "Urho3D/DebugNew.h"

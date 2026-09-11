@@ -27,7 +27,7 @@
 #include "Urho3D/Container/Ptr.h"
 #include "Urho3D/Core/Timer.h"
 #include "Urho3D/Network/PacketTypeFlags.h"
-#include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Network/NetworkConnection.h"
 
 namespace Urho3D
 {

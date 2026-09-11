@@ -10,7 +10,7 @@
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/Network/Protocol.h"
 #include "Urho3D/Network/ReplicatedPeer.h"
-#include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Network/NetworkConnection.h"
 #include "Urho3D/Resource/ResourceCache.h"
 #include "Urho3D/Resource/BinaryFile.h"
 #include "Urho3D/Resource/JSONFile.h"

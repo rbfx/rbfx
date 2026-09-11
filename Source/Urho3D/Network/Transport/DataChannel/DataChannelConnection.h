@@ -7,7 +7,7 @@
 #include "Urho3D/Core/Object.h"
 #include "Urho3D/IO/MemoryBuffer.h"
 #include "Urho3D/IO/VectorBuffer.h"
-#include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Network/NetworkConnection.h"
 #include "Urho3D/Network/URL.h"
 
 #include <rtc/configuration.hpp>
