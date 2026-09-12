@@ -106,6 +106,10 @@
             out half3 normalInTangentSpace,
             sampler2D normalMap, vec2 texCoord, half3 vertexNormal, half4 vertexTangent, half2 vertexBitangentXY)
         {
+        #ifdef URHO3D_SURFACE_TWO_SIDED_2
+            vertexNormal *= SELECT_FRONT_BACK_FACE(1.0, -1.0);
+        #endif
+
             normalInTangentSpace = DecodeNormal(texture(normalMap, texCoord));
             mediump mat3 tbn = mat3(vertexTangent.xyz, vec3(vertexBitangentXY, vertexTangent.w), vertexNormal);
             half3 normal = normalize(tbn * normalInTangentSpace);
@@ -123,6 +127,10 @@
     #else
         half3 _GetSurfaceNormal(out half3 normalInTangentSpace, half3 vertexNormal)
         {
+        #ifdef URHO3D_SURFACE_TWO_SIDED_2
+            vertexNormal *= SELECT_FRONT_BACK_FACE(1.0, -1.0);
+        #endif
+
             normalInTangentSpace = vec3(0.0, 0.0, 1.0);
             half3 normal = normalize(vertexNormal);
 

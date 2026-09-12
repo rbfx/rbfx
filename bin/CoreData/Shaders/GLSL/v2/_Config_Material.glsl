@@ -8,8 +8,13 @@
 /// Whether both sides of surface have exactly the same lighting.
 // #define URHO3D_SURFACE_ONE_SIDED
 
-/// Whether both sides of surface have indepentent lighting still based on the normal.
+/// Whether both sides of surface have independent lighting still based on the normal.
+/// The normal map is inverted on the back side.
 // #define URHO3D_SURFACE_TWO_SIDED
+
+/// Whether both sides of surface have independent lighting still based on the normal.
+/// The normal map is the same on the back side.
+// #define URHO3D_SURFACE_TWO_SIDED_2
 
 /// Whether the surface normal is ignored when calculating lighting. Not supported by deferred lighting.
 // #define URHO3D_SURFACE_VOLUMETRIC
@@ -68,6 +73,9 @@
             #define VERTEX_ADJUST_NoL(NoL) 1.0
         #elif defined(TRANSLUCENT)
             #define URHO3D_SURFACE_TWO_SIDED
+            #define VERTEX_ADJUST_NoL(NoL) abs(NoL)
+        #elif defined(TRANSLUCENT2)
+            #define URHO3D_SURFACE_TWO_SIDED_2
             #define VERTEX_ADJUST_NoL(NoL) abs(NoL)
         #else
             #define URHO3D_SURFACE_ONE_SIDED

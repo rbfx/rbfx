@@ -6,7 +6,7 @@
 /// Compatibility notes:
 /// - Don't use function-style macros with 0 arguments, they don't work on some Android devices. Example (bad):
 ///   #define GetModelMatrix() cModel
-/// - Don't change uniform buffer content depending on shader type or on shader-type-specifiec defines:
+/// - Don't change uniform buffer content depending on shader type or on shader-type-specific defines:
 ///   DX11 expects same buffers and will not handle it well.
 ///   Consider disabling whole buffer for stage.
 ///   Example: Object uniform buffer is enabled only for vertex shader.
@@ -64,13 +64,19 @@
 /// Whether to sample reflections from environment cubemap.
 // #define ENVCUBEMAP
 
-/// Whether to use two-sided ligthing for geometries.
+/// Whether to use two-sided lighting for geometries.
+/// The normal map is inverted on the back side.
 // #define TRANSLUCENT
 
-/// Whether to use volumetric ligthing for geometries (forward lighting only).
+/// Whether to use two-sided lighting for geometries.
+/// The back side of geometry has the opposite vertex normal.
+/// The normal map is the same on the back side.
+// #define TRANSLUCENT2
+
+/// Whether to use volumetric lighting for geometries (forward lighting only).
 // #define VOLUMETRIC
 
-/// Whether to use physiclally based material.
+/// Whether to use physically based material.
 // #define PBR
 
 /// Whether to apply soft fade-out for particles.
