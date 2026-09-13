@@ -1,3 +1,6 @@
+# Copyright (c) 2026-2026 the rbfx project.
+# This work is licensed under the terms of the MIT license.
+# For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 function (vs_generate_sln SLN_PATH)
     # This is a dumb VS solution generator for grouping C# projects with non-VS generators. It makes several assumptions
