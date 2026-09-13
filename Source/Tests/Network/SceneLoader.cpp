@@ -1,8 +1,6 @@
-//
 // Copyright (c) 2026-2026 the rbfx project.
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
-//
 
 #include "../CommonUtils.h"
 #include "../NetworkUtils.h"
