@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../Plugins/Plugin.h"
+#include "Urho3D/Plugins/Plugin.h"
 
 namespace Urho3D
 {

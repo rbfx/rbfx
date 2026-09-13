@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Core/Exception.h"
-#include "../Core/NonCopyable.h"
+#include "Urho3D/Core/Exception.h"
+#include "Urho3D/Core/NonCopyable.h"
 
 #include <EASTL/string.h>
 #include <EASTL/utility.h>

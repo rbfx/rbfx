@@ -2,23 +2,23 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/BillboardSet.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/StaticModel.h"
-#include "../Graphics/Viewport.h"
-#include "../Graphics/Texture2D.h"
-#include "../IO/Log.h"
-#include "../Resource/ResourceCache.h"
-#include "../RmlUI/RmlCanvasComponent.h"
-#include "../RmlUI/RmlUI.h"
-#include "../Scene/Node.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/BillboardSet.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/Viewport.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/RmlUI/RmlCanvasComponent.h"
+#include "Urho3D/RmlUI/RmlUI.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Scene/Scene.h"
 
 #include <RmlUi/Core/Context.h>
 

@@ -10,7 +10,7 @@
 #else
 #   include <condition_variable>
 #endif
-#include <Urho3D/Urho3D.h>
+#include "Urho3D/Urho3D.h"
 
 namespace Urho3D
 {

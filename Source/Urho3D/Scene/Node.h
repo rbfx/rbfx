@@ -5,12 +5,12 @@
 
 #pragma once
 
-#include "../IO/VectorBuffer.h"
-#include "../Math/Matrix3x4.h"
-#include "../Math/Transform.h"
-#include "../Scene/Component.h"
-#include "../Scene/PrefabTypes.h"
-#include "../Scene/Serializable.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Math/Matrix3x4.h"
+#include "Urho3D/Math/Transform.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/PrefabTypes.h"
+#include "Urho3D/Scene/Serializable.h"
 
 #include <EASTL/type_traits.h>
 

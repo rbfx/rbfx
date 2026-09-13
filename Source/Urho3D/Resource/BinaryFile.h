@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Container/ByteVector.h"
-#include "../IO/Archive.h"
-#include "../IO/VectorBuffer.h"
-#include "../Resource/Resource.h"
+#include "Urho3D/Container/ByteVector.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Resource/Resource.h"
 
 #include <EASTL/functional.h>
 

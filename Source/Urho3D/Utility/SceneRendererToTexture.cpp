@@ -2,16 +2,16 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/Camera.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/Viewport.h"
-#include "../Scene/Scene.h"
-#include "../Utility/SceneRendererToTexture.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Graphics/Viewport.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Utility/SceneRendererToTexture.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

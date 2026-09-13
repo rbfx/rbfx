@@ -3,14 +3,14 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Audio/OggVorbisSoundStream.h"
-#include "../Audio/Sound.h"
+#include "Urho3D/Audio/OggVorbisSoundStream.h"
+#include "Urho3D/Audio/Sound.h"
 
 #include <STB/stb_vorbis.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

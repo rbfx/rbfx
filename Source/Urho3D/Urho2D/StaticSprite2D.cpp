@@ -3,19 +3,19 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Technique.h"
-#include "../Graphics/Texture2D.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Scene.h"
-#include "../Urho2D/Renderer2D.h"
-#include "../Urho2D/Sprite2D.h"
-#include "../Urho2D/StaticSprite2D.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Technique.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Urho2D/Renderer2D.h"
+#include "Urho3D/Urho2D/Sprite2D.h"
+#include "Urho3D/Urho2D/StaticSprite2D.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

@@ -2,17 +2,17 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Glow/BakedSceneChunk.h"
+#include "Urho3D/Glow/BakedSceneChunk.h"
 
-#include "../Glow/Helpers.h"
-#include "../Glow/LightTracer.h"
-#include "../Graphics/Drawable.h"
-#include "../Graphics/Terrain.h"
-#include "../Graphics/TerrainPatch.h"
-#include "../Graphics/Zone.h"
-#include "../IO/Log.h"
+#include "Urho3D/Glow/Helpers.h"
+#include "Urho3D/Glow/LightTracer.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/Terrain.h"
+#include "Urho3D/Graphics/TerrainPatch.h"
+#include "Urho3D/Graphics/Zone.h"
+#include "Urho3D/IO/Log.h"
 
 #include <EASTL/sort.h>
 

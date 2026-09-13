@@ -2,18 +2,18 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Glow/StaticModelForLightmap.h"
+#include "Urho3D/Glow/StaticModelForLightmap.h"
 
-#include "../Core/Context.h"
-#include "../Glow/Helpers.h"
-#include "../Glow/LightmapUVGenerator.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Model.h"
-#include "../Graphics/StaticModel.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Glow/Helpers.h"
+#include "Urho3D/Glow/LightmapUVGenerator.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/StaticModel.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

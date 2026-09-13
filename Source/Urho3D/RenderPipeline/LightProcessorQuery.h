@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../Graphics/OctreeQuery.h"
+#include "Urho3D/Graphics/OctreeQuery.h"
 
 #include <EASTL/vector.h>
 

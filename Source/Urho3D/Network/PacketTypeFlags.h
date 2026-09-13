@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <Urho3D/Container/FlagSet.h>
+#include "Urho3D/Container/FlagSet.h"
 
 namespace Urho3D
 {

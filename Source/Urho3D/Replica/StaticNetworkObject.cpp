@@ -2,15 +2,15 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Scene/Node.h"
-#include "../Scene/PrefabReader.h"
-#include "../Scene/PrefabResource.h"
-#include "../Scene/SceneResolver.h"
-#include "../Replica/StaticNetworkObject.h"
-#include "../Resource/ResourceCache.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Scene/PrefabReader.h"
+#include "Urho3D/Scene/PrefabResource.h"
+#include "Urho3D/Scene/SceneResolver.h"
+#include "Urho3D/Replica/StaticNetworkObject.h"
+#include "Urho3D/Resource/ResourceCache.h"
 
 namespace Urho3D
 {

@@ -77,7 +77,7 @@
 #include <tuple>
 #include <type_traits>
 
-#include <Urho3D/Core/Profiler.h>
+#include "Urho3D/Core/Profiler.h"
 
 #endif
 

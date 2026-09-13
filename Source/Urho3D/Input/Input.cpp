@@ -3,7 +3,7 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
 #include "Urho3D/Audio/Audio.h"
 #include "Urho3D/Core/Context.h"
@@ -30,7 +30,7 @@
 #include "Urho3D/UI/UI.h"
 
 #ifdef _WIN32
-#include "../Engine/Engine.h"
+#include "Urho3D/Engine/Engine.h"
 #endif
 
 
@@ -40,7 +40,7 @@
 #include <emscripten/html5.h>
 #endif
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 extern "C" int SDL_AddTouch(SDL_TouchID touchID, SDL_TouchDeviceType type, const char* name);
 

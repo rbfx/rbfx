@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/Assert.h"
-#include "../Core/Context.h"
-#include "../Core/NonCopyable.h"
-#include "../IO/Archive.h"
+#include "Urho3D/Core/Assert.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/NonCopyable.h"
+#include "Urho3D/IO/Archive.h"
 
 namespace Urho3D
 {

@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Math/AreaAllocator.h"
-#include "../Math/Rect.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/Light.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Math/AreaAllocator.h"
+#include "Urho3D/Math/Rect.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 #include <EASTL/vector.h>

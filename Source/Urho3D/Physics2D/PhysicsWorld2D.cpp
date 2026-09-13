@@ -3,23 +3,23 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/Profiler.h"
-#include "../Graphics/DebugRenderer.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Renderer.h"
-#include "../IO/Log.h"
-#include "../Physics2D/CollisionShape2D.h"
-#include "../Physics2D/PhysicsEvents2D.h"
-#include "../Physics2D/PhysicsUtils2D.h"
-#include "../Physics2D/PhysicsWorld2D.h"
-#include "../Physics2D/RigidBody2D.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Physics2D/CollisionShape2D.h"
+#include "Urho3D/Physics2D/PhysicsEvents2D.h"
+#include "Urho3D/Physics2D/PhysicsUtils2D.h"
+#include "Urho3D/Physics2D/PhysicsWorld2D.h"
+#include "Urho3D/Physics2D/RigidBody2D.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

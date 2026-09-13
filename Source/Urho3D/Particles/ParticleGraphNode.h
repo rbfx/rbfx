@@ -5,12 +5,12 @@
 #pragma once
 
 #include <EASTL/span.h>
-#include "../Resource/Resource.h"
-#include "../IO/Archive.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../Resource/GraphNode.h"
-#include "../Scene/Serializable.h"
-#include "ParticleGraphPin.h"
+#include "Urho3D/Resource/Resource.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/Resource/GraphNode.h"
+#include "Urho3D/Scene/Serializable.h"
+#include "Urho3D/Particles/ParticleGraphPin.h"
 
 namespace Urho3D
 {

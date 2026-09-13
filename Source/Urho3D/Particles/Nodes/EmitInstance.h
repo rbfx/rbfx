@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Emit.h"
+#include "Urho3D/Particles/Nodes/Emit.h"
 
 namespace Urho3D
 {

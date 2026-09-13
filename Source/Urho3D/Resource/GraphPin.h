@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "Graph.h"
-#include "../Core/Context.h"
+#include "Urho3D/Resource/Graph.h"
+#include "Urho3D/Core/Context.h"
 #include <EASTL/fixed_vector.h>
 
 namespace Urho3D

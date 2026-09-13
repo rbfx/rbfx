@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <Urho3D/Urho3D.h>
+#include "Urho3D/Urho3D.h"
 
 #include "Urho3D/Container/FlagSet.h"
 #include "Urho3D/Container/Hash.h"

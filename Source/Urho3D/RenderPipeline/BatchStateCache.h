@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/NonCopyable.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../RenderAPI/PipelineState.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/Core/NonCopyable.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 
 #include <EASTL/optional.h>
 

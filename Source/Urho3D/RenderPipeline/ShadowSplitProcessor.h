@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "../Graphics/Camera.h"
-#include "../Math/NumericRange.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
-#include "../RenderPipeline/PipelineBatchSortKey.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Math/NumericRange.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderPipeline/PipelineBatchSortKey.h"
+#include "Urho3D/Scene/Node.h"
 
 #include <EASTL/vector.h>
 

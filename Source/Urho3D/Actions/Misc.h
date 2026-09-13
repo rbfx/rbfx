@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "AttributeAction.h"
+#include "Urho3D/Actions/AttributeAction.h"
 
 namespace Urho3D
 {

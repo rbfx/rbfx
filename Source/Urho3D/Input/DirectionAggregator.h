@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Container/FlagSet.h"
-#include "../Core/Object.h"
-#include "../UI/UIElement.h"
-#include "../Input/AxisAdapter.h"
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/UI/UIElement.h"
+#include "Urho3D/Input/AxisAdapter.h"
 #include <EASTL/fixed_vector.h>
 
 namespace Urho3D

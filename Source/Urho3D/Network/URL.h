@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <Urho3D/Urho3D.h>
+#include "Urho3D/Urho3D.h"
 #include <EASTL/string.h>
 
 namespace Urho3D

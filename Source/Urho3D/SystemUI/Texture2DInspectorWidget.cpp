@@ -2,9 +2,9 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../SystemUI/Texture2DInspectorWidget.h"
+#include "Urho3D/SystemUI/Texture2DInspectorWidget.h"
 
-#include "../SystemUI/SystemUI.h"
+#include "Urho3D/SystemUI/SystemUI.h"
 
 namespace Urho3D
 {

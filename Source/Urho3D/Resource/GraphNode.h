@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Core/Context.h"
-#include "GraphPin.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Resource/GraphPin.h"
 #include <EASTL/fixed_vector.h>
 #include <EASTL/span.h>
 

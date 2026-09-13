@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Scene/Component.h"
+#include "Urho3D/Scene/Component.h"
 
 #ifdef DT_POLYREF64
 using dtPolyRef = uint64_t;

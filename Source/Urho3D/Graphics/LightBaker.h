@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Graphics/LightBakingSettings.h"
-#include "../Scene/Component.h"
+#include "Urho3D/Graphics/LightBakingSettings.h"
+#include "Urho3D/Scene/Component.h"
 
 #include <EASTL/shared_ptr.h>
 

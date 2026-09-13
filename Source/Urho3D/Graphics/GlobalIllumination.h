@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include "../Graphics/LightProbeGroup.h"
-#include "../Math/Matrix3.h"
-#include "../Math/Sphere.h"
-#include "../Math/TetrahedralMesh.h"
-#include "../Math/Vector3.h"
-#include "../Resource/BinaryFile.h"
-#include "../Scene/Component.h"
+#include "Urho3D/Graphics/LightProbeGroup.h"
+#include "Urho3D/Math/Matrix3.h"
+#include "Urho3D/Math/Sphere.h"
+#include "Urho3D/Math/TetrahedralMesh.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Resource/BinaryFile.h"
+#include "Urho3D/Scene/Component.h"
 
 namespace Urho3D
 {

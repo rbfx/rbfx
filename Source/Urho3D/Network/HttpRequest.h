@@ -7,12 +7,12 @@
 
 #include <EASTL/shared_array.h>
 
-#include <Urho3D/Core/Mutex.h>
-#include <Urho3D/Container/RefCounted.h>
-#include <Urho3D/Core/Thread.h>
-#include <Urho3D/IO/Deserializer.h>
-#include <Urho3D/IO/VectorBuffer.h>
-#include <Urho3D/Network/URL.h>
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Container/RefCounted.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/IO/Deserializer.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Network/URL.h"
 
 namespace Urho3D
 {

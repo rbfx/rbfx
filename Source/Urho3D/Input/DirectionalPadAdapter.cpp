@@ -2,14 +2,14 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Input/DirectionalPadAdapter.h"
+#include "Urho3D/Input/DirectionalPadAdapter.h"
 
-#include "../Core/Context.h"
-#include "../Input/Input.h"
-#include "../Input/InputEvents.h"
-#include "../Core/CoreEvents.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/Input/InputEvents.h"
+#include "Urho3D/Core/CoreEvents.h"
 
 namespace Urho3D
 {

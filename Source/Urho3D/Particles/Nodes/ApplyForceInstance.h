@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "ApplyForce.h"
+#include "Urho3D/Particles/Nodes/ApplyForce.h"
 
 namespace Urho3D
 {

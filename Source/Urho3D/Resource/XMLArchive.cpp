@@ -2,12 +2,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Resource/XMLArchive.h"
+#include "Urho3D/Resource/XMLArchive.h"
 
-#include "../Core/StringUtils.h"
-#include "../IO/ArchiveSerialization.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
 
 namespace Urho3D
 {

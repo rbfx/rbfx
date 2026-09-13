@@ -2,14 +2,14 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "BaseAction.h"
+#include "Urho3D/Actions/BaseAction.h"
 
-#include "ActionManager.h"
-#include "ActionState.h"
-#include "FiniteTimeAction.h"
+#include "Urho3D/Actions/ActionManager.h"
+#include "Urho3D/Actions/ActionState.h"
+#include "Urho3D/Actions/FiniteTimeAction.h"
 
-#include "../Core/Context.h"
-#include "../IO/Archive.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Archive.h"
 
 namespace Urho3D
 {

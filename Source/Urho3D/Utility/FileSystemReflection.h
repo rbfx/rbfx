@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Core/Signal.h"
-#include "../IO/MultiFileWatcher.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/IO/MultiFileWatcher.h"
 
 #include <EASTL/unordered_set.h>
 

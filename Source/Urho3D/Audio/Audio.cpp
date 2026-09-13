@@ -3,22 +3,22 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Audio/Audio.h"
-#include "../Audio/Microphone.h"
-#include "../Audio/Sound.h"
-#include "../Audio/SoundListener.h"
-#include "../Audio/SoundSource3D.h"
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/ProcessUtils.h"
-#include "../Core/Profiler.h"
-#include "../IO/Log.h"
+#include "Urho3D/Audio/Audio.h"
+#include "Urho3D/Audio/Microphone.h"
+#include "Urho3D/Audio/Sound.h"
+#include "Urho3D/Audio/SoundListener.h"
+#include "Urho3D/Audio/SoundSource3D.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/ProcessUtils.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/IO/Log.h"
 
 #include <SDL.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:6293)

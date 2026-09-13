@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Input.h"
+#include "Urho3D/Input/Input.h"
 #include "Urho3D/Input/InputConstants.h"
 #include "Urho3D/Resource/Resource.h"
 

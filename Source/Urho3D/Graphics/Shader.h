@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "../Graphics/GraphicsDefs.h"
-#include "../IO/ScanFlags.h"
-#include "../Resource/Resource.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/IO/ScanFlags.h"
+#include "Urho3D/Resource/Resource.h"
 
 namespace Urho3D
 {

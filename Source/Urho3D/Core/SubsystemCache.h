@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../Core/TupleUtils.h"
-#include "../Container/RefCounted.h"
-#include "../Math/StringHash.h"
+#include "Urho3D/Core/TupleUtils.h"
+#include "Urho3D/Container/RefCounted.h"
+#include "Urho3D/Math/StringHash.h"
 
 #include <EASTL/array.h>
 #include <EASTL/tuple.h>

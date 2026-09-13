@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "LocalToWorld.h"
+#include "Urho3D/Particles/Nodes/LocalToWorld.h"
 #include "Urho3D/Scene/Node.h"
 
 namespace Urho3D

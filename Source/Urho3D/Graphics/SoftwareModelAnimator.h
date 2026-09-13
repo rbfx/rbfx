@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Graphics/Model.h"
-#include "../Graphics/Skeleton.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/Skeleton.h"
 
 #include <EASTL/span.h>
 

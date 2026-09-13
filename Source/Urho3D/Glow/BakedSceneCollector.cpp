@@ -2,21 +2,21 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Glow/BakedSceneCollector.h"
+#include "Urho3D/Glow/BakedSceneCollector.h"
 
-#include "../Glow/RaytracerScene.h"
-#include "../Graphics/Light.h"
-#include "../Graphics/LightProbeGroup.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/StaticModel.h"
-#include "../Graphics/Terrain.h"
-#include "../Graphics/TerrainPatch.h"
-#include "../Graphics/Zone.h"
-#include "../IO/Log.h"
-#include "../Scene/Scene.h"
-#include "../Resource/ResourceCache.h"
+#include "Urho3D/Glow/RaytracerScene.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/Graphics/LightProbeGroup.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/Terrain.h"
+#include "Urho3D/Graphics/TerrainPatch.h"
+#include "Urho3D/Graphics/Zone.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Resource/ResourceCache.h"
 
 #include <EASTL/algorithm.h>
 

@@ -7,9 +7,9 @@
 
 #include <EASTL/list.h>
 
-#include "../Graphics/Drawable.h"
-#include "../Graphics/Skeleton.h"
-#include "../Math/Frustum.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/Skeleton.h"
+#include "Urho3D/Math/Frustum.h"
 
 namespace Urho3D
 {

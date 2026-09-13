@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <Urho3D/Replica/NetworkObject.h>
+#include "Urho3D/Replica/NetworkObject.h"
 
 namespace Urho3D
 {

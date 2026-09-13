@@ -5,8 +5,8 @@
 #pragma once
 
 
-#include "../Container/Ptr.h"
-#include "../RenderPipeline/BatchStateCache.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/RenderPipeline/BatchStateCache.h"
 
 #include <RmlUi/Core/RenderInterface.h>
 

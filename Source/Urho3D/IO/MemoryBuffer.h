@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Container/ByteVector.h"
-#include "../IO/AbstractFile.h"
+#include "Urho3D/Container/ByteVector.h"
+#include "Urho3D/IO/AbstractFile.h"
 
 namespace Urho3D
 {

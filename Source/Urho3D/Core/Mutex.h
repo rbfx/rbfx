@@ -11,9 +11,9 @@
 #   include <mutex>
 #endif
 
-#include <Urho3D/Urho3D.h>
-#include "../Core/NonCopyable.h"
-#include "../Core/Profiler.h"
+#include "Urho3D/Urho3D.h"
+#include "Urho3D/Core/NonCopyable.h"
+#include "Urho3D/Core/Profiler.h"
 
 #include <atomic>
 #include <thread>

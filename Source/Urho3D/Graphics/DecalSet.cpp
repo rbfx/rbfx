@@ -3,26 +3,26 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/Profiler.h"
-#include "../Graphics/AnimatedModel.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/DecalSet.h"
-#include "../Graphics/Geometry.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/IndexBuffer.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Tangent.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../IO/Log.h"
-#include "../IO/MemoryBuffer.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/DecalSet.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/IndexBuffer.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Tangent.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:6293)

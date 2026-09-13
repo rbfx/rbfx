@@ -2,11 +2,11 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "ShaderParameter.h"
+#include "Urho3D/Actions/ShaderParameter.h"
 
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "FiniteTimeActionState.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Actions/FiniteTimeActionState.h"
 #include "Urho3D/Graphics/Material.h"
 
 namespace Urho3D

@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "ParticleGraphEmitter.h"
-#include "ParticleGraphPin.h"
-#include "../Core/NonCopyable.h"
+#include "Urho3D/Particles/ParticleGraphEmitter.h"
+#include "Urho3D/Particles/ParticleGraphPin.h"
+#include "Urho3D/Core/NonCopyable.h"
 
 namespace Urho3D
 {

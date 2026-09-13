@@ -7,10 +7,10 @@
 
 #include <EASTL/shared_array.h>
 
-#include "../Container/IndexAllocator.h"
-#include "../Core/Object.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/PipelineStateTracker.h"
+#include "Urho3D/Container/IndexAllocator.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/PipelineStateTracker.h"
 
 namespace Urho3D
 {

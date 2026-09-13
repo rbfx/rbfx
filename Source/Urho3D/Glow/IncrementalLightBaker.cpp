@@ -2,28 +2,28 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Glow/IncrementalLightBaker.h"
+#include "Urho3D/Glow/IncrementalLightBaker.h"
 
-#include "../Core/Context.h"
-#include "../Glow/BakedSceneChunk.h"
-#include "../Glow/LightmapCharter.h"
-#include "../Glow/LightmapGeometryBuffer.h"
-#include "../Glow/LightmapFilter.h"
-#include "../Glow/LightmapStitcher.h"
-#include "../Glow/LightTracer.h"
-#include "../Glow/RaytracerScene.h"
-#include "../Graphics/GlobalIllumination.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/LightProbeGroup.h"
-#include "../Graphics/Model.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../Math/TetrahedralMesh.h"
-#include "../Resource/Image.h"
-#include "../Resource/ResourceCache.h"
-#include "../IO/VirtualFileSystem.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Glow/BakedSceneChunk.h"
+#include "Urho3D/Glow/LightmapCharter.h"
+#include "Urho3D/Glow/LightmapGeometryBuffer.h"
+#include "Urho3D/Glow/LightmapFilter.h"
+#include "Urho3D/Glow/LightmapStitcher.h"
+#include "Urho3D/Glow/LightTracer.h"
+#include "Urho3D/Glow/RaytracerScene.h"
+#include "Urho3D/Graphics/GlobalIllumination.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/LightProbeGroup.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Math/TetrahedralMesh.h"
+#include "Urho3D/Resource/Image.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
 
 #include <EASTL/algorithm.h>
 #include <EASTL/numeric.h>

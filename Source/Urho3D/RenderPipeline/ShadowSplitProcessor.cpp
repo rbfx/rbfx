@@ -2,24 +2,24 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/Camera.h"
-#include "../Graphics/Drawable.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Light.h"
-#include "../Graphics/Octree.h"
-#include "../Math/Polyhedron.h"
-#include "../RenderPipeline/BatchCompositor.h"
-#include "../RenderPipeline/DrawableProcessor.h"
-#include "../RenderPipeline/LightProcessor.h"
-#include "../RenderPipeline/LightProcessorQuery.h"
-#include "../RenderPipeline/ShadowMapAllocator.h"
-#include "../RenderPipeline/ShadowSplitProcessor.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Math/Polyhedron.h"
+#include "Urho3D/RenderPipeline/BatchCompositor.h"
+#include "Urho3D/RenderPipeline/DrawableProcessor.h"
+#include "Urho3D/RenderPipeline/LightProcessor.h"
+#include "Urho3D/RenderPipeline/LightProcessorQuery.h"
+#include "Urho3D/RenderPipeline/ShadowMapAllocator.h"
+#include "Urho3D/RenderPipeline/ShadowSplitProcessor.h"
 
 #include <EASTL/sort.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

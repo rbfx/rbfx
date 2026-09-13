@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
-#include "../Graphics/RenderSurface.h"
-#include "../Graphics/Texture.h"
-#include "../Math/SphericalHarmonics.h"
-#include "../Resource/ImageCube.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Graphics/RenderSurface.h"
+#include "Urho3D/Graphics/Texture.h"
+#include "Urho3D/Math/SphericalHarmonics.h"
+#include "Urho3D/Resource/ImageCube.h"
 
 #include <EASTL/optional.h>
 

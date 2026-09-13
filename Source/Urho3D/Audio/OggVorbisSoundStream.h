@@ -7,7 +7,7 @@
 
 #include <EASTL/shared_array.h>
 
-#include "../Audio/SoundStream.h"
+#include "Urho3D/Audio/SoundStream.h"
 
 namespace Urho3D
 {

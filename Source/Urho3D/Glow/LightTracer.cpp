@@ -2,14 +2,14 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Glow/BakedSceneChunk.h"
-#include "../Glow/Helpers.h"
-#include "../Glow/RaytracerScene.h"
-#include "../Glow/LightTracer.h"
-#include "../IO/Log.h"
-#include "../Math/TetrahedralMesh.h"
+#include "Urho3D/Glow/BakedSceneChunk.h"
+#include "Urho3D/Glow/Helpers.h"
+#include "Urho3D/Glow/RaytracerScene.h"
+#include "Urho3D/Glow/LightTracer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Math/TetrahedralMesh.h"
 
 #include <embree3/rtcore.h>
 #include <embree3/rtcore_ray.h>

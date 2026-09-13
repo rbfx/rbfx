@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "BurstTimer.h"
+#include "Urho3D/Particles/Nodes/BurstTimer.h"
 
 namespace Urho3D
 {

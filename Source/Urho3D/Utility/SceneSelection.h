@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../Core/Signal.h"
-#include "../Scene/Scene.h"
-#include "../Utility/PackedSceneData.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Utility/PackedSceneData.h"
 
 #include <EASTL/unordered_set.h>
 

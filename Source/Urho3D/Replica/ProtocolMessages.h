@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../IO/MemoryBuffer.h"
-#include "../IO/VectorBuffer.h"
-#include "../Network/Protocol.h"
-#include "../Replica/NetworkId.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Network/Protocol.h"
+#include "Urho3D/Replica/NetworkId.h"
 
 namespace Urho3D
 {

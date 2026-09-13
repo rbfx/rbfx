@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "../Graphics/Drawable.h"
-#include "../IO/FileIdentifier.h"
-#include "../Math/BoundingBox.h"
-#include "../Math/SphericalHarmonics.h"
-#include "../Scene/Component.h"
-#include "../Resource/BinaryFile.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/IO/FileIdentifier.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/SphericalHarmonics.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Resource/BinaryFile.h"
 
 namespace Urho3D
 {

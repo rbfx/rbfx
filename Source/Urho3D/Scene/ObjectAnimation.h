@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Resource/Resource.h"
-#include "../Scene/AnimationDefs.h"
+#include "Urho3D/Resource/Resource.h"
+#include "Urho3D/Scene/AnimationDefs.h"
 
 namespace Urho3D
 {

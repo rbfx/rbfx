@@ -5,7 +5,7 @@
 // This is a dummy file used by BindTool script to parse entire engine API.
 
 #if URHO3D_MONOLITHIC_HEADER
-#   include <Urho3D/Urho3DAll.h>
+#   include "Urho3D/Urho3DAll.h"
 #else
 #   error URHO3D_MONOLITHIC_HEADER build configration parameter is required.
 #endif

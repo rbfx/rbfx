@@ -3,87 +3,87 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Audio/Audio.h"
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Profiler.h"
-#include "../Core/ProcessUtils.h"
-#include "../Core/Thread.h"
-#include "../Core/WorkQueue.h"
+#include "Urho3D/Audio/Audio.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/ProcessUtils.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Core/WorkQueue.h"
 #ifdef URHO3D_SYSTEMUI
-#include "../SystemUI/SystemUI.h"
-#include "../SystemUI/Console.h"
-#include "../SystemUI/DebugHud.h"
-#include "../SystemUI/StandardSerializableHooks.h"
+#include "Urho3D/SystemUI/SystemUI.h"
+#include "Urho3D/SystemUI/Console.h"
+#include "Urho3D/SystemUI/DebugHud.h"
+#include "Urho3D/SystemUI/StandardSerializableHooks.h"
 #endif
-#include "../Engine/Engine.h"
-#include "../Engine/EngineDefs.h"
-#include "../Engine/StateManager.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/Texture2D.h"
-#include "../RenderAPI/PipelineState.h"
-#include "../RenderAPI/RenderAPIUtils.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../Resource/JSONArchive.h"
-#include "../Graphics/Renderer.h"
-#include "../Input/Input.h"
-#include "../Input/DirectionalPadAdapter.h"
-#include "../IO/FileSystem.h"
-#include "../IO/VirtualFileSystem.h"
-#include "../IO/MountedDirectory.h"
-#include "../IO/Log.h"
-#include "../IO/PackageFile.h"
+#include "Urho3D/Engine/Engine.h"
+#include "Urho3D/Engine/EngineDefs.h"
+#include "Urho3D/Engine/StateManager.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/Resource/JSONArchive.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/Input/DirectionalPadAdapter.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+#include "Urho3D/IO/MountedDirectory.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/PackageFile.h"
 #ifdef URHO3D_GLOW
-#include "../Glow/StaticModelForLightmap.h"
+#include "Urho3D/Glow/StaticModelForLightmap.h"
 #endif
 #ifdef URHO3D_IK
-#include "../IK/IK.h"
+#include "Urho3D/IK/IK.h"
 #endif
 #ifdef URHO3D_NAVIGATION
-#include "../Navigation/NavigationMesh.h"
+#include "Urho3D/Navigation/NavigationMesh.h"
 #endif
 #ifdef URHO3D_NETWORK
-#include "../Network/Network.h"
+#include "Urho3D/Network/Network.h"
 #endif
 #ifdef URHO3D_PHYSICS
-#include "../Physics/PhysicsWorld.h"
-#include "../Physics/RaycastVehicle.h"
+#include "Urho3D/Physics/PhysicsWorld.h"
+#include "Urho3D/Physics/RaycastVehicle.h"
 #endif
 #ifdef URHO3D_PHYSICS2D
-#include "../Physics2D/Physics2D.h"
+#include "Urho3D/Physics2D/Physics2D.h"
 #endif
-#include "../Resource/ResourceCache.h"
-#include "../Resource/Localization.h"
-#include "../RenderPipeline/RenderPass.h"
-#include "../RenderPipeline/RenderPath.h"
-#include "../RenderPipeline/RenderPipeline.h"
-#include "../RenderPipeline/Passes/AmbientOcclusionPass.h"
-#include "../RenderPipeline/Passes/AutoExposurePass.h"
-#include "../RenderPipeline/Passes/BloomPass.h"
-#include "../RenderPipeline/Passes/FullScreenShaderPass.h"
-#include "../RenderPipeline/Passes/OutlineRenderPass.h"
-#include "../RenderPipeline/Passes/ToneMappingPass.h"
-#include "../Resource/JSONArchive.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
-#include "../UI/UI.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/Localization.h"
+#include "Urho3D/RenderPipeline/RenderPass.h"
+#include "Urho3D/RenderPipeline/RenderPath.h"
+#include "Urho3D/RenderPipeline/RenderPipeline.h"
+#include "Urho3D/RenderPipeline/Passes/AmbientOcclusionPass.h"
+#include "Urho3D/RenderPipeline/Passes/AutoExposurePass.h"
+#include "Urho3D/RenderPipeline/Passes/BloomPass.h"
+#include "Urho3D/RenderPipeline/Passes/FullScreenShaderPass.h"
+#include "Urho3D/RenderPipeline/Passes/OutlineRenderPass.h"
+#include "Urho3D/RenderPipeline/Passes/ToneMappingPass.h"
+#include "Urho3D/Resource/JSONArchive.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
+#include "Urho3D/UI/UI.h"
 #ifdef URHO3D_RMLUI
-#include "../RmlUI/RmlUI.h"
+#include "Urho3D/RmlUI/RmlUI.h"
 #endif
 #ifdef URHO3D_URHO2D
-#include "../Urho2D/Urho2D.h"
+#include "Urho3D/Urho2D/Urho2D.h"
 #endif
-#include "../Engine/EngineEvents.h"
+#include "Urho3D/Engine/EngineEvents.h"
 #ifdef URHO3D_PARTICLE_GRAPH
-#include "../Particles/ParticleGraphSystem.h"
+#include "Urho3D/Particles/ParticleGraphSystem.h"
 #endif
-#include "../Plugins/PluginManager.h"
-#include "../Utility/UtilityLibrary.h"
+#include "Urho3D/Plugins/PluginManager.h"
+#include "Urho3D/Utility/UtilityLibrary.h"
 #ifdef URHO3D_ACTIONS
-#include "../Actions/ActionManager.h"
+#include "Urho3D/Actions/ActionManager.h"
 #endif
 #ifdef URHO3D_XR
     #include "Urho3D/XR/VRRig.h"
@@ -95,10 +95,10 @@
 #include <emscripten/bind.h>
 #endif
 
-#include "StateManager.h"
-#include "../Core/CommandLine.h"
+#include "Urho3D/Engine/StateManager.h"
+#include "Urho3D/Core/CommandLine.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 #if defined(_MSC_VER) && defined(_DEBUG)
 // From dbgint.h

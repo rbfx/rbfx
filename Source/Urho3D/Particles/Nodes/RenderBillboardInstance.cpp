@@ -2,16 +2,16 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "RenderBillboardInstance.h"
+#include "Urho3D/Particles/Nodes/RenderBillboardInstance.h"
 
-#include "../../Graphics/Camera.h"
-#include "../../Graphics/Octree.h"
-#include "../../Scene/Scene.h"
-#include "../ParticleGraphLayerInstance.h"
-#include "../Span.h"
-#include "../UpdateContext.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Particles/ParticleGraphLayerInstance.h"
+#include "Urho3D/Particles/Span.h"
+#include "Urho3D/Particles/UpdateContext.h"
 #include "Urho3D/Resource/ResourceCache.h"
 
 namespace Urho3D

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../UI/Button.h"
+#include "Urho3D/UI/Button.h"
 
 namespace Urho3D
 {

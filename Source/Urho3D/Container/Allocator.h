@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "../Core/NonCopyable.h"
+#include "Urho3D/Core/NonCopyable.h"
 
-#include <Urho3D/Urho3D.h>
+#include "Urho3D/Urho3D.h"
 
 #include <cstddef>
 #include <EASTL/utility.h>

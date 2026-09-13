@@ -2,12 +2,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Container/Hash.h"
-#include "../Core/VariantCurve.h"
-#include "../IO/Archive.h"
-#include "../IO/ArchiveSerialization.h"
+#include "Urho3D/Container/Hash.h"
+#include "Urho3D/Core/VariantCurve.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
 
 namespace Urho3D
 {

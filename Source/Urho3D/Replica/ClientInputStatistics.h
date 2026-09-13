@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../Replica/NetworkValue.h"
+#include "Urho3D/Replica/NetworkValue.h"
 
 #include <EASTL/bonus/ring_buffer.h>
 

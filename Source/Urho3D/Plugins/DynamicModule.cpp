@@ -2,20 +2,20 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Plugins/DynamicModule.h"
+#include "Urho3D/Plugins/DynamicModule.h"
 
-#include "../IO/File.h"
-#include "../IO/Log.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/Log.h"
 #if URHO3D_CSHARP
-#   include "../Script/Script.h"
+#   include "Urho3D/Script/Script.h"
 #endif
 
 #if _WIN32
 #   include <windows.h>
 #else
-#   include "../Core/PE.h"
+#   include "Urho3D/Core/PE.h"
 #   include <dlfcn.h>
 #endif
 #if __linux__

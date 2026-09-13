@@ -2,19 +2,19 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Plugins/ModulePlugin.h"
+#include "Urho3D/Plugins/ModulePlugin.h"
 
-#include "../Core/ProcessUtils.h"
-#include "../Core/StringUtils.h"
-#include "../Engine/Engine.h"
-#include "../IO/File.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../IO/VectorBuffer.h"
-#include "../Plugins/PluginManager.h"
-#include "../Script/Script.h"
+#include "Urho3D/Core/ProcessUtils.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/Engine/Engine.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Plugins/PluginManager.h"
+#include "Urho3D/Script/Script.h"
 
 namespace Urho3D
 {

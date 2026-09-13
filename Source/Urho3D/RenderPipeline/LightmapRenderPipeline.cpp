@@ -2,21 +2,21 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../RenderPipeline/LightmapRenderPipeline.h"
+#include "Urho3D/RenderPipeline/LightmapRenderPipeline.h"
 
-#include "../RenderAPI/DrawCommandQueue.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../RenderAPI/RenderScope.h"
-#include "../RenderPipeline/BatchRenderer.h"
-#include "../RenderPipeline/InstancingBuffer.h"
-#include "../RenderPipeline/RenderBufferManager.h"
-#include "../RenderPipeline/ScenePass.h"
-#include "../RenderPipeline/SceneProcessor.h"
-#include "../RenderPipeline/ShadowMapAllocator.h"
+#include "Urho3D/RenderAPI/DrawCommandQueue.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderScope.h"
+#include "Urho3D/RenderPipeline/BatchRenderer.h"
+#include "Urho3D/RenderPipeline/InstancingBuffer.h"
+#include "Urho3D/RenderPipeline/RenderBufferManager.h"
+#include "Urho3D/RenderPipeline/ScenePass.h"
+#include "Urho3D/RenderPipeline/SceneProcessor.h"
+#include "Urho3D/RenderPipeline/ShadowMapAllocator.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

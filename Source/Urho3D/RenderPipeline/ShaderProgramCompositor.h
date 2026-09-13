@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 
 #include <EASTL/utility.h>
 

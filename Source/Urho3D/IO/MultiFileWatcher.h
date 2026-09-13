@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../IO/FileWatcher.h"
+#include "Urho3D/IO/FileWatcher.h"
 
 namespace Urho3D
 {

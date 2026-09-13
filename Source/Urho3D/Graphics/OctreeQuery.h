@@ -5,12 +5,12 @@
 
 #pragma once
 
-#include "../Core/NonCopyable.h"
-#include "../Graphics/Drawable.h"
-#include "../Math/BoundingBox.h"
-#include "../Math/Frustum.h"
-#include "../Math/Ray.h"
-#include "../Math/Sphere.h"
+#include "Urho3D/Core/NonCopyable.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Frustum.h"
+#include "Urho3D/Math/Ray.h"
+#include "Urho3D/Math/Sphere.h"
 
 namespace Urho3D
 {

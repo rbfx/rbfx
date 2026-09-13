@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../Math/StringHash.h"
+#include "Urho3D/Math/StringHash.h"
 
 #include <EASTL/string.h>
 

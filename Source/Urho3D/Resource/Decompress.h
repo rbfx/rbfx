@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Resource/Image.h"
+#include "Urho3D/Resource/Image.h"
 
 namespace Urho3D
 {

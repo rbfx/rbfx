@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Graphics/StaticModel.h"
+#include "Urho3D/Graphics/StaticModel.h"
 
 namespace Urho3D
 {

@@ -3,13 +3,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/DebugRenderer.h"
-#include "../IO/Log.h"
-#include "../Navigation/NavArea.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Navigation/NavArea.h"
+#include "Urho3D/Scene/Node.h"
 
 namespace Urho3D
 {

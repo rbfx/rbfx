@@ -3,13 +3,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Math/BoundingBox.h"
-#include "../Math/Frustum.h"
-#include "../Math/Ray.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Frustum.h"
+#include "Urho3D/Math/Ray.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

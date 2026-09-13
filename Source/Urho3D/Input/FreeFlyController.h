@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Scene/Component.h"
-#include "../Input/Input.h"
-#include "../Input/MultitouchAdapter.h"
-#include "../Input/AxisAdapter.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/Input/MultitouchAdapter.h"
+#include "Urho3D/Input/AxisAdapter.h"
 
 namespace Urho3D
 {

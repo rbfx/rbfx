@@ -2,12 +2,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Network/NetworkEvents.h"
-#include "../Replica/ReplicatedTransform.h"
-#include "../Replica/NetworkSettingsConsts.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Network/NetworkEvents.h"
+#include "Urho3D/Replica/ReplicatedTransform.h"
+#include "Urho3D/Replica/NetworkSettingsConsts.h"
 
 namespace Urho3D
 {

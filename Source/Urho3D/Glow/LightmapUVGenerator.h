@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../Graphics/ModelView.h"
+#include "Urho3D/Graphics/ModelView.h"
 
 #include <EASTL/vector.h>
 

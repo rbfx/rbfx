@@ -2,15 +2,15 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/IteratorRange.h"
-#include "../Graphics/Light.h"
-#include "../RenderPipeline/DrawableProcessor.h"
-#include "../RenderPipeline/LightProcessorQuery.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Core/IteratorRange.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/RenderPipeline/DrawableProcessor.h"
+#include "Urho3D/RenderPipeline/LightProcessorQuery.h"
+#include "Urho3D/Scene/Node.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

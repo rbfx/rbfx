@@ -2,13 +2,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "ActionSet.h"
+#include "Urho3D/Actions/ActionSet.h"
 
-#include "ActionManager.h"
-#include "../Core/Context.h"
-#include "../Resource/XMLFile.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Deserializer.h"
+#include "Urho3D/Actions/ActionManager.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Deserializer.h"
 
 namespace Urho3D
 {

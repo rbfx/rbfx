@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Glow/LightmapGeometryBuffer.h"
-#include "../Glow/LightTracer.h"
-#include "../Graphics/LightBakingSettings.h"
-#include "../Graphics/LightProbeGroup.h"
+#include "Urho3D/Glow/LightmapGeometryBuffer.h"
+#include "Urho3D/Glow/LightTracer.h"
+#include "Urho3D/Graphics/LightBakingSettings.h"
+#include "Urho3D/Graphics/LightProbeGroup.h"
 
 namespace Urho3D
 {

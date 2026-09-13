@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Core/Variant.h"
-#include "../IO/Archive.h"
-#include "../Engine/ApplicationFlavor.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/Variant.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/Engine/ApplicationFlavor.h"
 
 namespace Urho3D
 {

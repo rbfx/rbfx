@@ -2,13 +2,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Utility/AssetPipeline.h"
+#include "Urho3D/Utility/AssetPipeline.h"
 
-#include "../IO/ArchiveSerialization.h"
-#include "../Resource/JSONArchive.h"
-#include "../Resource/JSONFile.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/Resource/JSONArchive.h"
+#include "Urho3D/Resource/JSONFile.h"
 
 namespace Urho3D
 {

@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "FiniteTimeActionState.h"
-#include "../Core/Attribute.h"
-#include "../Scene/Serializable.h"
+#include "Urho3D/Actions/FiniteTimeActionState.h"
+#include "Urho3D/Core/Attribute.h"
+#include "Urho3D/Scene/Serializable.h"
 
 namespace Urho3D
 {

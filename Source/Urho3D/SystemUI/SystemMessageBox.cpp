@@ -4,16 +4,16 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "SystemMessageBox.h"
+#include "Urho3D/SystemUI/SystemMessageBox.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Graphics/Graphics.h"
-#include "../IO/Log.h"
-#include "SystemUI.h"
-#include "SystemUIEvents.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/SystemUI/SystemUI.h"
+#include "Urho3D/SystemUI/SystemUIEvents.h"
 
 namespace Urho3D
 {

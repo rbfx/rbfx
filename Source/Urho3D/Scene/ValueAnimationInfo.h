@@ -7,8 +7,8 @@
 
 #include <EASTL/vector.h>
 
-#include "../Container/Ptr.h"
-#include "../Scene/AnimationDefs.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Scene/AnimationDefs.h"
 
 namespace Urho3D
 {

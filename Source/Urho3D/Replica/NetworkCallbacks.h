@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/Assert.h"
-#include "../Container/FlagSet.h"
-#include "../Replica/NetworkId.h"
-#include "../Replica/NetworkTime.h"
+#include "Urho3D/Core/Assert.h"
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Replica/NetworkId.h"
+#include "Urho3D/Replica/NetworkTime.h"
 
 #include <EASTL/optional.h>
 

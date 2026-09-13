@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Navigation/CrowdManager.h"
-#include "../Scene/Component.h"
+#include "Urho3D/Navigation/CrowdManager.h"
+#include "Urho3D/Scene/Component.h"
 
 namespace Urho3D
 {

@@ -7,14 +7,14 @@
 
 #include <EASTL/vector.h>
 
-#include "../Container/Ptr.h"
-#include "../Core/Variant.h"
-#include "../Core/Spline.h"
-#include "../Graphics/DebugRenderer.h"
-#include "../Math/MathDefs.h"
-#include "../Math/Vector3.h"
-#include "../Scene/Component.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Core/Variant.h"
+#include "Urho3D/Core/Spline.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/Math/MathDefs.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/Node.h"
 
 namespace Urho3D
 {

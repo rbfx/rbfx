@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "FiniteTimeActionState.h"
+#include "Urho3D/Actions/FiniteTimeActionState.h"
 
 namespace Urho3D
 {

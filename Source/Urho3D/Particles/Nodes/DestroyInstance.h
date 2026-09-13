@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Destroy.h"
+#include "Urho3D/Particles/Nodes/Destroy.h"
 
 namespace Urho3D
 {

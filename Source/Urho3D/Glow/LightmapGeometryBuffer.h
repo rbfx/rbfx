@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Graphics/LightBakingSettings.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Graphics/LightBakingSettings.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {

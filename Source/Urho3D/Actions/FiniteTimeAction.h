@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "BaseAction.h"
+#include "Urho3D/Actions/BaseAction.h"
 
 namespace Urho3D
 {

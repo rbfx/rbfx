@@ -2,9 +2,9 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include <Urho3D/Navigation/CrowdAgent.h>
-#include <Urho3D/Navigation/CrowdManager.h>
-#include <Urho3D/Script/Script.h>
+#include "Urho3D/Navigation/CrowdAgent.h"
+#include "Urho3D/Navigation/CrowdManager.h"
+#include "Urho3D/Script/Script.h"
 
 #include <EASTL/utility.h>
 

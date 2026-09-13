@@ -5,12 +5,12 @@
 
 #pragma once
 
-#include "../Container/FlagSet.h"
-#include "../Core/Mutex.h"
-#include "../Core/Object.h"
-#include "../Core/Signal.h"
-#include "../Input/InputEvents.h"
-#include "../UI/Cursor.h"
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Input/InputEvents.h"
+#include "Urho3D/UI/Cursor.h"
 
 #include <EASTL/list.h>
 #include <EASTL/optional.h>

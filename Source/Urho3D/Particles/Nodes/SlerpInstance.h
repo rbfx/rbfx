@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Slerp.h"
+#include "Urho3D/Particles/Nodes/Slerp.h"
 
 namespace Urho3D
 {

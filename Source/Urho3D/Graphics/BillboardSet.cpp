@@ -3,25 +3,25 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
 #include <EASTL/sort.h>
 
-#include "../Core/Context.h"
-#include "../Core/Profiler.h"
-#include "../Graphics/BillboardSet.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/Geometry.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/IndexBuffer.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/OctreeQuery.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../IO/MemoryBuffer.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Graphics/BillboardSet.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/IndexBuffer.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/OctreeQuery.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Scene/Node.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

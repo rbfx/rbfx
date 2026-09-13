@@ -3,18 +3,18 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/StringUtils.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/ParticleEffect.h"
-#include "../Graphics/BillboardSet.h"
-#include "../IO/Log.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/XMLFile.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/ParticleEffect.h"
+#include "Urho3D/Graphics/BillboardSet.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/XMLFile.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

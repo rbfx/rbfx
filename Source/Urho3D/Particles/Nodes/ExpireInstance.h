@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Expire.h"
+#include "Urho3D/Particles/Nodes/Expire.h"
 
 namespace Urho3D
 {

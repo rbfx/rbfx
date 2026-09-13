@@ -3,22 +3,22 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/StringUtils.h"
-#include "../Resource/JSONValue.h"
-#include "../Scene/Component.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/Resource/JSONValue.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 #ifdef URHO3D_PHYSICS
-#include "../Physics/PhysicsWorld.h"
+#include "Urho3D/Physics/PhysicsWorld.h"
 #endif
 #ifdef URHO3D_PHYSICS2D
-#include "../Physics2D/PhysicsWorld2D.h"
+#include "Urho3D/Physics2D/PhysicsWorld2D.h"
 #endif
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable:6293)

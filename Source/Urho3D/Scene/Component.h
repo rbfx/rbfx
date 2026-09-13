@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Scene/Serializable.h"
+#include "Urho3D/Scene/Serializable.h"
 
 namespace Urho3D
 {

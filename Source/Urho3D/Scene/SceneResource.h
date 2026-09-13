@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include <Urho3D/Core/Signal.h>
-#include <Urho3D/Resource/Resource.h>
-#include <Urho3D/Scene/Scene.h>
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Resource/Resource.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {

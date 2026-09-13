@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "ParticleGraphLayer.h"
-#include "ParticleGraphNodeInstance.h"
+#include "Urho3D/Particles/ParticleGraphLayer.h"
+#include "Urho3D/Particles/ParticleGraphNodeInstance.h"
 #include <EASTL/sort.h>
 
 namespace Urho3D

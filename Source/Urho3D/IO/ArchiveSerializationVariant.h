@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../IO/ArchiveSerializationBasic.h"
-#include "../Core/Context.h"
-#include "../Core/StringUtils.h"
-#include "../Core/Variant.h"
+#include "Urho3D/IO/ArchiveSerializationBasic.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/Core/Variant.h"
 
 namespace Urho3D
 {

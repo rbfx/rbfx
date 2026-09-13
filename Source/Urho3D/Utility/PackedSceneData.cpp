@@ -2,15 +2,15 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../IO/BinaryArchive.h"
-#include "../IO/MemoryBuffer.h"
-#include "../Scene/Component.h"
-#include "../Scene/Scene.h"
-#include "../Utility/PackedSceneData.h"
+#include "Urho3D/IO/BinaryArchive.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Utility/PackedSceneData.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

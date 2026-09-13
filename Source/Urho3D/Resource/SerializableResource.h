@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <Urho3D/Resource/Resource.h>
-#include <Urho3D/Scene/Serializable.h>
+#include "Urho3D/Resource/Resource.h"
+#include "Urho3D/Scene/Serializable.h"
 
 namespace Urho3D
 {

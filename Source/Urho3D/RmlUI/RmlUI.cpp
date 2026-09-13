@@ -2,37 +2,37 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Audio/Sound.h"
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/Shader.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../Graphics/IndexBuffer.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/Viewport.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/Technique.h"
-#include "../Graphics/Renderer.h"
-#include "../Input/Input.h"
-#include "../IO/Log.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/ResourceEvents.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Audio/Sound.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/Graphics/Shader.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/Graphics/IndexBuffer.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/Viewport.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Technique.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/ResourceEvents.h"
+#include "Urho3D/Scene/Scene.h"
 #ifdef URHO3D_SYSTEMUI
-#include "../SystemUI/SystemUI.h"
+#include "Urho3D/SystemUI/SystemUI.h"
 #endif
-#include "../RmlUI/RmlUI.h"
-#include "../RmlUI/RmlRenderer.h"
-#include "../RmlUI/RmlSystem.h"
-#include "../RmlUI/RmlFile.h"
-#include "../RmlUI/RmlEventListeners.h"
-#include "../RmlUI/RmlCanvasComponent.h"
-#include "../RmlUI/RmlSerializableInspector.h"
-#include "../RmlUI/RmlUIComponent.h"
+#include "Urho3D/RmlUI/RmlUI.h"
+#include "Urho3D/RmlUI/RmlRenderer.h"
+#include "Urho3D/RmlUI/RmlSystem.h"
+#include "Urho3D/RmlUI/RmlFile.h"
+#include "Urho3D/RmlUI/RmlEventListeners.h"
+#include "Urho3D/RmlUI/RmlCanvasComponent.h"
+#include "Urho3D/RmlUI/RmlSerializableInspector.h"
+#include "Urho3D/RmlUI/RmlUIComponent.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 
@@ -41,7 +41,7 @@
 #include <RmlUi/Core.h>
 #include <RmlUi/Debugger.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

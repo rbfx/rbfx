@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../Engine/ApplicationFlavor.h"
-#include "../IO/FileSystem.h"
-#include "../Scene/Serializable.h"
+#include "Urho3D/Engine/ApplicationFlavor.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/Scene/Serializable.h"
 
 #include <EASTL/unordered_set.h>
 

@@ -2,11 +2,11 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "All.h"
+#include "Urho3D/Particles/All.h"
 
-#include "ParticleGraphSystem.h"
+#include "Urho3D/Particles/ParticleGraphSystem.h"
 
 namespace Urho3D
 {

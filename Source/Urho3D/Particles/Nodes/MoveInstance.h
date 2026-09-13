@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../../Math/Ray.h"
-#include "../../Scene/Node.h"
-#include "../../Scene/Scene.h"
-#include "ApplyForce.h"
+#include "Urho3D/Math/Ray.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Particles/Nodes/ApplyForce.h"
 
 namespace Urho3D
 {

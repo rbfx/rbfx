@@ -3,14 +3,14 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
 #include <EASTL/shared_array.h>
 
-#include "../IO/Compression.h"
-#include "../IO/Deserializer.h"
-#include "../IO/Serializer.h"
-#include "../IO/VectorBuffer.h"
+#include "Urho3D/IO/Compression.h"
+#include "Urho3D/IO/Deserializer.h"
+#include "Urho3D/IO/Serializer.h"
+#include "Urho3D/IO/VectorBuffer.h"
 
 #include <LZ4/lz4.h>
 #include <LZ4/lz4hc.h>

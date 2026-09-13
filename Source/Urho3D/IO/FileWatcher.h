@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "../Core/Mutex.h"
-#include "../Core/Object.h"
-#include "../Core/Thread.h"
-#include "../Core/Timer.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Core/Timer.h"
 
 namespace Urho3D
 {

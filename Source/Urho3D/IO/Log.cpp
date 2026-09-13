@@ -3,14 +3,14 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Thread.h"
-#include "../Core/Timer.h"
-#include "../IO/IOEvents.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Core/Timer.h"
+#include "Urho3D/IO/IOEvents.h"
+#include "Urho3D/IO/Log.h"
 
 #include <spdlog/spdlog.h>
 #include <spdlog/logger.h>
@@ -36,7 +36,7 @@
 extern "C" void SDL_IOS_LogMessage(const char* message);
 #endif
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 
 namespace Urho3D

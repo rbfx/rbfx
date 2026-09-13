@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "../Math/Color.h"
-#include "../Math/Vector2.h"
-#include "../Math/Vector3.h"
+#include "Urho3D/Math/Color.h"
+#include "Urho3D/Math/Vector2.h"
+#include "Urho3D/Math/Vector3.h"
 
 #include <Box2D/Box2D.h>
 

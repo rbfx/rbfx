@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "../Container/FlagSet.h"
-#include "../Core/Object.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../RenderAPI/PipelineState.h"
-#include "../RenderAPI/RenderContext.h"
-#include "../RenderPipeline/RenderBuffer.h"
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderPipeline/RenderBuffer.h"
 #include "Urho3D/RenderPipeline/StaticPipelineStateCache.h"
 
 namespace Urho3D

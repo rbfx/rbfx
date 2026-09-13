@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include "OutlineScenePass.h"
-#include "../RenderPipeline/SceneProcessor.h"
-#include "../RenderPipeline/CameraProcessor.h"
-#include "../RenderPipeline/RenderBuffer.h"
-#include "../RenderPipeline/RenderBufferManager.h"
-#include "../RenderPipeline/RenderPipeline.h"
-#include "../RenderPipeline/SharedRenderPassState.h"
-#include "../RenderPipeline/ScenePass.h"
+#include "Urho3D/RenderPipeline/OutlineScenePass.h"
+#include "Urho3D/RenderPipeline/SceneProcessor.h"
+#include "Urho3D/RenderPipeline/CameraProcessor.h"
+#include "Urho3D/RenderPipeline/RenderBuffer.h"
+#include "Urho3D/RenderPipeline/RenderBufferManager.h"
+#include "Urho3D/RenderPipeline/RenderPipeline.h"
+#include "Urho3D/RenderPipeline/SharedRenderPassState.h"
+#include "Urho3D/RenderPipeline/ScenePass.h"
 
 #include <EASTL/optional.h>
 

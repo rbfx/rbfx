@@ -7,7 +7,7 @@
 
 #include <EASTL/string.h>
 
-#include "../Math/Vector4.h"
+#include "Urho3D/Math/Vector4.h"
 
 namespace Urho3D
 {

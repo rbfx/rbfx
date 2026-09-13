@@ -2,14 +2,14 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Script/Script.h"
+#include "Urho3D/Script/Script.h"
 
-#include "../Core/CoreEvents.h"
-#include "../Core/Profiler.h"
-#include "../Core/Thread.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/IO/Log.h"
 
 namespace Urho3D
 {

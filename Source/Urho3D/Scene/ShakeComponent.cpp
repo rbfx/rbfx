@@ -4,7 +4,7 @@
 
 #include "Urho3D/Scene/ShakeComponent.h"
 
-#include "Node.h"
+#include "Urho3D/Scene/Node.h"
 #include "Urho3D/Core/Context.h"
 
 namespace Urho3D

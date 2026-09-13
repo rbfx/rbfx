@@ -3,16 +3,16 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../SystemUI/Widgets.h"
+#include "Urho3D/SystemUI/Widgets.h"
 
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/TextureCube.h"
-#include "../IO/FileSystem.h"
-#include "../Input/Input.h"
-#include "../SystemUI/DragDropPayload.h"
-#include "../SystemUI/SystemUI.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Graphics/TextureCube.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/SystemUI/DragDropPayload.h"
+#include "Urho3D/SystemUI/SystemUI.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 

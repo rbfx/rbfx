@@ -2,10 +2,10 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "FiniteTimeActionState.h"
+#include "Urho3D/Actions/FiniteTimeActionState.h"
 
-#include "../Core/Context.h"
-#include "FiniteTimeAction.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Actions/FiniteTimeAction.h"
 
 namespace Urho3D
 {

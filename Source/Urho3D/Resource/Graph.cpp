@@ -2,15 +2,15 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "Graph.h"
+#include "Urho3D/Resource/Graph.h"
 
-#include "../IO/ArchiveSerialization.h"
-#include "../IO/MemoryBuffer.h"
-#include "GraphNode.h"
-#include "XMLArchive.h"
-#include "XMLFile.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Resource/GraphNode.h"
+#include "Urho3D/Resource/XMLArchive.h"
+#include "Urho3D/Resource/XMLFile.h"
 
 namespace Urho3D
 {

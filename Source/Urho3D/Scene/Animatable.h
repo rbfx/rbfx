@@ -8,8 +8,8 @@
 #include <EASTL/unique_ptr.h>
 #include <EASTL/hash_set.h>
 
-#include "../Scene/Serializable.h"
-#include "../Scene/ValueAnimationInfo.h"
+#include "Urho3D/Scene/Serializable.h"
+#include "Urho3D/Scene/ValueAnimationInfo.h"
 
 namespace Urho3D
 {

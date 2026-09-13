@@ -3,13 +3,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Macros.h"
-#include "../IO/Serializer.h"
-#include "../Scene/Serializable.h"
+#include "Urho3D/Core/Macros.h"
+#include "Urho3D/IO/Serializer.h"
+#include "Urho3D/Scene/Serializable.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

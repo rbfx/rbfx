@@ -3,7 +3,7 @@
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #include <ImGui/imgui.h>
-#include <Urho3D/Urho3D.h>
+#include "Urho3D/Urho3D.h"
 
 /* calling conventions for Windows */
 #ifndef SWIGSTDCALL

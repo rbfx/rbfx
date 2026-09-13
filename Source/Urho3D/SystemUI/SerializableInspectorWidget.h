@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Core/Signal.h"
-#include "../Scene/Serializable.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Scene/Serializable.h"
 
 namespace Urho3D
 {

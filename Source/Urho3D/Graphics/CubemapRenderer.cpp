@@ -2,21 +2,21 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/CubemapRenderer.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/TextureCube.h"
-#include "../RenderPipeline/RenderPipeline.h"
-#include "../RenderAPI/DrawCommandQueue.h"
-#include "../RenderAPI/RenderContext.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../RenderAPI/RenderScope.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/CubemapRenderer.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/TextureCube.h"
+#include "Urho3D/RenderPipeline/RenderPipeline.h"
+#include "Urho3D/RenderAPI/DrawCommandQueue.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderScope.h"
+#include "Urho3D/Scene/Node.h"
 
 #include <EASTL/fixed_vector.h>
 

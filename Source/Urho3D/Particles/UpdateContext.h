@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "ParticleGraphEmitter.h"
-#include "ParticleGraphPin.h"
+#include "Urho3D/Particles/ParticleGraphEmitter.h"
+#include "Urho3D/Particles/ParticleGraphPin.h"
 
 namespace Urho3D
 {

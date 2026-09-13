@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include "../Container/TransformedSpan.h"
-#include "../Core/Signal.h"
-#include "../IO/MemoryBuffer.h"
-#include "../IO/VectorBuffer.h"
-#include "../Replica/ClientReplica.h"
-#include "../Replica/ProtocolMessages.h"
-#include "../Replica/ServerReplicator.h"
-#include "../Scene/TrackedComponent.h"
+#include "Urho3D/Container/TransformedSpan.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Replica/ClientReplica.h"
+#include "Urho3D/Replica/ProtocolMessages.h"
+#include "Urho3D/Replica/ServerReplicator.h"
+#include "Urho3D/Scene/TrackedComponent.h"
 #include "Urho3D/Container/RefCounted.h"
 #include "Urho3D/Network/NetworkDefs.h"
 

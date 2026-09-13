@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Glow/BakedSceneBackground.h"
-#include "../Math/Frustum.h"
-#include "../Math/Vector3.h"
-#include "../Resource/ImageCube.h"
+#include "Urho3D/Glow/BakedSceneBackground.h"
+#include "Urho3D/Math/Frustum.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Resource/ImageCube.h"
 
 #include <EASTL/vector.h>
 

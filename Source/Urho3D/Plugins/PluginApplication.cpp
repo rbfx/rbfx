@@ -2,15 +2,15 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Plugins/PluginApplication.h"
+#include "Urho3D/Plugins/PluginApplication.h"
 
-#include "../Core/Context.h"
-#include "../IO/Archive.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../IO/Log.h"
-#include "../Plugins/PluginManager.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Plugins/PluginManager.h"
 
 namespace Urho3D
 {

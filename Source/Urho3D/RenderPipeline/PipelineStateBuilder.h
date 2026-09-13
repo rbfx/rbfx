@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../RenderAPI/PipelineState.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
-#include "../RenderPipeline/ShaderProgramCompositor.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderPipeline/ShaderProgramCompositor.h"
 
 namespace Urho3D
 {

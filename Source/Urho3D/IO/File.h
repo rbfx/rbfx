@@ -7,8 +7,8 @@
 
 #include <EASTL/shared_array.h>
 
-#include "../Core/Object.h"
-#include "../IO/AbstractFile.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/IO/AbstractFile.h"
 
 #ifdef __ANDROID__
 struct SDL_RWops;

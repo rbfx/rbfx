@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../Graphics/Viewport.h"
-#include "../Plugins/PluginApplication.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Graphics/Viewport.h"
+#include "Urho3D/Plugins/PluginApplication.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {

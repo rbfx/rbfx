@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../UI/Window.h"
+#include "Urho3D/UI/Window.h"
 
 namespace Urho3D
 {

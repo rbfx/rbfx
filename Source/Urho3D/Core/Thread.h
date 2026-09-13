@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <Urho3D/Urho3D.h>
+#include "Urho3D/Urho3D.h"
 
 #ifndef _WIN32
 #include <pthread.h>
@@ -14,7 +14,7 @@ using ThreadID = pthread_t;
 using ThreadID = unsigned;
 #endif
 
-#include "../Container/Str.h"
+#include "Urho3D/Container/Str.h"
 
 namespace Urho3D
 {

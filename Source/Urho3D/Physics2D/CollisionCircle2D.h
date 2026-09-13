@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Physics2D/CollisionShape2D.h"
+#include "Urho3D/Physics2D/CollisionShape2D.h"
 
 namespace Urho3D
 {

@@ -4,18 +4,18 @@
 
 #pragma once
 
-#include "../Core/TypeTrait.h"
-#include "../IO/Archive.h"
-#include "../IO/Log.h"
-#include "../Math/Color.h"
-#include "../Math/Matrix3.h"
-#include "../Math/Matrix3x4.h"
-#include "../Math/Matrix4.h"
-#include "../Math/Rect.h"
-#include "../Math/Vector2.h"
-#include "../Math/Vector3.h"
-#include "../Math/Vector4.h"
-#include "../Math/Quaternion.h"
+#include "Urho3D/Core/TypeTrait.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Math/Color.h"
+#include "Urho3D/Math/Matrix3.h"
+#include "Urho3D/Math/Matrix3x4.h"
+#include "Urho3D/Math/Matrix4.h"
+#include "Urho3D/Math/Rect.h"
+#include "Urho3D/Math/Vector2.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Math/Vector4.h"
+#include "Urho3D/Math/Quaternion.h"
 
 #include <type_traits>
 

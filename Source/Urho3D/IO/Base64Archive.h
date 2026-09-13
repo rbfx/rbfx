@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../IO/BinaryArchive.h"
-#include "../IO/VectorBuffer.h"
+#include "Urho3D/IO/BinaryArchive.h"
+#include "Urho3D/IO/VectorBuffer.h"
 
 namespace Urho3D
 {

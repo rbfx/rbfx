@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Core/Signal.h"
-#include "../Utility/SceneSelection.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Utility/SceneSelection.h"
 
 namespace Urho3D
 {

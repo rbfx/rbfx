@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <Urho3D/Scene/PrefabTypes.h>
-#include <Urho3D/Scene/Serializable.h>
+#include "Urho3D/Scene/PrefabTypes.h"
+#include "Urho3D/Scene/Serializable.h"
 
 #include <EASTL/unordered_map.h>
 #include <EASTL/vector.h>

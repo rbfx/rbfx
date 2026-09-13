@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Math/Vector2.h"
+#include "Urho3D/Math/Vector2.h"
 
 namespace Urho3D
 {

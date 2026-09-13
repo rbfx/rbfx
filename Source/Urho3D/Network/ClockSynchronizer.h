@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../IO/Deserializer.h"
-#include "../IO/Serializer.h"
+#include "Urho3D/IO/Deserializer.h"
+#include "Urho3D/IO/Serializer.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/vector.h>

@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "../Graphics/Texture.h"
-#include "../Resource/Image.h"
-#include "../UI/BorderImage.h"
+#include "Urho3D/Graphics/Texture.h"
+#include "Urho3D/Resource/Image.h"
+#include "Urho3D/UI/BorderImage.h"
 
 struct SDL_Cursor;
 

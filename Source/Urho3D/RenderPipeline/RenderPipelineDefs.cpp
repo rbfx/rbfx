@@ -2,15 +2,15 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "../Graphics/Graphics.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

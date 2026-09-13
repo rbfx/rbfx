@@ -3,30 +3,30 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include <Urho3D/Core/Context.h>
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Core/Profiler.h>
-#include <Urho3D/Core/WorkQueue.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/IO/PackageFile.h>
-#include <Urho3D/IO/VirtualFileSystem.h>
-#include <Urho3D/Resource/BackgroundLoader.h>
-#include <Urho3D/Resource/BinaryFile.h>
-#include <Urho3D/Resource/Graph.h>
-#include <Urho3D/Resource/GraphNode.h>
-#include <Urho3D/Resource/Image.h>
-#include <Urho3D/Resource/ImageCube.h>
-#include <Urho3D/Resource/JSONFile.h>
-#include <Urho3D/Resource/PListFile.h>
-#include <Urho3D/Resource/ResourceCache.h>
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/PackageFile.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+#include "Urho3D/Resource/BackgroundLoader.h"
+#include "Urho3D/Resource/BinaryFile.h"
+#include "Urho3D/Resource/Graph.h"
+#include "Urho3D/Resource/GraphNode.h"
+#include "Urho3D/Resource/Image.h"
+#include "Urho3D/Resource/ImageCube.h"
+#include "Urho3D/Resource/JSONFile.h"
+#include "Urho3D/Resource/PListFile.h"
+#include "Urho3D/Resource/ResourceCache.h"
 
-#include <Urho3D/Resource/SerializableResource.h>
-#include <Urho3D/Resource/ResourceEvents.h>
-#include <Urho3D/Resource/XMLFile.h>
+#include "Urho3D/Resource/SerializableResource.h"
+#include "Urho3D/Resource/ResourceEvents.h"
+#include "Urho3D/Resource/XMLFile.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 #include <cstdio>
 

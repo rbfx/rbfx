@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <Urho3D/Scene/NodePrefab.h>
+#include "Urho3D/Scene/NodePrefab.h"
 
 namespace Urho3D
 {

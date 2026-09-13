@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../Replica/BehaviorNetworkObject.h"
+#include "Urho3D/Replica/BehaviorNetworkObject.h"
 
 namespace Urho3D
 {

@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/Signal.h"
-#include "../Graphics/Animation.h"
-#include "../SystemUI/ResourceInspectorWidget.h"
-#include "../SystemUI/Widgets.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Graphics/Animation.h"
+#include "Urho3D/SystemUI/ResourceInspectorWidget.h"
+#include "Urho3D/SystemUI/Widgets.h"
 
 namespace Urho3D
 {

@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Input/InputConstants.h"
-#include "../UI/ScrollView.h"
+#include "Urho3D/Input/InputConstants.h"
+#include "Urho3D/UI/ScrollView.h"
 
 namespace Urho3D
 {

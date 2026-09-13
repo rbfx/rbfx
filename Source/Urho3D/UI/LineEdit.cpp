@@ -3,16 +3,16 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Input/Input.h"
-#include "../UI/LineEdit.h"
-#include "../UI/Text.h"
-#include "../UI/UI.h"
-#include "../UI/UIEvents.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/UI/LineEdit.h"
+#include "Urho3D/UI/Text.h"
+#include "Urho3D/UI/UI.h"
+#include "Urho3D/UI/UIEvents.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 #include <SDL.h>
 

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <Urho3D/Urho3D.h>
+#include "Urho3D/Urho3D.h"
 
 #include <EASTL/string.h>
 #include <EASTL/unordered_map.h>
@@ -14,7 +14,7 @@
 #include <cstring>
 #include <cctype>
 
-#include "../Container/Hash.h"
+#include "Urho3D/Container/Hash.h"
 
 namespace Urho3D
 {

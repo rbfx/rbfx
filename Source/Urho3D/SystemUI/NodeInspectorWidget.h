@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/Signal.h"
-#include "../Scene/Component.h"
-#include "../Scene/Node.h"
-#include "../SystemUI/SerializableInspectorWidget.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/SystemUI/SerializableInspectorWidget.h"
 
 namespace Urho3D
 {

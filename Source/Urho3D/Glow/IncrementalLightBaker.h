@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/StopToken.h"
-#include "../Glow/BakedLightCache.h"
-#include "../Glow/BakedSceneCollector.h"
-#include "../Graphics/LightBakingSettings.h"
+#include "Urho3D/Core/StopToken.h"
+#include "Urho3D/Glow/BakedLightCache.h"
+#include "Urho3D/Glow/BakedSceneCollector.h"
+#include "Urho3D/Graphics/LightBakingSettings.h"
 
 #include <EASTL/string.h>
 #include <atomic>

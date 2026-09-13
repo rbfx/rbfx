@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Audio/AudioDefs.h"
-#include "../Scene/Component.h"
+#include "Urho3D/Audio/AudioDefs.h"
+#include "Urho3D/Scene/Component.h"
 
 namespace Urho3D
 {

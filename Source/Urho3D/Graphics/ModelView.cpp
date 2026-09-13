@@ -2,17 +2,17 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/ModelView.h"
+#include "Urho3D/Graphics/ModelView.h"
 
-#include "../Graphics/Geometry.h"
-#include "../Graphics/IndexBuffer.h"
-#include "../Graphics/Model.h"
-#include "../Graphics/Tangent.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../Graphics/Material.h"
-#include "../IO/Log.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/IndexBuffer.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/Tangent.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/IO/Log.h"
 
 #include <EASTL/numeric.h>
 

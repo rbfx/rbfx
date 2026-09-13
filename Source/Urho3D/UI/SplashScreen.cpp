@@ -2,13 +2,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "SplashScreen.h"
+#include "Urho3D/UI/SplashScreen.h"
 
-#include "Sprite.h"
-#include "../Resource/ResourceCache.h"
-#include "../Audio/SoundSource.h"
-#include "../IO/FileSystem.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/UI/Sprite.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Audio/SoundSource.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/Scene/Scene.h"
 #include "Urho3D/Graphics/Renderer.h"
 
 namespace Urho3D

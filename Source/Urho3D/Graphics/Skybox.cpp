@@ -3,19 +3,19 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Skybox.h"
-#include "../Graphics/TextureCube.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../Resource/ImageCube.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Skybox.h"
+#include "Urho3D/Graphics/TextureCube.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/Resource/ImageCube.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Scene/Node.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

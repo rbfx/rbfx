@@ -2,41 +2,41 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/SubsystemCache.h"
+#include "Urho3D/Core/SubsystemCache.h"
 
-#include "../IO/VirtualFileSystem.h"
-#include "../Audio/Audio.h"
-#include "../Engine/Engine.h"
-#include "../Core/WorkQueue.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Renderer.h"
-#include "../IO/FileSystem.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+#include "Urho3D/Audio/Audio.h"
+#include "Urho3D/Engine/Engine.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/IO/FileSystem.h"
 #if URHO3D_LOGGING
-#include "../IO/Log.h"
+#include "Urho3D/IO/Log.h"
 #endif
 #ifdef URHO3D_PARTICLE_GRAPH
-#include "../Particles/ParticleGraphSystem.h"
+#include "Urho3D/Particles/ParticleGraphSystem.h"
 #endif
-#include "../Plugins/PluginManager.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/Localization.h"
+#include "Urho3D/Plugins/PluginManager.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/Localization.h"
 #if URHO3D_NETWORK
-#include "../Network/Network.h"
+#include "Urho3D/Network/Network.h"
 #endif
-#include "../Input/Input.h"
-#include "../UI/UI.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/UI/UI.h"
 #if URHO3D_SYSTEMUI
-#include "../SystemUI/SystemUI.h"
+#include "Urho3D/SystemUI/SystemUI.h"
 #endif
-#include "../Engine/StateManager.h"
+#include "Urho3D/Engine/StateManager.h"
 #if URHO3D_ACTIONS
-#include "../Actions/ActionManager.h"
+#include "Urho3D/Actions/ActionManager.h"
 #endif
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

@@ -2,26 +2,26 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/Mutex.h"
-#include "../Graphics/Drawable.h"
-#include "../RenderAPI/PipelineState.h"
-#include "../RenderAPI/RenderAPIUtils.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../RenderAPI/RenderPool.h"
-#include "../Graphics/RenderSurface.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/TextureCube.h"
-#include "../Graphics/Viewport.h"
-#include "../RenderPipeline/RenderBuffer.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderPool.h"
+#include "Urho3D/Graphics/RenderSurface.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Graphics/TextureCube.h"
+#include "Urho3D/Graphics/Viewport.h"
+#include "Urho3D/RenderPipeline/RenderBuffer.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/IO/Log.h"
 
 #include <EASTL/unordered_set.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

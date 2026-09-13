@@ -11,7 +11,7 @@
 #pragma warning(disable:4702) // unreachable code
 #endif
 
-#include "../Math/Random.h"
+#include "Urho3D/Math/Random.h"
 
 #include <EASTL/span.h>
 

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Audio/SoundSource.h"
+#include "Urho3D/Audio/SoundSource.h"
 
 namespace Urho3D
 {

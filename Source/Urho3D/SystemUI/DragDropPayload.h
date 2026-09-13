@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Container/RefCounted.h"
-#include "../Container/ConstString.h"
+#include "Urho3D/Container/RefCounted.h"
+#include "Urho3D/Container/ConstString.h"
 
 #include <EASTL/functional.h>
 #include <EASTL/unordered_set.h>

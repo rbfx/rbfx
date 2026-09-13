@@ -2,12 +2,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "AttributeActionState.h"
+#include "Urho3D/Actions/AttributeActionState.h"
 
-#include "../Core/Context.h"
-#include "../Core/Object.h"
-#include "../IO/Log.h"
-#include "../Scene/Serializable.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Scene/Serializable.h"
 
 namespace Urho3D
 {

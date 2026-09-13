@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/Attribute.h"
-#include "../Core/Signal.h"
-#include "../Core/TypeInfo.h"
-#include "../Container/Ptr.h"
+#include "Urho3D/Core/Attribute.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Core/TypeInfo.h"
+#include "Urho3D/Container/Ptr.h"
 
 #include <EASTL/functional.h>
 #include <EASTL/type_traits.h>

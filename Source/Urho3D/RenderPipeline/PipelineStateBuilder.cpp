@@ -2,24 +2,24 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsUtils.h"
-#include "../IO/Log.h"
-#include "../RenderAPI/PipelineState.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../RenderPipeline/CameraProcessor.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../RenderPipeline/InstancingBuffer.h"
-#include "../RenderPipeline/LightProcessor.h"
-#include "../RenderPipeline/PipelineStateBuilder.h"
-#include "../RenderPipeline/SceneProcessor.h"
-#include "../RenderPipeline/ShadowMapAllocator.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsUtils.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderPipeline/CameraProcessor.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/RenderPipeline/InstancingBuffer.h"
+#include "Urho3D/RenderPipeline/LightProcessor.h"
+#include "Urho3D/RenderPipeline/PipelineStateBuilder.h"
+#include "Urho3D/RenderPipeline/SceneProcessor.h"
+#include "Urho3D/RenderPipeline/ShadowMapAllocator.h"
 
 #include <EASTL/span.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

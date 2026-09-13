@@ -3,19 +3,19 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../IO/Archive.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../Resource/XMLFile.h"
-#include "../Resource/JSONFile.h"
-#include "../Scene/ObjectAnimation.h"
-#include "../Scene/SceneEvents.h"
-#include "../Scene/ValueAnimation.h"
-#include "../Scene/ValueAnimationInfo.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Resource/JSONFile.h"
+#include "Urho3D/Scene/ObjectAnimation.h"
+#include "Urho3D/Scene/SceneEvents.h"
+#include "Urho3D/Scene/ValueAnimation.h"
+#include "Urho3D/Scene/ValueAnimationInfo.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

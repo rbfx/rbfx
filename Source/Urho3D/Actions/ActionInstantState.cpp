@@ -2,10 +2,10 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "ActionInstantState.h"
+#include "Urho3D/Actions/ActionInstantState.h"
 
-#include "../Core/Context.h"
-#include "ActionInstant.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Actions/ActionInstant.h"
 
 namespace Urho3D
 {

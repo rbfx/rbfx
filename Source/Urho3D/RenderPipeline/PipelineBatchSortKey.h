@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "../Graphics/Geometry.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Technique.h"
-#include "../RenderPipeline/DrawableProcessor.h"
-#include "../RenderPipeline/BatchCompositor.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Technique.h"
+#include "Urho3D/RenderPipeline/DrawableProcessor.h"
+#include "Urho3D/RenderPipeline/BatchCompositor.h"
 
 #include <EASTL/span.h>
 

@@ -2,24 +2,24 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/LightBaker.h"
+#include "Urho3D/Graphics/LightBaker.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/StopToken.h"
-#include "../Core/Timer.h"
-#include "../Graphics/GlobalIllumination.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/Skybox.h"
-#include "../Graphics/Zone.h"
-#include "../IO/Log.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/StopToken.h"
+#include "Urho3D/Core/Timer.h"
+#include "Urho3D/Graphics/GlobalIllumination.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/Skybox.h"
+#include "Urho3D/Graphics/Zone.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Scene/Scene.h"
 
 #if URHO3D_GLOW
-#include "../Glow/IncrementalLightBaker.h"
+#include "Urho3D/Glow/IncrementalLightBaker.h"
 #endif
 
 namespace Urho3D

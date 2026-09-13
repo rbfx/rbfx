@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "RenderBillboard.h"
-#include "../../Graphics/BillboardSet.h"
-#include "../../Scene/Node.h"
-#include "../../Graphics/Octree.h"
+#include "Urho3D/Particles/Nodes/RenderBillboard.h"
+#include "Urho3D/Graphics/BillboardSet.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Graphics/Octree.h"
 
 namespace Urho3D
 {

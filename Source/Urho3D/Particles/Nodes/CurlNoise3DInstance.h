@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "CurlNoise3D.h"
-#include "../../Math/PerlinNoise.h"
+#include "Urho3D/Particles/Nodes/CurlNoise3D.h"
+#include "Urho3D/Math/PerlinNoise.h"
 
 namespace Urho3D
 {

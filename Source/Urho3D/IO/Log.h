@@ -7,11 +7,11 @@
 
 #include <EASTL/list.h>
 
-#include "../Core/Assert.h"
-#include "../Core/Macros.h"
-#include "../Core/Mutex.h"
-#include "../Core/Object.h"
-#include "../Core/StringUtils.h"
+#include "Urho3D/Core/Assert.h"
+#include "Urho3D/Core/Macros.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/StringUtils.h"
 
 namespace Urho3D
 {

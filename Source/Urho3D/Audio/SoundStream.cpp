@@ -3,9 +3,9 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Audio/SoundStream.h"
+#include "Urho3D/Audio/SoundStream.h"
 
 namespace Urho3D
 {

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Math/Rect.h"
-#include "../Math/Vector2.h"
+#include "Urho3D/Math/Rect.h"
+#include "Urho3D/Math/Vector2.h"
 
 #include <EASTL/vector.h>
 

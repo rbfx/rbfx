@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Input/InputConstants.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Input/InputConstants.h"
 
 
 namespace Urho3D

@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Graphics/GraphicsDefs.h"
-#include "../UI/UIElement.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/UI/UIElement.h"
 
 namespace Urho3D
 {

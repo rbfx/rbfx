@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Core/Assert.h"
-#include "../Replica/NetworkId.h"
+#include "Urho3D/Core/Assert.h"
+#include "Urho3D/Replica/NetworkId.h"
 
 #include <EASTL/numeric_limits.h>
 #include <EASTL/string.h>

@@ -2,32 +2,32 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Camera.h"
-#include "../RenderAPI/DrawCommandQueue.h"
-#include "../Graphics/Drawable.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsUtils.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/TextureCube.h"
-#include "../Graphics/Zone.h"
-#include "../IO/Log.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../RenderPipeline/BatchRenderer.h"
-#include "../RenderPipeline/DrawableProcessor.h"
-#include "../RenderPipeline/InstancingBuffer.h"
-#include "../RenderPipeline/LightProcessor.h"
-#include "../RenderPipeline/RenderPipelineDebugger.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/RenderAPI/DrawCommandQueue.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsUtils.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Graphics/TextureCube.h"
+#include "Urho3D/Graphics/Zone.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderPipeline/BatchRenderer.h"
+#include "Urho3D/RenderPipeline/DrawableProcessor.h"
+#include "Urho3D/RenderPipeline/InstancingBuffer.h"
+#include "Urho3D/RenderPipeline/LightProcessor.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDebugger.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/Scene/Scene.h"
 
 #include <EASTL/sort.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../Math/Matrix3x4.h"
-#include "../Math/Vector3.h"
-#include "../Math/Quaternion.h"
+#include "Urho3D/Math/Matrix3x4.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Math/Quaternion.h"
 
 #include <EASTL/functional.h>
 #include <EASTL/span.h>

@@ -2,13 +2,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../RmlUI/RmlSerializableInspector.h"
+#include "Urho3D/RmlUI/RmlSerializableInspector.h"
 
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "../RmlUI/RmlUI.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/RmlUI/RmlUI.h"
 
 #include <RmlUi/Core/Context.h>
 

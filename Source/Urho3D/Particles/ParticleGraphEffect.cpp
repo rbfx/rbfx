@@ -2,19 +2,19 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "ParticleGraphEffect.h"
+#include "Urho3D/Particles/ParticleGraphEffect.h"
 
-#include "../Core/Context.h"
-#include "../Core/Thread.h"
-#include "../Graphics//Graphics.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../IO/Deserializer.h"
-#include "../IO/FileSystem.h"
-#include "../Resource/XMLArchive.h"
-#include "../Resource/XMLFile.h"
-#include "ParticleGraphLayer.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Graphics//Graphics.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/IO/Deserializer.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/Resource/XMLArchive.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Particles/ParticleGraphLayer.h"
 
 namespace Urho3D
 {

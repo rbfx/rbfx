@@ -8,10 +8,10 @@
 #include <EASTL/hash_set.h>
 #include <EASTL/unordered_map.h>
 
-#include "../Core/Mutex.h"
-#include "../Container/Ptr.h"
-#include "../Core/Thread.h"
-#include "../Math/StringHash.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Math/StringHash.h"
 
 // BackgroundLoader is not supported for Web now.
 // TODO: Migrate BackgroundLoader to WorkQueue and avoid this extra toggle

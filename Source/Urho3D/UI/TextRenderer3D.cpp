@@ -2,13 +2,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Scene.h"
-#include "../UI/TextRenderer3D.h"
-#include "../UI/Font.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/UI/TextRenderer3D.h"
+#include "Urho3D/UI/Font.h"
 
 namespace Urho3D
 {

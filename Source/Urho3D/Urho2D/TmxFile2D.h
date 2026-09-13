@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Resource/Resource.h"
-#include "../Urho2D/TileMapDefs2D.h"
+#include "Urho3D/Resource/Resource.h"
+#include "Urho3D/Urho2D/TileMapDefs2D.h"
 
 namespace Urho3D
 {

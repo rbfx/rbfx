@@ -3,34 +3,34 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
 #include <EASTL/sort.h>
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Profiler.h"
-#include "../Core/Thread.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/Technique.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/Texture2DArray.h"
-#include "../Graphics/Texture3D.h"
-#include "../Graphics/TextureCube.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../IO/VectorBuffer.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/ResourceEvents.h"
-#include "../Resource/XMLFile.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
-#include "../Scene/ValueAnimation.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/Technique.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Graphics/Texture2DArray.h"
+#include "Urho3D/Graphics/Texture3D.h"
+#include "Urho3D/Graphics/TextureCube.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/ResourceEvents.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
+#include "Urho3D/Scene/ValueAnimation.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

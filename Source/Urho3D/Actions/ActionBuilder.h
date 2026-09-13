@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "AttributeAction.h"
-#include "CallFunc.h"
+#include "Urho3D/Actions/AttributeAction.h"
+#include "Urho3D/Actions/CallFunc.h"
 
 namespace Urho3D
 {

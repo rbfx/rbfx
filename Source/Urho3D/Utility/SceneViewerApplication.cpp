@@ -2,18 +2,18 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Utility/SceneViewerApplication.h"
+#include "Urho3D/Utility/SceneViewerApplication.h"
 
-#include "../Engine/Engine.h"
-#include "../Engine/EngineDefs.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/Renderer.h"
-#include "../Input/FreeFlyController.h"
-#include "../Input/Input.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/XMLFile.h"
+#include "Urho3D/Engine/Engine.h"
+#include "Urho3D/Engine/EngineDefs.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Input/FreeFlyController.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/XMLFile.h"
 
 namespace Urho3D
 {

@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include "../Graphics/OutlineGroup.h"
-#include "../RenderPipeline/DrawableProcessor.h"
-#include "../RenderPipeline/PipelineBatchSortKey.h"
-#include "../RenderPipeline/PipelineStateBuilder.h"
-#include "../RenderPipeline/RenderBuffer.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
-#include "../RenderPipeline/ScenePass.h"
+#include "Urho3D/Graphics/OutlineGroup.h"
+#include "Urho3D/RenderPipeline/DrawableProcessor.h"
+#include "Urho3D/RenderPipeline/PipelineBatchSortKey.h"
+#include "Urho3D/RenderPipeline/PipelineStateBuilder.h"
+#include "Urho3D/RenderPipeline/RenderBuffer.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderPipeline/ScenePass.h"
 
 namespace Urho3D
 {

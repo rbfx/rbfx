@@ -3,12 +3,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include <Urho3D/Core/Profiler.h>
-#include <Urho3D/Core/Timer.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/Network/HttpRequest.h>
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/Timer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Network/HttpRequest.h"
 
 #ifdef URHO3D_PLATFORM_WEB
 #include <emscripten/fetch.h>
@@ -16,7 +16,7 @@
 #include <Civetweb/civetweb.h>
 #endif
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

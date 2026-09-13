@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/Assert.h"
-#include "../Math/MathDefs.h"
-#include "../Math/Quaternion.h"
-#include "../Replica/NetworkTime.h"
+#include "Urho3D/Core/Assert.h"
+#include "Urho3D/Math/MathDefs.h"
+#include "Urho3D/Math/Quaternion.h"
+#include "Urho3D/Replica/NetworkTime.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/span.h>

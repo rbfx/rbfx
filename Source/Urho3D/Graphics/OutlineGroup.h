@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Graphics/Drawable.h"
-#include "../Graphics/Material.h"
-#include "../Scene/Component.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/Node.h"
 
 #include <EASTL/unordered_set.h>
 

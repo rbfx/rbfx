@@ -2,10 +2,10 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Input/AxisAdapter.h"
-#include "../IO/ArchiveSerializationBasic.h"
+#include "Urho3D/Input/AxisAdapter.h"
+#include "Urho3D/IO/ArchiveSerializationBasic.h"
 
 namespace Urho3D
 {

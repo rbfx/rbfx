@@ -18,7 +18,7 @@
 #include <enkiTS/src/TaskScheduler.h>
 
 #ifdef __APPLE__
-#include "TargetConditionals.h"
+#include <TargetConditionals.h>
 #include <CoreFoundation/CFUUID.h>
 #endif
 
@@ -98,7 +98,7 @@ extern "C" RPCRTAPI RPC_STATUS RPC_ENTRY RpcStringFreeA(RPC_CSTR* String);
 
 #include <SDL.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

@@ -2,22 +2,22 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Plugins/PluginManager.h"
+#include "Urho3D/Plugins/PluginManager.h"
 
-#include "../Core/CoreEvents.h"
-#include "../Core/ProcessUtils.h"
-#include "../Engine/Engine.h"
-#include "../Engine/EngineDefs.h"
-#include "../Engine/EngineEvents.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../IO/BinaryArchive.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../IO/MemoryBuffer.h"
-#include "../Plugins/ModulePlugin.h"
-#include "../Plugins/ScriptBundlePlugin.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/ProcessUtils.h"
+#include "Urho3D/Engine/Engine.h"
+#include "Urho3D/Engine/EngineDefs.h"
+#include "Urho3D/Engine/EngineEvents.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/IO/BinaryArchive.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Plugins/ModulePlugin.h"
+#include "Urho3D/Plugins/ScriptBundlePlugin.h"
 
 #include <EASTL/bonus/adaptors.h>
 #include <EASTL/finally.h>

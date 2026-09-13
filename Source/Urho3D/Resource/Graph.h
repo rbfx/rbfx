@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../Core/Context.h"
+#include "Urho3D/Core/Context.h"
 
 namespace Urho3D
 {

@@ -3,11 +3,11 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "Sequence.h"
+#include "Urho3D/Actions/Sequence.h"
 
-#include "ActionBuilder.h"
-#include "Repeat.h"
-#include "FiniteTimeActionState.h"
+#include "Urho3D/Actions/ActionBuilder.h"
+#include "Urho3D/Actions/Repeat.h"
+#include "Urho3D/Actions/FiniteTimeActionState.h"
 
 namespace Urho3D
 {

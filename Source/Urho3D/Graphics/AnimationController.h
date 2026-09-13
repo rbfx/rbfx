@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "../IO/VectorBuffer.h"
-#include "../Math/WrappedScalar.h"
-#include "../Scene/Component.h"
-#include "../Graphics/AnimationState.h"
-#include "../Graphics/AnimationStateSource.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Math/WrappedScalar.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Graphics/AnimationState.h"
+#include "Urho3D/Graphics/AnimationStateSource.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/span.h>

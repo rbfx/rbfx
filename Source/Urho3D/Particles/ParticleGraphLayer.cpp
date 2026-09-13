@@ -2,15 +2,15 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "ParticleGraphLayer.h"
+#include "Urho3D/Particles/ParticleGraphLayer.h"
 
-#include "../IO/Log.h"
-#include "../Scene/Serializable.h"
-#include "ParticleGraph.h"
-#include "ParticleGraphNode.h"
-#include "ParticleGraphPin.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Scene/Serializable.h"
+#include "Urho3D/Particles/ParticleGraph.h"
+#include "Urho3D/Particles/ParticleGraphNode.h"
+#include "Urho3D/Particles/ParticleGraphPin.h"
 
 namespace Urho3D
 {

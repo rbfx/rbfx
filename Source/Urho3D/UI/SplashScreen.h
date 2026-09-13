@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "../Engine/StateManager.h"
-#include "../Audio/SoundSource.h"
-#include "../Audio/Sound.h"
-#include "../UI/Sprite.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Engine/StateManager.h"
+#include "Urho3D/Audio/SoundSource.h"
+#include "Urho3D/Audio/Sound.h"
+#include "Urho3D/UI/Sprite.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {

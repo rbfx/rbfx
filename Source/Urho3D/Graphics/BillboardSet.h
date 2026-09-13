@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "../Graphics/Drawable.h"
-#include "../IO/VectorBuffer.h"
-#include "../Math/Color.h"
-#include "../Math/Matrix3x4.h"
-#include "../Math/Rect.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Math/Color.h"
+#include "Urho3D/Math/Matrix3x4.h"
+#include "Urho3D/Math/Rect.h"
 
 namespace Urho3D
 {

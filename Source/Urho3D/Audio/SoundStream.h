@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Container/RefCounted.h"
+#include "Urho3D/Container/RefCounted.h"
 
 namespace Urho3D
 {

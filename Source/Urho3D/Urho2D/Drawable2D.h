@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Graphics/Drawable.h"
-#include "../Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
 
 namespace Urho3D
 {

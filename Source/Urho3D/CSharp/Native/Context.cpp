@@ -2,12 +2,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include <Urho3D/Core/Context.h>
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Core/Mutex.h>
-#include <Urho3D/Core/ProcessUtils.h>
-#include <Urho3D/Core/Thread.h>
-#include <Urho3D/Script/Script.h>
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Core/ProcessUtils.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Script/Script.h"
 
 extern "C"
 {

@@ -3,15 +3,15 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "Misc.h"
+#include "Urho3D/Actions/Misc.h"
 
-#include "../Core/Context.h"
-#include "../IO/ArchiveSerializationBasic.h"
-#include "../IO/Log.h"
-#include "../Scene/Node.h"
-#include "../UI/UIElement.h"
-#include "AttributeActionState.h"
-#include "FiniteTimeActionState.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/ArchiveSerializationBasic.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/UI/UIElement.h"
+#include "Urho3D/Actions/AttributeActionState.h"
+#include "Urho3D/Actions/FiniteTimeActionState.h"
 
 namespace Urho3D
 {

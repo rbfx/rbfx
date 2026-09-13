@@ -7,7 +7,7 @@
 
 #include <EASTL/shared_array.h>
 
-#include "../Resource/Resource.h"
+#include "Urho3D/Resource/Resource.h"
 
 namespace Urho3D
 {

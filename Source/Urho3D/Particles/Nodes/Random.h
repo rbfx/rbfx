@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../ParticleGraphNode.h"
-#include "../ParticleGraphNodeInstance.h"
-#include "../ParticleGraphPin.h"
+#include "Urho3D/Particles/ParticleGraphNode.h"
+#include "Urho3D/Particles/ParticleGraphNodeInstance.h"
+#include "Urho3D/Particles/ParticleGraphPin.h"
 
 namespace Urho3D
 {

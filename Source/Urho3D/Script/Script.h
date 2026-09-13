@@ -9,10 +9,10 @@
 #include <EASTL/unique_ptr.h>
 #include <EASTL/vector.h>
 
-#include "../Core/Macros.h"
-#include "../Core/Mutex.h"
-#include "../Core/Object.h"
-#include "../Plugins/PluginApplication.h"
+#include "Urho3D/Core/Macros.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Plugins/PluginApplication.h"
 
 #ifndef SWIGSTDCALL
 #   if _WIN32

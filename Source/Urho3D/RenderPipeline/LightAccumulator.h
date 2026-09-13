@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../Graphics/Light.h"
-#include "../Math/SphericalHarmonics.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/Math/SphericalHarmonics.h"
+#include "Urho3D/Scene/Node.h"
 
 #include <EASTL/fixed_vector.h>
 #include <EASTL/sort.h>

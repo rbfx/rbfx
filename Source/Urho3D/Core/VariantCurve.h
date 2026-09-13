@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Container/KeyFrameSet.h"
-#include "../Core/Variant.h"
+#include "Urho3D/Container/KeyFrameSet.h"
+#include "Urho3D/Core/Variant.h"
 
 namespace Urho3D
 {

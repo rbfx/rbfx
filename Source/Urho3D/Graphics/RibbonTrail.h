@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Graphics/Drawable.h"
+#include "Urho3D/Graphics/Drawable.h"
 
 namespace Urho3D
 {

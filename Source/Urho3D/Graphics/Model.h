@@ -7,11 +7,11 @@
 
 #include <EASTL/shared_array.h>
 
-#include "../Container/Ptr.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/Skeleton.h"
-#include "../Math/BoundingBox.h"
-#include "../Resource/Resource.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/Skeleton.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Resource/Resource.h"
 
 namespace Urho3D
 {

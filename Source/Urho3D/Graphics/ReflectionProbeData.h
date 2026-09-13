@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Math/BoundingBox.h"
-#include "../Math/SphericalHarmonics.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/SphericalHarmonics.h"
 
 namespace Urho3D
 {

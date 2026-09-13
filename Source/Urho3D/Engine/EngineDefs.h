@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Container/ConstString.h"
+#include "Urho3D/Container/ConstString.h"
 
 
 namespace Urho3D

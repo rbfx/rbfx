@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "../Math/Color.h"
-#include "../Math/Rect.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/Material.h"
+#include "Urho3D/Math/Color.h"
+#include "Urho3D/Math/Rect.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/Material.h"
 
 namespace Urho3D
 {

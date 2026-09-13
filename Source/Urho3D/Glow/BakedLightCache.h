@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include "../Glow/BakedSceneChunk.h"
-#include "../Glow/RaytracerScene.h"
-#include "../Glow/LightmapGeometryBuffer.h"
-#include "../Glow/LightTracer.h"
-#include "../Graphics/Light.h"
-#include "../Graphics/LightProbeGroup.h"
-#include "../Math/Vector3.h"
+#include "Urho3D/Glow/BakedSceneChunk.h"
+#include "Urho3D/Glow/RaytracerScene.h"
+#include "Urho3D/Glow/LightmapGeometryBuffer.h"
+#include "Urho3D/Glow/LightTracer.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/Graphics/LightProbeGroup.h"
+#include "Urho3D/Math/Vector3.h"
 
 #include <EASTL/shared_ptr.h>
 

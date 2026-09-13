@@ -4,12 +4,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "Console.h"
+#include "Urho3D/SystemUI/Console.h"
 
-#include "SystemUI.h"
-#include "SystemUIEvents.h"
+#include "Urho3D/SystemUI/SystemUI.h"
+#include "Urho3D/SystemUI/SystemUIEvents.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Engine/EngineEvents.h"
@@ -22,7 +22,7 @@
 
 #include <EASTL/sort.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

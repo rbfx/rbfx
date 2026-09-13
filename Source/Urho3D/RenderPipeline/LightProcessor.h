@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/NonCopyable.h"
-#include "../Graphics/Light.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
-#include "../RenderPipeline/ShadowSplitProcessor.h"
+#include "Urho3D/Core/NonCopyable.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderPipeline/ShadowSplitProcessor.h"
 
 #include <EASTL/array.h>
 #include <EASTL/vector.h>

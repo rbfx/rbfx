@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <Urho3D/RenderPipeline/RenderPass.h>
-#include <Urho3D/Resource/Resource.h>
+#include "Urho3D/RenderPipeline/RenderPass.h"
+#include "Urho3D/Resource/Resource.h"
 
 namespace Urho3D
 {

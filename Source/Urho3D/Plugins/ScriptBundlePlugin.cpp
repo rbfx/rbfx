@@ -2,13 +2,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Plugins/ScriptBundlePlugin.h"
+#include "Urho3D/Plugins/ScriptBundlePlugin.h"
 
-#include "../Plugins/PluginManager.h"
-#include "../Resource/ResourceEvents.h"
-#include "../Script/Script.h"
+#include "Urho3D/Plugins/PluginManager.h"
+#include "Urho3D/Resource/ResourceEvents.h"
+#include "Urho3D/Script/Script.h"
 
 namespace Urho3D
 {

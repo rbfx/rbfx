@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "RenderMesh.h"
-#include "../../Graphics/StaticModel.h"
-#include "../../Scene/Node.h"
-#include "../../Graphics/Octree.h"
+#include "Urho3D/Particles/Nodes/RenderMesh.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Graphics/Octree.h"
 
 namespace Urho3D
 {

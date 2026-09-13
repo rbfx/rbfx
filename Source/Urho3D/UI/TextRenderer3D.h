@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../Scene/LogicComponent.h"
-#include "../UI/Text3D.h"
-#include "../UI/Font.h"
+#include "Urho3D/Scene/LogicComponent.h"
+#include "Urho3D/UI/Text3D.h"
+#include "Urho3D/UI/Font.h"
 
 #include <EASTL/unordered_map.h>
 

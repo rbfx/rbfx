@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <Urho3D/Scene/TrackedComponent.h>
+#include "Urho3D/Scene/TrackedComponent.h"
 
 namespace Urho3D
 {

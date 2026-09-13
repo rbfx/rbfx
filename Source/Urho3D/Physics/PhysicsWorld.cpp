@@ -3,28 +3,28 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
 #include <EASTL/sort.h>
 
-#include "../Core/Context.h"
-#include "../Core/Mutex.h"
-#include "../Core/Profiler.h"
-#include "../Graphics/DebugRenderer.h"
-#include "../Graphics/Model.h"
-#include "../IO/Log.h"
-#include "../Math/Ray.h"
-#include "../Physics/KinematicCharacterController.h"
-#include "../Physics/CollisionShape.h"
-#include "../Physics/Constraint.h"
-#include "../Physics/PhysicsEvents.h"
-#include "../Physics/PhysicsUtils.h"
-#include "../Physics/PhysicsWorld.h"
-#include "../Physics/TriggerAnimator.h"
-#include "../Physics/RaycastVehicle.h"
-#include "../Physics/RigidBody.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Math/Ray.h"
+#include "Urho3D/Physics/KinematicCharacterController.h"
+#include "Urho3D/Physics/CollisionShape.h"
+#include "Urho3D/Physics/Constraint.h"
+#include "Urho3D/Physics/PhysicsEvents.h"
+#include "Urho3D/Physics/PhysicsUtils.h"
+#include "Urho3D/Physics/PhysicsWorld.h"
+#include "Urho3D/Physics/TriggerAnimator.h"
+#include "Urho3D/Physics/RaycastVehicle.h"
+#include "Urho3D/Physics/RigidBody.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
 #include <Bullet/BulletCollision/BroadphaseCollision/btDbvtBroadphase.h>
 #include <Bullet/BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h>

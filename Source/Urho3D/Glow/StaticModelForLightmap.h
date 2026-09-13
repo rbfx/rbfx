@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Glow/LightmapGeometryBuffer.h"
-#include "../Graphics/Drawable.h"
+#include "Urho3D/Glow/LightmapGeometryBuffer.h"
+#include "Urho3D/Graphics/Drawable.h"
 
 #include <EASTL/span.h>
 

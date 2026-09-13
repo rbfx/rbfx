@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Math/BoundingBox.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Scene/Node.h"
 
 namespace Urho3D
 {

@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Scene/Component.h"
-#include "../IO/VectorBuffer.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/IO/VectorBuffer.h"
 
 #include <Box2D/Box2D.h>
 

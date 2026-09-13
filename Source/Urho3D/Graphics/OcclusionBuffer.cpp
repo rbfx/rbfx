@@ -3,16 +3,16 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/WorkQueue.h"
-#include "../Core/Profiler.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/OcclusionBuffer.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/OcclusionBuffer.h"
+#include "Urho3D/IO/Log.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

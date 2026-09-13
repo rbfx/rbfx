@@ -3,13 +3,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../IO/File.h"
-#include "../IO/FileSystem.h"
-#include "../IO/FileWatcher.h"
-#include "../IO/Log.h"
-#include "../Core/Profiler.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/FileWatcher.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Core/Profiler.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -19,12 +19,12 @@
 extern "C"
 {
 // Need read/close for inotify
-#include "unistd.h"
+#include <unistd.h>
 }
 #elif defined(__APPLE__) && !defined(IOS) && !defined(TVOS)
 extern "C"
 {
-#include "../IO/MacFileWatcher.h"
+#include "Urho3D/IO/MacFileWatcher.h"
 }
 #endif
 

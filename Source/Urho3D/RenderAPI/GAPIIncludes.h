@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <Urho3D/Urho3D.h>
+#include "Urho3D/Urho3D.h"
 
 #if GL_SUPPORTED || GLES_SUPPORTED
     #if URHO3D_PLATFORM_IOS || URHO3D_PLATFORM_TVOS

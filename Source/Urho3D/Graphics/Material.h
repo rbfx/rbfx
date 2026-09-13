@@ -5,13 +5,13 @@
 
 #pragma once
 
-#include "../Container/IndexAllocator.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/Light.h"
-#include "../Graphics/Technique.h"
-#include "../Math/Vector4.h"
-#include "../Resource/Resource.h"
-#include "../Scene/ValueAnimationInfo.h"
+#include "Urho3D/Container/IndexAllocator.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/Graphics/Technique.h"
+#include "Urho3D/Math/Vector4.h"
+#include "Urho3D/Resource/Resource.h"
+#include "Urho3D/Scene/ValueAnimationInfo.h"
 
 #include <atomic>
 

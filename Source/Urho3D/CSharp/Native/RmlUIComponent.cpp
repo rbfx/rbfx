@@ -5,8 +5,8 @@
 #if URHO3D_RMLUI
 #include "Urho3D/RmlUI/RmlUI.h"
 
-#include <Urho3D/RmlUI/RmlUIComponent.h>
-#include <Urho3D/Script/Script.h>
+#include "Urho3D/RmlUI/RmlUIComponent.h"
+#include "Urho3D/Script/Script.h"
 
 #include <EASTL/shared_ptr.h>
 

@@ -4,15 +4,15 @@
 
 #pragma once
 
-#include "../Core/Context.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/StaticModel.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/Technique.h"
-#include "../Graphics/Terrain.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/XMLFile.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/Technique.h"
+#include "Urho3D/Graphics/Terrain.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/XMLFile.h"
 
 #include <EASTL/string.h>
 

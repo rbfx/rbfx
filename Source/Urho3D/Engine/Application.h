@@ -7,12 +7,12 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
-#include "../Core/Context.h"
-#include "../Core/Main.h"
-#include "../Core/Macros.h"
-#include "../Engine/Engine.h"
-#include "../Plugins/PluginApplication.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Main.h"
+#include "Urho3D/Core/Macros.h"
+#include "Urho3D/Engine/Engine.h"
+#include "Urho3D/Plugins/PluginApplication.h"
 
 namespace Urho3D
 {

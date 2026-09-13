@@ -5,8 +5,8 @@
 #pragma once
 
 #include <EASTL/span.h>
-#include "../Resource/Resource.h"
-#include "../IO/Archive.h"
+#include "Urho3D/Resource/Resource.h"
+#include "Urho3D/IO/Archive.h"
 
 namespace Urho3D
 {

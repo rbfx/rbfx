@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/Graphics.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/Graphics.h"
 
 #include <EASTL/span.h>
 

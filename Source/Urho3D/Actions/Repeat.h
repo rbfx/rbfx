@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "FiniteTimeAction.h"
+#include "Urho3D/Actions/FiniteTimeAction.h"
 #include <EASTL/array.h>
 
 namespace Urho3D

@@ -2,34 +2,34 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../RenderPipeline/DefaultRenderPipeline.h"
+#include "Urho3D/RenderPipeline/DefaultRenderPipeline.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/DebugRenderer.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/OutlineGroup.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/Viewport.h"
-#include "../Input/Input.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../RenderPipeline/BatchRenderer.h"
-#include "../RenderPipeline/DrawableProcessor.h"
-#include "../RenderPipeline/InstancingBuffer.h"
-#include "../RenderPipeline/LightProcessor.h"
-#include "../RenderPipeline/OutlineScenePass.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../RenderPipeline/ShadowMapAllocator.h"
-#include "../RenderPipeline/Passes/OutlineRenderPass.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/Graphics/OutlineGroup.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/Viewport.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderPipeline/BatchRenderer.h"
+#include "Urho3D/RenderPipeline/DrawableProcessor.h"
+#include "Urho3D/RenderPipeline/InstancingBuffer.h"
+#include "Urho3D/RenderPipeline/LightProcessor.h"
+#include "Urho3D/RenderPipeline/OutlineScenePass.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/RenderPipeline/ShadowMapAllocator.h"
+#include "Urho3D/RenderPipeline/Passes/OutlineRenderPass.h"
+#include "Urho3D/Scene/Scene.h"
 #if URHO3D_SYSTEMUI
-    #include "../SystemUI/SystemUI.h"
+    #include "Urho3D/SystemUI/SystemUI.h"
 #endif
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

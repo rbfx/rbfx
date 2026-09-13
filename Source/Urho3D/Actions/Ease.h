@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Math/EaseMath.h"
-#include "FiniteTimeAction.h"
+#include "Urho3D/Math/EaseMath.h"
+#include "Urho3D/Actions/FiniteTimeAction.h"
 
 namespace Urho3D
 {

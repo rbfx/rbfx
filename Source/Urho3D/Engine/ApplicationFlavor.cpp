@@ -2,12 +2,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Engine/ApplicationFlavor.h"
+#include "Urho3D/Engine/ApplicationFlavor.h"
 
-#include "../Core/ProcessUtils.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/ProcessUtils.h"
+#include "Urho3D/IO/Log.h"
 
 #include <EASTL/map.h>
 #include <EASTL/set.h>

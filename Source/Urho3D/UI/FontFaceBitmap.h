@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../UI/FontFace.h"
+#include "Urho3D/UI/FontFace.h"
 
 namespace Urho3D
 {

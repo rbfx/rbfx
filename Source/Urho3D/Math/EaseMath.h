@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "MathDefs.h"
+#include "Urho3D/Math/MathDefs.h"
 
 namespace Urho3D
 {

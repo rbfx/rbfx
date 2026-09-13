@@ -3,10 +3,10 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../IO/MemoryBuffer.h"
-#include "../IO/VectorBuffer.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/IO/VectorBuffer.h"
 
 namespace Urho3D
 {

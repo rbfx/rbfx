@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "../Core/Context.h"
-#include "ParticleGraphEffect.h"
-#include "ParticleGraphLayerInstance.h"
-#include "ParticleGraphNode.h"
-#include "ParticleGraphNodeInstance.h"
-#include "SpanVariants.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Particles/ParticleGraphEffect.h"
+#include "Urho3D/Particles/ParticleGraphLayerInstance.h"
+#include "Urho3D/Particles/ParticleGraphNode.h"
+#include "Urho3D/Particles/ParticleGraphNodeInstance.h"
+#include "Urho3D/Particles/SpanVariants.h"
 #include <EASTL/tuple.h>
 
 namespace Urho3D

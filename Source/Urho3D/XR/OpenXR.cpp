@@ -48,7 +48,7 @@
 
 #include <SDL.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 #if URHO3D_PLATFORM_ANDROID
 // TODO: This is a hack to get EGLConfig in SDL2.

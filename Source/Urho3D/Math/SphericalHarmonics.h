@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../Math/Color.h"
-#include "../Math/Vector3.h"
-#include "../Math/Vector4.h"
+#include "Urho3D/Math/Color.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Math/Vector4.h"
 
 namespace Urho3D
 {

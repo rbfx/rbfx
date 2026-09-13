@@ -3,19 +3,19 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/Zone.h"
-#include "../Scene/Scene.h"
-#include "../UI/View3D.h"
-#include "../UI/UI.h"
-#include "../UI/UIEvents.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Graphics/Zone.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/UI/View3D.h"
+#include "Urho3D/UI/UI.h"
+#include "Urho3D/UI/UIEvents.h"
 
 namespace Urho3D
 {

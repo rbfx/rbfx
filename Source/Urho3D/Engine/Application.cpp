@@ -3,25 +3,25 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Profiler.h"
-#include "../Engine/Application.h"
-#include "../Engine/EngineDefs.h"
-#include "../Engine/EngineEvents.h"
-#include "../IO/IOEvents.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Engine/Application.h"
+#include "Urho3D/Engine/EngineDefs.h"
+#include "Urho3D/Engine/EngineEvents.h"
+#include "Urho3D/IO/IOEvents.h"
+#include "Urho3D/IO/Log.h"
 #if URHO3D_CSHARP
-#include "../Script/Script.h"
+#include "Urho3D/Script/Script.h"
 #endif
 
 #if defined(IOS) || defined(TVOS)
-#include "../Graphics/Graphics.h"
+#include "Urho3D/Graphics/Graphics.h"
 #include <SDL.h>
 #endif
-#include "../Core/CommandLine.h"
+#include "Urho3D/Core/CommandLine.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../UI/BorderImage.h"
+#include "Urho3D/UI/BorderImage.h"
 
 namespace Urho3D
 {

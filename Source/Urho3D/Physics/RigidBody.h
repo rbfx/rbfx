@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../IO/VectorBuffer.h"
-#include "../Scene/Component.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Scene/Component.h"
 
 #include <Bullet/LinearMath/btMotionState.h>
 

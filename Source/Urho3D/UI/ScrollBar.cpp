@@ -3,14 +3,14 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Input/InputEvents.h"
-#include "../UI/Button.h"
-#include "../UI/ScrollBar.h"
-#include "../UI/Slider.h"
-#include "../UI/UIEvents.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Input/InputEvents.h"
+#include "Urho3D/UI/Button.h"
+#include "Urho3D/UI/ScrollBar.h"
+#include "Urho3D/UI/Slider.h"
+#include "Urho3D/UI/UIEvents.h"
 
 namespace Urho3D
 {

@@ -2,18 +2,18 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/Geometry.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/GraphicsUtils.h"
-#include "../Graphics/Technique.h"
-#include "../RenderAPI/PipelineState.h"
-#include "../RenderPipeline/BatchStateCache.h"
-#include "../RenderPipeline/ShaderConsts.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/GraphicsUtils.h"
+#include "Urho3D/Graphics/Technique.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
+#include "Urho3D/RenderPipeline/BatchStateCache.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

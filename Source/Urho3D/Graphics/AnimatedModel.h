@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "../Graphics/AnimationStateSource.h"
-#include "../Graphics/Model.h"
-#include "../Graphics/Skeleton.h"
-#include "../Graphics/StaticModel.h"
+#include "Urho3D/Graphics/AnimationStateSource.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/Skeleton.h"
+#include "Urho3D/Graphics/StaticModel.h"
 
 namespace Urho3D
 {

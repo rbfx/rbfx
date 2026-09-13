@@ -3,13 +3,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Texture.h"
-#include "../UI/UIElement.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Texture.h"
+#include "Urho3D/UI/UIElement.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

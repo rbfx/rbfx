@@ -2,9 +2,9 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "Repeat.h"
+#include "Urho3D/Actions/Repeat.h"
 
-#include "FiniteTimeActionState.h"
+#include "Urho3D/Actions/FiniteTimeActionState.h"
 
 namespace Urho3D
 {

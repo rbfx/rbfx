@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
-#include "../Scene/Component.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Scene/Component.h"
 
 namespace Urho3D
 {

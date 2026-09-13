@@ -2,8 +2,8 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include <Urho3D/Core/Object.h>
-#include <Urho3D/Script/Script.h>
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Script/Script.h"
 
 #include <EASTL/shared_ptr.h>
 

@@ -3,21 +3,21 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/ProcessUtils.h"
-#include "../Core/Profiler.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Technique.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/ShaderVariation.h"
-#include "../IO/Log.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/XMLFile.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/ProcessUtils.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Technique.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/ShaderVariation.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/XMLFile.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

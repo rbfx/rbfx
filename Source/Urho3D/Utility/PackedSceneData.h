@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "../Core/IteratorRange.h"
-#include "../Core/Signal.h"
-#include "../IO/VectorBuffer.h"
-#include "../Scene/Component.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Core/IteratorRange.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/Node.h"
 
 namespace Urho3D
 {

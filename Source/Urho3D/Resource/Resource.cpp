@@ -3,20 +3,20 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/Profiler.h"
-#include "../Core/Thread.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../IO/BinaryArchive.h"
-#include "../IO/Log.h"
-#include "../IO/VirtualFileSystem.h"
-#include "../Resource/Resource.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/XMLElement.h"
-#include "../Resource/XMLArchive.h"
-#include "../Resource/JSONArchive.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/IO/BinaryArchive.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+#include "Urho3D/Resource/Resource.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/XMLElement.h"
+#include "Urho3D/Resource/XMLArchive.h"
+#include "Urho3D/Resource/JSONArchive.h"
 #include "Urho3D/IO/MemoryBuffer.h"
 
 #include <EASTL/finally.h>

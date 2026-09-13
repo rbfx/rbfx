@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Math/Vector3.h"
-#include "../Math/Matrix3x4.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Math/Matrix3x4.h"
 
 namespace Urho3D
 {

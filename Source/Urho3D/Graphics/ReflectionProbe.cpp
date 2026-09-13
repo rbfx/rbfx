@@ -2,22 +2,22 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/DebugRenderer.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/ReflectionProbe.h"
-#include "../Graphics/TextureCube.h"
-#include "../IO/FileSystem.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../RenderPipeline/RenderPipeline.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/XMLElement.h"
-#include "../Resource/XMLFile.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/Graphics/ReflectionProbe.h"
+#include "Urho3D/Graphics/TextureCube.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderPipeline/RenderPipeline.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/XMLElement.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Scene/Node.h"
 
 namespace Urho3D
 {

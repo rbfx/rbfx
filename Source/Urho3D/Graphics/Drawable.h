@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/PipelineStateTracker.h"
-#include "../Graphics/ReflectionProbeData.h"
-#include "../Math/BoundingBox.h"
-#include "../Scene/Component.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/PipelineStateTracker.h"
+#include "Urho3D/Graphics/ReflectionProbeData.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Scene/Component.h"
 
 namespace Urho3D
 {

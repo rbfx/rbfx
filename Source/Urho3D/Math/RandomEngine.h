@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Math/BoundingBox.h"
-#include "../Math/Quaternion.h"
-#include "../Math/Vector2.h"
-#include "../Math/Vector3.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Quaternion.h"
+#include "Urho3D/Math/Vector2.h"
+#include "Urho3D/Math/Vector3.h"
 
 #include <EASTL/array.h>
 #include <EASTL/span.h>

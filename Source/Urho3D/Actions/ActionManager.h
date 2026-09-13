@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Core/Context.h"
-#include "../Core/Object.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Object.h"
 
 namespace Urho3D
 {

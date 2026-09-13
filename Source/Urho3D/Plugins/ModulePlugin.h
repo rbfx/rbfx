@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Plugins/DynamicModule.h"
-#include "../Plugins/Plugin.h"
+#include "Urho3D/Plugins/DynamicModule.h"
+#include "Urho3D/Plugins/Plugin.h"
 
 namespace Urho3D
 {

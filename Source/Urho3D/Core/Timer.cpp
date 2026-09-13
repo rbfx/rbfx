@@ -3,11 +3,11 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/CoreEvents.h"
-#include "../Core/Profiler.h"
-#include "../Core/Timer.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/Timer.h"
 
 #include <SDL_timer.h>
 
@@ -23,7 +23,7 @@
 #include <unistd.h>
 #endif
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

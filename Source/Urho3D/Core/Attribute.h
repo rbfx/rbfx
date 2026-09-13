@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "../Container/FlagSet.h"
-#include "../Container/Ptr.h"
-#include "../Core/Variant.h"
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Core/Variant.h"
 
 #include <EASTL/optional.h>
 

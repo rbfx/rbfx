@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
-#include "../Core/Variant.h"
-#include "../Math/BoundingBox.h"
-#include "../Math/Rect.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Core/Variant.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Rect.h"
 
 #include <EASTL/unique_ptr.h>
 

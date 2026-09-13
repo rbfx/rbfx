@@ -2,19 +2,19 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/StringUtils.h"
-#include "../Graphics/Drawable.h"
-#include "../Graphics/Geometry.h"
-#include "../Graphics/Light.h"
-#include "../Graphics/Material.h"
-#include "../RenderAPI/PipelineState.h"
-#include "../Graphics/ShaderVariation.h"
-#include "../RenderPipeline/BatchCompositor.h"
-#include "../RenderPipeline/RenderPipelineDebugger.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
+#include "Urho3D/Graphics/ShaderVariation.h"
+#include "Urho3D/RenderPipeline/BatchCompositor.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDebugger.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 #include <EASTL/tuple.h>
 

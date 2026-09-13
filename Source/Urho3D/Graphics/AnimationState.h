@@ -7,10 +7,10 @@
 
 #include <EASTL/unordered_map.h>
 
-#include "../Container/Ptr.h"
-#include "../Graphics/Skeleton.h"
-#include "../Math/StringHash.h"
-#include "../Math/Transform.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Graphics/Skeleton.h"
+#include "Urho3D/Math/StringHash.h"
+#include "Urho3D/Math/Transform.h"
 
 namespace Urho3D
 {

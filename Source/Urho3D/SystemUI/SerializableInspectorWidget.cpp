@@ -2,14 +2,14 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../SystemUI/SerializableInspectorWidget.h"
+#include "Urho3D/SystemUI/SerializableInspectorWidget.h"
 
-#include "../Scene/Component.h"
-#include "../Scene/Node.h"
-#include "../SystemUI/SystemUI.h"
-#include "../SystemUI/Widgets.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/SystemUI/SystemUI.h"
+#include "Urho3D/SystemUI/Widgets.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 

@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Math/Vector3.h"
-#include "../Scene/Component.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Scene/Component.h"
 
 class btTypedConstraint;
 

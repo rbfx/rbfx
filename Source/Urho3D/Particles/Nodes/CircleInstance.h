@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "Circle.h"
-#include "../Emitter.h"
+#include "Urho3D/Particles/Nodes/Circle.h"
+#include "Urho3D/Particles/Emitter.h"
 
 namespace Urho3D
 {

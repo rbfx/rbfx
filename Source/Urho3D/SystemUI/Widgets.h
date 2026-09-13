@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "../Core/Variant.h"
-#include "../Graphics/Texture2D.h"
-#include "../SystemUI/ImGui.h"
+#include "Urho3D/Core/Variant.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/SystemUI/ImGui.h"
 
 #include <EASTL/optional.h>
 

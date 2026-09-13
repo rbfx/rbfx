@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../RmlUI/RmlUIComponent.h"
+#include "Urho3D/RmlUI/RmlUIComponent.h"
 
 #include <RmlUi/Core/DataModelHandle.h>
 

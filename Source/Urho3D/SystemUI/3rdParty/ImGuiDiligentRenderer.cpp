@@ -25,7 +25,7 @@
  *  of the possibility of such damages.
  */
 
-#include "ImGuiDiligentRenderer.hpp"
+#include "Urho3D/SystemUI/3rdParty/ImGuiDiligentRenderer.hpp"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/RenderDevice.h>

@@ -3,15 +3,15 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Audio/Audio.h"
-#include "../Audio/Sound.h"
-#include "../Audio/SoundListener.h"
-#include "../Audio/SoundSource3D.h"
-#include "../Core/Context.h"
-#include "../Graphics/DebugRenderer.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Audio/Audio.h"
+#include "Urho3D/Audio/Sound.h"
+#include "Urho3D/Audio/SoundListener.h"
+#include "Urho3D/Audio/SoundSource3D.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/Scene/Node.h"
 
 namespace Urho3D
 {

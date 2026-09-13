@@ -4,16 +4,16 @@
 
 #pragma once
 
-#include "../Container/IndexAllocator.h"
-#include "../Core/Timer.h"
-#include "../IO/MemoryBuffer.h"
-#include "../IO/VectorBuffer.h"
-#include "../Network/ClockSynchronizer.h"
-#include "../Network/NetworkDefs.h"
-#include "../Replica/ClientInputStatistics.h"
-#include "../Replica/NetworkId.h"
-#include "../Replica/TickSynchronizer.h"
-#include "../Replica/ProtocolMessages.h"
+#include "Urho3D/Container/IndexAllocator.h"
+#include "Urho3D/Core/Timer.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Network/ClockSynchronizer.h"
+#include "Urho3D/Network/NetworkDefs.h"
+#include "Urho3D/Replica/ClientInputStatistics.h"
+#include "Urho3D/Replica/NetworkId.h"
+#include "Urho3D/Replica/TickSynchronizer.h"
+#include "Urho3D/Replica/ProtocolMessages.h"
 
 #include <EASTL/bitvector.h>
 #include <EASTL/optional.h>

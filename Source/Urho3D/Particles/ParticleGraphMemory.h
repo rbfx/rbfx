@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "Span.h"
-#include "../Core/Variant.h"
+#include "Urho3D/Particles/Span.h"
+#include "Urho3D/Core/Variant.h"
 
 namespace Urho3D
 {

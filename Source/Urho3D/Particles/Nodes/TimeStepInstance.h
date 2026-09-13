@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "TimeStep.h"
+#include "Urho3D/Particles/Nodes/TimeStep.h"
 
 namespace Urho3D
 {

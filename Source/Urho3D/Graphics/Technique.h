@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "../Container/Hash.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/PipelineStateTracker.h"
-#include "../Resource/Resource.h"
+#include "Urho3D/Container/Hash.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/PipelineStateTracker.h"
+#include "Urho3D/Resource/Resource.h"
 
 namespace Urho3D
 {

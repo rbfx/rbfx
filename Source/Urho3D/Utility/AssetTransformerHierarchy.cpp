@@ -2,11 +2,11 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Utility/AssetTransformerHierarchy.h"
+#include "Urho3D/Utility/AssetTransformerHierarchy.h"
 
-#include "../IO/Log.h"
+#include "Urho3D/IO/Log.h"
 
 #include <EASTL/sort.h>
 #include <EASTL/unordered_set.h>

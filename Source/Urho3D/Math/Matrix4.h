@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Math/Quaternion.h"
-#include "../Math/Vector4.h"
+#include "Urho3D/Math/Quaternion.h"
+#include "Urho3D/Math/Vector4.h"
 
 #ifdef URHO3D_SSE
 #include <emmintrin.h>

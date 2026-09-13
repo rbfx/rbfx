@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../Utility/AssetTransformer.h"
+#include "Urho3D/Utility/AssetTransformer.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/vector_multiset.h>

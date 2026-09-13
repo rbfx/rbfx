@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../Scene/LogicComponent.h"
+#include "Urho3D/Scene/LogicComponent.h"
 
 namespace Urho3D
 {

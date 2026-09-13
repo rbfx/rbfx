@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../RenderPipeline/RenderPipelineDefs.h"
-#include "../RenderPipeline/PipelineBatchSortKey.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderPipeline/PipelineBatchSortKey.h"
 
 namespace Urho3D
 {

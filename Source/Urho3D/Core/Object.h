@@ -5,15 +5,15 @@
 
 #pragma once
 
-#include "../Container/Allocator.h"
-#include "../Core/Mutex.h"
-#include "../Core/ObjectCategory.h"
-#include "../Core/Profiler.h"
-#include "../Core/StringHashRegister.h"
-#include "../Core/SubsystemCache.h"
-#include "../Core/TypeInfo.h"
-#include "../Core/TypeTrait.h"
-#include "../Core/Variant.h"
+#include "Urho3D/Container/Allocator.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Core/ObjectCategory.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/StringHashRegister.h"
+#include "Urho3D/Core/SubsystemCache.h"
+#include "Urho3D/Core/TypeInfo.h"
+#include "Urho3D/Core/TypeTrait.h"
+#include "Urho3D/Core/Variant.h"
 
 #include <EASTL/algorithm.h>
 #include <EASTL/array.h>

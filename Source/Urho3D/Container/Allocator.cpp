@@ -3,10 +3,10 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Container/Allocator.h"
-#include "../Core/Profiler.h"
+#include "Urho3D/Container/Allocator.h"
+#include "Urho3D/Core/Profiler.h"
 
 #if URHO3D_STATIC
 URHO3D_API void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
@@ -20,7 +20,7 @@ URHO3D_API void* operator new[](size_t size, size_t alignment, size_t alignmentO
 }
 #endif
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

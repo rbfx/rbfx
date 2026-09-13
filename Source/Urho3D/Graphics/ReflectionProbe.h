@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "../Container/TransformedSpan.h"
-#include "../Graphics/CubemapRenderer.h"
-#include "../Graphics/ReflectionProbeData.h"
-#include "../Math/BoundingBox.h"
-#include "../Scene/Component.h"
-#include "../Scene/TrackedComponent.h"
+#include "Urho3D/Container/TransformedSpan.h"
+#include "Urho3D/Graphics/CubemapRenderer.h"
+#include "Urho3D/Graphics/ReflectionProbeData.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/TrackedComponent.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>

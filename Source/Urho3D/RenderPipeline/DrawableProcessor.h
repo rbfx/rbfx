@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Core/WorkQueue.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Math/NumericRange.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
-#include "../RenderPipeline/LightAccumulator.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Math/NumericRange.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderPipeline/LightAccumulator.h"
 
 #include <atomic>
 

@@ -11,18 +11,18 @@
 #include <EASTL/unordered_map.h>
 #include <EASTL/unique_ptr.h>
 
-#include "../Container/Ptr.h"
-#include "../Container/ByteVector.h"
-#include "../Container/Str.h"
-#include "../Core/Assert.h"
-#include "../Core/Exception.h"
-#include "../Core/TypeTrait.h"
-#include "../Math/Color.h"
-#include "../Math/MathDefs.h"
-#include "../Math/Matrix3.h"
-#include "../Math/Matrix3x4.h"
-#include "../Math/Rect.h"
-#include "../Math/StringHash.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Container/ByteVector.h"
+#include "Urho3D/Container/Str.h"
+#include "Urho3D/Core/Assert.h"
+#include "Urho3D/Core/Exception.h"
+#include "Urho3D/Core/TypeTrait.h"
+#include "Urho3D/Math/Color.h"
+#include "Urho3D/Math/MathDefs.h"
+#include "Urho3D/Math/Matrix3.h"
+#include "Urho3D/Math/Matrix3x4.h"
+#include "Urho3D/Math/Rect.h"
+#include "Urho3D/Math/StringHash.h"
 
 #include <typeinfo>
 

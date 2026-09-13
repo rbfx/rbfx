@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "ParticleGraphPin.h"
-#include "UpdateContext.h"
+#include "Urho3D/Particles/ParticleGraphPin.h"
+#include "Urho3D/Particles/UpdateContext.h"
 
 namespace Urho3D
 {

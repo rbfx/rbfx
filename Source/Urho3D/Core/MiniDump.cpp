@@ -5,9 +5,9 @@
 
 #if defined(_MSC_VER) && defined(URHO3D_MINIDUMPS)
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/ProcessUtils.h"
+#include "Urho3D/Core/ProcessUtils.h"
 
 #include <cstdio>
 #include <io.h>

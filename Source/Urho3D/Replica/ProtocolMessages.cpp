@@ -2,12 +2,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Replica/ProtocolMessages.h"
+#include "Urho3D/Replica/ProtocolMessages.h"
 
-#include "../Core/StringUtils.h"
-#include "../Replica/ReplicationManager.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/Replica/ReplicationManager.h"
 
 namespace Urho3D
 {

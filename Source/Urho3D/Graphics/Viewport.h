@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Container/Ptr.h"
-#include "../Math/Ray.h"
-#include "../Math/Rect.h"
-#include "../Math/Vector2.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Math/Ray.h"
+#include "Urho3D/Math/Rect.h"
+#include "Urho3D/Math/Vector2.h"
 
 namespace Urho3D
 {

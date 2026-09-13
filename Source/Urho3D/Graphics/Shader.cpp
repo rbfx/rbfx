@@ -3,20 +3,20 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
 #include <EASTL/sort.h>
 
-#include "../Core/Context.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Shader.h"
-#include "../Graphics/ShaderVariation.h"
-#include "../IO/Deserializer.h"
-#include "../IO/Log.h"
-#include "../IO/VirtualFileSystem.h"
-#include "../Resource/ResourceCache.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Shader.h"
+#include "Urho3D/Graphics/ShaderVariation.h"
+#include "Urho3D/IO/Deserializer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+#include "Urho3D/Resource/ResourceCache.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

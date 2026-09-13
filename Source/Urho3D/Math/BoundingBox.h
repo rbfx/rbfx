@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Math/Rect.h"
-#include "../Math/Vector3.h"
+#include "Urho3D/Math/Rect.h"
+#include "Urho3D/Math/Vector3.h"
 
 #ifdef URHO3D_SSE
 #include <xmmintrin.h>

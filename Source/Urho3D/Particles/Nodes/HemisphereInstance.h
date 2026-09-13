@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "Hemisphere.h"
-#include "../Emitter.h"
+#include "Urho3D/Particles/Nodes/Hemisphere.h"
+#include "Urho3D/Particles/Emitter.h"
 
 namespace Urho3D
 {

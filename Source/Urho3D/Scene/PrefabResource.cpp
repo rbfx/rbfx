@@ -2,14 +2,14 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include <Urho3D/Precompiled.h>
+#include "Urho3D/Precompiled.h"
 
-#include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/Scene/PrefabReference.h>
-#include <Urho3D/Scene/PrefabResource.h>
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Resource/ResourceCache.h>
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Scene/PrefabReference.h"
+#include "Urho3D/Scene/PrefabResource.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Resource/ResourceCache.h"
 
 #include <EASTL/unordered_set.h>
 

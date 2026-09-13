@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include "ApplyForce.h"
+#include "Urho3D/Particles/Nodes/ApplyForce.h"
 #if URHO3D_PHYSICS
-#include "../../Physics/PhysicsWorld.h"
+#include "Urho3D/Physics/PhysicsWorld.h"
 #endif
-#include "../../Scene/Node.h"
-#include "../../Math/Ray.h"
-#include "../../Scene/Scene.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Math/Ray.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {

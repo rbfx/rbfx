@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 
 #include <EASTL/string.h>
 #include <EASTL/unordered_set.h>

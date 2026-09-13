@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Container/ConstString.h"
-#include "../Core/Variant.h"
+#include "Urho3D/Container/ConstString.h"
+#include "Urho3D/Core/Variant.h"
 
 namespace Urho3D
 {

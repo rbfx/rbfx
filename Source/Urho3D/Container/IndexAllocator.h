@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../Core/Mutex.h"
+#include "Urho3D/Core/Mutex.h"
 
 #include <EASTL/sort.h>
 #include <EASTL/vector.h>

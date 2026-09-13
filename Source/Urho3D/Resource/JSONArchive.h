@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../IO/ArchiveBase.h"
-#include "../Resource/JSONFile.h"
-#include "../Resource/JSONValue.h"
+#include "Urho3D/IO/ArchiveBase.h"
+#include "Urho3D/Resource/JSONFile.h"
+#include "Urho3D/Resource/JSONValue.h"
 
 #include <EASTL/optional.h>
 

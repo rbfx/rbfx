@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "EmitterRotation.h"
+#include "Urho3D/Particles/Nodes/EmitterRotation.h"
 #include "Urho3D/Scene/Node.h"
 
 namespace Urho3D

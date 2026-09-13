@@ -3,17 +3,17 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/DebugRenderer.h"
-#include "../IO/Log.h"
-#include "../Navigation/DynamicNavigationMesh.h"
-#include "../Navigation/Obstacle.h"
-#include "../Navigation/NavigationEvents.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Navigation/DynamicNavigationMesh.h"
+#include "Urho3D/Navigation/Obstacle.h"
+#include "Urho3D/Navigation/NavigationEvents.h"
+#include "Urho3D/Scene/Scene.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

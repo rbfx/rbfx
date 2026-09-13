@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 
 namespace Urho3D
 {

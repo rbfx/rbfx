@@ -5,12 +5,12 @@
 
 #pragma once
 
-#include "../Core/ThreadSafeCache.h"
-#include "../Graphics/Drawable.h"
-#include "../Graphics/ReflectionProbeData.h"
-#include "../Graphics/Texture.h"
-#include "../Math/Color.h"
-#include "../Math/SphericalHarmonics.h"
+#include "Urho3D/Core/ThreadSafeCache.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/ReflectionProbeData.h"
+#include "Urho3D/Graphics/Texture.h"
+#include "Urho3D/Math/Color.h"
+#include "Urho3D/Math/SphericalHarmonics.h"
 
 namespace Urho3D
 {

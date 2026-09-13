@@ -2,16 +2,16 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Math/InverseKinematics.h"
-#include "../Math/Transform.h"
+#include "Urho3D/Math/InverseKinematics.h"
+#include "Urho3D/Math/Transform.h"
 
 #include <EASTL/bonus/adaptors.h>
 #include <EASTL/numeric.h>
 #include <EASTL/optional.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

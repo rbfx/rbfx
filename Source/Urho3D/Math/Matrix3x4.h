@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Math/Matrix4.h"
+#include "Urho3D/Math/Matrix4.h"
 
 #ifdef URHO3D_SSE
 #include <emmintrin.h>

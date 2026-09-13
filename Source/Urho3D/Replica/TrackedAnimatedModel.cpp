@@ -2,13 +2,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/AnimatedModel.h"
-#include "../Network/NetworkEvents.h"
-#include "../Replica/TrackedAnimatedModel.h"
-#include "../Replica/NetworkSettingsConsts.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Network/NetworkEvents.h"
+#include "Urho3D/Replica/TrackedAnimatedModel.h"
+#include "Urho3D/Replica/NetworkSettingsConsts.h"
 
 namespace Urho3D
 {

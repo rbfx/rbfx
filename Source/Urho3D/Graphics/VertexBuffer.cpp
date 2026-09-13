@@ -5,20 +5,20 @@
 
 // This file contains VertexBuffer code common to all graphics APIs.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../Math/MathDefs.h"
-#include "../Graphics/GraphicsUtils.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/Math/MathDefs.h"
+#include "Urho3D/Graphics/GraphicsUtils.h"
 
 #include <EASTL/array.h>
 #include <EASTL/numeric.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

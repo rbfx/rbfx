@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Resource/ResourceCache.h"
-#include "../Utility/AssetTransformer.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Utility/AssetTransformer.h"
 
 namespace Urho3D
 {

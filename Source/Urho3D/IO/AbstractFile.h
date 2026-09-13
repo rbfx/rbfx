@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../IO/Serializer.h"
-#include "../IO/Deserializer.h"
+#include "Urho3D/IO/Serializer.h"
+#include "Urho3D/IO/Deserializer.h"
 
 namespace Urho3D
 {

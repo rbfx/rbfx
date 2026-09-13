@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Container/FlagSet.h"
-#include "../Math/MathDefs.h"
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Math/MathDefs.h"
 
 #include <SDL_joystick.h>
 #include <SDL_gamecontroller.h>

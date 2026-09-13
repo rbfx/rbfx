@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "BorderImage.h"
-#include "../Math/Vector2.h"
-#include "Text.h"
+#include "Urho3D/UI/BorderImage.h"
+#include "Urho3D/Math/Vector2.h"
+#include "Urho3D/UI/Text.h"
 
 namespace Urho3D
 {

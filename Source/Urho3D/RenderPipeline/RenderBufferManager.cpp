@@ -2,29 +2,29 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/Geometry.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsUtils.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/RenderSurface.h"
-#include "../Graphics/Texture2D.h"
-#include "../RenderPipeline/RenderBufferManager.h"
-#include "../RenderPipeline/RenderPipelineDebugger.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../RenderAPI/DrawCommandQueue.h"
-#include "../RenderAPI/RenderContext.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../RenderAPI/RenderAPIUtils.h"
-#include "../RenderAPI/RenderScope.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsUtils.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/RenderSurface.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/RenderPipeline/RenderBufferManager.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDebugger.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/RenderAPI/DrawCommandQueue.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
+#include "Urho3D/RenderAPI/RenderScope.h"
 
 #include <Diligent/Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
 
 #include <EASTL/optional.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

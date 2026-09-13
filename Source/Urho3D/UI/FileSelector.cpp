@@ -3,24 +3,24 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
 #include <EASTL/sort.h>
 
-#include "../Core/Context.h"
-#include "../IO/File.h"
-#include "../IO/FileSystem.h"
-#include "../Input/InputEvents.h"
-#include "../UI/DropDownList.h"
-#include "../UI/FileSelector.h"
-#include "../UI/LineEdit.h"
-#include "../UI/ListView.h"
-#include "../UI/Text.h"
-#include "../UI/UI.h"
-#include "../UI/UIEvents.h"
-#include "../UI/Window.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/Input/InputEvents.h"
+#include "Urho3D/UI/DropDownList.h"
+#include "Urho3D/UI/FileSelector.h"
+#include "Urho3D/UI/LineEdit.h"
+#include "Urho3D/UI/ListView.h"
+#include "Urho3D/UI/Text.h"
+#include "Urho3D/UI/UI.h"
+#include "Urho3D/UI/UIEvents.h"
+#include "Urho3D/UI/Window.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

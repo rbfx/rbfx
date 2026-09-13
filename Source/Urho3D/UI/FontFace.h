@@ -7,10 +7,10 @@
 
 #include <EASTL/unordered_map.h>
 
-#include <Urho3D/Urho3D.h>
+#include "Urho3D/Urho3D.h"
 
-#include "../Container/Ptr.h"
-#include "../Math/AreaAllocator.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Math/AreaAllocator.h"
 
 namespace Urho3D
 {

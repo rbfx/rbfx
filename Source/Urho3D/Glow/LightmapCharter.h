@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "../Graphics/LightBakingSettings.h"
-#include "../Math/AreaAllocator.h"
-#include "../Math/Rect.h"
-#include "../Math/Vector2.h"
-#include "../Math/Vector4.h"
+#include "Urho3D/Graphics/LightBakingSettings.h"
+#include "Urho3D/Math/AreaAllocator.h"
+#include "Urho3D/Math/Rect.h"
+#include "Urho3D/Math/Vector2.h"
+#include "Urho3D/Math/Vector4.h"
 
 #include <EASTL/vector.h>
 

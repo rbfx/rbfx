@@ -3,20 +3,20 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "ActionManager.h"
+#include "Urho3D/Actions/ActionManager.h"
 
-#include "../Core/CoreEvents.h"
-#include "../IO/Log.h"
-#include "ActionSet.h"
-#include "ActionState.h"
-#include "Attribute.h"
-#include "Ease.h"
-#include "FiniteTimeActionState.h"
-#include "Move.h"
-#include "Parallel.h"
-#include "Repeat.h"
-#include "Sequence.h"
-#include "ShaderParameter.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Actions/ActionSet.h"
+#include "Urho3D/Actions/ActionState.h"
+#include "Urho3D/Actions/Attribute.h"
+#include "Urho3D/Actions/Ease.h"
+#include "Urho3D/Actions/FiniteTimeActionState.h"
+#include "Urho3D/Actions/Move.h"
+#include "Urho3D/Actions/Parallel.h"
+#include "Urho3D/Actions/Repeat.h"
+#include "Urho3D/Actions/Sequence.h"
+#include "Urho3D/Actions/ShaderParameter.h"
 
 namespace Urho3D
 {

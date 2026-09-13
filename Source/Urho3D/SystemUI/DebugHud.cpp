@@ -3,25 +3,25 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../SystemUI/DebugHud.h"
+#include "Urho3D/SystemUI/DebugHud.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Profiler.h"
-#include "../Engine/Engine.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/Renderer.h"
-#include "../IO/Log.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../SystemUI/SystemUI.h"
-#include "../UI/UI.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Engine/Engine.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/SystemUI/SystemUI.h"
+#include "Urho3D/UI/UI.h"
 
 #include <EASTL/sort.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

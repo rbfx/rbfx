@@ -3,11 +3,11 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "Parallel.h"
+#include "Urho3D/Actions/Parallel.h"
 
-#include "ActionBuilder.h"
-#include "ActionManager.h"
-#include "FiniteTimeActionState.h"
+#include "Urho3D/Actions/ActionBuilder.h"
+#include "Urho3D/Actions/ActionManager.h"
+#include "Urho3D/Actions/FiniteTimeActionState.h"
 #include "Urho3D/IO/ArchiveSerializationContainer.h"
 
 #include <numeric>

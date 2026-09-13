@@ -3,10 +3,10 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Thread.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/IO/Log.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -19,7 +19,7 @@
 #include <sys/prctl.h>
 #endif
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

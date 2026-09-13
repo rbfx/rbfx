@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Graphics/GraphicsDefs.h"
-#include "../RenderPipeline/BatchStateCache.h"
-#include "../RenderPipeline/DrawableProcessor.h"
-#include "../RenderPipeline/InstancingBuffer.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/RenderPipeline/BatchStateCache.h"
+#include "Urho3D/RenderPipeline/DrawableProcessor.h"
+#include "Urho3D/RenderPipeline/InstancingBuffer.h"
 
 #include <EASTL/sort.h>
 

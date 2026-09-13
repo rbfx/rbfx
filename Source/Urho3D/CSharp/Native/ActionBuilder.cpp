@@ -3,8 +3,8 @@
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #if URHO3D_ACTIONS
-#include <Urho3D/Script/Script.h>
-#include <Urho3D/Actions/ActionBuilder.h>
+#include "Urho3D/Script/Script.h"
+#include "Urho3D/Actions/ActionBuilder.h"
 
 namespace Urho3D
 {

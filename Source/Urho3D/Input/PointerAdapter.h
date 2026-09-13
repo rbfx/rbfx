@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Input/DirectionAggregator.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Input/DirectionAggregator.h"
 
 namespace Urho3D
 {

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "InputConstants.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Input/InputConstants.h"
 #include <EASTL/fixed_vector.h>
 
 namespace Urho3D

@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include "../Container/Ptr.h"
-#include "../Glow/BakedSceneBackground.h"
-#include "../Glow/EmbreeForward.h"
-#include "../Graphics/LightBakingSettings.h"
-#include "../Math/BoundingBox.h"
-#include "../Math/Color.h"
-#include "../Resource/Image.h"
-#include "../Resource/ImageCube.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Glow/BakedSceneBackground.h"
+#include "Urho3D/Glow/EmbreeForward.h"
+#include "Urho3D/Graphics/LightBakingSettings.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Color.h"
+#include "Urho3D/Resource/Image.h"
+#include "Urho3D/Resource/ImageCube.h"
 
 #include <EASTL/vector.h>
 

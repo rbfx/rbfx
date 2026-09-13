@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "NormalizedEffectTime.h"
+#include "Urho3D/Particles/Nodes/NormalizedEffectTime.h"
 
 namespace Urho3D
 {

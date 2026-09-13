@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Resource/Resource.h"
-#include "../Resource/XMLElement.h"
+#include "Urho3D/Resource/Resource.h"
+#include "Urho3D/Resource/XMLElement.h"
 
 #include <EASTL/functional.h>
 

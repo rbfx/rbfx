@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../SystemUI/ResourceInspectorWidget.h"
+#include "Urho3D/SystemUI/ResourceInspectorWidget.h"
 
 namespace Urho3D
 {

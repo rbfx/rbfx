@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "ParticleGraphEffect.h"
-#include "../Graphics/Drawable.h"
-#include "../Scene/Component.h"
+#include "Urho3D/Particles/ParticleGraphEffect.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Scene/Component.h"
 
 #include <EASTL/fixed_vector.h>
 

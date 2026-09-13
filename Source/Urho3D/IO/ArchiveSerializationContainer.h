@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../IO/ArchiveSerializationBasic.h"
-#include "../IO/ArchiveSerializationVariant.h"
+#include "Urho3D/IO/ArchiveSerializationBasic.h"
+#include "Urho3D/IO/ArchiveSerializationVariant.h"
 
 #include <EASTL/variant.h>
 

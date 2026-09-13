@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/RenderSurface.h"
-#include "../Math/Color.h"
-#include "../Resource/Resource.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/RenderSurface.h"
+#include "Urho3D/Math/Color.h"
+#include "Urho3D/Resource/Resource.h"
 #include "Urho3D/RenderAPI/RawTexture.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 

@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../IO/ArchiveBase.h"
-#include "../IO/Deserializer.h"
-#include "../IO/Serializer.h"
-#include "../IO/VectorBuffer.h"
+#include "Urho3D/IO/ArchiveBase.h"
+#include "Urho3D/IO/Deserializer.h"
+#include "Urho3D/IO/Serializer.h"
+#include "Urho3D/IO/VectorBuffer.h"
 
 namespace Urho3D
 {

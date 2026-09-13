@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../RenderPipeline/BatchStateCache.h"
-#include "../UI/Cursor.h"
-#include "../UI/UIBatch.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/RenderPipeline/BatchStateCache.h"
+#include "Urho3D/UI/Cursor.h"
+#include "Urho3D/UI/UIBatch.h"
 
 namespace Urho3D
 {

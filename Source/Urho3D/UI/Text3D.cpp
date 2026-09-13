@@ -3,23 +3,23 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/Geometry.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Technique.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../IO/Log.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Node.h"
-#include "../UI/Font.h"
-#include "../UI/FontFace.h"
-#include "../UI/Text.h"
-#include "../UI/Text3D.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Technique.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/UI/Font.h"
+#include "Urho3D/UI/FontFace.h"
+#include "Urho3D/UI/Text.h"
+#include "Urho3D/UI/Text3D.h"
 
 namespace Urho3D
 {

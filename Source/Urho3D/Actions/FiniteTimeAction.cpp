@@ -3,11 +3,11 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "FiniteTimeAction.h"
+#include "Urho3D/Actions/FiniteTimeAction.h"
 
-#include "ActionManager.h"
-#include "../Core/Context.h"
-#include "../IO/ArchiveSerializationBasic.h"
+#include "Urho3D/Actions/ActionManager.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/ArchiveSerializationBasic.h"
 
 namespace Urho3D
 {

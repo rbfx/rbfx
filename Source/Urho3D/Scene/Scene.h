@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "../Core/Mutex.h"
-#include "../Resource/JSONFile.h"
-#include "../Resource/XMLElement.h"
-#include "../Scene/Node.h"
-#include "../Scene/SceneResolver.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Resource/JSONFile.h"
+#include "Urho3D/Resource/XMLElement.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Scene/SceneResolver.h"
 
 #include <EASTL/span.h>
 #include <EASTL/unique_ptr.h>

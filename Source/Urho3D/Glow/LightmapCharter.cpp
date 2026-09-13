@@ -2,17 +2,17 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Glow/LightmapCharter.h"
+#include "Urho3D/Glow/LightmapCharter.h"
 
-#include "../Core/Variant.h"
-#include "../IO/Log.h"
-#include "../Glow/Helpers.h"
-#include "../Glow/LightmapUVGenerator.h"
-#include "../Graphics/Model.h"
-#include "../Graphics/StaticModel.h"
-#include "../Graphics/Terrain.h"
+#include "Urho3D/Core/Variant.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Glow/Helpers.h"
+#include "Urho3D/Glow/LightmapUVGenerator.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/Terrain.h"
 
 #include <EASTL/sort.h>
 

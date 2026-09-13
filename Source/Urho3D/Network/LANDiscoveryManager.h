@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include <Urho3D/Container/FlagSet.h>
-#include <Urho3D/Core/Object.h>
-#include <Urho3D/Core/Timer.h>
-#include <Urho3D/Core/Variant.h>
-#include <Urho3D/IO/VectorBuffer.h>
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/Timer.h"
+#include "Urho3D/Core/Variant.h"
+#include "Urho3D/IO/VectorBuffer.h"
 
 namespace Urho3D
 {

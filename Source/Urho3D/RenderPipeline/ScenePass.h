@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../RenderPipeline/PipelineBatchSortKey.h"
-#include "../RenderPipeline/BatchCompositor.h"
-#include "../RenderPipeline/DrawableProcessor.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/RenderPipeline/PipelineBatchSortKey.h"
+#include "Urho3D/RenderPipeline/BatchCompositor.h"
+#include "Urho3D/RenderPipeline/DrawableProcessor.h"
 
 #include <EASTL/string.h>
 #include <EASTL/vector.h>

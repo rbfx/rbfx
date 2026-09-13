@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "FiniteTimeAction.h"
+#include "Urho3D/Actions/FiniteTimeAction.h"
 #include <EASTL/fixed_vector.h>
 
 namespace Urho3D

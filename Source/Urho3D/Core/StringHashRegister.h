@@ -7,9 +7,9 @@
 
 #include <EASTL/unique_ptr.h>
 
-#include "../Container/Str.h"
-#include "../Core/Variant.h"
-#include "../Math/StringHash.h"
+#include "Urho3D/Container/Str.h"
+#include "Urho3D/Core/Variant.h"
+#include "Urho3D/Math/StringHash.h"
 
 namespace Urho3D
 {

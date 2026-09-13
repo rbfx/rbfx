@@ -5,7 +5,7 @@
 #pragma once
 
 
-#include "../Core/Object.h"
+#include "Urho3D/Core/Object.h"
 
 #include <RmlUi/Core/EventListener.h>
 

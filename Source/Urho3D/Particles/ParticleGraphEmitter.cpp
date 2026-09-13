@@ -2,17 +2,17 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "ParticleGraphEmitter.h"
+#include "Urho3D/Particles/ParticleGraphEmitter.h"
 
-#include "../Core/Context.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/ResourceEvents.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
-#include "ParticleGraphLayer.h"
-#include "ParticleGraphLayerInstance.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/ResourceEvents.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
+#include "Urho3D/Particles/ParticleGraphLayer.h"
+#include "Urho3D/Particles/ParticleGraphLayerInstance.h"
 
 namespace Urho3D
 {

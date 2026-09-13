@@ -3,23 +3,23 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Profiler.h"
-#include "../Core/Context.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../IO/Deserializer.h"
-#include "../IO/Log.h"
-#include "../IO/MemoryBuffer.h"
-#include "../Resource/JSONArchive.h"
-#include "../Resource/JSONFile.h"
-#include "../Resource/ResourceCache.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/IO/Deserializer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Resource/JSONArchive.h"
+#include "Urho3D/Resource/JSONFile.h"
+#include "Urho3D/Resource/ResourceCache.h"
 
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 using namespace rapidjson;
 

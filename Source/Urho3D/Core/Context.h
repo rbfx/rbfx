@@ -7,11 +7,11 @@
 
 #include <EASTL/unique_ptr.h>
 
-#include "../Container/Ptr.h"
-#include "../Core/Attribute.h"
-#include "../Core/Object.h"
-#include "../Core/ObjectReflection.h"
-#include "../Core/SubsystemCache.h"
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Core/Attribute.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/ObjectReflection.h"
+#include "Urho3D/Core/SubsystemCache.h"
 
 namespace Urho3D
 {

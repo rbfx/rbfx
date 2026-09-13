@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../RenderPipeline/RenderBuffer.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/RenderPipeline/RenderBuffer.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 
 namespace Urho3D
 {

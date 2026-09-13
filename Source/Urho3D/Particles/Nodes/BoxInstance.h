@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "Box.h"
-#include "../Emitter.h"
+#include "Urho3D/Particles/Nodes/Box.h"
+#include "Urho3D/Particles/Emitter.h"
 
 namespace Urho3D
 {

@@ -5,10 +5,10 @@
 #pragma once
 
 
-#include "../Core/Object.h"
-#include "../Core/Signal.h"
-#include "../Graphics/Texture2D.h"
-#include "../Math/Vector2.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Math/Vector2.h"
 
 #include <EASTL/vector.h>
 #include <EASTL/string.h>

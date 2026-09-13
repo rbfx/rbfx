@@ -8,8 +8,8 @@
 #include <EASTL/list.h>
 #include <EASTL/shared_array.h>
 
-#include "../Audio/SoundStream.h"
-#include "../Core/Mutex.h"
+#include "Urho3D/Audio/SoundStream.h"
+#include "Urho3D/Core/Mutex.h"
 
 namespace Urho3D
 {

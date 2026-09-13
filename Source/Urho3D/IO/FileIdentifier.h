@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include <Urho3D/Urho3D.h>
+#include "Urho3D/Urho3D.h"
 
-#include <Urho3D/Core/Format.h>
+#include "Urho3D/Core/Format.h"
 
 #include <EASTL/string.h>
 #include <EASTL/string_view.h>

@@ -2,26 +2,26 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/IteratorRange.h"
-#include "../Core/WorkQueue.h"
-#include "../Math/NumericRange.h"
-#include "../Math/Polyhedron.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/OctreeQuery.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/Texture2D.h"
-#include "../RenderPipeline/LightProcessor.h"
-#include "../RenderPipeline/LightProcessorQuery.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/IteratorRange.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Math/NumericRange.h"
+#include "Urho3D/Math/Polyhedron.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/OctreeQuery.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/RenderPipeline/LightProcessor.h"
+#include "Urho3D/RenderPipeline/LightProcessorQuery.h"
+#include "Urho3D/Scene/Node.h"
 
 #include <EASTL/fixed_vector.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

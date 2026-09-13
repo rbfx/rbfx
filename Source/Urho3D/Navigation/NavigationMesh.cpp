@@ -3,35 +3,35 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/Profiler.h"
-#include "../Core/WorkQueue.h"
-#include "../Graphics/DebugRenderer.h"
-#include "../Graphics/Drawable.h"
-#include "../Graphics/Geometry.h"
-#include "../Graphics/Model.h"
-#include "../Graphics/StaticModel.h"
-#include "../Graphics/TerrainPatch.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../IO/Log.h"
-#include "../IO/MemoryBuffer.h"
-#include "../Navigation/CrowdAgent.h"
-#include "../Navigation/DynamicNavigationMesh.h"
-#include "../Navigation/NavArea.h"
-#include "../Navigation/NavBuildData.h"
-#include "../Navigation/Navigable.h"
-#include "../Navigation/NavigationEvents.h"
-#include "../Navigation/NavigationMesh.h"
-#include "../Navigation/NavigationUtils.h"
-#include "../Navigation/Obstacle.h"
-#include "../Navigation/OffMeshConnection.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/TerrainPatch.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Navigation/CrowdAgent.h"
+#include "Urho3D/Navigation/DynamicNavigationMesh.h"
+#include "Urho3D/Navigation/NavArea.h"
+#include "Urho3D/Navigation/NavBuildData.h"
+#include "Urho3D/Navigation/Navigable.h"
+#include "Urho3D/Navigation/NavigationEvents.h"
+#include "Urho3D/Navigation/NavigationMesh.h"
+#include "Urho3D/Navigation/NavigationUtils.h"
+#include "Urho3D/Navigation/Obstacle.h"
+#include "Urho3D/Navigation/OffMeshConnection.h"
 #ifdef URHO3D_PHYSICS
-#include "../Physics/CollisionShape.h"
+#include "Urho3D/Physics/CollisionShape.h"
 #endif
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
 #include <cfloat>
 #include <Detour/DetourCommon.h>
@@ -42,7 +42,7 @@
 
 #include <EASTL/numeric.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

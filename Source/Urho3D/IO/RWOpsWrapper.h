@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../IO/File.h"
+#include "Urho3D/IO/File.h"
 
 #include <SDL_rwops.h>
 

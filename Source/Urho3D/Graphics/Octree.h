@@ -5,12 +5,12 @@
 
 #pragma once
 
-#include "../Container/MultiVector.h"
-#include "../Core/Mutex.h"
-#include "../Core/WorkQueue.h"
-#include "../Graphics/Drawable.h"
-#include "../Graphics/OctreeQuery.h"
-#include "../Math/Transform.h"
+#include "Urho3D/Container/MultiVector.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/OctreeQuery.h"
+#include "Urho3D/Math/Transform.h"
 
 namespace Urho3D
 {

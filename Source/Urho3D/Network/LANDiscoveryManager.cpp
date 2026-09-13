@@ -3,11 +3,11 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include <Urho3D/Network/LANDiscoveryManager.h>
-#include <Urho3D/Network/NetworkEvents.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/IO/MemoryBuffer.h>
-#include <Urho3D/Core/CoreEvents.h>
+#include "Urho3D/Network/LANDiscoveryManager.h"
+#include "Urho3D/Network/NetworkEvents.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Core/CoreEvents.h"
 
 #ifdef _WIN32
 #include <winsock2.h>

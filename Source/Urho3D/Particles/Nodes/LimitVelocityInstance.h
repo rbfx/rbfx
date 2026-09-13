@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "LimitVelocity.h"
+#include "Urho3D/Particles/Nodes/LimitVelocity.h"
 
 namespace Urho3D
 {

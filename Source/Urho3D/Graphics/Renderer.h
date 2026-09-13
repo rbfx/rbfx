@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "../Core/Mutex.h"
-#include "../Graphics/Drawable.h"
-#include "../RenderAPI/PipelineState.h"
-#include "../Graphics/Viewport.h"
-#include "../Math/Color.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
+#include "Urho3D/Graphics/Viewport.h"
+#include "Urho3D/Math/Color.h"
 
 #include <EASTL/set.h>
 #include <EASTL/unique_ptr.h>

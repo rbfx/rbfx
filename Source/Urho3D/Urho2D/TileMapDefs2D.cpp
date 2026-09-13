@@ -3,13 +3,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Resource/XMLElement.h"
-#include "../Resource/JSONFile.h"
-#include "../Urho2D/TileMapDefs2D.h"
+#include "Urho3D/Resource/XMLElement.h"
+#include "Urho3D/Resource/JSONFile.h"
+#include "Urho3D/Urho2D/TileMapDefs2D.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

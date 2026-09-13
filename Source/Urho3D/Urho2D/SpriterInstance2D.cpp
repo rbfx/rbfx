@@ -3,12 +3,12 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/DrawableEvents.h"
-#include "../Scene/Component.h"
-#include "../Scene/Node.h"
-#include "../Urho2D/SpriterInstance2D.h"
+#include "Urho3D/Graphics/DrawableEvents.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Urho2D/SpriterInstance2D.h"
 
 #include <cmath>
 

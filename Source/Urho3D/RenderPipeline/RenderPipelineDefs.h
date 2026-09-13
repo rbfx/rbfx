@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "../Container/ConstString.h"
-#include "../Container/Hash.h"
-#include "../Core/Signal.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/Light.h"
-#include "../Math/Vector2.h"
+#include "Urho3D/Container/ConstString.h"
+#include "Urho3D/Container/Hash.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/Math/Vector2.h"
 
 namespace Urho3D
 {

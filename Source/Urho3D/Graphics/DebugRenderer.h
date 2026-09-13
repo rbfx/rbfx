@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "../RenderPipeline/StaticPipelineStateCache.h"
-#include "../Math/Color.h"
-#include "../Math/Frustum.h"
-#include "../Scene/Component.h"
+#include "Urho3D/RenderPipeline/StaticPipelineStateCache.h"
+#include "Urho3D/Math/Color.h"
+#include "Urho3D/Math/Frustum.h"
+#include "Urho3D/Scene/Component.h"
 
 namespace Urho3D
 {

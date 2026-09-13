@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Scene/Component.h"
+#include "Urho3D/Scene/Component.h"
 
 #include <Box2D/Box2D.h>
 

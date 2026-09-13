@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "../Container/FlagSet.h"
-#include "../Core/Object.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 #include "Urho3D/RenderAPI/RenderTargetView.h"
 
 #include <EASTL/optional.h>

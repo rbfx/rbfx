@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../Math/BoundingBox.h"
-#include "../Math/Matrix3x4.h"
-#include "../Math/Vector3.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Matrix3x4.h"
+#include "Urho3D/Math/Vector3.h"
 
 #include <EASTL/algorithm.h>
 #include <EASTL/span.h>

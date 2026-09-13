@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "EmitterScale.h"
+#include "Urho3D/Particles/Nodes/EmitterScale.h"
 #include "Urho3D/Scene/Node.h"
 
 namespace Urho3D

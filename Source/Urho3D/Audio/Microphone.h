@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Core/Mutex.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/Mutex.h"
 
 #include <SDL.h>
 

@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../UI/UIEvents.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/UI/UIEvents.h"
 
 
 namespace Urho3D

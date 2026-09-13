@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../IK/IKSolverComponent.h"
-#include "../Scene/LogicComponent.h"
-#include "../Scene/SceneEvents.h"
+#include "Urho3D/IK/IKSolverComponent.h"
+#include "Urho3D/Scene/LogicComponent.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
 namespace Urho3D
 {

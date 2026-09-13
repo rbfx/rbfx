@@ -2,23 +2,23 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../RmlUI/RmlEventListeners.h"
+#include "Urho3D/RmlUI/RmlEventListeners.h"
 
-#include "../Audio/Sound.h"
-#include "../Audio/SoundSource.h"
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "../Resource/JSONFile.h"
-#include "../Resource/ResourceCache.h"
-#include "../RmlUI/RmlUI.h"
-#include "../RmlUI/RmlUIComponent.h"
-#include "../Scene/Node.h"
+#include "Urho3D/Audio/Sound.h"
+#include "Urho3D/Audio/SoundSource.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Resource/JSONFile.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/RmlUI/RmlUI.h"
+#include "Urho3D/RmlUI/RmlUIComponent.h"
+#include "Urho3D/Scene/Node.h"
 
 #include <regex>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

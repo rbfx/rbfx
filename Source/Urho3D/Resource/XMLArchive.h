@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "../IO/ArchiveBase.h"
-#include "../Resource/XMLElement.h"
-#include "../Resource/XMLFile.h"
+#include "Urho3D/IO/ArchiveBase.h"
+#include "Urho3D/Resource/XMLElement.h"
+#include "Urho3D/Resource/XMLFile.h"
 
 #include <EASTL/hash_set.h>
 

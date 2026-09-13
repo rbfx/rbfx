@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include <Urho3D/Container/IndexAllocator.h>
-#include <Urho3D/Core/TupleUtils.h>
-#include <Urho3D/Scene/Component.h>
-#include <Urho3D/Scene/Scene.h>
+#include "Urho3D/Container/IndexAllocator.h"
+#include "Urho3D/Core/TupleUtils.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {

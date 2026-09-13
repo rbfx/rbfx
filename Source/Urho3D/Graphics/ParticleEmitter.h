@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Graphics/BillboardSet.h"
+#include "Urho3D/Graphics/BillboardSet.h"
 
 namespace Urho3D
 {

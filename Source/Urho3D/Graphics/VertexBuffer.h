@@ -7,11 +7,11 @@
 
 #include <EASTL/shared_array.h>
 
-#include "../Container/ByteVector.h"
-#include "../Core/Object.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/PipelineStateTracker.h"
-#include "../Math/Vector4.h"
+#include "Urho3D/Container/ByteVector.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Graphics/PipelineStateTracker.h"
+#include "Urho3D/Math/Vector4.h"
 #include "Urho3D/RenderAPI/RawBuffer.h"
 
 namespace Urho3D

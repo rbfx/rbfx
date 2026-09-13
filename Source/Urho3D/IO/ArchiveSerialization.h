@@ -4,6 +4,6 @@
 
 #pragma once
 
-#include "../IO/ArchiveSerializationBasic.h"
-#include "../IO/ArchiveSerializationContainer.h"
-#include "../IO/ArchiveSerializationVariant.h"
+#include "Urho3D/IO/ArchiveSerializationBasic.h"
+#include "Urho3D/IO/ArchiveSerializationContainer.h"
+#include "Urho3D/IO/ArchiveSerializationVariant.h"

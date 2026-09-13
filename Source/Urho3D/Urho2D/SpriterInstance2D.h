@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Urho2D/SpriterData2D.h"
+#include "Urho3D/Urho2D/SpriterData2D.h"
 
 namespace Urho3D
 {

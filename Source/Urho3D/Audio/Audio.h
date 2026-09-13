@@ -8,9 +8,9 @@
 #include <EASTL/unique_ptr.h>
 #include <EASTL/hash_set.h>
 
-#include "../Audio/AudioDefs.h"
-#include "../Core/Mutex.h"
-#include "../Core/Object.h"
+#include "Urho3D/Audio/AudioDefs.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Core/Object.h"
 
 namespace Urho3D
 {

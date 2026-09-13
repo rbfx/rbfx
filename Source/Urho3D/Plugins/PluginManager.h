@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "../Container/ConstString.h"
-#include "../IO/FileWatcher.h"
-#include "../IO/VectorBuffer.h"
-#include "../Plugins/DynamicModule.h"
-#include "../Plugins/Plugin.h"
+#include "Urho3D/Container/ConstString.h"
+#include "Urho3D/IO/FileWatcher.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Plugins/DynamicModule.h"
+#include "Urho3D/Plugins/Plugin.h"
 
 #include <EASTL/functional.h>
 #include <EASTL/unordered_set.h>

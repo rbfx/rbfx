@@ -3,7 +3,7 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/IO/Log.h"
@@ -30,7 +30,7 @@ btKinematicCharacterController* newKinematicCharCtrl(btPairCachingGhostObject *g
     return new btKinematicCharacterController(ghostCGO, shape, stepHeight, upVec);
 }
 
-#include <Urho3D/DebugNew.h>
+#include "Urho3D/DebugNew.h"
 
 //=============================================================================
 //=============================================================================

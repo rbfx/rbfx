@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Math/Vector3.h"
-#include "../Resource/ImageCube.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Resource/ImageCube.h"
 
 #include <EASTL/string.h>
 

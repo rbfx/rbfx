@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../Glow/LightmapGeometryBuffer.h"
-#include "../Graphics/Texture2D.h"
+#include "Urho3D/Glow/LightmapGeometryBuffer.h"
+#include "Urho3D/Graphics/Texture2D.h"
 
 namespace Urho3D
 {

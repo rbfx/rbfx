@@ -2,24 +2,24 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Glow/LightmapStitcher.h"
+#include "Urho3D/Glow/LightmapStitcher.h"
 
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "../Glow/Helpers.h"
-#include "../Graphics/Camera.h"
-#include "../Graphics/Geometry.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Model.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/StaticModel.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../RenderPipeline/RenderPipeline.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Glow/Helpers.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/RenderPipeline/RenderPipeline.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {

@@ -3,10 +3,10 @@
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
-#include "../Helpers.h"
-#include "../ParticleGraphNode.h"
-#include "../ParticleGraphNodeInstance.h"
-#include "../../Graphics/AnimationTrack.h"
+#include "Urho3D/Particles/Helpers.h"
+#include "Urho3D/Particles/ParticleGraphNode.h"
+#include "Urho3D/Particles/ParticleGraphNodeInstance.h"
+#include "Urho3D/Graphics/AnimationTrack.h"
 
 namespace Urho3D
 {

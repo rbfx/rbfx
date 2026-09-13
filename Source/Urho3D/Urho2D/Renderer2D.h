@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "../Graphics/Drawable.h"
-#include "../Graphics/Texture2D.h"
-#include "../Math/Frustum.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Math/Frustum.h"
 
 namespace Urho3D
 {

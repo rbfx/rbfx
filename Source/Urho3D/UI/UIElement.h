@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "../Math/Vector2.h"
-#include "../Input/InputConstants.h"
-#include "../Resource/XMLFile.h"
-#include "../Scene/Animatable.h"
-#include "../UI/UIBatch.h"
+#include "Urho3D/Math/Vector2.h"
+#include "Urho3D/Input/InputConstants.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Scene/Animatable.h"
+#include "Urho3D/UI/UIBatch.h"
 
 namespace Urho3D
 {

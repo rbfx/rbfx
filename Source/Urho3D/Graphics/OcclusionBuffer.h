@@ -7,10 +7,10 @@
 
 #include <EASTL/shared_array.h>
 
-#include "../Core/Object.h"
-#include "../Core/Timer.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../Math/Frustum.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/Timer.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Math/Frustum.h"
 
 namespace Urho3D
 {

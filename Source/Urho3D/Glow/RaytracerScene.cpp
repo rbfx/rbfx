@@ -2,16 +2,16 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/Model.h"
-#include "../Graphics/ModelView.h"
-#include "../Graphics/StaticModel.h"
-#include "../Graphics/Terrain.h"
-#include "../Graphics/TerrainPatch.h"
-#include "../Glow/RaytracerScene.h"
-#include "../Glow/Helpers.h"
-#include "../IO/Log.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/ModelView.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/Terrain.h"
+#include "Urho3D/Graphics/TerrainPatch.h"
+#include "Urho3D/Glow/RaytracerScene.h"
+#include "Urho3D/Glow/Helpers.h"
+#include "Urho3D/IO/Log.h"
 
 #include <embree3/rtcore.h>
 #include <embree3/rtcore_ray.h>
