@@ -168,7 +168,7 @@ void PluginApplication::RegisterPluginApplication()
 /// Macro for defining entry point of dynamically linked plugin.
 #if !defined(URHO3D_PLUGINS) || defined(URHO3D_STATIC)
     #define URHO3D_DEFINE_PLUGIN_MAIN(type) \
-        extern "C" void CONCATENATE(RegisterPlugin_, URHO3D_CURRENT_PLUGIN_NAME_SANITATED)() \
+        extern "C" void CONCATENATE(RegisterPlugin_, URHO3D_CURRENT_PLUGIN_NAME_SANITIZED)() \
         { \
             Urho3D::PluginApplication::RegisterPluginApplication<type>(TO_STRING(URHO3D_CURRENT_PLUGIN_NAME)); \
         }

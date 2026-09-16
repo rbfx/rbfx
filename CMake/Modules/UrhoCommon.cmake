@@ -614,24 +614,40 @@ function (web_link_resources TARGET RESOURCES)
     add_dependencies(${TARGET} ${RESOURCES})
 endfunction ()
 
-function (setup_plugin_target TARGET PLUGIN_NAME)
-    string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
+function(sanitize_plugin_name PLUGIN_NAME PLUGIN_NAME_SANITIZED PLUGIN_NAME_SANITIZED_UPPERCASE)
+    string (REPLACE "." "_" PLUGIN_NAME_SANITIZED_LOCAL "${PLUGIN_NAME}")
+    string (TOUPPER "${PLUGIN_NAME_SANITIZED_LOCAL}" PLUGIN_NAME_SANITIZED_UPPERCASE_LOCAL)
 
-    set_target_properties (${TARGET} PROPERTIES OUTPUT_NAME ${PLUGIN_NAME})
-    target_compile_definitions (${TARGET} PRIVATE
-        URHO3D_CURRENT_PLUGIN_NAME=${PLUGIN_NAME}
-        URHO3D_CURRENT_PLUGIN_NAME_SANITATED=${PLUGIN_NAME_SANITATED}
-        ${PLUGIN_NAME_SANITATED}_EXPORT=1
-    )
+    set(${PLUGIN_NAME_SANITIZED} "${PLUGIN_NAME_SANITIZED_LOCAL}" PARENT_SCOPE)
+    set(${PLUGIN_NAME_SANITIZED_UPPERCASE} "${PLUGIN_NAME_SANITIZED_UPPERCASE_LOCAL}" PARENT_SCOPE)
+endfunction()
+
+function (add_plugin TARGET_NAME SOURCE_FILES)
+    set (PLUGIN_NAME "${TARGET_NAME}")
+    sanitize_plugin_name ("${PLUGIN_NAME}" PLUGIN_NAME_SANITIZED PLUGIN_NAME_SANITIZED_UPPERCASE)
+
+    option ("URHO3D_ENABLE_${PLUGIN_NAME_SANITIZED_UPPERCASE}" "Plugin: ${PLUGIN_NAME}" ON)
+    if (NOT ${URHO3D_ENABLE_${PLUGIN_NAME_SANITIZED_UPPERCASE}})
+        return ()
+    endif ()
+
+    if ("${URHO3D_EMBEDDED_PLUGIN_TARGET}" STREQUAL "")
+        add_library (${TARGET_NAME} ${SOURCE_FILES})
+        target_link_libraries (${TARGET_NAME} PUBLIC Urho3D)
+        set_target_properties (${TARGET_NAME} PROPERTIES OUTPUT_NAME ${PLUGIN_NAME})
+        target_compile_definitions (${TARGET_NAME} PRIVATE
+            URHO3D_CURRENT_PLUGIN_NAME=${PLUGIN_NAME}
+            URHO3D_CURRENT_PLUGIN_NAME_SANITIZED=${PLUGIN_NAME_SANITIZED}
+            ${PLUGIN_NAME_SANITIZED_UPPERCASE}_EXPORT=1
+        )
+    else ()
+        target_sources (${URHO3D_EMBEDDED_PLUGIN_TARGET} PRIVATE ${SOURCE_FILES})
+        target_compile_definitions (${URHO3D_EMBEDDED_PLUGIN_TARGET} PUBLIC
+            "${PLUGIN_NAME_SANITIZED_UPPERCASE}_API=${URHO3D_EMBEDDED_PLUGIN_TARGET_API}")
+    endif ()
 endfunction ()
 
-function (add_plugin TARGET SOURCE_FILES)
-    add_library (${TARGET} ${SOURCE_FILES})
-    target_link_libraries (${TARGET} PUBLIC Urho3D)
-    setup_plugin_target (${TARGET} "${TARGET}")
-endfunction ()
-
-function (target_link_plugins TARGET PLUGIN_LIBRARIES)
+function (target_link_plugins TARGET_NAME PLUGIN_LIBRARIES)
     set (DECLARE_FUNCTIONS "")
     set (REGISTER_PLUGINS "")
     set (PLUGIN_LIST "")
@@ -639,18 +655,19 @@ function (target_link_plugins TARGET PLUGIN_LIBRARIES)
     foreach (PLUGIN_LIBRARY ${PLUGIN_LIBRARIES})
         get_target_property (PLUGIN_NAME ${PLUGIN_LIBRARY} OUTPUT_NAME)
         get_target_property (TARGET_TYPE ${PLUGIN_LIBRARY} TYPE)
+
         if (TARGET_TYPE STREQUAL STATIC_LIBRARY)
-            string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
-            string (APPEND DECLARE_FUNCTIONS "    void RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
-            string (APPEND REGISTER_PLUGINS "    RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
+            sanitize_plugin_name ("${PLUGIN_NAME}" PLUGIN_NAME_SANITIZED PLUGIN_NAME_SANITIZED_UPPERCASE)
+            string (APPEND DECLARE_FUNCTIONS "    void RegisterPlugin_${PLUGIN_NAME_SANITIZED}();\n")
+            string (APPEND REGISTER_PLUGINS "    RegisterPlugin_${PLUGIN_NAME_SANITIZED}();\n")
             string (APPEND STATIC_PLUGIN_LIBRARIRES "${PLUGIN_LIBRARY};")
         endif ()
         string (APPEND PLUGIN_LIST "${PLUGIN_NAME};")
     endforeach ()
 
     configure_file (${URHO3D_TEMPLATE_DIR}/LinkedPlugins.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/LinkedPlugins.cpp @ONLY)
-    target_sources (${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/LinkedPlugins.cpp)
-    target_link_libraries (${TARGET} PRIVATE ${STATIC_PLUGIN_LIBRARIRES})
+    target_sources (${TARGET_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/LinkedPlugins.cpp)
+    target_link_libraries (${TARGET_NAME} PRIVATE ${STATIC_PLUGIN_LIBRARIRES})
 endfunction()
 
 function (install_third_party_libs)

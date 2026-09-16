@@ -22,6 +22,7 @@
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/UIEvents.h>
+#include <Urho3D/SamplePlugin/SampleComponent.h>
 
 #include "01_HelloWorld/HelloWorld.h"
 #include "02_HelloGUI/HelloGUI.h"
@@ -207,6 +208,12 @@ void SampleSelectionScreen::Deactivate()
 
 void SamplesManager::Start()
 {
+    {
+        auto scene = MakeShared<Scene>(context_);
+        auto node = scene->CreateChild();
+        //node->CreateComponent<SampleComponent>();
+    }
+
     ResourceCache* cache = context_->GetSubsystem<ResourceCache>();
     VirtualFileSystem* vfs = context_->GetSubsystem<VirtualFileSystem>();
     vfs->SetWatching(true);

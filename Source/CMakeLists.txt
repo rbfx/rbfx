@@ -26,6 +26,12 @@ add_subdirectory (Tools)
 add_subdirectory (Samples)
 add_subdirectory (Tests)
 
+set (URHO3D_EMBEDDED_PLUGIN_TARGET Urho3D)
+set (URHO3D_EMBEDDED_PLUGIN_TARGET_API URHO3D_API)
+add_subdirectory (Urho3D/SamplePlugin)
+set (URHO3D_EMBEDDED_PLUGIN_TARGET "")
+set (URHO3D_EMBEDDED_PLUGIN_TARGET_API "")
+
 # Check options outside so user can add Player and/or Editor explicitly afterwards.
 if (URHO3D_PLAYER)
     add_subdirectory (Player)
