@@ -4,7 +4,7 @@
 
 #include "Urho3D/Precompiled.h"
 
-#include "Urho3D/Plugins/ScriptBundlePlugin.h"
+#include "Urho3D/Plugins/ScriptBundlePluginInstance.h"
 
 #include "Urho3D/Plugins/PluginManager.h"
 #include "Urho3D/Resource/ResourceEvents.h"
@@ -13,8 +13,8 @@
 namespace Urho3D
 {
 
-ScriptBundlePlugin::ScriptBundlePlugin(Context* context)
-    : Plugin(context)
+ScriptBundlePluginInstance::ScriptBundlePluginInstance(Context* context)
+    : PluginInstance(context)
 {
     SubscribeToEvent(E_FILECHANGED, [this](VariantMap& args)
     {
@@ -25,7 +25,7 @@ ScriptBundlePlugin::ScriptBundlePlugin(Context* context)
     });
 }
 
-bool ScriptBundlePlugin::Load()
+bool ScriptBundlePluginInstance::Load()
 {
     ScriptRuntimeApi* runtime = Script::GetRuntimeApi();
     if (!runtime)
@@ -43,7 +43,7 @@ bool ScriptBundlePlugin::Load()
     return true;
 }
 
-bool ScriptBundlePlugin::PerformUnload()
+bool ScriptBundlePluginInstance::PerformUnload()
 {
     ScriptRuntimeApi* runtime = Script::GetRuntimeApi();
     if (!runtime || !application_)
@@ -54,7 +54,7 @@ bool ScriptBundlePlugin::PerformUnload()
     return true;
 }
 
-void ScriptBundlePlugin::OnFileChanged(const ea::string& name)
+void ScriptBundlePluginInstance::OnFileChanged(const ea::string& name)
 {
     outOfDate_ |= name.ends_with(".cs");
 }

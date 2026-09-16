@@ -4,21 +4,21 @@
 
 #pragma once
 
-#include "Urho3D/Plugins/DynamicModule.h"
-#include "Urho3D/Plugins/Plugin.h"
+#include "Urho3D/Plugins/DynamicLibrary.h"
+#include "Urho3D/Plugins/PluginInstance.h"
 
 namespace Urho3D
 {
 
 /// Plugin that is loaded from a native or managed dynamic library.
-class URHO3D_API ModulePlugin : public Plugin
+class URHO3D_API DynamicLibraryPluginInstance : public PluginInstance
 {
-    URHO3D_OBJECT(ModulePlugin, Plugin);
+    URHO3D_OBJECT(DynamicLibraryPluginInstance, PluginInstance);
 
 public:
-    explicit ModulePlugin(Context* context) : Plugin(context) { }
+    explicit DynamicLibraryPluginInstance(Context* context) : PluginInstance(context) { }
 
-    /// Implement Plugin
+    /// Implement PluginInstance
     /// @{
     bool Load() override;
     bool IsLoaded() const override;
@@ -39,7 +39,7 @@ protected:
     ea::string temporaryFileName_;
 
     /// Native module of this plugin.
-    DynamicModule module_{context_};
+    DynamicLibrary module_{context_};
     /// Last modification time.
     unsigned lastModificationTime_{};
     /// Last loaded module type.

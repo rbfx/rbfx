@@ -4,19 +4,19 @@
 
 #pragma once
 
-#include "Urho3D/Plugins/Plugin.h"
+#include "Urho3D/Plugins/PluginInstance.h"
 
 namespace Urho3D
 {
 
-class URHO3D_API ScriptBundlePlugin : public Plugin
+class URHO3D_API ScriptBundlePluginInstance : public PluginInstance
 {
-    URHO3D_OBJECT(ScriptBundlePlugin, Plugin);
+    URHO3D_OBJECT(ScriptBundlePluginInstance, PluginInstance);
 
 public:
-    explicit ScriptBundlePlugin(Context* context);
+    explicit ScriptBundlePluginInstance(Context* context);
 
-    /// Implement Plugin
+    /// Implement PluginInstance
     /// @{
     bool Load() override;
     bool IsLoaded() const override { return application_ != nullptr; }

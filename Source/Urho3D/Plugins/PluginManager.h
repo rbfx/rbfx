@@ -7,8 +7,8 @@
 #include "Urho3D/Container/ConstString.h"
 #include "Urho3D/IO/FileWatcher.h"
 #include "Urho3D/IO/VectorBuffer.h"
-#include "Urho3D/Plugins/DynamicModule.h"
-#include "Urho3D/Plugins/Plugin.h"
+#include "Urho3D/Plugins/DynamicLibrary.h"
+#include "Urho3D/Plugins/PluginInstance.h"
 
 #include <EASTL/functional.h>
 #include <EASTL/unordered_set.h>
@@ -125,11 +125,11 @@ public:
     bool AreLoadedPluginsOutOfDate() const { return pluginsOutOfDate_; }
 
     /// Manually add new plugin with dynamic reloading.
-    bool AddDynamicPlugin(Plugin* plugin);
+    bool AddDynamicPlugin(PluginInstance* plugin);
     /// Manually add plugin that stays loaded forever.
     bool AddStaticPlugin(PluginApplication* pluginApplication);
     /// Find or load dynamic plugin by name.
-    Plugin* GetDynamicPlugin(const ea::string& name, bool ignoreUnloaded);
+    PluginInstance* GetDynamicPlugin(const ea::string& name, bool ignoreUnloaded);
     /// Find or load plugin application by name.
     PluginApplication* GetPluginApplication(const ea::string& name, bool ignoreUnloaded);
     /// Return main plugin. The result is valid after plugin application started.
@@ -149,8 +149,8 @@ private:
     void Update(bool exiting);
     void CheckOutOfDatePlugins();
 
-    void PerformPluginUnload(Plugin* plugin);
-    bool CheckAndRemoveUnloadedPlugin(Plugin* plugin);
+    void PerformPluginUnload(PluginInstance* plugin);
+    bool CheckAndRemoveUnloadedPlugin(PluginInstance* plugin);
 
     template <class T> void ForEachPluginApplication(const T& callback)
     {
@@ -190,7 +190,7 @@ private:
 
     /// Currently loaded modules
     /// @{
-    ea::unordered_map<ea::string, SharedPtr<Plugin>> dynamicPlugins_;
+    ea::unordered_map<ea::string, SharedPtr<PluginInstance>> dynamicPlugins_;
     ea::unordered_map<ea::string, SharedPtr<PluginApplication>> staticPlugins_;
     /// @}
 
