@@ -16,8 +16,8 @@
 #include "Urho3D/IO/FileSystem.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/IO/MemoryBuffer.h"
-#include "Urho3D/Plugins/ModulePlugin.h"
-#include "Urho3D/Plugins/ScriptBundlePlugin.h"
+#include "Urho3D/Plugins/DynamicLibraryPluginInstance.h"
+#include "Urho3D/Plugins/ScriptBundlePluginInstance.h"
 
 #include <EASTL/bonus/adaptors.h>
 #include <EASTL/finally.h>
@@ -142,7 +142,7 @@ void PluginStack::CopyBinariesToTemporaryDirectory()
         if (fs->FileExists(binaryDirectory_ + relativePdbFileName))
         {
             if (!fs->Copy(binaryDirectory_ + relativePdbFileName,
-                    ModulePlugin::GetTemporaryPdbName(temporaryDirectory_ + relativePdbFileName)))
+                    DynamicLibraryPluginInstance::GetTemporaryPdbName(temporaryDirectory_ + relativePdbFileName)))
             {
                 URHO3D_LOGERROR("Failed to copy '{}' from binary directory '{}' to temporary directory '{}'",
                     relativePdbFileName, binaryDirectory_, temporaryDirectory_);
@@ -328,7 +328,7 @@ PluginManager::PluginManager(Context* context)
     }
 
 #if URHO3D_PLUGINS && URHO3D_CSHARP
-    auto scriptBundlePlugin = MakeShared<ScriptBundlePlugin>(context_);
+    auto scriptBundlePlugin = MakeShared<ScriptBundlePluginInstance>(context_);
     scriptBundlePlugin->SetName("Automatic:Scripts");
     AddDynamicPlugin(scriptBundlePlugin);
 #endif
@@ -416,7 +416,7 @@ bool PluginManager::IsPluginLoaded(const ea::string& name)
     return application && application->IsLoaded();
 }
 
-bool PluginManager::AddDynamicPlugin(Plugin* plugin)
+bool PluginManager::AddDynamicPlugin(PluginInstance* plugin)
 {
 #if URHO3D_PLUGINS && !URHO3D_STATIC
     const ea::string& name = plugin->GetName();
@@ -426,7 +426,7 @@ bool PluginManager::AddDynamicPlugin(Plugin* plugin)
         return false;
     }
 
-    dynamicPlugins_.emplace(name, SharedPtr<Plugin>(plugin));
+    dynamicPlugins_.emplace(name, SharedPtr<PluginInstance>(plugin));
 
     URHO3D_LOGINFO("Added dynamic plugin '{}'", name);
     return true;
@@ -450,7 +450,7 @@ bool PluginManager::AddStaticPlugin(PluginApplication* pluginApplication)
     return true;
 }
 
-Plugin* PluginManager::GetDynamicPlugin(const ea::string& name, bool ignoreUnloaded)
+PluginInstance* PluginManager::GetDynamicPlugin(const ea::string& name, bool ignoreUnloaded)
 {
 #if URHO3D_PLUGINS && !URHO3D_STATIC
     const auto iter = dynamicPlugins_.find(name);
@@ -459,7 +459,7 @@ Plugin* PluginManager::GetDynamicPlugin(const ea::string& name, bool ignoreUnloa
     if (ignoreUnloaded)
         return nullptr;
 
-    auto plugin = MakeShared<ModulePlugin>(context_);
+    auto plugin = MakeShared<DynamicLibraryPluginInstance>(context_);
     plugin->SetName(name);
     if (!AddDynamicPlugin(plugin))
         return nullptr;
@@ -476,7 +476,7 @@ PluginApplication* PluginManager::GetPluginApplication(const ea::string& name, b
     if (iter != staticPlugins_.end())
         return iter->second;
 
-    if (Plugin* dynamicPlugin = GetDynamicPlugin(name, ignoreUnloaded))
+    if (PluginInstance* dynamicPlugin = GetDynamicPlugin(name, ignoreUnloaded))
     {
         if (!dynamicPlugin->IsLoaded())
         {
@@ -627,7 +627,7 @@ bool PluginManager::IsReloadBlocked(ea::string* reason) const
     return false;
 }
 
-void PluginManager::PerformPluginUnload(Plugin* plugin)
+void PluginManager::PerformPluginUnload(PluginInstance* plugin)
 {
     if (pluginStack_)
         DisposeStack();
@@ -635,7 +635,7 @@ void PluginManager::PerformPluginUnload(Plugin* plugin)
     plugin->PerformUnload();
 }
 
-bool PluginManager::CheckAndRemoveUnloadedPlugin(Plugin* plugin)
+bool PluginManager::CheckAndRemoveUnloadedPlugin(PluginInstance* plugin)
 {
     if (!plugin->IsUnloading())
         return false;
@@ -677,7 +677,7 @@ StringVector PluginManager::ScanAvailableModules()
         {
             // Parse file only if it is outdated or was not parsed already.
             info.lastModificationTime_ = currentModificationTime;
-            info.pluginType_ = DynamicModule::ReadModuleInformation(context_, fullPath);
+            info.pluginType_ = DynamicLibrary::ReadModuleInformation(context_, fullPath);
         }
 
         if (info.pluginType_ == MODULE_INVALID)

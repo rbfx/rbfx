@@ -23,13 +23,13 @@ enum ModuleType
 };
 
 /// A class managing lifetime of dynamically loaded library module.
-class URHO3D_API DynamicModule : public Object
+class URHO3D_API DynamicLibrary : public Object
 {
-    URHO3D_OBJECT(DynamicModule, Object);
+    URHO3D_OBJECT(DynamicLibrary, Object);
 
 public:
-    explicit DynamicModule(Context* context);
-    ~DynamicModule() override;
+    explicit DynamicLibrary(Context* context);
+    ~DynamicLibrary() override;
 
     /// Load a specified dynamic library and return true on success.
     bool Load(const ea::string& path);
@@ -45,7 +45,7 @@ public:
     /// Return a path to loaded module.
     const ea::string& GetPath() const { return path_; }
 
-    /// Inspects a specified file and detects it's type.
+    /// Inspects a specified file and detects its type.
     static ModuleType ReadModuleInformation(Context* context, const ea::string& path, unsigned* pdbPathOffset=nullptr,
         unsigned* pdbPathLength=nullptr);
 

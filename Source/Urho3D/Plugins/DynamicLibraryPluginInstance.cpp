@@ -4,7 +4,7 @@
 
 #include "Urho3D/Precompiled.h"
 
-#include "Urho3D/Plugins/ModulePlugin.h"
+#include "Urho3D/Plugins/DynamicLibraryPluginInstance.h"
 
 #include "Urho3D/Core/ProcessUtils.h"
 #include "Urho3D/Core/StringUtils.h"
@@ -19,7 +19,7 @@
 namespace Urho3D
 {
 
-bool ModulePlugin::Load()
+bool DynamicLibraryPluginInstance::Load()
 {
     // Locate binaries
     originalFileName_ = GetAbsoluteFileName(name_, true);
@@ -60,12 +60,12 @@ bool ModulePlugin::Load()
     return true;
 }
 
-bool ModulePlugin::IsLoaded() const
+bool DynamicLibraryPluginInstance::IsLoaded() const
 {
     return module_.GetModuleType() != MODULE_INVALID && !unloading_ && application_ != nullptr;
 }
 
-bool ModulePlugin::PerformUnload()
+bool DynamicLibraryPluginInstance::PerformUnload()
 {
     if (!application_)
         return false;
@@ -88,7 +88,7 @@ bool ModulePlugin::PerformUnload()
     return true;
 }
 
-ea::string ModulePlugin::GetTemporaryPdbName(const ea::string& fileName)
+ea::string DynamicLibraryPluginInstance::GetTemporaryPdbName(const ea::string& fileName)
 {
     ea::string path, file, extension;
     SplitPath(fileName, path, file, extension);
@@ -96,7 +96,7 @@ ea::string ModulePlugin::GetTemporaryPdbName(const ea::string& fileName)
     return path + file + extension;
 }
 
-ea::string ModulePlugin::GetAbsoluteFileName(const ea::string& name, bool original) const
+ea::string DynamicLibraryPluginInstance::GetAbsoluteFileName(const ea::string& name, bool original) const
 {
 #if __linux__ || __APPLE__
     static const ea::string_view prefix = "lib";
@@ -118,11 +118,11 @@ ea::string ModulePlugin::GetAbsoluteFileName(const ea::string& name, bool origin
     return EMPTY_STRING;
 }
 
-void ModulePlugin::PatchTemporaryBinary(const ea::string& fileName)
+void DynamicLibraryPluginInstance::PatchTemporaryBinary(const ea::string& fileName)
 {
 #if _MSC_VER || URHO3D_CSHARP
     unsigned pdbOffset = 0, pdbSize = 0;
-    const ModuleType type = DynamicModule::ReadModuleInformation(context_, fileName, &pdbOffset, &pdbSize);
+    const ModuleType type = DynamicLibrary::ReadModuleInformation(context_, fileName, &pdbOffset, &pdbSize);
 #if _MSC_VER
     bool hashPdb = true;
 #else
@@ -157,15 +157,15 @@ void ModulePlugin::PatchTemporaryBinary(const ea::string& fileName)
 #endif
 }
 
-bool ModulePlugin::IsOutOfDate() const
+bool DynamicLibraryPluginInstance::IsOutOfDate() const
 {
     return lastModificationTime_ < context_->GetSubsystem<FileSystem>()->GetLastModifiedTime(originalFileName_);
 }
 
-bool ModulePlugin::IsReadyToReload() const
+bool DynamicLibraryPluginInstance::IsReadyToReload() const
 {
     URHO3D_PROFILE("IsModuleReadyToReload");
-    return DynamicModule::ReadModuleInformation(context_, originalFileName_) == lastModuleType_;
+    return DynamicLibrary::ReadModuleInformation(context_, originalFileName_) == lastModuleType_;
 }
 
 }

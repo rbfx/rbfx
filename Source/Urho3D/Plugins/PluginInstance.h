@@ -9,14 +9,14 @@
 namespace Urho3D
 {
 
-/// A base class for plugins of all kinds. It only provides a common plugin interface.
-class URHO3D_API Plugin : public Object
+/// Wrapper that manages dynamic plugin loading and unloading.
+class URHO3D_API PluginInstance : public Object
 {
-    URHO3D_OBJECT(Plugin, Object);
+    URHO3D_OBJECT(PluginInstance, Object);
 
 public:
-    explicit Plugin(Context* context) : Object(context) {}
-    ~Plugin() override {}
+    explicit PluginInstance(Context* context) : Object(context) {}
+    ~PluginInstance() override {}
 
     /// Name must be set right after creating a plugin object.
     void SetName(const ea::string& name) { name_ = name; }

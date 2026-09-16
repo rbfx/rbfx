@@ -4,7 +4,7 @@
 
 #include "Urho3D/Precompiled.h"
 
-#include "Urho3D/Plugins/DynamicModule.h"
+#include "Urho3D/Plugins/DynamicLibrary.h"
 
 #include "Urho3D/IO/File.h"
 #include "Urho3D/IO/Log.h"
@@ -120,18 +120,18 @@ static bool IsValidPtr(const ea::vector<unsigned char>& data, const T* p, unsign
            reinterpret_cast<std::uintptr_t>(p) + len <= reinterpret_cast<std::uintptr_t>(data.data() + data.size());
 }
 
-DynamicModule::DynamicModule(Context* context)
+DynamicLibrary::DynamicLibrary(Context* context)
     : Object(context)
 {
 }
 
-DynamicModule::~DynamicModule()
+DynamicLibrary::~DynamicLibrary()
 {
     if (handle_ != 0)
         Unload();
 }
 
-bool DynamicModule::Load(const ea::string& path)
+bool DynamicLibrary::Load(const ea::string& path)
 {
 #if URHO3D_PLUGINS
     if (handle_ != 0)
@@ -175,7 +175,7 @@ bool DynamicModule::Load(const ea::string& path)
     return false;
 }
 
-bool DynamicModule::Unload()
+bool DynamicLibrary::Unload()
 {
 #if URHO3D_PLUGINS
     if (handle_ == 0)
@@ -208,7 +208,7 @@ bool DynamicModule::Unload()
 #endif  // URHO3D_PLUGINS
 }
 
-void* DynamicModule::GetSymbol(const ea::string& symbol)
+void* DynamicLibrary::GetSymbol(const ea::string& symbol)
 {
 #if URHO3D_PLUGINS
 #if URHO3D_CSHARP
@@ -232,7 +232,7 @@ void* DynamicModule::GetSymbol(const ea::string& symbol)
 #endif  // URHO3D_PLUGINS
 }
 
-ModuleType DynamicModule::ReadModuleInformation(Context* context, const ea::string& path, unsigned* pdbPathOffset, unsigned* pdbPathLength)
+ModuleType DynamicLibrary::ReadModuleInformation(Context* context, const ea::string& path, unsigned* pdbPathOffset, unsigned* pdbPathLength)
 {
 #if URHO3D_PLUGINS
     // This function implements a naive check for plugin validity. Proper check would parse executable headers and look
@@ -531,7 +531,7 @@ ModuleType DynamicModule::ReadModuleInformation(Context* context, const ea::stri
     return MODULE_INVALID;
 }
 
-PluginApplication* DynamicModule::InstantiatePlugin()
+PluginApplication* DynamicLibrary::InstantiatePlugin()
 {
     if (moduleType_ == MODULE_NATIVE)
     {
