@@ -615,13 +615,13 @@ function (web_link_resources TARGET RESOURCES)
 endfunction ()
 
 function (setup_plugin_target TARGET PLUGIN_NAME)
-    string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
+    string (REPLACE "." "_" PLUGIN_NAME_SANITIZED ${PLUGIN_NAME})
 
     set_target_properties (${TARGET} PROPERTIES OUTPUT_NAME ${PLUGIN_NAME})
     target_compile_definitions (${TARGET} PRIVATE
         URHO3D_CURRENT_PLUGIN_NAME=${PLUGIN_NAME}
-        URHO3D_CURRENT_PLUGIN_NAME_SANITATED=${PLUGIN_NAME_SANITATED}
-        ${PLUGIN_NAME_SANITATED}_EXPORT=1
+        URHO3D_CURRENT_PLUGIN_NAME_SANITIZED=${PLUGIN_NAME_SANITIZED}
+        ${PLUGIN_NAME_SANITIZED}_EXPORT=1
     )
 endfunction ()
 
@@ -640,9 +640,9 @@ function (target_link_plugins TARGET PLUGIN_LIBRARIES)
         get_target_property (PLUGIN_NAME ${PLUGIN_LIBRARY} OUTPUT_NAME)
         get_target_property (TARGET_TYPE ${PLUGIN_LIBRARY} TYPE)
         if (TARGET_TYPE STREQUAL STATIC_LIBRARY)
-            string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
-            string (APPEND DECLARE_FUNCTIONS "    void RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
-            string (APPEND REGISTER_PLUGINS "    RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
+            string (REPLACE "." "_" PLUGIN_NAME_SANITIZED ${PLUGIN_NAME})
+            string (APPEND DECLARE_FUNCTIONS "    void RegisterPlugin_${PLUGIN_NAME_SANITIZED}();\n")
+            string (APPEND REGISTER_PLUGINS "    RegisterPlugin_${PLUGIN_NAME_SANITIZED}();\n")
             string (APPEND STATIC_PLUGIN_LIBRARIRES "${PLUGIN_LIBRARY};")
         endif ()
         string (APPEND PLUGIN_LIST "${PLUGIN_NAME};")

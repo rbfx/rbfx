@@ -4,7 +4,7 @@
 
 #include "Urho3D/Precompiled.h"
 
-#include "Urho3D/Plugins/PluginApplication.h"
+#include "Urho3D/Plugins/Plugin.h"
 
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/IO/Archive.h"
@@ -15,26 +15,26 @@
 namespace Urho3D
 {
 
-void PluginApplication::RegisterPluginApplication(const ea::string& name, PluginApplicationFactory factory)
+void Plugin::RegisterPlugin(const ea::string& name, PluginFactory factory)
 {
-    PluginManager::RegisterPluginApplication(name, factory);
+    PluginManager::RegisterPlugin(name, factory);
 }
 
-PluginApplication::PluginApplication(Context* context)
+Plugin::Plugin(Context* context)
     : Object(context)
 {
 }
 
-PluginApplication::~PluginApplication()
+Plugin::~Plugin()
 {
 }
 
-void PluginApplication::Dispose()
+void Plugin::Dispose()
 {
     if (Refs() != 1)
     {
         URHO3D_LOGERROR(
-            "Plugin application '{}' has more than one reference remaining. "
+            "Plugin '{}' has more than one reference remaining. "
             "This may lead to memory leaks or crashes.",
             GetTypeName());
     }
@@ -45,11 +45,11 @@ void PluginApplication::Dispose()
         UnloadPlugin();
 }
 
-void PluginApplication::LoadPlugin()
+void Plugin::LoadPlugin()
 {
     if (isLoaded_)
     {
-        URHO3D_ASSERT(0, "PluginApplication is already loaded");
+        URHO3D_ASSERT(0, "Plugin is already loaded");
         return;
     }
 
@@ -57,11 +57,11 @@ void PluginApplication::LoadPlugin()
     Load();
 }
 
-void PluginApplication::UnloadPlugin()
+void Plugin::UnloadPlugin()
 {
     if (!isLoaded_)
     {
-        URHO3D_ASSERT(0, "PluginApplication is not loaded");
+        URHO3D_ASSERT(0, "Plugin is not loaded");
         return;
     }
 
@@ -73,11 +73,11 @@ void PluginApplication::UnloadPlugin()
     reflectedTypes_.clear();
 }
 
-void PluginApplication::StartApplication(bool isMain)
+void Plugin::StartApplication(bool isMain)
 {
     if (isStarted_)
     {
-        URHO3D_ASSERT(0, "PluginApplication is already started");
+        URHO3D_ASSERT(0, "Plugin is already started");
         return;
     }
 
@@ -85,11 +85,11 @@ void PluginApplication::StartApplication(bool isMain)
     Start(isMain);
 }
 
-void PluginApplication::StopApplication()
+void Plugin::StopApplication()
 {
     if (!isStarted_)
     {
-        URHO3D_ASSERT(0, "PluginApplication is not started");
+        URHO3D_ASSERT(0, "Plugin is not started");
         return;
     }
 
@@ -97,13 +97,13 @@ void PluginApplication::StopApplication()
     isStarted_ = false;
 }
 
-void PluginApplication::SuspendApplication(Archive& output, unsigned version)
+void Plugin::SuspendApplication(Archive& output, unsigned version)
 {
     URHO3D_ASSERT(!output.IsInput());
 
     if (!isStarted_)
     {
-        URHO3D_ASSERT(0, "PluginApplication is not started");
+        URHO3D_ASSERT(0, "Plugin is not started");
         return;
     }
 
@@ -114,13 +114,13 @@ void PluginApplication::SuspendApplication(Archive& output, unsigned version)
     Suspend(output);
 }
 
-void PluginApplication::ResumeApplication(Archive* input, unsigned version)
+void Plugin::ResumeApplication(Archive* input, unsigned version)
 {
     URHO3D_ASSERT(!input || input->IsInput());
 
     if (isStarted_)
     {
-        URHO3D_ASSERT(0, "PluginApplication is already started");
+        URHO3D_ASSERT(0, "Plugin is already started");
         return;
     }
 
@@ -137,12 +137,12 @@ void PluginApplication::ResumeApplication(Archive* input, unsigned version)
     }
 }
 
-MainPluginApplication::MainPluginApplication(Context* context)
-    : PluginApplication(context)
+ExecutablePlugin::ExecutablePlugin(Context* context)
+    : Plugin(context)
 {
 }
 
-MainPluginApplication::~MainPluginApplication()
+ExecutablePlugin::~ExecutablePlugin()
 {
 }
 

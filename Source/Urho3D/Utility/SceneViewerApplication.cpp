@@ -19,7 +19,7 @@ namespace Urho3D
 {
 
 SceneViewerApplication::SceneViewerApplication(Context* context)
-    : MainPluginApplication(context)
+    : ExecutablePlugin(context)
 {
 }
 

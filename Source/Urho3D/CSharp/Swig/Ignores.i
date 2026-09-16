@@ -27,7 +27,7 @@
 %ignore Urho3D::ParticleGraphNode::CreateInstanceAt;
 %ignore Urho3D::ParticleGraphSystem::Reflect;
 %ignore Urho3D::PhysicsWorld::CustomUpdate;
-%ignore Urho3D::PluginApplication::RegisterPluginApplication;
+%ignore Urho3D::Plugin::RegisterPlugin;
 %ignore Urho3D::Renderer::GetOrCreatePipelineState;
 %ignore Urho3D::ReplicationManager::GetSetting;
 %ignore Urho3D::RmlSystem::TranslateString;

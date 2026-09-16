@@ -5,7 +5,7 @@
 #pragma once
 
 
-#include <Urho3D/Plugins/PluginApplication.h>
+#include <Urho3D/Plugins/Plugin.h>
 #include <Urho3D/Scene/LogicComponent.h>
 #include <Urho3D/Scene/Node.h>
 

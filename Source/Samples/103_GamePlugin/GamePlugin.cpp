@@ -21,13 +21,13 @@
 #include <Urho3D/Math/RandomEngine.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
-URHO3D_DEFINE_PLUGIN_MAIN(Urho3D::GamePlugin);
+URHO3D_EXPORT_PLUGIN(Urho3D::GamePlugin);
 
 namespace Urho3D
 {
 
 GamePlugin::GamePlugin(Context* context)
-    : MainPluginApplication(context)
+    : ExecutablePlugin(context)
 {
 }
 

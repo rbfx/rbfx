@@ -17,13 +17,13 @@
 
 #include <EASTL/unordered_set.h>
 
-URHO3D_DEFINE_PLUGIN_MAIN(Urho3D::InputLogger);
+URHO3D_EXPORT_PLUGIN(Urho3D::InputLogger);
 
 namespace Urho3D
 {
 
 InputLogger::InputLogger(Context* context)
-    : MainPluginApplication(context)
+    : ExecutablePlugin(context)
 {
 }
 

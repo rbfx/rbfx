@@ -41,14 +41,14 @@ bool DynamicLibraryPluginInstance::Load()
     if (!module_.Load(temporaryFileName_))
         return false;
 
-    application_ = module_.InstantiatePlugin();
-    if (!application_)
+    plugin_ = module_.InstantiatePlugin();
+    if (!plugin_)
         return false;
 
-    const ea::string& oldName = application_->GetPluginName();
-    if (!oldName.empty() && application_->GetPluginName() != name_)
+    const ea::string& oldName = plugin_->GetPluginName();
+    if (!oldName.empty() && plugin_->GetPluginName() != name_)
         URHO3D_LOGWARNING("Plugin name mismatch: file {} contains plugin {}. This plugin may be incompatible in static build.", name_, oldName);
-    application_->SetPluginName(name_);
+    plugin_->SetPluginName(name_);
 
     lastModificationTime_ = context_->GetSubsystem<FileSystem>()->GetLastModifiedTime(originalFileName_);
     ++version_;
@@ -62,26 +62,26 @@ bool DynamicLibraryPluginInstance::Load()
 
 bool DynamicLibraryPluginInstance::IsLoaded() const
 {
-    return module_.GetModuleType() != MODULE_INVALID && !unloading_ && application_ != nullptr;
+    return module_.GetModuleType() != MODULE_INVALID && !unloading_ && plugin_ != nullptr;
 }
 
 bool DynamicLibraryPluginInstance::PerformUnload()
 {
-    if (!application_)
+    if (!plugin_)
         return false;
 
     URHO3D_PROFILE("UnloadModule");
 
     // Disposing object requires managed reference to be the last one alive.
-    WeakPtr<PluginApplication> application(application_);
-    application_->Dispose();
+    WeakPtr<Plugin> application(plugin_);
+    plugin_->Dispose();
 
 #if URHO3D_CSHARP
     if (module_.GetModuleType() == MODULE_MANAGED)
-        Script::GetRuntimeApi()->Dispose(application_.Detach());
+        Script::GetRuntimeApi()->Dispose(plugin_.Detach());
 #endif
 
-    application_ = nullptr;
+    plugin_ = nullptr;
     if (!module_.Unload())
         return false;
 

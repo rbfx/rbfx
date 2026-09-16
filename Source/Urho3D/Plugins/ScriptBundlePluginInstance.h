@@ -19,7 +19,7 @@ public:
     /// Implement PluginInstance
     /// @{
     bool Load() override;
-    bool IsLoaded() const override { return application_ != nullptr; }
+    bool IsLoaded() const override { return plugin_ != nullptr; }
     bool IsOutOfDate() const override { return outOfDate_; }
     bool PerformUnload() override;
     /// @}

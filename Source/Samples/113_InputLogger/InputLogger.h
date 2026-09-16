@@ -6,7 +6,7 @@
 
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Viewport.h>
-#include <Urho3D/Plugins/PluginApplication.h>
+#include <Urho3D/Plugins/Plugin.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Text.h>
 
@@ -15,16 +15,16 @@
 namespace Urho3D
 {
 
-class InputLogger : public MainPluginApplication
+class InputLogger : public ExecutablePlugin
 {
-    URHO3D_OBJECT(InputLogger, MainPluginApplication);
+    URHO3D_OBJECT(InputLogger, ExecutablePlugin);
 
 public:
     /// Construct.
     explicit InputLogger(Context* context);
 
 protected:
-    /// Implement MainPluginApplication
+    /// Implement ExecutablePlugin
     /// @{
     void Load() override;
     void Start(bool isMain) override;

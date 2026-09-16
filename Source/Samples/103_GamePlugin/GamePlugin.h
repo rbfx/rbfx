@@ -5,22 +5,22 @@
 #pragma once
 
 #include <Urho3D/Graphics/Viewport.h>
-#include <Urho3D/Plugins/PluginApplication.h>
+#include <Urho3D/Plugins/Plugin.h>
 #include <Urho3D/Scene/Scene.h>
 
 namespace Urho3D
 {
 
-class GamePlugin : public MainPluginApplication
+class GamePlugin : public ExecutablePlugin
 {
-    URHO3D_OBJECT(GamePlugin, MainPluginApplication);
+    URHO3D_OBJECT(GamePlugin, ExecutablePlugin);
 
 public:
     /// Construct.
     explicit GamePlugin(Context* context);
 
 protected:
-    /// Implement MainPluginApplication
+    /// Implement ExecutablePlugin
     /// @{
     void Load() override;
     void Start(bool isMain) override;

@@ -14,7 +14,7 @@ namespace Editor
     {
         public override bool VerifyAssembly(string path)
         {
-            string expectName = typeof(PluginApplication).FullName;
+            string expectName = typeof(Plugin).FullName;
             AssemblyDefinition plugin = AssemblyDefinition.ReadAssembly(path);
             foreach (var pair in GetTypesWithAttribute<LoadablePluginAttribute>(plugin))
             {

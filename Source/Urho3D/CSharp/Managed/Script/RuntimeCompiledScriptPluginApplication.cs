@@ -7,12 +7,12 @@ using System.Reflection;
 
 namespace Urho3DNet
 {
-    public partial class RuntimeCompiledScriptPluginApplication : PluginApplication
+    public partial class RuntimeCompiledScriptPlugin : Plugin
     {
         /// Assembly that is being managed by this plugin.
         private Assembly _slaveAssembly;
         /// Construct.
-        public RuntimeCompiledScriptPluginApplication(Context context) : base(context)
+        public RuntimeCompiledScriptPlugin(Context context) : base(context)
         {
         }
         /// Sets assembly that is being managed by this plugin.
