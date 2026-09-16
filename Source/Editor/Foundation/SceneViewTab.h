@@ -169,7 +169,7 @@ public:
     template <class T, class ... Args> SceneViewAddon* RegisterAddon(const Args&... args);
     template <class T> T* GetAddon();
 
-    /// Setup context for plugin application execution.
+    /// Setup context for plugin execution.
     void SetupPluginContext();
     /// Draw Edit menu for selection in the scene.
     void RenderEditMenu(Scene* scene, SceneSelection& selection);

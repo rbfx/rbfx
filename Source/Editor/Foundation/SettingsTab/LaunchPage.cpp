@@ -89,14 +89,14 @@ void LaunchPage::RenderMainPlugin(ea::string& mainPlugin)
         mainPlugin.clear();
 
     auto pluginManager = GetSubsystem<PluginManager>();
-    for (const ea::string& plugin : pluginManager->GetLoadedPlugins())
+    for (const ea::string& pluginName : pluginManager->GetLoadedPlugins())
     {
-        const auto pluginApplication = pluginManager->GetPluginApplication(plugin, true);
-        if (!pluginApplication || !pluginApplication->IsMain())
+        const auto plugin = pluginManager->GetPlugin(pluginName, true);
+        if (!plugin || !plugin->IsExecutable())
             continue;
 
-        if (ui::Selectable(plugin.c_str(), plugin == mainPlugin))
-            mainPlugin = plugin;
+        if (ui::Selectable(pluginName.c_str(), pluginName == mainPlugin))
+            mainPlugin = pluginName;
     }
     ui::EndCombo();
 }

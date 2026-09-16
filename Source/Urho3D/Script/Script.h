@@ -12,7 +12,7 @@
 #include "Urho3D/Core/Macros.h"
 #include "Urho3D/Core/Mutex.h"
 #include "Urho3D/Core/Object.h"
-#include "Urho3D/Plugins/PluginApplication.h"
+#include "Urho3D/Plugins/Plugin.h"
 
 #ifndef SWIGSTDCALL
 #   if _WIN32
@@ -31,14 +31,14 @@ class URHO3D_API ScriptRuntimeApi
 public:
     /// Destruct.
     virtual ~ScriptRuntimeApi();
-    /// Returns true if path contains a valid managed assembly with a class that inherits from PluginApplication.
+    /// Returns true if path contains a valid managed assembly with a class that inherits from Plugin.
     virtual bool VerifyAssembly(const ea::string& path) = 0;
     /// Modifies specified assembly by setting it's version to specified one.
     virtual bool SetAssemblyVersion(const ea::string& path, unsigned version) = 0;
     /// Loads specified managed assembly and returns it's gc handle.
     virtual void* LoadAssembly(const ea::string& path) = 0;
-    /// Looks for class inheriting from PluginApplication and creates an instance of it.
-    virtual PluginApplication* CreatePluginApplication(void* assembly) = 0;
+    /// Looks for class inheriting from Plugin and creates an instance of it.
+    virtual Plugin* CreatePlugin(void* assembly) = 0;
     /// Invokes managed instance.Dispose() method.
     virtual void Dispose(RefCounted* instance) = 0;
     /// Release specified gc handle. It becomes invalid.
@@ -50,7 +50,7 @@ public:
     /// Warning! This is slow! Perform a full garbage collection.
     virtual void FullGC() = 0;
     /// Implement any logic that is required before Application::Start() runs.
-    virtual PluginApplication* CompileResourceScriptPlugin() = 0;
+    virtual Plugin* CompileResourceScriptPlugin() = 0;
     /// Invokes managed instance.Dispose() if passed instance has one native reference and has managed object attached to it.
     /// This method should be used with instances detached from SharedPtr<>.
     void DereferenceAndDispose(RefCounted* instance);

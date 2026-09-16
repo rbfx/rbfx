@@ -30,7 +30,7 @@ namespace
 
 auto& GetRegistry()
 {
-    static ea::unordered_map<ea::string, PluginApplicationFactory> registry;
+    static ea::unordered_map<ea::string, PluginFactory> registry;
     return registry;
 }
 
@@ -92,11 +92,11 @@ PluginStack::PluginStack(PluginManager* manager, const StringVector& plugins, co
 
     for (const ea::string& name : plugins)
     {
-        if (const WeakPtr<PluginApplication> application{manager->GetPluginApplication(name, false)})
+        if (const WeakPtr<Plugin> application{manager->GetPlugin(name, false)})
         {
             const PluginInfo info{name, application};
             applications_.push_back(info);
-            if (application->IsMain())
+            if (application->IsExecutable())
                 mainApplications_.push_back(info);
         }
     }
@@ -160,8 +160,8 @@ void PluginStack::LoadPlugins()
 {
     for (const PluginInfo& info : applications_)
     {
-        if (info.application_)
-            info.application_->LoadPlugin();
+        if (info.plugin_)
+            info.plugin_->LoadPlugin();
     }
 }
 
@@ -169,19 +169,19 @@ void PluginStack::UnloadPlugins()
 {
     for (const PluginInfo& info : ea::reverse(applications_))
     {
-        if (info.application_)
-            info.application_->UnloadPlugin();
+        if (info.plugin_)
+            info.plugin_->UnloadPlugin();
     }
 }
 
-PluginApplication* PluginStack::FindMainPlugin(const ea::string& mainPlugin) const
+Plugin* PluginStack::FindMainPlugin(const ea::string& mainPlugin) const
 {
     if (!mainPlugin.empty())
     {
         for (const PluginInfo& info : mainApplications_)
         {
             if (info.name_ == mainPlugin)
-                return info.application_.Get();
+                return info.plugin_.Get();
         }
 
         URHO3D_LOGWARNING("Cannot find main plugin '{}'", mainPlugin);
@@ -191,7 +191,7 @@ PluginApplication* PluginStack::FindMainPlugin(const ea::string& mainPlugin) con
         URHO3D_LOGWARNING("Multiple main plugins found, using '{}'", mainApplications_.front().name_);
 
     if (!mainApplications_.empty())
-        return mainApplications_.front().application_;
+        return mainApplications_.front().plugin_;
 
     return nullptr;
 }
@@ -200,7 +200,7 @@ bool PluginStack::IsSuspendSupported() const
 {
     const auto isSupported = [](const PluginInfo& info)
     {
-        return !info.application_ || info.application_->IsSuspendSupported();
+        return !info.plugin_ || info.plugin_->IsSuspendSupported();
         //
     };
     return ea::all_of(applications_.begin(), applications_.end(), isSupported);
@@ -218,8 +218,8 @@ void PluginStack::StartApplication(const ea::string& mainPlugin)
 
     for (const PluginInfo& info : applications_)
     {
-        if (info.application_)
-            info.application_->StartApplication(info.application_ == mainApplication_);
+        if (info.plugin_)
+            info.plugin_->StartApplication(info.plugin_ == mainApplication_);
     }
     isStarted_ = true;
 }
@@ -237,11 +237,11 @@ SerializedPlugins PluginStack::SuspendApplication()
 
     for (const PluginInfo& info : ea::reverse(applications_))
     {
-        if (!info.application_)
+        if (!info.plugin_)
             continue;
 
         BinaryOutputArchive archive{context_, data[info.name_]};
-        info.application_->SuspendApplication(archive, version_);
+        info.plugin_->SuspendApplication(archive, version_);
     }
     return data;
 }
@@ -256,18 +256,18 @@ void PluginStack::ResumeApplication(const SerializedPlugins& serializedPlugins)
 
     for (const PluginInfo& info : applications_)
     {
-        if (!info.application_)
+        if (!info.plugin_)
             continue;
 
         const auto iter = serializedPlugins.find(info.name_);
         if (iter == serializedPlugins.end())
-            info.application_->ResumeApplication(nullptr, version_);
+            info.plugin_->ResumeApplication(nullptr, version_);
         else
         {
             const VectorBuffer& pluginData = iter->second;
             MemoryBuffer dataView{pluginData.GetBuffer()};
             BinaryInputArchive archive{context_, dataView};
-            info.application_->ResumeApplication(&archive, version_);
+            info.plugin_->ResumeApplication(&archive, version_);
         }
     }
     isStarted_ = true;
@@ -285,17 +285,17 @@ void PluginStack::StopApplication()
 
     for (const PluginInfo& info : ea::reverse(applications_))
     {
-        if (info.application_)
-            info.application_->StopApplication();
+        if (info.plugin_)
+            info.plugin_->StopApplication();
     }
 }
 
-PluginApplication* PluginStack::GetMainPlugin() const
+Plugin* PluginStack::GetMainPlugin() const
 {
     return mainApplication_;
 }
 
-void PluginManager::RegisterPluginApplication(const ea::string& name, PluginApplicationFactory factory)
+void PluginManager::RegisterPlugin(const ea::string& name, PluginFactory factory)
 {
     GetRegistry().emplace(name, factory);
 }
@@ -412,7 +412,7 @@ void PluginManager::SetPluginsLoaded(const StringVector& plugins)
 
 bool PluginManager::IsPluginLoaded(const ea::string& name)
 {
-    PluginApplication* application = GetPluginApplication(name, true);
+    Plugin* application = GetPlugin(name, true);
     return application && application->IsLoaded();
 }
 
@@ -435,16 +435,16 @@ bool PluginManager::AddDynamicPlugin(PluginInstance* plugin)
 #endif
 }
 
-bool PluginManager::AddStaticPlugin(PluginApplication* pluginApplication)
+bool PluginManager::AddStaticPlugin(Plugin* plugin)
 {
-    const ea::string name = pluginApplication->GetPluginName();
+    const ea::string name = plugin->GetPluginName();
     if (dynamicPlugins_.contains(name) || staticPlugins_.contains(name))
     {
         URHO3D_ASSERTLOG(0, "Plugin name '{}' is already used", name);
         return false;
     }
 
-    staticPlugins_.emplace(name, SharedPtr<PluginApplication>(pluginApplication));
+    staticPlugins_.emplace(name, SharedPtr<Plugin>(plugin));
 
     URHO3D_LOGINFO("Loaded static plugin '{}'", name);
     return true;
@@ -470,7 +470,7 @@ PluginInstance* PluginManager::GetDynamicPlugin(const ea::string& name, bool ign
 #endif
 }
 
-PluginApplication* PluginManager::GetPluginApplication(const ea::string& name, bool ignoreUnloaded)
+Plugin* PluginManager::GetPlugin(const ea::string& name, bool ignoreUnloaded)
 {
     const auto iter = staticPlugins_.find(name);
     if (iter != staticPlugins_.end())
@@ -484,14 +484,14 @@ PluginApplication* PluginManager::GetPluginApplication(const ea::string& name, b
                 return nullptr;
         }
 
-        if (PluginApplication* application = dynamicPlugin->GetApplication())
+        if (Plugin* application = dynamicPlugin->GetPlugin())
             return application;
     }
 
     return nullptr;
 }
 
-PluginApplication* PluginManager::GetMainPlugin() const
+Plugin* PluginManager::GetMainPlugin() const
 {
     if (pluginStack_)
         return pluginStack_->GetMainPlugin();
@@ -693,7 +693,7 @@ StringVector PluginManager::ScanAvailableModules()
 StringVector PluginManager::EnumerateLoadedModules()
 {
     StringVector result;
-    ForEachPluginApplication([&](PluginApplication* application, const ea::string& name, unsigned version)
+    ForEachPlugin([&](Plugin* application, const ea::string& name, unsigned version)
     {
         result.push_back(name);
     });

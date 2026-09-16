@@ -68,16 +68,16 @@ namespace Urho3DNet
             throw new Exception("Assembly versioning is not supported in this build.");
         }
 
-        public override PluginApplication CreatePluginApplication(IntPtr assembly)
+        public override Plugin CreatePlugin(IntPtr assembly)
         {
             var instance = GCHandle.FromIntPtr(assembly).Target as Assembly;
             if (instance == null)
                 return null;
 
-            Type pluginType = instance.GetTypes().First(t => t.IsClass && t.BaseType == typeof(PluginApplication));
+            Type pluginType = instance.GetTypes().First(t => t.IsClass && t.BaseType == typeof(Plugin));
             if (pluginType == null)
                 return null;
-            return Activator.CreateInstance(pluginType, Context.Instance) as PluginApplication;
+            return Activator.CreateInstance(pluginType, Context.Instance) as Plugin;
         }
 
         public override IntPtr LoadAssembly(string path)
@@ -139,10 +139,10 @@ namespace Urho3DNet
             GC.Collect();                    // Collect those finalized objects.
         }
 
-        public override PluginApplication CompileResourceScriptPlugin()
+        public override Plugin CompileResourceScriptPlugin()
         {
             // Empty plugin. Essentially a noop.
-            return new RuntimeCompiledScriptPluginApplication(Context.Instance);
+            return new RuntimeCompiledScriptPlugin(Context.Instance);
         }
     }
 }

@@ -12,7 +12,7 @@
 #include "Urho3D/Core/Main.h"
 #include "Urho3D/Core/Macros.h"
 #include "Urho3D/Engine/Engine.h"
-#include "Urho3D/Plugins/PluginApplication.h"
+#include "Urho3D/Plugins/Plugin.h"
 
 namespace Urho3D
 {

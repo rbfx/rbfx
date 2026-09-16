@@ -9,7 +9,7 @@
 #include <Urho3D/Engine/StateManager.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
-#include <Urho3D/Plugins/PluginApplication.h>
+#include <Urho3D/Plugins/Plugin.h>
 #include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #if URHO3D_SYSTEMUI

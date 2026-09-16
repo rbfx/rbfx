@@ -5,29 +5,29 @@
 #pragma once
 
 #include "Urho3D/Graphics/Viewport.h"
-#include "Urho3D/Plugins/PluginApplication.h"
+#include "Urho3D/Plugins/Plugin.h"
 #include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {
 
 /// Simple application to show scene with free-fly camera.
-class URHO3D_API SceneViewerApplication : public MainPluginApplication
+class URHO3D_API SceneViewerApplication : public ExecutablePlugin
 {
-    URHO3D_OBJECT(SceneViewerApplication, MainPluginApplication);
+    URHO3D_OBJECT(SceneViewerApplication, ExecutablePlugin);
     URHO3D_MANUAL_PLUGIN("Builtin.SceneViewer");
 
 public:
     explicit SceneViewerApplication(Context* context);
     ~SceneViewerApplication() override;
 
-    /// Implement MainPluginApplication
+    /// Implement ExecutablePlugin
     /// @{
     bool IsSuspendSupported() const override { return true; }
     /// @}
 
 protected:
-    /// Implement MainPluginApplication
+    /// Implement ExecutablePlugin
     /// @{
     void Load() override;
     void Unload() override;

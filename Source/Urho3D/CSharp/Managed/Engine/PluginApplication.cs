@@ -4,7 +4,7 @@
 
 namespace Urho3DNet
 {
-    /// Tag subclasses of PluginApplication in order to make a C# dll a loadable plugin.
+    /// Tag subclasses of Plugin in order to make a C# dll a loadable plugin.
     public class LoadablePluginAttribute : System.Attribute
     {
     }

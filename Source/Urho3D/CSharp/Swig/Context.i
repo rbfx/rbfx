@@ -50,7 +50,7 @@
 %inheritable(Urho3D, Animatable);
 %inheritable(Urho3D, Component);
 %inheritable(Urho3D, LogicComponent);
-%inheritable(Urho3D, PluginApplication);
+%inheritable(Urho3D, Plugin);
 %inheritable(Urho3D, Drawable);
 %inheritable(Urho3D, MoveAndOrbitComponent);
 %inheritable(Urho3D, Resource);

@@ -38,7 +38,7 @@ public:
     SerializedPlugins SuspendApplication();
     /// Resume all plugins in the stack and start application.
     void ResumeApplication(const SerializedPlugins& serializedPlugins);
-    /// Stop plugin application for all loaded plugins.
+    /// Stop all loaded plugins.
     void StopApplication();
 
     /// Return whether the application is started now.
@@ -47,20 +47,20 @@ public:
     unsigned GetNumPlugins() const { return applications_.size(); }
 
     /// Return main plugin. The result is valid after StartApplication.
-    PluginApplication* GetMainPlugin() const;
+    Plugin* GetMainPlugin() const;
 
 private:
     struct PluginInfo
     {
         ea::string name_;
-        WeakPtr<PluginApplication> application_;
+        WeakPtr<Plugin> plugin_;
     };
 
     void CopyBinariesToTemporaryDirectory();
 
     void LoadPlugins();
     void UnloadPlugins();
-    PluginApplication* FindMainPlugin(const ea::string& mainPlugin) const;
+    Plugin* FindMainPlugin(const ea::string& mainPlugin) const;
 
 private:
     const ea::string binaryDirectory_;
@@ -69,7 +69,7 @@ private:
 
     ea::vector<PluginInfo> applications_;
     ea::vector<PluginInfo> mainApplications_;
-    WeakPtr<PluginApplication> mainApplication_;
+    WeakPtr<Plugin> mainApplication_;
     bool isStarted_{};
 };
 
@@ -82,8 +82,8 @@ class URHO3D_API PluginManager : public Object
 public:
     /// Quit application callback.
     using QuitApplicationCallback = ea::function<void()>;
-    /// Register plugin application class to be visible in all future instances of PluginManager.
-    static void RegisterPluginApplication(const ea::string& name, PluginApplicationFactory factory);
+    /// Register plugin class to be visible in all future instances of PluginManager.
+    static void RegisterPlugin(const ea::string& name, PluginFactory factory);
 
     explicit PluginManager(Context* context);
     ~PluginManager() override;
@@ -95,9 +95,9 @@ public:
     /// This may be unsafe to call inside of the frame. Called automatically between frames.
     void Commit();
 
-    /// Start plugin application for all loaded plugins.
+    /// Start all loaded plugins.
     void StartApplication();
-    /// Stop plugin application for all loaded plugins.
+    /// Stop all loaded plugins.
     void StopApplication();
     /// Quit application on user request.
     /// Engine is shut down by default. External tooling like Editor may override this behavior.
@@ -127,13 +127,13 @@ public:
     /// Manually add new plugin with dynamic reloading.
     bool AddDynamicPlugin(PluginInstance* plugin);
     /// Manually add plugin that stays loaded forever.
-    bool AddStaticPlugin(PluginApplication* pluginApplication);
+    bool AddStaticPlugin(Plugin* plugin);
     /// Find or load dynamic plugin by name.
     PluginInstance* GetDynamicPlugin(const ea::string& name, bool ignoreUnloaded);
-    /// Find or load plugin application by name.
-    PluginApplication* GetPluginApplication(const ea::string& name, bool ignoreUnloaded);
-    /// Return main plugin. The result is valid after plugin application started.
-    PluginApplication* GetMainPlugin() const;
+    /// Find or load plugin by name.
+    Plugin* GetPlugin(const ea::string& name, bool ignoreUnloaded);
+    /// Return main plugin. The result is valid after plugins started.
+    Plugin* GetMainPlugin() const;
     /// Enumerate dynamic modules available to load.
     StringVector ScanAvailableModules();
     /// Enumerate already loaded dynamic modules and static plugins.
@@ -152,11 +152,11 @@ private:
     void PerformPluginUnload(PluginInstance* plugin);
     bool CheckAndRemoveUnloadedPlugin(PluginInstance* plugin);
 
-    template <class T> void ForEachPluginApplication(const T& callback)
+    template <class T> void ForEachPlugin(const T& callback)
     {
         for (const auto& [name, plugin] : dynamicPlugins_)
         {
-            if (PluginApplication* application = plugin->GetApplication())
+            if (Plugin* application = plugin->GetPlugin())
                 callback(application, name, plugin->GetVersion());
         }
 
@@ -191,7 +191,7 @@ private:
     /// Currently loaded modules
     /// @{
     ea::unordered_map<ea::string, SharedPtr<PluginInstance>> dynamicPlugins_;
-    ea::unordered_map<ea::string, SharedPtr<PluginApplication>> staticPlugins_;
+    ea::unordered_map<ea::string, SharedPtr<Plugin>> staticPlugins_;
     /// @}
 
     /// Auto-reloading of dynamic plugins

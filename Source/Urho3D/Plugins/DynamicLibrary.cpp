@@ -238,7 +238,7 @@ ModuleType DynamicLibrary::ReadModuleInformation(Context* context, const ea::str
     // This function implements a naive check for plugin validity. Proper check would parse executable headers and look
     // for relevant exported function names.
     ea::vector<unsigned char> data;
-    const char pluginEntryPoint[] = "PluginApplicationMain";
+    const char pluginEntryPoint[] = "PluginDynamicLibraryMain";
 
 #if __linux__
     // ELF magic
@@ -295,7 +295,7 @@ ModuleType DynamicLibrary::ReadModuleInformation(Context* context, const ea::str
         if (symNameTableOffset == 0)
             return MODULE_INVALID;
 
-        // Find PluginApplicationMain symbol
+        // Find PluginDynamicLibraryMain symbol
         {
             auto shoff = hdr->e_shoff;
             Elf_Shdr* sectab = nullptr;
@@ -412,7 +412,7 @@ ModuleType DynamicLibrary::ReadModuleInformation(Context* context, const ea::str
         if (netDir.VirtualAddress != 0)
         {
 #if URHO3D_CSHARP
-            // Verify that plugin has a class that inherits from PluginApplication.
+            // Verify that plugin has a class that inherits from Plugin.
             if (auto* scriptApi = Script::GetRuntimeApi())
             {
                 if (scriptApi->VerifyAssembly(path.data()))
@@ -423,7 +423,7 @@ ModuleType DynamicLibrary::ReadModuleInformation(Context* context, const ea::str
 #if _WIN32
         else if (eatDir.VirtualAddress > 0)
         {
-            // Verify that plugin has exported function named PluginApplicationMain.
+            // Verify that plugin has exported function named PluginDynamicLibraryMain.
             // Find section that contains EAT.
 
             unsigned firstSectionOffset = dos->e_lfanew + FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader) + nt->FileHeader.SizeOfOptionalHeader;
@@ -531,16 +531,16 @@ ModuleType DynamicLibrary::ReadModuleInformation(Context* context, const ea::str
     return MODULE_INVALID;
 }
 
-PluginApplication* DynamicLibrary::InstantiatePlugin()
+Plugin* DynamicLibrary::InstantiatePlugin()
 {
     if (moduleType_ == MODULE_NATIVE)
     {
-        if (void* main = GetSymbol("PluginApplicationMain"))
-            return reinterpret_cast<PluginApplication*(*)(Context*)>(main)(context_);
+        if (void* main = GetSymbol("PluginDynamicLibraryMain"))
+            return reinterpret_cast<Plugin*(*)(Context*)>(main)(context_);
     }
 #if URHO3D_CSHARP
     else if (moduleType_ == MODULE_MANAGED)
-        return Script::GetRuntimeApi()->CreatePluginApplication((void*)handle_);
+        return Script::GetRuntimeApi()->CreatePlugin((void*)handle_);
 #endif
     return nullptr;
 }

@@ -31,11 +31,11 @@ bool ScriptBundlePluginInstance::Load()
     if (!runtime)
         return false;
 
-    application_ = runtime->CompileResourceScriptPlugin();
-    if (!application_)
+    plugin_ = runtime->CompileResourceScriptPlugin();
+    if (!plugin_)
         return false;
 
-    application_->SetPluginName(name_);
+    plugin_->SetPluginName(name_);
 
     unloading_ = false;
     outOfDate_ = false;
@@ -46,11 +46,11 @@ bool ScriptBundlePluginInstance::Load()
 bool ScriptBundlePluginInstance::PerformUnload()
 {
     ScriptRuntimeApi* runtime = Script::GetRuntimeApi();
-    if (!runtime || !application_)
+    if (!runtime || !plugin_)
         return false;
 
-    application_->Dispose();
-    runtime->Dispose(application_.Detach());
+    plugin_->Dispose();
+    runtime->Dispose(plugin_.Detach());
     return true;
 }
 

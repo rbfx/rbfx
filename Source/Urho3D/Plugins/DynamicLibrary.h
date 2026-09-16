@@ -9,7 +9,7 @@
 namespace Urho3D
 {
 
-class PluginApplication;
+class Plugin;
 
 /// Enumeration describing plugin file path status.
 enum ModuleType
@@ -36,7 +36,7 @@ public:
     /// Unload currently loaded dynamic library. Returns true only if library was previously loaded and unloading succeeded.
     bool Unload();
     /// Instantiate plugin interface from DLL.
-    PluginApplication* InstantiatePlugin();
+    Plugin* InstantiatePlugin();
 
     /// Looks up exported symbol in current loaded dynamic library and returns it. Works only for native modules.
     void* GetSymbol(const ea::string& symbol);

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Urho3D/Plugins/PluginApplication.h"
+#include "Urho3D/Plugins/Plugin.h"
 
 namespace Urho3D
 {
@@ -25,8 +25,8 @@ public:
     const ea::string& GetName() const { return name_; }
     /// Return current version of the plugin.
     unsigned GetVersion() const { return version_; }
-    /// Return plugin application, if available.
-    PluginApplication* GetApplication() const { return application_; }
+    /// Return plugin, if available.
+    Plugin* GetPlugin() const { return plugin_; }
 
     /// Mark plugin for unloading. Plugin will be unloaded at the end of current frame.
     void Unload() { unloading_ = true; }
@@ -36,7 +36,7 @@ public:
     /// Loads plugin into application memory space and initializes it.
     virtual bool Load() { return true; }
     /// Returns true if plugin is loaded and functional.
-    virtual bool IsLoaded() const { return application_ != nullptr; }
+    virtual bool IsLoaded() const { return plugin_ != nullptr; }
     /// Returns true if plugin was modified on the disk and should be reloaded.
     virtual bool IsOutOfDate() const { return false; }
     /// Returns true if plugin file is ready to reload.
@@ -52,9 +52,9 @@ protected:
     bool unloading_{};
     /// Current plugin version.
     unsigned version_{};
-    /// Instance to the plugin application. This should be a single owning reference to the plugin. Managed plugins are
+    /// Instance of the plugin. This should be a single owning reference to the plugin. Managed plugins are
     /// an exception as managed object holds reference to native object and must be disposed in order to free this object.
-    SharedPtr<PluginApplication> application_;
+    SharedPtr<Plugin> plugin_;
 };
 
 
