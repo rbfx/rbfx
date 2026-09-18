@@ -26,6 +26,13 @@ jobs:
           ref: master
           fetch-depth: 0
 
+      - name: Checkout CI actions
+        uses: actions/checkout@v5
+        with:
+          repository: rbfx/ci
+          path: rbfx-actions
+          fetch-depth: 1
+
       - name: Validate version
         id: version
         run: |
@@ -60,7 +67,7 @@ jobs:
           echo "Tag $tag_name does not exist, proceeding with release."
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -78,7 +85,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         working-directory: packaging/nuget/
-        run: ../../script/ci_build.sh download-nuget-sdks -- '${{ github.repository }}' ./in
+        run: ${{ github.workspace }}/rbfx-actions/script/ci_artifacts.sh download-nuget-sdks '${{ github.repository }}' ./in
 
       - name: Build NuGet Packages
         working-directory: packaging/nuget/
@@ -110,7 +117,7 @@ jobs:
           echo "Created and pushed tag: $tag_name"
 
       - name: Upload NuGet Packages as Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-packages-${{ steps.version.outputs.version }}
           path: packaging/nuget/out/*.nupkg

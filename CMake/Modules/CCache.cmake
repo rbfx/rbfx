@@ -23,7 +23,7 @@
 include(${CMAKE_CURRENT_LIST_DIR}/ucm.cmake)
 
 find_program(CCACHE ccache)
-if (NOT MSVC AND CCACHE_FOUND AND ENV{CCACHE_DIR})  # MSVC side is handled in ci_build.sh action-build-msvc()
+if (NOT MSVC AND CCACHE_FOUND AND ENV{CCACHE_DIR})  # MSVC side is handled by the CI build driver.
     if (CMAKE_GENERATOR STREQUAL "Xcode")
         if ("${CMAKE_C_COMPILER_LAUNCHER}" STREQUAL "ccache")
             if (NOT CCACHE)
