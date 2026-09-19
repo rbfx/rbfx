@@ -220,14 +220,14 @@ jobs:
         run: ${{ env.ci_build_script }} install-engine-sdk
 
       - name: Save Build Cache
-        if: env.ci_artifacts == 'true'
+        if: needs.PrepareFlags.outputs.ci_artifacts == 'true'
         uses: actions/cache/save@v5
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ci_cache_id }}-${{ env.ci_short_sha }}
 
       - name: Release Mobile Artifacts
-        if: env.ci_platform_group == 'mobile' && env.ci_artifacts == 'true'
+        if: env.ci_platform_group == 'mobile' && needs.PrepareFlags.outputs.ci_artifacts == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -305,7 +305,7 @@ jobs:
         run: ${{ env.ci_build_script }} test-project sample-project source
 
       - name: Release SDK
-        if: env.ci_artifacts == 'true'
+        if: needs.PrepareFlags.outputs.ci_artifacts == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: latest
