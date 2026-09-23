@@ -65,6 +65,33 @@ IntVector3 ToIntVector3(unsigned x, unsigned y, unsigned z)
     return {static_cast<int>(x), static_cast<int>(y), static_cast<int>(z)};
 }
 
+template <unsigned NumComponents, unsigned NumInputs>
+void CalculateNextLevelColor(unsigned char* output, const ea::array<const unsigned char*, NumInputs>& inputs)
+{
+    unsigned result[NumComponents]{};
+    for (unsigned i = 0; i < NumInputs; ++i)
+    {
+        for (unsigned j = 0; j < NumComponents; ++j)
+            result[j] += inputs[i][j];
+    }
+    for (unsigned j = 0; j < NumComponents; ++j)
+        output[j] = result[j] / NumInputs;
+}
+
+template <unsigned NumInputs>
+void CalculateNextLevelColor(
+    unsigned char* output, const ea::array<const unsigned char*, NumInputs>& inputs, unsigned numComponents)
+{
+    switch (numComponents)
+    {
+    case 1: CalculateNextLevelColor<1, NumInputs>(output, inputs); break;
+    case 2: CalculateNextLevelColor<2, NumInputs>(output, inputs); break;
+    case 3: CalculateNextLevelColor<3, NumInputs>(output, inputs); break;
+    case 4: CalculateNextLevelColor<4, NumInputs>(output, inputs); break;
+    default: break;
+    }
+}
+
 } // namespace
 
 bool CompressedLevel::Decompress(unsigned char* dest) const
@@ -1289,7 +1316,6 @@ bool Image::SaveWEBP(const ea::string& fileName, float compression /* = 0.0f */)
 #endif
 }
 
-
 Color Image::GetPixel(int x, int y) const
 {
     return GetPixel(x, y, 0);
@@ -1447,16 +1473,9 @@ SharedPtr<Image> Image::GetNextLevel() const
 
     URHO3D_PROFILE("CalculateImageMipLevel");
 
-    int widthOut = width_ / 2;
-    int heightOut = height_ / 2;
-    int depthOut = depth_ / 2;
-
-    if (widthOut < 1)
-        widthOut = 1;
-    if (heightOut < 1)
-        heightOut = 1;
-    if (depthOut < 1)
-        depthOut = 1;
+    const int widthOut = ea::max(1, width_ / 2);
+    const int heightOut = ea::max(1, height_ / 2);
+    const int depthOut = ea::max(1, depth_ / 2);
 
     SharedPtr<Image> mipImage(MakeShared<Image>(context_));
 
@@ -1472,262 +1491,69 @@ SharedPtr<Image> Image::GetNextLevel() const
     if (depth_ == 1 && (height_ == 1 || width_ == 1))
     {
         // Loop using the larger dimension
-        if (widthOut < heightOut)
-            widthOut = heightOut;
+        const int size = ea::max(widthOut, heightOut);
 
-        switch (components_)
+        for (int x = 0; x < size; ++x)
         {
-        case 1:
-            for (int x = 0; x < widthOut; ++x)
-                pixelDataOut[x] = (unsigned char)(((unsigned)pixelDataIn[x * 2] + pixelDataIn[x * 2 + 1]) >> 1);
-            break;
-
-        case 2:
-            for (int x = 0; x < widthOut * 2; x += 2)
-            {
-                pixelDataOut[x] = (unsigned char)(((unsigned)pixelDataIn[x * 2] + pixelDataIn[x * 2 + 2]) >> 1);
-                pixelDataOut[x + 1] = (unsigned char)(((unsigned)pixelDataIn[x * 2 + 1] + pixelDataIn[x * 2 + 3]) >> 1);
-            }
-            break;
-
-        case 3:
-            for (int x = 0; x < widthOut * 3; x += 3)
-            {
-                pixelDataOut[x] = (unsigned char)(((unsigned)pixelDataIn[x * 2] + pixelDataIn[x * 2 + 3]) >> 1);
-                pixelDataOut[x + 1] = (unsigned char)(((unsigned)pixelDataIn[x * 2 + 1] + pixelDataIn[x * 2 + 4]) >> 1);
-                pixelDataOut[x + 2] = (unsigned char)(((unsigned)pixelDataIn[x * 2 + 2] + pixelDataIn[x * 2 + 5]) >> 1);
-            }
-            break;
-
-        case 4:
-            for (int x = 0; x < widthOut * 4; x += 4)
-            {
-                pixelDataOut[x] = (unsigned char)(((unsigned)pixelDataIn[x * 2] + pixelDataIn[x * 2 + 4]) >> 1);
-                pixelDataOut[x + 1] = (unsigned char)(((unsigned)pixelDataIn[x * 2 + 1] + pixelDataIn[x * 2 + 5]) >> 1);
-                pixelDataOut[x + 2] = (unsigned char)(((unsigned)pixelDataIn[x * 2 + 2] + pixelDataIn[x * 2 + 6]) >> 1);
-                pixelDataOut[x + 3] = (unsigned char)(((unsigned)pixelDataIn[x * 2 + 3] + pixelDataIn[x * 2 + 7]) >> 1);
-            }
-            break;
-
-        default:
-            assert(false);  // Should never reach here
-            break;
+            const ea::array<const unsigned char*, 2> inputs{{
+                &pixelDataIn[(x * 2) * components_],
+                &pixelDataIn[(x * 2 + 1) * components_],
+            }};
+            CalculateNextLevelColor<2>(&pixelDataOut[x * components_], inputs, components_);
         }
     }
     // 2D case
     else if (depth_ == 1)
     {
-        switch (components_)
+        for (int y = 0; y < heightOut; ++y)
         {
-        case 1:
-            for (int y = 0; y < heightOut; ++y)
+            const unsigned char* inUpper = &pixelDataIn[(y * 2) * width_ * components_];
+            const unsigned char* inLower = &pixelDataIn[(y * 2 + 1) * width_ * components_];
+            unsigned char* out = &pixelDataOut[y * widthOut * components_];
+
+            for (int x = 0; x < widthOut; ++x)
             {
-                const unsigned char* inUpper = &pixelDataIn[(y * 2) * width_];
-                const unsigned char* inLower = &pixelDataIn[(y * 2 + 1) * width_];
-                unsigned char* out = &pixelDataOut[y * widthOut];
-
-                for (int x = 0; x < widthOut; ++x)
-                {
-                    out[x] = (unsigned char)(((unsigned)inUpper[x * 2] + inUpper[x * 2 + 1] +
-                                              inLower[x * 2] + inLower[x * 2 + 1]) >> 2);
-                }
+                const ea::array<const unsigned char*, 4> inputs{{
+                    &inUpper[(x * 2) * components_],
+                    &inUpper[(x * 2 + 1) * components_],
+                    &inLower[(x * 2) * components_],
+                    &inLower[(x * 2 + 1) * components_],
+                }};
+                CalculateNextLevelColor<4>(&out[x * components_], inputs, components_);
             }
-            break;
-
-        case 2:
-            for (int y = 0; y < heightOut; ++y)
-            {
-                const unsigned char* inUpper = &pixelDataIn[(y * 2) * width_ * 2];
-                const unsigned char* inLower = &pixelDataIn[(y * 2 + 1) * width_ * 2];
-                unsigned char* out = &pixelDataOut[y * widthOut * 2];
-
-                for (int x = 0; x < widthOut * 2; x += 2)
-                {
-                    out[x] = (unsigned char)(((unsigned)inUpper[x * 2] + inUpper[x * 2 + 2] +
-                                              inLower[x * 2] + inLower[x * 2 + 2]) >> 2);
-                    out[x + 1] = (unsigned char)(((unsigned)inUpper[x * 2 + 1] + inUpper[x * 2 + 3] +
-                                                  inLower[x * 2 + 1] + inLower[x * 2 + 3]) >> 2);
-                }
-            }
-            break;
-
-        case 3:
-            for (int y = 0; y < heightOut; ++y)
-            {
-                const unsigned char* inUpper = &pixelDataIn[(y * 2) * width_ * 3];
-                const unsigned char* inLower = &pixelDataIn[(y * 2 + 1) * width_ * 3];
-                unsigned char* out = &pixelDataOut[y * widthOut * 3];
-
-                for (int x = 0; x < widthOut * 3; x += 3)
-                {
-                    out[x] = (unsigned char)(((unsigned)inUpper[x * 2] + inUpper[x * 2 + 3] +
-                                              inLower[x * 2] + inLower[x * 2 + 3]) >> 2);
-                    out[x + 1] = (unsigned char)(((unsigned)inUpper[x * 2 + 1] + inUpper[x * 2 + 4] +
-                                                  inLower[x * 2 + 1] + inLower[x * 2 + 4]) >> 2);
-                    out[x + 2] = (unsigned char)(((unsigned)inUpper[x * 2 + 2] + inUpper[x * 2 + 5] +
-                                                  inLower[x * 2 + 2] + inLower[x * 2 + 5]) >> 2);
-                }
-            }
-            break;
-
-        case 4:
-            for (int y = 0; y < heightOut; ++y)
-            {
-                const unsigned char* inUpper = &pixelDataIn[(y * 2) * width_ * 4];
-                const unsigned char* inLower = &pixelDataIn[(y * 2 + 1) * width_ * 4];
-                unsigned char* out = &pixelDataOut[y * widthOut * 4];
-
-                for (int x = 0; x < widthOut * 4; x += 4)
-                {
-                    out[x] = (unsigned char)(((unsigned)inUpper[x * 2] + inUpper[x * 2 + 4] +
-                                              inLower[x * 2] + inLower[x * 2 + 4]) >> 2);
-                    out[x + 1] = (unsigned char)(((unsigned)inUpper[x * 2 + 1] + inUpper[x * 2 + 5] +
-                                                  inLower[x * 2 + 1] + inLower[x * 2 + 5]) >> 2);
-                    out[x + 2] = (unsigned char)(((unsigned)inUpper[x * 2 + 2] + inUpper[x * 2 + 6] +
-                                                  inLower[x * 2 + 2] + inLower[x * 2 + 6]) >> 2);
-                    out[x + 3] = (unsigned char)(((unsigned)inUpper[x * 2 + 3] + inUpper[x * 2 + 7] +
-                                                  inLower[x * 2 + 3] + inLower[x * 2 + 7]) >> 2);
-                }
-            }
-            break;
-
-        default:
-            assert(false);  // Should never reach here
-            break;
         }
     }
     // 3D case
     else
     {
-        switch (components_)
+        for (int z = 0; z < depthOut; ++z)
         {
-        case 1:
-            for (int z = 0; z < depthOut; ++z)
+            const unsigned char* inOuter = &pixelDataIn[(z * 2) * width_ * height_ * components_];
+            const unsigned char* inInner = &pixelDataIn[(z * 2 + 1) * width_ * height_ * components_];
+
+            for (int y = 0; y < heightOut; ++y)
             {
-                const unsigned char* inOuter = &pixelDataIn[(z * 2) * width_ * height_];
-                const unsigned char* inInner = &pixelDataIn[(z * 2 + 1) * width_ * height_];
+                const unsigned char* inOuterUpper = &inOuter[(y * 2) * width_ * components_];
+                const unsigned char* inOuterLower = &inOuter[(y * 2 + 1) * width_ * components_];
+                const unsigned char* inInnerUpper = &inInner[(y * 2) * width_ * components_];
+                const unsigned char* inInnerLower = &inInner[(y * 2 + 1) * width_ * components_];
+                unsigned char* out = &pixelDataOut[(z * widthOut * heightOut + y * widthOut) * components_];
 
-                for (int y = 0; y < heightOut; ++y)
+                for (int x = 0; x < widthOut; x += 2)
                 {
-                    const unsigned char* inOuterUpper = &inOuter[(y * 2) * width_];
-                    const unsigned char* inOuterLower = &inOuter[(y * 2 + 1) * width_];
-                    const unsigned char* inInnerUpper = &inInner[(y * 2) * width_];
-                    const unsigned char* inInnerLower = &inInner[(y * 2 + 1) * width_];
-                    unsigned char* out = &pixelDataOut[z * widthOut * heightOut + y * widthOut];
-
-                    for (int x = 0; x < widthOut; ++x)
-                    {
-                        out[x] = (unsigned char)(((unsigned)inOuterUpper[x * 2] + inOuterUpper[x * 2 + 1] +
-                                                  inOuterLower[x * 2] + inOuterLower[x * 2 + 1] +
-                                                  inInnerUpper[x * 2] + inInnerUpper[x * 2 + 1] +
-                                                  inInnerLower[x * 2] + inInnerLower[x * 2 + 1]) >> 3);
-                    }
+                    const ea::array<const unsigned char*, 8> inputs{{
+                        &inOuterUpper[(x * 2) * components_],
+                        &inOuterUpper[(x * 2 + 1) * components_],
+                        &inOuterLower[(x * 2) * components_],
+                        &inOuterLower[(x * 2 + 1) * components_],
+                        &inInnerUpper[(x * 2) * components_],
+                        &inInnerUpper[(x * 2 + 1) * components_],
+                        &inInnerLower[(x * 2) * components_],
+                        &inInnerLower[(x * 2 + 1) * components_],
+                    }};
+                    CalculateNextLevelColor<8>(&out[x * components_], inputs, components_);
                 }
             }
-            break;
-
-        case 2:
-            for (int z = 0; z < depthOut; ++z)
-            {
-                const unsigned char* inOuter = &pixelDataIn[(z * 2) * width_ * height_ * 2];
-                const unsigned char* inInner = &pixelDataIn[(z * 2 + 1) * width_ * height_ * 2];
-
-                for (int y = 0; y < heightOut; ++y)
-                {
-                    const unsigned char* inOuterUpper = &inOuter[(y * 2) * width_ * 2];
-                    const unsigned char* inOuterLower = &inOuter[(y * 2 + 1) * width_ * 2];
-                    const unsigned char* inInnerUpper = &inInner[(y * 2) * width_ * 2];
-                    const unsigned char* inInnerLower = &inInner[(y * 2 + 1) * width_ * 2];
-                    unsigned char* out = &pixelDataOut[z * widthOut * heightOut * 2 + y * widthOut * 2];
-
-                    for (int x = 0; x < widthOut * 2; x += 2)
-                    {
-                        out[x] = (unsigned char)(((unsigned)inOuterUpper[x * 2] + inOuterUpper[x * 2 + 2] +
-                                                  inOuterLower[x * 2] + inOuterLower[x * 2 + 2] +
-                                                  inInnerUpper[x * 2] + inInnerUpper[x * 2 + 2] +
-                                                  inInnerLower[x * 2] + inInnerLower[x * 2 + 2]) >> 3);
-                        out[x + 1] = (unsigned char)(((unsigned)inOuterUpper[x * 2 + 1] + inOuterUpper[x * 2 + 3] +
-                                                      inOuterLower[x * 2 + 1] + inOuterLower[x * 2 + 3] +
-                                                      inInnerUpper[x * 2 + 1] + inInnerUpper[x * 2 + 3] +
-                                                      inInnerLower[x * 2 + 1] + inInnerLower[x * 2 + 3]) >> 3);
-                    }
-                }
-            }
-            break;
-
-        case 3:
-            for (int z = 0; z < depthOut; ++z)
-            {
-                const unsigned char* inOuter = &pixelDataIn[(z * 2) * width_ * height_ * 3];
-                const unsigned char* inInner = &pixelDataIn[(z * 2 + 1) * width_ * height_ * 3];
-
-                for (int y = 0; y < heightOut; ++y)
-                {
-                    const unsigned char* inOuterUpper = &inOuter[(y * 2) * width_ * 3];
-                    const unsigned char* inOuterLower = &inOuter[(y * 2 + 1) * width_ * 3];
-                    const unsigned char* inInnerUpper = &inInner[(y * 2) * width_ * 3];
-                    const unsigned char* inInnerLower = &inInner[(y * 2 + 1) * width_ * 3];
-                    unsigned char* out = &pixelDataOut[z * widthOut * heightOut * 3 + y * widthOut * 3];
-
-                    for (int x = 0; x < widthOut * 3; x += 3)
-                    {
-                        out[x] = (unsigned char)(((unsigned)inOuterUpper[x * 2] + inOuterUpper[x * 2 + 3] +
-                                                  inOuterLower[x * 2] + inOuterLower[x * 2 + 3] +
-                                                  inInnerUpper[x * 2] + inInnerUpper[x * 2 + 3] +
-                                                  inInnerLower[x * 2] + inInnerLower[x * 2 + 3]) >> 3);
-                        out[x + 1] = (unsigned char)(((unsigned)inOuterUpper[x * 2 + 1] + inOuterUpper[x * 2 + 4] +
-                                                      inOuterLower[x * 2 + 1] + inOuterLower[x * 2 + 4] +
-                                                      inInnerUpper[x * 2 + 1] + inInnerUpper[x * 2 + 4] +
-                                                      inInnerLower[x * 2 + 1] + inInnerLower[x * 2 + 4]) >> 3);
-                        out[x + 2] = (unsigned char)(((unsigned)inOuterUpper[x * 2 + 2] + inOuterUpper[x * 2 + 5] +
-                                                      inOuterLower[x * 2 + 2] + inOuterLower[x * 2 + 5] +
-                                                      inInnerUpper[x * 2 + 2] + inInnerUpper[x * 2 + 5] +
-                                                      inInnerLower[x * 2 + 2] + inInnerLower[x * 2 + 5]) >> 3);
-                    }
-                }
-            }
-            break;
-
-        case 4:
-            for (int z = 0; z < depthOut; ++z)
-            {
-                const unsigned char* inOuter = &pixelDataIn[(z * 2) * width_ * height_ * 4];
-                const unsigned char* inInner = &pixelDataIn[(z * 2 + 1) * width_ * height_ * 4];
-
-                for (int y = 0; y < heightOut; ++y)
-                {
-                    const unsigned char* inOuterUpper = &inOuter[(y * 2) * width_ * 4];
-                    const unsigned char* inOuterLower = &inOuter[(y * 2 + 1) * width_ * 4];
-                    const unsigned char* inInnerUpper = &inInner[(y * 2) * width_ * 4];
-                    const unsigned char* inInnerLower = &inInner[(y * 2 + 1) * width_ * 4];
-                    unsigned char* out = &pixelDataOut[z * widthOut * heightOut * 4 + y * widthOut * 4];
-
-                    for (int x = 0; x < widthOut * 4; x += 4)
-                    {
-                        out[x] = (unsigned char)(((unsigned)inOuterUpper[x * 2] + inOuterUpper[x * 2 + 4] +
-                                                  inOuterLower[x * 2] + inOuterLower[x * 2 + 4] +
-                                                  inInnerUpper[x * 2] + inInnerUpper[x * 2 + 4] +
-                                                  inInnerLower[x * 2] + inInnerLower[x * 2 + 4]) >> 3);
-                        out[x + 1] = (unsigned char)(((unsigned)inOuterUpper[x * 2 + 1] + inOuterUpper[x * 2 + 5] +
-                                                      inOuterLower[x * 2 + 1] + inOuterLower[x * 2 + 5] +
-                                                      inInnerUpper[x * 2 + 1] + inInnerUpper[x * 2 + 5] +
-                                                      inInnerLower[x * 2 + 1] + inInnerLower[x * 2 + 5]) >> 3);
-                        out[x + 2] = (unsigned char)(((unsigned)inOuterUpper[x * 2 + 2] + inOuterUpper[x * 2 + 6] +
-                                                      inOuterLower[x * 2 + 2] + inOuterLower[x * 2 + 6] +
-                                                      inInnerUpper[x * 2 + 2] + inInnerUpper[x * 2 + 6] +
-                                                      inInnerLower[x * 2 + 2] + inInnerLower[x * 2 + 6]) >> 3);
-                        out[x + 3] = (unsigned char)(((unsigned)inOuterUpper[x * 2 + 3] + inOuterUpper[x * 2 + 7] +
-                                                      inOuterLower[x * 2 + 3] + inOuterLower[x * 2 + 7] +
-                                                      inInnerUpper[x * 2 + 3] + inInnerUpper[x * 2 + 7] +
-                                                      inInnerLower[x * 2 + 3] + inInnerLower[x * 2 + 7]) >> 3);
-                    }
-                }
-            }
-            break;
-
-        default:
-            assert(false);  // Should never reach here
-            break;
         }
     }
 
