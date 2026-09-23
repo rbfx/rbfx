@@ -26,7 +26,7 @@ public:
 
     using MaterialVector = ea::vector<SharedPtr<Material>>;
 
-    MaterialInspectorWidget(Context* context, const MaterialVector& materials);
+    MaterialInspectorWidget(Context* context, const MaterialVector& materials, const ea::string& coreDataPath);
     ~MaterialInspectorWidget() override;
 
     void UpdateTechniques(const ea::string& path);
@@ -42,6 +42,7 @@ private:
         ea::string displayName_;
         ea::string resourceName_;
         SharedPtr<Technique> technique_;
+        bool isCoreData_{};
         bool deprecated_{};
 
         bool operator<(const TechniqueDesc& rhs) const;
@@ -103,6 +104,7 @@ private:
     void RenderNewShaderParameter();
 
     const ea::string defaultTechniqueName_{"Techniques/LitOpaque.xml"};
+    const ea::string coreDataPath_;
 
     SharedPtr<Scene> previewScene_;
     SharedPtr<SceneRendererToTexture> previewWidget_;

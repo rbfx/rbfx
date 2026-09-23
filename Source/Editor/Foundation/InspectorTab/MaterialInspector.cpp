@@ -69,7 +69,7 @@ void MaterialInspector::InspectResources()
         return;
     }
 
-    widget_ = MakeShared<MaterialInspectorWidget>(context_, materials);
+    widget_ = MakeShared<MaterialInspectorWidget>(context_, materials, project_->GetCoreDataPath());
     widget_->UpdateTechniques(techniquePath_);
     widget_->OnEditBegin.Subscribe(this, &MaterialInspector::BeginEdit);
     widget_->OnEditEnd.Subscribe(this, &MaterialInspector::EndEdit);

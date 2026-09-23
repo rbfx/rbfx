@@ -80,7 +80,17 @@ const StringVector cullModes{"Cull None", "Cull Back Faces", "Cull Front Faces"}
 
 const StringVector fillModes{"Solid", "Wireframe", "Points"};
 
+Color GetTechniqueColor(bool isCoreData, bool isDeprecated)
+{
+    if (!isCoreData)
+        return Color{0.5f, 1.0f, 0.0f, 1.0f};
+    else if (!isDeprecated)
+        return Color{1.0f, 1.0f, 1.0f, 1.0f};
+    else
+        return Color{0.5f, 0.5f, 0.5f, 1.0f};
 }
+
+} // namespace
 
 const ea::vector<MaterialInspectorWidget::TextureUnitDesc> MaterialInspectorWidget::textureUnits{
     {ShaderResources::Albedo,       "Albedo map or Diffuse texture with optional alpha channel."},
@@ -190,11 +200,14 @@ const ea::vector<MaterialInspectorWidget::PropertyDesc> MaterialInspectorWidget:
 
 bool MaterialInspectorWidget::TechniqueDesc::operator<(const TechniqueDesc& rhs) const
 {
-    return ea::tie(deprecated_, displayName_) < ea::tie(rhs.deprecated_, rhs.displayName_);
+    return ea::tie(deprecated_, isCoreData_, displayName_)
+        < ea::tie(rhs.deprecated_, rhs.isCoreData_, rhs.displayName_);
 }
 
-MaterialInspectorWidget::MaterialInspectorWidget(Context* context, const MaterialVector& materials)
+MaterialInspectorWidget::MaterialInspectorWidget(
+    Context* context, const MaterialVector& materials, const ea::string& coreDataPath)
     : Object(context)
+    , coreDataPath_(coreDataPath)
     , materials_(materials)
     , previewScene_(MakeShared<Scene>(context))
     , previewWidget_(MakeShared<SceneRendererToTexture>(previewScene_))
@@ -271,14 +284,17 @@ void MaterialInspectorWidget::UpdateTechniques(const ea::string& path)
 
     for (const ea::string& relativeName : techniques)
     {
-        auto desc = ea::make_shared<TechniqueDesc>();
-        desc->resourceName_ = AddTrailingSlash(path) + relativeName;
-        desc->displayName_ = relativeName.substr(0, relativeName.size() - 4);
-        desc->technique_ = cache->GetResource<Technique>(desc->resourceName_);
-        desc->deprecated_ = IsTechniqueDeprecated(desc->resourceName_);
-        if (desc->technique_)
+        const ea::string resourceName = AddTrailingSlash(path) + relativeName;
+        if (const auto technique = cache->GetResource<Technique>(resourceName))
         {
-            techniques_[desc->resourceName_] = desc;
+            auto desc = ea::make_shared<TechniqueDesc>();
+            desc->resourceName_ = resourceName;
+            desc->displayName_ = relativeName.substr(0, relativeName.size() - 4);
+            desc->technique_ = technique;
+            desc->isCoreData_ = desc->technique_->GetAbsoluteFileName().starts_with(coreDataPath_);
+            desc->deprecated_ = desc->isCoreData_ && IsTechniqueDeprecated(resourceName);
+
+            techniques_[resourceName] = desc;
             sortedTechniques_.push_back(desc);
         }
     }
@@ -576,7 +592,8 @@ bool MaterialInspectorWidget::EditTechniqueInEntry(TechniqueEntry& entry, float 
                 wasDeprecated = true;
             }
 
-            const ColorScopeGuard guardTextColor{ImGuiCol_Text, ImVec4{0.3f, 1.0f, 0.0f, 1.0f}, !desc.deprecated_};
+            const ColorScopeGuard guardTextColor{
+                ImGuiCol_Text, ToImGui(GetTechniqueColor(desc.isCoreData_, desc.deprecated_))};
 
             if (ui::Selectable(desc.displayName_.c_str(), entry.technique_ == desc.technique_))
             {
