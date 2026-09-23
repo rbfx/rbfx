@@ -120,6 +120,9 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Enable Instancing", bool, settings_.instancingBuffer_.enableInstancing_, MarkSettingsDirty, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Pre-Pass", bool, settings_.sceneProcessor_.depthPrePass_, MarkSettingsDirty, false, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Lighting Mode", settings_.sceneProcessor_.lightingMode_, MarkSettingsDirty, directLightingModeNames, DirectLightingMode::Forward, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Directional Light Shadow Resolution", unsigned, settings_.sceneProcessor_.directionalShadowSize_, MarkSettingsDirty, SceneProcessorSettings{}.directionalShadowSize_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Spot Light Shadow Resolution", unsigned, settings_.sceneProcessor_.spotShadowSize_, MarkSettingsDirty, SceneProcessorSettings{}.spotShadowSize_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Point Light Shadow Resolution", unsigned, settings_.sceneProcessor_.pointShadowSize_, MarkSettingsDirty, SceneProcessorSettings{}.pointShadowSize_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Enable Shadows", bool, settings_.sceneProcessor_.enableShadows_, MarkSettingsDirty, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Cubemap Box Projection", bool, settings_.sceneProcessor_.cubemapBoxProjection_, MarkSettingsDirty, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("PCF Kernel Size", unsigned, settings_.sceneProcessor_.pcfKernelSize_, MarkSettingsDirty, 1, AM_DEFAULT);
