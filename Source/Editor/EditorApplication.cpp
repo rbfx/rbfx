@@ -4,6 +4,7 @@
 
 #include "EditorApplication.h"
 
+#include "Assets/DilateTextureTransformer.h"
 #include "Assets/ModelImporter.h"
 #include "Foundation/AnimationViewTab.h"
 #include "Foundation/ConcurrentAssetProcessing.h"
@@ -83,6 +84,7 @@ EditorApplication::EditorApplication(Context* context)
     : Application(context)
     , editorPluginManager_(MakeShared<EditorPluginManager>(context_))
 {
+    editorPluginManager_->AddPlugin("Assets.DilateTextureTransformer", &Assets_DilateTextureTransformer);
     editorPluginManager_->AddPlugin("Assets.ModelImporter", &Assets_ModelImporter);
 
     editorPluginManager_->AddPlugin("Foundation.StandardFileTypes", &Foundation_StandardFileTypes);
