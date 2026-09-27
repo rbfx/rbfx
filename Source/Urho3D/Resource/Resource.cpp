@@ -20,6 +20,7 @@
 #include "Urho3D/IO/MemoryBuffer.h"
 
 #include <EASTL/finally.h>
+#include <EASTL/sort.h>
 
 namespace Urho3D
 {
