@@ -100,7 +100,7 @@ bool Animation::LoadXML(const XMLElement& source)
     LoadTracksFromXML(source);
     LoadVariantTracksFromXML(source);
     LoadTriggersFromXML(source);
-    LoadMetadataFromXML(source);
+    SetMetadata(CreateMetadataFromXML(source));
 
     return true;
 }
@@ -322,7 +322,7 @@ bool Animation::BeginLoad(Deserializer& source)
         LoadTracksFromXML(rootElem);
         LoadVariantTracksFromXML(rootElem);
         LoadTriggersFromXML(rootElem);
-        LoadMetadataFromXML(rootElem);
+        SetMetadata(CreateMetadataFromXML(rootElem));
 
         memoryUse += triggers_.size() * sizeof(AnimationTriggerPoint);
         SetMemoryUse(memoryUse);
@@ -553,7 +553,7 @@ SharedPtr<Animation> Animation::Clone(const ea::string& cloneName) const
     ret->tracks_ = tracks_;
     ret->variantTracks_ = variantTracks_;
     ret->triggers_ = triggers_;
-    ret->CopyMetadata(*this);
+    ret->SetMetadata(GetMetadata());
     ret->SetMemoryUse(GetMemoryUse());
 
     return ret;

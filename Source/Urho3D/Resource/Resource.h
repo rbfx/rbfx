@@ -187,6 +187,11 @@ public:
     /// Construct.
     explicit ResourceWithMetadata(Context* context) : Resource(context) {}
 
+    /// Set metadata, overwrite all old values.
+    void SetMetadata(const StringVariantMap& metadata) { metadata_ = metadata; }
+    /// Return all metadata.
+    const StringVariantMap& GetMetadata() const { return metadata_; }
+
     /// Add new metadata variable or overwrite old value.
     /// @property{set_metadata}
     void AddMetadata(const ea::string& name, const Variant& value);
@@ -194,30 +199,22 @@ public:
     void RemoveMetadata(const ea::string& name);
     /// Remove all metadata variables.
     void RemoveAllMetadata();
-    /// Return all metadata keys.
-    const StringVector& GetMetadataKeys() const { return metadataKeys_; }
     /// Return metadata variable.
     /// @property
     const Variant& GetMetadata(const ea::string& name) const;
     /// Return whether the resource has metadata.
     /// @property
     bool HasMetadata() const;
-    /// Copy metadata from another resource.
-    void CopyMetadata(const ResourceWithMetadata& source);
 
 protected:
-    /// Load metadata from <metadata> children of XML element.
-    void LoadMetadataFromXML(const XMLElement& source);
-    /// Load metadata from JSON array.
-    void LoadMetadataFromJSON(const JSONArray& array);
+    /// Read metadata from <metadata> children of XML element.
+    static StringVariantMap CreateMetadataFromXML(const XMLElement& source);
     /// Save as <metadata> children of XML element.
     void SaveMetadataToXML(XMLElement& destination) const;
 
 private:
-    /// Animation metadata variables.
-    VariantMap metadata_;
-    /// Animation metadata keys.
-    StringVector metadataKeys_;
+    /// Metadata variables.
+    StringVariantMap metadata_;
 };
 
 /// Serialize reference to a resource.

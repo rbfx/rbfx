@@ -302,7 +302,7 @@ bool Model::BeginLoad(Deserializer& source)
     ea::string xmlName = ReplaceExtension(GetName(), ".xml");
     SharedPtr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (file)
-        LoadMetadataFromXML(file->GetRoot());
+        SetMetadata(CreateMetadataFromXML(file->GetRoot()));
 
     SetMemoryUse(memoryUse);
     return true;

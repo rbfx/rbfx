@@ -168,7 +168,7 @@ SharedPtr<Animation> RetargetAnimationsTransformer::RetargetAnimation(const Reta
     targetAnimation->SetLength(task.sourceAnimation_->GetLength());
     targetAnimation->SetName(task.targetAnimationName_);
     targetAnimation->SetAnimationName(task.sourceAnimation_->GetAnimationName());
-    targetAnimation->CopyMetadata(*task.sourceAnimation_);
+    targetAnimation->SetMetadata(task.sourceAnimation_->GetMetadata());
 
     // Prepare scene and models
     auto scene = MakeShared<Scene>(context_);

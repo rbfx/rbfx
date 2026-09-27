@@ -213,7 +213,7 @@ void Texture::SetParameters(XMLFile* file)
 
 void Texture::SetParameters(const XMLElement& element)
 {
-    LoadMetadataFromXML(element);
+    SetMetadata(CreateMetadataFromXML(element));
     for (XMLElement paramElem = element.GetChild(); paramElem; paramElem = paramElem.GetNext())
     {
         ea::string name = paramElem.GetName();

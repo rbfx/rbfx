@@ -1122,8 +1122,8 @@ bool ModelView::ImportModel(const Model* model)
     name_ = model->GetName();
 
     // Read metadata
-    for (const ea::string& key : model->GetMetadataKeys())
-        metadata_.emplace(key, model->GetMetadata(key));
+    for (const auto& [key, value] : model->GetMetadata())
+        metadata_.emplace(key, value);
 
     const auto& modelVertexBuffers = model->GetVertexBuffers();
     const auto& modelIndexBuffers = model->GetIndexBuffers();

@@ -324,21 +324,17 @@ bool SimpleResource::SaveFile(const FileIdentifier& fileName) const
 
 void ResourceWithMetadata::AddMetadata(const ea::string& name, const Variant& value)
 {
-    const bool exists = !metadata_.insert_or_assign(StringHash(name), value).second;
-    if (!exists)
-        metadataKeys_.push_back(name);
+    metadata_.insert_or_assign(name, value);
 }
 
 void ResourceWithMetadata::RemoveMetadata(const ea::string& name)
 {
     metadata_.erase(name);
-    metadataKeys_.erase_first(name);
 }
 
 void ResourceWithMetadata::RemoveAllMetadata()
 {
     metadata_.clear();
-    metadataKeys_.clear();
 }
 
 const Urho3D::Variant& ResourceWithMetadata::GetMetadata(const ea::string& name) const
@@ -355,37 +351,24 @@ bool ResourceWithMetadata::HasMetadata() const
     return !metadata_.empty();
 }
 
-void ResourceWithMetadata::LoadMetadataFromXML(const XMLElement& source)
+StringVariantMap ResourceWithMetadata::CreateMetadataFromXML(const XMLElement& source)
 {
-    RemoveAllMetadata();
+    StringVariantMap result;
     for (XMLElement elem = source.GetChild("metadata"); elem; elem = elem.GetNext("metadata"))
-        AddMetadata(elem.GetAttribute("name"), elem.GetVariant());
-}
-
-void ResourceWithMetadata::LoadMetadataFromJSON(const JSONArray& array)
-{
-    RemoveAllMetadata();
-    for (unsigned i = 0; i < array.size(); i++)
-    {
-        const JSONValue& value = array.at(i);
-        AddMetadata(value.Get("name").GetString(), value.GetVariant());
-    }
+        result.emplace(elem.GetAttribute("name"), elem.GetVariant());
+    return result;
 }
 
 void ResourceWithMetadata::SaveMetadataToXML(XMLElement& destination) const
 {
-    for (unsigned i = 0; i < metadataKeys_.size(); ++i)
+    StringVector keys = metadata_.keys();
+    ea::sort(keys.begin(), keys.end());
+    for (unsigned i = 0; i < keys.size(); ++i)
     {
         XMLElement elem = destination.CreateChild("metadata");
-        elem.SetString("name", metadataKeys_[i]);
-        elem.SetVariant(GetMetadata(metadataKeys_[i]));
+        elem.SetString("name", keys[i]);
+        elem.SetVariant(GetMetadata(keys[i]));
     }
 }
 
-void ResourceWithMetadata::CopyMetadata(const ResourceWithMetadata& source)
-{
-    metadata_ = source.metadata_;
-    metadataKeys_ = source.metadataKeys_;
-}
-
-}
+} // namespace Urho3D
