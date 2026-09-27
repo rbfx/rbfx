@@ -57,6 +57,13 @@ bool IsCompressedEffective(const Image& image, RenderDevice* renderDevice)
     return !renderDevice || renderDevice->IsTextureFormatSupported(image.GetGPUFormat());
 }
 
+static const char* mipmapAlgoNames[] =
+{
+    "average",
+    "alphaweighted",
+    nullptr
+};
+
 } // namespace
 
 static const char* addressModeNames[] =
@@ -307,6 +314,23 @@ bool Texture::TryRestore()
     if (cache->Exists(GetName()))
         return cache->ReloadResource(this);
     return false;
+}
+
+ImageMipMapParams Texture::CreateMipMapParamsFromXML(const XMLElement& element)
+{
+    ImageMipMapParams result;
+    if (const XMLElement paramElem = element.GetChild("mipmapgen"))
+    {
+        const ea::string mode = paramElem.GetAttributeLower("algorithm");
+        result.algorithm_ = static_cast<ImageMipMapAlgorithm>(GetStringListIndex(mode.c_str(), mipmapAlgoNames, 0));
+        result.alphaScaleFactor_ = paramElem.GetFloat("alphascale");
+    }
+    return result;
+}
+
+ImageMipMapParams Texture::CreateMipMapParamsFromXML(XMLFile* file)
+{
+    return file ? CreateMipMapParamsFromXML(file->GetRoot()) : ImageMipMapParams{};
 }
 
 void Texture::CheckTextureBudget(StringHash type)

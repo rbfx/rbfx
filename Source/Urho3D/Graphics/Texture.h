@@ -9,6 +9,7 @@
 #include "Urho3D/Graphics/RenderSurface.h"
 #include "Urho3D/Math/Color.h"
 #include "Urho3D/Resource/Resource.h"
+#include "Urho3D/Resource/ResourceDefs.h"
 #include "Urho3D/RenderAPI/RawTexture.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
@@ -202,6 +203,10 @@ private:
     void HandleRenderSurfaceUpdate();
 
 protected:
+    /// Read mipmap generation parameters from XML.
+    static ImageMipMapParams CreateMipMapParamsFromXML(const XMLElement& element);
+    static ImageMipMapParams CreateMipMapParamsFromXML(XMLFile* file);
+
     /// Check whether texture memory budget has been exceeded. Free unused materials in that case to release the texture references.
     void CheckTextureBudget(StringHash type);
 
@@ -213,6 +218,7 @@ protected:
     /// Read texture data to image.
     bool ReadToImage(unsigned arraySlice, unsigned level, Image* image);
 
+protected:
     /// Requested mip levels.
     unsigned requestedLevels_{};
     /// Whether sRGB sampling and writing is requested.

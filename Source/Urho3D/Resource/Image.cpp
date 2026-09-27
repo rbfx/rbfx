@@ -79,16 +79,48 @@ void CalculateNextLevelColor(unsigned char* output, const ea::array<const unsign
 }
 
 template <unsigned NumInputs>
-void CalculateNextLevelColor(
-    unsigned char* output, const ea::array<const unsigned char*, NumInputs>& inputs, unsigned numComponents)
+void CalculateNextLevelColorAlphaWeighted(
+    unsigned char* output, const ea::array<const unsigned char*, NumInputs>& inputs, float alphaFactor)
 {
-    switch (numComponents)
+    Color result{Color::TRANSPARENT_BLACK};
+    float totalAlpha{};
+    float maxAlpha{};
+
+    for (unsigned i = 0; i < NumInputs; ++i)
     {
-    case 1: CalculateNextLevelColor<1, NumInputs>(output, inputs); break;
-    case 2: CalculateNextLevelColor<2, NumInputs>(output, inputs); break;
-    case 3: CalculateNextLevelColor<3, NumInputs>(output, inputs); break;
-    case 4: CalculateNextLevelColor<4, NumInputs>(output, inputs); break;
-    default: break;
+        const Color input{*reinterpret_cast<const unsigned*>(inputs[i])};
+        result.r_ += input.r_ * input.a_;
+        result.g_ += input.g_ * input.a_;
+        result.b_ += input.b_ * input.a_;
+        totalAlpha += input.a_;
+        maxAlpha = ea::max(maxAlpha, input.a_);
+    }
+
+    if (totalAlpha > 0.0f)
+        result = result * (1.0f / totalAlpha);
+    result.a_ = Clamp(totalAlpha / static_cast<float>(NumInputs) * alphaFactor, 0.0f, 1.0f);
+
+    *reinterpret_cast<unsigned*>(output) = result.ToUInt();
+}
+
+template <unsigned NumInputs>
+void CalculateNextLevelColor(unsigned char* output, const ea::array<const unsigned char*, NumInputs>& inputs,
+    unsigned numComponents, const ImageMipMapParams& params)
+{
+    if (params.algorithm_ == ImageMipMapAlgorithm::AlphaWeightedLinear && numComponents == 4)
+    {
+        CalculateNextLevelColorAlphaWeighted<NumInputs>(output, inputs, params.alphaScaleFactor_);
+    }
+    else
+    {
+        switch (numComponents)
+        {
+        case 1: CalculateNextLevelColor<1, NumInputs>(output, inputs); break;
+        case 2: CalculateNextLevelColor<2, NumInputs>(output, inputs); break;
+        case 3: CalculateNextLevelColor<3, NumInputs>(output, inputs); break;
+        case 4: CalculateNextLevelColor<4, NumInputs>(output, inputs); break;
+        default: break;
+        }
     }
 }
 
@@ -221,6 +253,7 @@ bool Image::BeginLoad(Deserializer& source)
             {
                 // Build the image chain
                 SharedPtr<Image> nextImage(MakeShared<Image>(context_));
+                nextImage->SetMipMapParams(GetMipMapParams());
                 currentImage->nextSibling_ = nextImage;
                 currentImage = nextImage;
             }
@@ -1478,6 +1511,7 @@ SharedPtr<Image> Image::GetNextLevel() const
     const int depthOut = ea::max(1, depth_ / 2);
 
     SharedPtr<Image> mipImage(MakeShared<Image>(context_));
+    mipImage->SetMipMapParams(GetMipMapParams());
 
     if (depth_ > 1)
         mipImage->SetSize(widthOut, heightOut, depthOut, components_);
@@ -1499,7 +1533,7 @@ SharedPtr<Image> Image::GetNextLevel() const
                 &pixelDataIn[(x * 2) * components_],
                 &pixelDataIn[(x * 2 + 1) * components_],
             }};
-            CalculateNextLevelColor<2>(&pixelDataOut[x * components_], inputs, components_);
+            CalculateNextLevelColor<2>(&pixelDataOut[x * components_], inputs, components_, mipParams_);
         }
     }
     // 2D case
@@ -1519,7 +1553,7 @@ SharedPtr<Image> Image::GetNextLevel() const
                     &inLower[(x * 2) * components_],
                     &inLower[(x * 2 + 1) * components_],
                 }};
-                CalculateNextLevelColor<4>(&out[x * components_], inputs, components_);
+                CalculateNextLevelColor<4>(&out[x * components_], inputs, components_, mipParams_);
             }
         }
     }
@@ -1551,7 +1585,7 @@ SharedPtr<Image> Image::GetNextLevel() const
                         &inInnerLower[(x * 2) * components_],
                         &inInnerLower[(x * 2 + 1) * components_],
                     }};
-                    CalculateNextLevelColor<8>(&out[x * components_], inputs, components_);
+                    CalculateNextLevelColor<8>(&out[x * components_], inputs, components_, mipParams_);
                 }
             }
         }
@@ -1579,6 +1613,7 @@ SharedPtr<Image> Image::ConvertToRGBA() const
     }
 
     SharedPtr<Image> ret(MakeShared<Image>(context_));
+    ret->SetMipMapParams(GetMipMapParams());
     ret->SetSize(width_, height_, depth_, 4);
 
     const unsigned char* src = data_.get();
@@ -1682,6 +1717,7 @@ SharedPtr<Image> Image::GetDecompressedImageLevel(unsigned index) const
         const CompressedLevel compressedLevel = GetCompressedLevel(ea::min(index, numCompressedLevels_));
 
         auto decompressedImage = MakeShared<Image>(context_);
+        decompressedImage->SetMipMapParams(GetMipMapParams());
         decompressedImage->SetSize(compressedLevel.width_, compressedLevel.height_, 4);
         if (!compressedLevel.Decompress(decompressedImage->GetData()))
         {
@@ -1723,6 +1759,7 @@ SharedPtr<Image> Image::GetSubimage(const IntRect& rect) const
         int height = rect.Height();
 
         auto image = MakeShared<Image>(context_);
+        image->SetMipMapParams(GetMipMapParams());
         image->SetSize(width, height, components_);
 
         unsigned char* dest = image->GetData();
@@ -1800,6 +1837,7 @@ SharedPtr<Image> Image::GetSubimage(const IntRect& rect) const
         }
 
         auto image = MakeShared<Image>(context_);
+        image->SetMipMapParams(GetMipMapParams());
         image->width_ = paddedRect.Width();
         image->height_ = paddedRect.Height();
         image->depth_ = 1;

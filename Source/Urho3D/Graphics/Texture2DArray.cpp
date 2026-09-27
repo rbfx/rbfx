@@ -61,6 +61,8 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
         return false;
     }
 
+    const auto mipMapParams = CreateMipMapParamsFromXML(loadParameters_);
+
     loadImages_.clear();
 
     XMLElement textureElem = loadParameters_->GetRoot();
@@ -73,7 +75,10 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
         if (GetPath(name).empty())
             name = texPath + name;
 
-        loadImages_.push_back(cache->GetTempResource<Image>(name));
+        const auto loadImage = cache->GetTempResource<Image>(name);
+        loadImage->SetMipMapParams(mipMapParams);
+        loadImages_.push_back(loadImage);
+
         cache->StoreResourceDependency(this, name);
 
         layerElem = layerElem.GetNext("layer");

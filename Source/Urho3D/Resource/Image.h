@@ -7,6 +7,7 @@
 
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 #include "Urho3D/Resource/Resource.h"
+#include "Urho3D/Resource/ResourceDefs.h"
 
 #include <EASTL/shared_array.h>
 
@@ -58,6 +59,8 @@ public:
     /// Save the image to a file. Format of the image is determined by file extension. JPG is saved with maximum quality.
     bool SaveFile(const FileIdentifier& fileName) const override;
 
+    /// Set mipmap generation parameters. Does not affect existing mipmap levels.
+    void SetMipMapParams(const ImageMipMapParams& mipParams) { mipParams_ = mipParams; }
     /// Set 2D size and number of color components. Old image data will be destroyed and new data is undefined. Return true if successful.
     bool SetSize(int width, int height, unsigned components);
     /// Set 3D size and number of color components. Old image data will be destroyed and new data is undefined. Return true if successful.
@@ -156,6 +159,9 @@ public:
     /// @property
     unsigned GetNumCompressedLevels() const { return numCompressedLevels_; }
 
+    /// Return mipmap generation parameters.
+    const ImageMipMapParams& GetMipMapParams() const { return mipParams_; }
+
     /// Return next mip level by bilinear filtering. Note that if the image is already 1x1x1, will keep returning an image of that size.
     SharedPtr<Image> GetNextLevel() const;
     /// Return the next sibling image of an array or cubemap.
@@ -210,6 +216,8 @@ private:
     bool sRGB_{};
     /// Compressed format.
     TextureFormat compressedFormat_{};
+    /// Mipmap generation parameters.
+    ImageMipMapParams mipParams_;
     /// Pixel data.
     ea::shared_array<unsigned char> data_;
     /// Precalculated mip level image.

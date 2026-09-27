@@ -52,14 +52,17 @@ bool Texture2D::BeginLoad(Deserializer& source)
         return false;
     }
 
-    // Precalculate mip levels if async loading
-    if (GetAsyncLoadState() == ASYNC_LOADING)
-        loadImage_->PrecalculateLevels();
-
     // Load the optional parameters file
     auto* cache = GetSubsystem<ResourceCache>();
     ea::string xmlName = ReplaceExtension(GetName(), ".xml");
     loadParameters_ = cache->GetTempResource<XMLFile>(xmlName, false);
+
+    const auto mipMapParams = CreateMipMapParamsFromXML(loadParameters_);
+    loadImage_->SetMipMapParams(mipMapParams);
+
+    // Precalculate mip levels if async loading
+    if (GetAsyncLoadState() == ASYNC_LOADING)
+        loadImage_->PrecalculateLevels();
 
     return true;
 }

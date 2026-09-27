@@ -57,6 +57,8 @@ bool Texture3D::BeginLoad(Deserializer& source)
         return false;
     }
 
+    const auto mipMapParams = CreateMipMapParamsFromXML(loadParameters_);
+
     XMLElement textureElem = loadParameters_->GetRoot();
     XMLElement volumeElem = textureElem.GetChild("volume");
     XMLElement colorlutElem = textureElem.GetChild("colorlut");
@@ -72,6 +74,8 @@ bool Texture3D::BeginLoad(Deserializer& source)
             name = texPath + name;
 
         loadImage_ = cache->GetTempResource<Image>(name);
+        loadImage_->SetMipMapParams(mipMapParams);
+
         // Precalculate mip levels if async loading
         if (loadImage_ && GetAsyncLoadState() == ASYNC_LOADING)
             loadImage_->PrecalculateLevels();
@@ -90,6 +94,8 @@ bool Texture3D::BeginLoad(Deserializer& source)
 
         AbstractFilePtr file = GetSubsystem<ResourceCache>()->GetFile(name);
         loadImage_ = MakeShared<Image>(context_);
+        loadImage_->SetMipMapParams(mipMapParams);
+
         if (!loadImage_->LoadColorLUT(*(file.Get())))
         {
             loadParameters_.Reset();
