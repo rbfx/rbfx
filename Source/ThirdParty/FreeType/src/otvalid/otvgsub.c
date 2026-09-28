@@ -1,33 +1,33 @@
-/***************************************************************************/
-/*                                                                         */
-/*  otvgsub.c                                                              */
-/*                                                                         */
-/*    OpenType GSUB table validation (body).                               */
-/*                                                                         */
-/*  Copyright 2004-2017 by                                                 */
-/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
-/*                                                                         */
-/*  This file is part of the FreeType project, and may only be used,       */
-/*  modified, and distributed under the terms of the FreeType project      */
-/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
-/*  this file you indicate that you have read the license and              */
-/*  understand and accept it fully.                                        */
-/*                                                                         */
-/***************************************************************************/
+/****************************************************************************
+ *
+ * otvgsub.c
+ *
+ *   OpenType GSUB table validation (body).
+ *
+ * Copyright (C) 2004-2024 by
+ * David Turner, Robert Wilhelm, and Werner Lemberg.
+ *
+ * This file is part of the FreeType project, and may only be used,
+ * modified, and distributed under the terms of the FreeType project
+ * license, LICENSE.TXT.  By continuing to use, modify, or distribute
+ * this file you indicate that you have read the license and
+ * understand and accept it fully.
+ *
+ */
 
 
 #include "otvalid.h"
 #include "otvcommn.h"
 
 
-  /*************************************************************************/
-  /*                                                                       */
-  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
-  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
-  /* messages during execution.                                            */
-  /*                                                                       */
+  /**************************************************************************
+   *
+   * The macro FT_COMPONENT is used in trace mode.  It is an implicit
+   * parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log
+   * messages during execution.
+   */
 #undef  FT_COMPONENT
-#define FT_COMPONENT  trace_otvgsub
+#define FT_COMPONENT  otvgsub
 
 
   /*************************************************************************/
@@ -61,7 +61,8 @@
       {
         FT_Bytes  Coverage;
         FT_Int    DeltaGlyphID;
-        FT_Long   idx;
+        FT_UInt   first_cov, last_cov;
+        FT_UInt   first_idx, last_idx;
 
 
         OTV_LIMIT_CHECK( 4 );
@@ -70,12 +71,21 @@
 
         otv_Coverage_validate( Coverage, otvalid, -1 );
 
-        idx = (FT_Long)otv_Coverage_get_first( Coverage ) + DeltaGlyphID;
-        if ( idx < 0 )
+        first_cov = otv_Coverage_get_first( Coverage );
+        last_cov  = otv_Coverage_get_last( Coverage );
+
+        /* These additions are modulo 65536. */
+        first_idx = (FT_UInt)( (FT_Int)first_cov + DeltaGlyphID ) & 0xFFFFU;
+        last_idx  = (FT_UInt)( (FT_Int)last_cov + DeltaGlyphID ) & 0xFFFFU;
+
+        /* Since the maximum number of glyphs is 2^16 - 1 = 65535, */
+        /* the largest possible glyph index is 65534.  For this    */
+        /* reason there can't be a wrap-around region, which would */
+        /* imply the use of the invalid glyph index 65535.         */
+        if ( first_idx > last_idx )
           FT_INVALID_DATA;
 
-        idx = (FT_Long)otv_Coverage_get_last( Coverage ) + DeltaGlyphID;
-        if ( (FT_UInt)idx >= otvalid->glyph_count )
+        if ( last_idx >= otvalid->glyph_count )
           FT_INVALID_DATA;
       }
       break;
@@ -552,7 +562,11 @@
     OTV_ValidatorRec  otvalidrec;
     OTV_Validator     otvalid = &otvalidrec;
     FT_Bytes          p       = table;
+    FT_UInt           table_size;
+    FT_UShort         version;
     FT_UInt           ScriptList, FeatureList, LookupList;
+
+    OTV_OPTIONAL_TABLE32( featureVariations );
 
 
     otvalid->root = ftvalid;
@@ -560,10 +574,28 @@
     FT_TRACE3(( "validating GSUB table\n" ));
     OTV_INIT;
 
-    OTV_LIMIT_CHECK( 10 );
+    OTV_LIMIT_CHECK( 4 );
 
-    if ( FT_NEXT_ULONG( p ) != 0x10000UL )      /* Version */
+    if ( FT_NEXT_USHORT( p ) != 1 )  /* majorVersion */
       FT_INVALID_FORMAT;
+
+    version = FT_NEXT_USHORT( p );   /* minorVersion */
+
+    table_size = 10;
+    switch ( version )
+    {
+    case 0:
+      OTV_LIMIT_CHECK( 6 );
+      break;
+
+    case 1:
+      OTV_LIMIT_CHECK( 10 );
+      table_size += 4;
+      break;
+
+    default:
+      FT_INVALID_FORMAT;
+    }
 
     ScriptList  = FT_NEXT_USHORT( p );
     FeatureList = FT_NEXT_USHORT( p );
@@ -579,6 +611,14 @@
                               otvalid );
     otv_ScriptList_validate( table + ScriptList, table + FeatureList,
                              otvalid );
+
+    if ( version > 0 )
+    {
+      OTV_OPTIONAL_OFFSET32( featureVariations );
+      OTV_SIZE_CHECK32( featureVariations );
+      if ( featureVariations )
+        OTV_TRACE(( "  [omitting featureVariations validation]\n" )); /* XXX */
+    }
 
     FT_TRACE4(( "\n" ));
   }
