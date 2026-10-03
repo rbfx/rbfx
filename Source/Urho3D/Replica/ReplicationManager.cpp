@@ -281,6 +281,7 @@ void ReplicationManager::OnScenePostUpdate(float timeStep)
 
 void ReplicationManager::InitializeObjectsStandalone()
 {
+    URHO3D_PROFILE("InitializeStandaloneNetworkObjects");
     for (const NetworkId networkId : standalone_.recentlyAddedObjects_)
     {
         NetworkObject* networkObject = GetNetworkObject(networkId);
