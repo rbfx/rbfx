@@ -89,6 +89,15 @@ RMLUICORE_API void SetFontEngineInterface(FontEngineInterface* font_interface);
 /// Returns RmlUi's font interface.
 RMLUICORE_API FontEngineInterface* GetFontEngineInterface();
 
+/// Finds line break opportunities inside runs of text without spaces (Chinese, Japanese, Thai).
+/// @param[in] text The UTF-8 text of a text element.
+/// @param[out] break_before Resized by the function to text.size(); set an entry to 1 where a line may break before that byte.
+using LineBreakFunction = void (*)(const String& text, Vector<char>& break_before);
+/// Sets the function used to find line breaks inside words. By default lines break only at white-space.
+RMLUICORE_API void SetLineBreakFunction(LineBreakFunction function);
+/// Returns the line break function, or nullptr if lines break only at white-space.
+RMLUICORE_API LineBreakFunction GetLineBreakFunction();
+
 /// Creates a new element context.
 /// @param[in] name The new name of the context. This must be unique.
 /// @param[in] dimensions The initial dimensions of the new context.

@@ -241,6 +241,18 @@ FontEngineInterface* GetFontEngineInterface()
 	return font_interface;
 }
 
+static LineBreakFunction line_break_function = nullptr;
+
+void SetLineBreakFunction(LineBreakFunction function)
+{
+	line_break_function = function;
+}
+
+LineBreakFunction GetLineBreakFunction()
+{
+	return line_break_function;
+}
+
 Context* CreateContext(const String& name, const Vector2i dimensions)
 {
 	if (!initialised)
