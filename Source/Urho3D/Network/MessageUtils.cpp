@@ -41,13 +41,13 @@ LargeMessageWriter::~LargeMessageWriter()
     {
         const auto payload = ConstByteSpan{buffer_.GetBuffer()};
         const unsigned maxMessageSize = connection_.GetMaxPayloadSize();
-        const unsigned numChunks = (buffer_.GetSize() + maxMessageSize - 1) / maxMessageSize;
+        const unsigned numChunks = ea::max(1u, (buffer_.GetSize() + maxMessageSize - 1) / maxMessageSize);
         for (unsigned i = 0; i < numChunks; ++i)
         {
             const bool isLastChunk = i + 1 == numChunks;
             const NetworkMessageId messageId = isLastChunk ? lastMessageId_ : incompleteMessageId_;
             const unsigned chunkOffset = i * maxMessageSize;
-            const unsigned chunkSize = isLastChunk ? buffer_.GetSize() % maxMessageSize : maxMessageSize;
+            const unsigned chunkSize = isLastChunk ? buffer_.GetSize() - chunkOffset : maxMessageSize;
             const auto chunkData = payload.subspan(chunkOffset, chunkSize);
             const ea::string& chunkDebugInfo = isLastChunk ? debugInfo_ : EMPTY_STRING;
             connection_.SendMessage(messageId, chunkData, PacketType::ReliableOrdered, chunkDebugInfo);
