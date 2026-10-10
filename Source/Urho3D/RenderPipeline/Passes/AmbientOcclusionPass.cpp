@@ -181,7 +181,7 @@ void AmbientOcclusionPass::RestorePipelineStateCache(const SharedRenderPassState
     pipelineStates_ = PipelineStateCache{};
 
     static const NamedSamplerStateDesc ssaoSamplers[] = {
-        {ShaderResources::Albedo, SamplerStateDesc::Bilinear()},
+        {ShaderResources::Albedo, SamplerStateDesc::Nearest(TextureAddressMode::ADDRESS_WRAP)},
         {ShaderResources::Normal, SamplerStateDesc::Bilinear()},
         {ShaderResources::DepthBuffer, SamplerStateDesc::Nearest()},
     };
