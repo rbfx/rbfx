@@ -333,13 +333,12 @@ install (DIRECTORY ${rbfx_SOURCE_DIR}/CMake/Modules/ DESTINATION ${CMAKE_INSTALL
 # Install CMake build scripts
 file (GLOB CMAKE_SCRIPTS ${rbfx_SOURCE_DIR}/Script/*${SCRIPT_EXT})
 install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/Scripts)
-if (ANDROID)
-    install (
-        DIRECTORY ${rbfx_SOURCE_DIR}/Source/ThirdParty/SDL/android-project/app/src/main/java/
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/Android/java
-        COMPONENT SDK
-    )
-endif ()
+# Each SDK contains the SDL Java files. The NuGet packaging of the C# bindings takes them from a desktop SDK.
+install (
+    DIRECTORY ${rbfx_SOURCE_DIR}/Source/ThirdParty/SDL/android-project/app/src/main/java/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/Android/java
+    COMPONENT SDK
+)
 # Install data files
 file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if (NOT ANDROID)
