@@ -237,8 +237,6 @@ endif ()
 
 add_subdirectory(Source)
 
-rbfx_configure_cmake_props()
-
 # Print current build configuration
 message(STATUS "Engine Features:")
 if (URHO3D_STATIC_RUNTIME)
@@ -267,11 +265,6 @@ message(STATUS "  SPIR-V Optimize ${URHO3D_SHADER_OPTIMIZER}")
 message(STATUS "  Threading       ${URHO3D_THREADING}")
 message(STATUS "  WebP            ${URHO3D_WEBP}")
 message(STATUS "  XR              ${URHO3D_XR}")
-message(STATUS "  CSharp          ${URHO3D_CSHARP}")
-if (URHO3D_CSHARP)
-    message(STATUS "    Targeting:    ${URHO3D_NETFX}")
-    message(STATUS "    Runtime:      ${URHO3D_NETFX_RUNTIME} (${URHO3D_NETFX_RUNTIME_IDENTIFIER})")
-endif ()
 message(STATUS "Engine Components:")
 if (URHO3D_NO_EDITOR_PLAYER_EXE)
     message(STATUS "  Player          ${URHO3D_PLAYER} (manual)")

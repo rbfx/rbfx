@@ -83,8 +83,8 @@ int RunApplication() \
 URHO3D_DEFINE_MAIN(RunApplication());
 #endif
 
-#if URHO3D_CSHARP
-#define URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Class)                                                  \
+/// Define an exported factory function that an external host uses to create the application.
+#define URHO3D_DEFINE_APPLICATION_FACTORY(Class)                                                      \
 extern "C"                                                                                            \
 {                                                                                                     \
     URHO3D_EXPORT_API Urho3D::Application* URHO3D_STDCALL CreateApplication(Urho3D::Context* context) \
@@ -92,8 +92,5 @@ extern "C"                                                                      
         return new Class(context);                                                                    \
     }                                                                                                 \
 }
-#else
-#   define URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Class)
-#endif
 
 }

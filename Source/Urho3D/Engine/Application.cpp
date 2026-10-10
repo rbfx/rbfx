@@ -11,7 +11,7 @@
 #include "Urho3D/Engine/EngineEvents.h"
 #include "Urho3D/IO/IOEvents.h"
 #include "Urho3D/IO/Log.h"
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
 #include "Urho3D/Script/Script.h"
 #endif
 

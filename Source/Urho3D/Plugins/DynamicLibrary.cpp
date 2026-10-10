@@ -8,7 +8,7 @@
 
 #include "Urho3D/IO/File.h"
 #include "Urho3D/IO/Log.h"
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
 #   include "Urho3D/Script/Script.h"
 #endif
 
@@ -144,11 +144,11 @@ bool DynamicLibrary::Load(const ea::string& path)
     if (moduleType_ == MODULE_INVALID)
         return false;
 
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     if (moduleType_ == MODULE_MANAGED)
         handle_ = (uintptr_t)Script::GetRuntimeApi()->LoadAssembly(path.data());
     else
-#endif  // URHO3D_CSHARP
+#endif  // URHO3D_SCRIPT_RUNTIME
     {
 #if _WIN32
         handle_ = (uintptr_t)LoadLibrary(path.data());
@@ -181,13 +181,13 @@ bool DynamicLibrary::Unload()
     if (handle_ == 0)
         return false;
 
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     if (moduleType_ == MODULE_MANAGED)
     {
         Script::GetRuntimeApi()->FreeGCHandle((void*)handle_);
     }
     else
-#endif  // URHO3D_CSHARP
+#endif  // URHO3D_SCRIPT_RUNTIME
     {
 #if _WIN32
         FreeLibrary((HMODULE)handle_);
@@ -211,13 +211,13 @@ bool DynamicLibrary::Unload()
 void* DynamicLibrary::GetSymbol(const ea::string& symbol)
 {
 #if URHO3D_PLUGINS
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     if (moduleType_ != MODULE_NATIVE)
     {
         URHO3D_LOGERROR("Symbol retrieval is not supported for this type of module.");
         return nullptr;
     }
-#endif  // URHO3D_CSHARP
+#endif  // URHO3D_SCRIPT_RUNTIME
 
 #if _WIN32
     return (void*)GetProcAddress((HMODULE)handle_, symbol.c_str());
@@ -328,7 +328,7 @@ ModuleType DynamicLibrary::ReadModuleInformation(Context* context, const ea::str
     }
 #endif  // __linux__
 
-#if _WIN32 || URHO3D_CSHARP
+#if _WIN32 || URHO3D_SCRIPT_RUNTIME
     if (path.ends_with(".dll"))
     {
         File file(context);
@@ -411,7 +411,7 @@ ModuleType DynamicLibrary::ReadModuleInformation(Context* context, const ea::str
         // Detect if dll is native or managed
         if (netDir.VirtualAddress != 0)
         {
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
             // Verify that plugin has a class that inherits from Plugin.
             if (auto* scriptApi = Script::GetRuntimeApi())
             {
@@ -462,7 +462,7 @@ ModuleType DynamicLibrary::ReadModuleInformation(Context* context, const ea::str
         }
 #endif  // _WIN32
     }
-#endif  // _WIN32 || URHO3D_CSHARP
+#endif  // _WIN32 || URHO3D_SCRIPT_RUNTIME
 #if __APPLE__
     if (path.ends_with(".dylib"))
     {
@@ -538,7 +538,7 @@ Plugin* DynamicLibrary::InstantiatePlugin()
         if (void* main = GetSymbol("PluginDynamicLibraryMain"))
             return reinterpret_cast<Plugin*(*)(Context*)>(main)(context_);
     }
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     else if (moduleType_ == MODULE_MANAGED)
         return Script::GetRuntimeApi()->CreatePlugin((void*)handle_);
 #endif

@@ -28,8 +28,9 @@ public:
 
 }
 
-#if URHO3D_CSHARP
-URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Urho3D::PlayerApplicationWithPlugins);
+// A standalone executable needs main(). A module for an external host needs the factory function.
+#if URHO3D_SCRIPT_RUNTIME && !URHO3D_PLAYER_EXECUTABLE
+URHO3D_DEFINE_APPLICATION_FACTORY(Urho3D::PlayerApplicationWithPlugins);
 #else
 URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::PlayerApplicationWithPlugins);
 #endif

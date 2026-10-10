@@ -8,7 +8,7 @@
 #include "Urho3D/Container/RefCounted.h"
 
 #include "Urho3D/Core/Macros.h"
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     #include "Urho3D/Script/Script.h"
 #endif
 
@@ -41,7 +41,7 @@ RefCounted::~RefCounted()
     URHO3D_ASSERT(refCount_->Refs() == 0);
     URHO3D_ASSERT(refCount_->WeakRefs() > 0);
 
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     // Dispose of managed object when native object was a part of other object (did not use refcounting). Native
     // destructors have run their course already. This is fine, because Dispose(true) is called only for wrapped but not
     // inherited classes and Dispose(true) of wrapper classes merely sets C++ pointer to null and does not interact with
@@ -68,7 +68,7 @@ RefCounted::~RefCounted()
 int RefCounted::AddRef() const
 {
     const int refs = refCount_->AddRefStrong();
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     if (URHO3D_UNLIKELY(scriptObject_ && !isScriptStrongRef_))
     {
         // More than one native reference exists. Ensure strong GC handle to prevent garbage collection of managed
@@ -86,7 +86,7 @@ int RefCounted::AddRef() const
 int RefCounted::ReleaseRef() const
 {
     const int refs = refCount_->ReleaseRefStrong();
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     if (refs == 0)
     {
         // Dispose managed object while native object is still intact. This code path is taken for user classes that
@@ -121,7 +121,7 @@ int RefCounted::WeakRefs() const
     return refCount_->WeakRefs() - 1;
 }
 
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
 void RefCounted::SetScriptObject(void* handle, bool isStrong)
 {
     if (scriptObject_ != nullptr)

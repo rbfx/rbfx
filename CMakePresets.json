@@ -35,9 +35,8 @@
       "inherits": "base",
       "cacheVariables": {
         "BUILD_SHARED_LIBS": "ON",
-        "URHO3D_CSHARP": "ON",
-        "URHO3D_NETFX_RUNTIME": "net8.0",
-        "URHO3D_NETFX": "net8.0"
+        "URHO3D_SCRIPT_RUNTIME": "ON",
+        "URHO3D_MONOLITHIC_HEADER": "ON"
       }
     },
     {
@@ -281,7 +280,6 @@
         "CMAKE_TOOLCHAIN_FILE": "CMake/Toolchains/IOS.cmake",
         "PLATFORM": "OS",
         "DEPLOYMENT_TARGET": "12",
-        "URHO3D_CSHARP": "ON",
         "CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED": "NO"
       }
     },
@@ -293,7 +291,6 @@
         "CMAKE_TOOLCHAIN_FILE": "CMake/Toolchains/IOS.cmake",
         "PLATFORM": "OS64",
         "DEPLOYMENT_TARGET": "12",
-        "URHO3D_CSHARP": "ON",
         "CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED": "NO"
       }
     },
@@ -303,8 +300,7 @@
       "inherits": ["windows-base", "cmake-prefix-path-windows"],
       "cacheVariables": {
         "CMAKE_SYSTEM_NAME": "WindowsStore",
-        "CMAKE_SYSTEM_VERSION": "10.0",
-        "URHO3D_NETFX_RUNTIME": "netstandard2.0"
+        "CMAKE_SYSTEM_VERSION": "10.0"
       }
     },
     {

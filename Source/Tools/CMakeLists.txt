@@ -13,6 +13,5 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Tools)
 add_subdirectory(PackageTool)
 add_subdirectory(RampGenerator)
 add_subdirectory(SpritePacker)
-add_subdirectory(ScriptPlayer)
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Tools)

@@ -327,7 +327,7 @@ PluginManager::PluginManager(Context* context)
         AddStaticPlugin(application);
     }
 
-#if URHO3D_PLUGINS && URHO3D_CSHARP
+#if URHO3D_PLUGINS && URHO3D_SCRIPT_RUNTIME
     auto scriptBundlePlugin = MakeShared<ScriptBundlePluginInstance>(context_);
     scriptBundlePlugin->SetName("Automatic:Scripts");
     AddDynamicPlugin(scriptBundlePlugin);

@@ -76,7 +76,7 @@ bool DynamicLibraryPluginInstance::PerformUnload()
     WeakPtr<Plugin> application(plugin_);
     plugin_->Dispose();
 
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     if (module_.GetModuleType() == MODULE_MANAGED)
         Script::GetRuntimeApi()->Dispose(plugin_.Detach());
 #endif
@@ -120,7 +120,7 @@ ea::string DynamicLibraryPluginInstance::GetAbsoluteFileName(const ea::string& n
 
 void DynamicLibraryPluginInstance::PatchTemporaryBinary(const ea::string& fileName)
 {
-#if _MSC_VER || URHO3D_CSHARP
+#if _MSC_VER || URHO3D_SCRIPT_RUNTIME
     unsigned pdbOffset = 0, pdbSize = 0;
     const ModuleType type = DynamicLibrary::ReadModuleInformation(context_, fileName, &pdbOffset, &pdbSize);
 #if _MSC_VER
@@ -147,7 +147,7 @@ void DynamicLibraryPluginInstance::PatchTemporaryBinary(const ea::string& fileNa
             }
         }
     }
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     if (type == MODULE_MANAGED)
     {
         // Managed runtime will modify file version in specified file.
