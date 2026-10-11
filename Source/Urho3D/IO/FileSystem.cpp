@@ -726,19 +726,91 @@ bool FileSystem::Copy(const ea::string& srcFileName, const ea::string& destFileN
         return false;
     }
 
-    auto srcFile = MakeShared<File>(context_, srcFileName, FILE_READ);
-    if (!srcFile->IsOpen())
-        return false;
-    auto destFile = MakeShared<File>(context_, destFileName, FILE_WRITE);
-    if (!destFile->IsOpen())
-        return false;
+    const auto openFile = [](const ea::string& name, bool read) -> FILE*
+    {
+#ifdef _WIN32
+        return _wfopen(GetWideNativePath(name).c_str(), read ? L"rb" : L"wb");
+#else
+        return fopen(GetNativePath(name).c_str(), read ? "rb" : "wb");
+#endif
+    };
 
-    unsigned fileSize = srcFile->GetSize();
-    ea::shared_array<unsigned char> buffer(new unsigned char[fileSize]);
+    FILE* source = nullptr;
+    FILE* destination = nullptr;
+    const auto fileGuard = ea::make_finally([&]
+    {
+        if (source)
+            fclose(source);
+        if (destination)
+            fclose(destination);
+    });
+    long long remaining = 0;
 
-    unsigned bytesRead = srcFile->Read(buffer.get(), fileSize);
-    unsigned bytesWritten = destFile->Write(buffer.get(), fileSize);
-    return bytesRead == fileSize && bytesWritten == fileSize;
+#ifdef __ANDROID__
+    if (URHO3D_IS_ASSET(destFileName))
+    {
+        URHO3D_LOGERROR("Only read mode is supported for Android asset files");
+        return false;
+    }
+    SDL_RWops* asset = nullptr;
+    const auto assetGuard = ea::make_finally([&]
+    {
+        if (asset)
+            SDL_RWclose(asset);
+    });
+    if (URHO3D_IS_ASSET(srcFileName))
+    {
+        asset = SDL_RWFromFile(URHO3D_ASSET(srcFileName), "rb");
+        if (!asset)
+            return false;
+        remaining = SDL_RWsize(asset);
+    }
+    else
+#endif
+    {
+        source = openFile(srcFileName, true);
+        if (!source)
+        {
+            URHO3D_LOGERRORF("Could not open file %s", srcFileName.c_str());
+            return false;
+        }
+#ifdef _WIN32
+        struct _stat64 info{};
+        if (_fstat64(_fileno(source), &info) != 0)
+            return false;
+#else
+        struct stat info{};
+        if (fstat(fileno(source), &info) != 0)
+            return false;
+#endif
+        remaining = info.st_size;
+    }
+    if (remaining < 0)
+        return false;
+    destination = openFile(destFileName, false);
+    if (!destination)
+    {
+        URHO3D_LOGERRORF("Could not open file %s", destFileName.c_str());
+        return false;
+    }
+
+    const auto bufferSize = static_cast<unsigned>(Min<long long>(remaining, 64 * 1024));
+    ea::shared_array<unsigned char> buffer(new unsigned char[bufferSize]);
+    while (remaining > 0)
+    {
+        const auto count = static_cast<size_t>(Min<long long>(remaining, bufferSize));
+#ifdef __ANDROID__
+        const auto read = asset ? SDL_RWread(asset, buffer.get(), 1, count) : fread(buffer.get(), 1, count, source);
+#else
+        const auto read = fread(buffer.get(), 1, count, source);
+#endif
+        if (read != count || fwrite(buffer.get(), 1, count, destination) != count)
+            return false;
+        remaining -= count;
+    }
+    const bool success = fclose(destination) == 0;
+    destination = nullptr;
+    return success;
 }
 
 bool FileSystem::Rename(const ea::string& srcFileName, const ea::string& destFileName)
