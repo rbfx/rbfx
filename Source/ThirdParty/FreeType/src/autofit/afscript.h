@@ -1,19 +1,19 @@
-/***************************************************************************/
-/*                                                                         */
-/*  afscript.h                                                             */
-/*                                                                         */
-/*    Auto-fitter scripts (specification only).                            */
-/*                                                                         */
-/*  Copyright 2013-2017 by                                                 */
-/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
-/*                                                                         */
-/*  This file is part of the FreeType project, and may only be used,       */
-/*  modified, and distributed under the terms of the FreeType project      */
-/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
-/*  this file you indicate that you have read the license and              */
-/*  understand and accept it fully.                                        */
-/*                                                                         */
-/***************************************************************************/
+/****************************************************************************
+ *
+ * afscript.h
+ *
+ *   Auto-fitter scripts (specification only).
+ *
+ * Copyright (C) 2013-2024 by
+ * David Turner, Robert Wilhelm, and Werner Lemberg.
+ *
+ * This file is part of the FreeType project, and may only be used,
+ * modified, and distributed under the terms of the FreeType project
+ * license, LICENSE.TXT.  By continuing to use, modify, or distribute
+ * this file you indicate that you have read the license and
+ * understand and accept it fully.
+ *
+ */
 
 
   /* The following part can be included multiple times. */
@@ -137,7 +137,7 @@
           "Georgian (Mkhedruli)",
           HB_SCRIPT_GEORGIAN,
           HINTING_BOTTOM_TO_TOP,
-          "\xE1\x83\x98 \xE1\x83\x94 \xE1\x83\x90" ) /* ი ე ა */
+          "\xE1\x83\x98 \xE1\x83\x94 \xE1\x83\x90 \xE1\xB2\xBF" ) /* ი ე ა Ი */
 
   SCRIPT( geok, GEOK,
           "Georgian (Khutsuri)",
@@ -187,12 +187,6 @@
           HINTING_BOTTOM_TO_TOP,
           "\xEA\xA4\x8D \xEA\xA4\x80" ) /* ꤍ ꤀ */
 
-  SCRIPT( knda, KNDA,
-          "Kannada",
-          HB_SCRIPT_KANNADA,
-          HINTING_BOTTOM_TO_TOP,
-          "\xE0\xB3\xA6 \xE0\xB2\xAC" ) /* ೦ ಬ */
-
   /* only digit zero has a simple shape in the Khmer script */
   SCRIPT( khmr, KHMR,
           "Khmer",
@@ -205,6 +199,12 @@
           HB_SCRIPT_INVALID,
           HINTING_BOTTOM_TO_TOP,
           "\xE1\xA7\xA1 \xE1\xA7\xAA" ) /* ᧡ ᧪ */
+
+  SCRIPT( knda, KNDA,
+          "Kannada",
+          HB_SCRIPT_KANNADA,
+          HINTING_BOTTOM_TO_TOP,
+          "\xE0\xB3\xA6 \xE0\xB2\xAC" ) /* ೦ ಬ */
 
   /* only digit zero has a simple shape in the Lao script */
   SCRIPT( lao, LAO,
@@ -242,6 +242,18 @@
           HB_SCRIPT_MALAYALAM,
           HINTING_BOTTOM_TO_TOP,
           "\xE0\xB4\xA0 \xE0\xB4\xB1" ) /* ഠ റ */
+
+  SCRIPT( medf, MEDF,
+          "Medefaidrin",
+          HB_SCRIPT_MEDEFAIDRIN,
+          HINTING_BOTTOM_TO_TOP,
+          "\xF0\x96\xB9\xA1 \xF0\x96\xB9\x9B \xF0\x96\xB9\xAF" ) /* 𖹡 𖹛 𖹯 */
+
+  SCRIPT( mong, MONG,
+          "Mongolian",
+          HB_SCRIPT_MONGOLIAN,
+          HINTING_TOP_TO_BOTTOM,
+          "\xE1\xA1\x82 \xE1\xA0\xAA" ) /* ᡂ ᠪ */
 
   SCRIPT( mymr, MYMR,
           "Myanmar",
@@ -284,6 +296,12 @@
           HB_SCRIPT_OSMANYA,
           HINTING_BOTTOM_TO_TOP,
           "\xF0\x90\x92\x86 \xF0\x90\x92\xA0" ) /* 𐒆 𐒠 */
+
+  SCRIPT( rohg, ROHG,
+          "Hanifi Rohingya",
+          HB_SCRIPT_HANIFI_ROHINGYA,
+          HINTING_BOTTOM_TO_TOP,
+          "\xF0\x90\xB4\xB0" ) /* 𐴰 */
 
   SCRIPT( saur, SAUR,
           "Saurashtra",
@@ -330,17 +348,17 @@
           HINTING_BOTTOM_TO_TOP,
           "\xE0\xB1\xA6 \xE0\xB1\xA7" ) /* ౦ ౧ */
 
-  SCRIPT( thai, THAI,
-          "Thai",
-          HB_SCRIPT_THAI,
-          HINTING_BOTTOM_TO_TOP,
-          "\xE0\xB8\xB2 \xE0\xB9\x85 \xE0\xB9\x90" ) /* า ๅ ๐ */
-
   SCRIPT( tfng, TFNG,
           "Tifinagh",
           HB_SCRIPT_TIFINAGH,
           HINTING_BOTTOM_TO_TOP,
           "\xE2\xB5\x94" ) /* ⵔ */
+
+  SCRIPT( thai, THAI,
+          "Thai",
+          HB_SCRIPT_THAI,
+          HINTING_BOTTOM_TO_TOP,
+          "\xE0\xB8\xB2 \xE0\xB9\x85 \xE0\xB9\x90" ) /* า ๅ ๐ */
 
   SCRIPT( vaii, VAII,
           "Vai",
