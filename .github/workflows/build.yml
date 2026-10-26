@@ -131,6 +131,7 @@ jobs:
         uses: ./rbfx-ci/.github/actions/ci-prepare-matrix
         with:
           platforms: all
+          runners: linux:ubuntu-24.04
 
   Build:
     name: ${{ matrix.ci_job_name }}
