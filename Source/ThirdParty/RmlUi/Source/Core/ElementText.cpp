@@ -43,7 +43,8 @@
 namespace Rml {
 
 static bool BuildToken(String& token, const char*& token_begin, const char* string_end, bool first_token, bool collapse_white_space,
-	bool break_at_endline, Style::TextTransform text_transformation, bool decode_escape_characters);
+	bool break_at_endline, Style::TextTransform text_transformation, bool decode_escape_characters, const char* text_begin = nullptr,
+	const Vector<char>* break_before = nullptr);
 static bool LastToken(const char* token_begin, const char* string_end, bool collapse_white_space, bool break_at_endline);
 
 void LogMissingFontFace(Element* element)
@@ -217,6 +218,16 @@ bool ElementText::GenerateLine(String& line, int& line_length, float& line_width
 	// endline is found (and we're processing them), then the line is ended. kthxbai!
 	const char* token_begin = text.c_str() + line_begin;
 	const char* string_end = text.c_str() + text.size();
+
+	// Line break opportunities inside words, for scripts written without spaces.
+	Vector<char> break_before;
+	const Vector<char>* break_before_ptr = nullptr;
+	if (LineBreakFunction line_break_function = GetLineBreakFunction())
+	{
+		line_break_function(text, break_before);
+		if (break_before.size() == text.size())
+			break_before_ptr = &break_before;
+	}
 	while (token_begin != string_end)
 	{
 		String token;
@@ -227,7 +238,7 @@ bool ElementText::GenerateLine(String& line, int& line_length, float& line_width
 
 		// Generate the next token and determine its pixel-length.
 		bool break_line = BuildToken(token, next_token_begin, string_end, line.empty() && trim_whitespace_prefix, collapse_white_space,
-			break_at_endline, text_transform_property, decode_escape_characters);
+			break_at_endline, text_transform_property, decode_escape_characters, text.c_str(), break_before_ptr);
 		int token_width = font_engine_interface->GetStringWidth(font_face_handle, token, letter_spacing, previous_codepoint);
 
 		// If we're breaking to fit a line box, check if the token can fit on the line before we add it.
@@ -491,8 +502,12 @@ void ElementText::GenerateDecoration(const FontFaceHandle font_face_handle)
 }
 
 static bool BuildToken(String& token, const char*& token_begin, const char* string_end, bool first_token, bool collapse_white_space,
-	bool break_at_endline, Style::TextTransform text_transformation, bool decode_escape_characters)
+	bool break_at_endline, Style::TextTransform text_transformation, bool decode_escape_characters, const char* text_begin,
+	const Vector<char>* break_before)
 {
+	// True once this token holds a non-white-space character, so a break opportunity can end it.
+	bool has_word_content = false;
+
 	RMLUI_ASSERT(token_begin != string_end);
 
 	token.reserve(string_end - token_begin + token.size());
@@ -562,6 +577,14 @@ static bool BuildToken(String& token, const char*& token_begin, const char* stri
 		// if should terminate the token; if we're not collapsing white-space, then yes (as sections of white-space are
 		// non-breaking), otherwise only if we've transitioned from characters to white-space.
 		bool white_space = !force_non_whitespace && StringUtilities::IsWhitespace(character);
+
+		// End the token at a line break opportunity inside a word (from the line break function).
+		if (!white_space && has_word_content && break_before && (*break_before)[escape_begin - text_begin])
+		{
+			token_begin = escape_begin;
+			return false;
+		}
+
 		if (white_space != parsing_white_space)
 		{
 			if (!collapse_white_space)
@@ -612,6 +635,7 @@ static bool BuildToken(String& token, const char*& token_begin, const char* stri
 			}
 
 			token += character;
+			has_word_content = true;
 		}
 
 		++token_begin;
