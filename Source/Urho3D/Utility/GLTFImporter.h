@@ -41,6 +41,10 @@ struct URHO3D_API GLTFImporterSettings
 
     float offsetMatrixError_{0.00002f};
     float keyFrameTimeError_{M_EPSILON};
+    /// Sample rate in samples per second for cubic spline bone animation.
+    /// Bone tracks support only linear interpolation, so the importer samples the spline into linear key frames.
+    /// Zero or less keeps only the source key frames.
+    float splineSampleRate_{30.0f};
 
     ea::unordered_map<ea::string, ea::string> nodeRenames_;
 
