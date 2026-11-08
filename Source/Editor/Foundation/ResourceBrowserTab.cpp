@@ -4,6 +4,7 @@
 
 #include "../Core/IniHelpers.h"
 #include "../Foundation/ResourceBrowserTab.h"
+#include "../Project/AssetManager.h"
 
 #include <Urho3D/IO/FileSystem.h>
 
@@ -443,6 +444,16 @@ void ResourceBrowserTab::RenderEntryContextMenuItems(const FileSystemEntry& entr
 
     if (ui::MenuItem("Copy Resource Name"))
         ui::SetClipboardText(entry.resourceName_.c_str());
+
+    ui::Separator();
+
+    ui::BeginDisabled(entry.resourceName_.empty());
+    if (ui::MenuItem("Re-import"))
+    {
+        if (AssetManager* assetManager = GetProject()->GetAssetManager())
+            assetManager->MarkCacheDirty(entry.resourceName_);
+    }
+    ui::EndDisabled();
 
     ui::Separator();
 
