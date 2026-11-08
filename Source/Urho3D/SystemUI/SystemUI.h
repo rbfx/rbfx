@@ -60,6 +60,9 @@ public:
     /// \param darkStyle enables dark style, otherwise it is a light style.
     /// \param alpha value between 0.0f - 1.0f
     void ApplyStyleDefault(bool darkStyle, float alpha);
+    /// Apply the style of the Editor: dark colors, 3 px window rounding and 1 px window border.
+    /// Call it after ApplyStyleDefault. The Editor and the AssetViewer share this style.
+    void ApplyStyleEditor();
     /// Hold a reference to this texture until end of frame.
     void ReferenceTexture(Texture2D* texture);
 
