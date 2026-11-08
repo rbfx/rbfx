@@ -31,6 +31,9 @@ struct URHO3D_API GLTFImporterSettings
     Quaternion rotation_;
 
     bool fadeTransparency_{false};
+    /// Paint the base colour of a material magenta when its base colour texture file is missing.
+    /// Only the FBX importer uses this option. The glTF importer ignores it.
+    bool highlightMissingTextures_{false};
 
     bool cleanupBoneNames_{true};
     bool cleanupRootNodes_{true};

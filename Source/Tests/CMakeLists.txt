@@ -18,7 +18,8 @@ set (TARGET_NAME Tests)
 
 # Target which contains test code. It includes generated bindings code as well.
 add_library(${TARGET_NAME}Lib SHARED MainDll.cpp ${TEST_SOURCE_CODE})
-target_link_libraries(${TARGET_NAME}Lib PRIVATE Urho3D catch2)
+# The ufbx data test (Utility/UFBXData*.cpp) reads the space conversion of the FBX files with ufbx.
+target_link_libraries(${TARGET_NAME}Lib PRIVATE Urho3D catch2 ufbx)
 
 # Executable test runner. Does not contain test code, only invokes actual main from the dll.
 add_executable(${TARGET_NAME} MainExe.cpp)
