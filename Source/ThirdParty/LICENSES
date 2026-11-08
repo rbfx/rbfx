@@ -45,6 +45,7 @@ List of third party code licenses:
 * STB/include/STB/stb_*.h
 * swig/LICENSE (optional, only used during build time with URHO3D_CSHARP=ON, GPL, https://www.swig.org/legal.html)
 * tinygltf/LICENSE
+* ufbx/LICENSE
 * tracy/LICENSE
   * Source/ThirdParty/tracy/libbacktrace/LICENSE
 * WebP/COPYING
