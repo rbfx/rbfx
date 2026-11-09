@@ -3255,6 +3255,7 @@ private:
                 const ea::string animationName = base_.GetResourceName(animationNameHint, "Animations/", "Animation", ".ani");
 
                 auto animation = ImportAnimation(animationName, groupIndex, group);
+                animation->AddMetadata(AnimationMetadata::SourceAnimationIndex, animationIndex);
 
                 if (groupIndex)
                 {
