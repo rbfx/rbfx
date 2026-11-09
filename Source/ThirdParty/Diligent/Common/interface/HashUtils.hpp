@@ -31,6 +31,7 @@
 #include <memory>
 #include <cstring>
 #include <algorithm>
+#include <type_traits>
 
 #include "../../Primitives/interface/Errors.hpp"
 #include "../../Platforms/Basic/interface/DebugUtilities.hpp"
