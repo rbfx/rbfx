@@ -6,6 +6,8 @@
 #include "crn_winhdr.h"
 #endif
 #ifndef _MSC_VER
+// MinGW-w64 has these in <stdio.h> when its secure API is on, as it is by default.
+#if !(defined(__MINGW32__) && defined(MINGW_HAS_SECURE_API))
 int sprintf_s(char* buffer, size_t sizeOfBuffer, const char* format, ...) {
   if (!sizeOfBuffer)
     return 0;
@@ -36,6 +38,7 @@ int vsprintf_s(char* buffer, size_t sizeOfBuffer, const char* format, va_list ar
 
   return CRNLIB_MIN(c, (int)sizeOfBuffer - 1);
 }
+#endif  // !MinGW secure API
 
 char* strlwr(char* p) {
   char* q = p;
