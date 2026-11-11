@@ -9,25 +9,22 @@
 #define CRNLIB_CMD_LINE_ALLOW_SLASH_PARAMS 1
 #endif
 
-#if CRNLIB_USE_WIN32_API
-#include "crn_winhdr.h"
-#endif
 namespace crnlib {
 void get_command_line_as_single_string(dynamic_string& cmd_line, int argc, char* argv[]) {
-  argc, argv;
-#if CRNLIB_USE_WIN32_API
-  cmd_line.set(GetCommandLineA());
-#else
   cmd_line.clear();
   for (int i = 0; i < argc; i++) {
     dynamic_string tmp(argv[i]);
-    if ((tmp.front() != '"') && (tmp.front() != '-') && (tmp.front() != '@'))
+#if CRNLIB_CMD_LINE_ALLOW_SLASH_PARAMS
+    const bool is_switch = (tmp.front() == '-') || (tmp.front() == '/');
+#else
+    const bool is_switch = tmp.front() == '-';
+#endif
+    if ((tmp.front() != '"') && !is_switch && (tmp.front() != '@'))
       tmp = "\"" + tmp + "\"";
     if (cmd_line.get_len())
       cmd_line += " ";
     cmd_line += tmp;
   }
-#endif
 }
 
 command_line_params::command_line_params() {
