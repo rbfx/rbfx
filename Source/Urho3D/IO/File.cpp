@@ -570,13 +570,17 @@ bool File::Copy(File* srcFile)
     if (!IsOpen() || GetMode() != FILE_WRITE)
         return false;
 
-    unsigned fileSize = srcFile->GetSize();
-    ea::shared_array<unsigned char> buffer(new unsigned char[fileSize]);
-
-    unsigned bytesRead = srcFile->Read(buffer.get(), fileSize);
-    unsigned bytesWritten = Write(buffer.get(), fileSize);
-    return bytesRead == fileSize && bytesWritten == fileSize;
-
+    unsigned remaining = srcFile->GetSize();
+    const unsigned bufferSize = Min(remaining, 64u * 1024u);
+    ea::shared_array<unsigned char> buffer(new unsigned char[bufferSize]);
+    while (remaining > 0)
+    {
+        const unsigned count = Min(remaining, bufferSize);
+        if (srcFile->Read(buffer.get(), count) != count || Write(buffer.get(), count) != count)
+            return false;
+        remaining -= count;
+    }
+    return handle_ && fflush((FILE*)handle_) == 0;
 }
 
 }
