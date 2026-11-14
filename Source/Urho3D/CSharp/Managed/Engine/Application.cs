@@ -14,5 +14,13 @@ namespace Urho3DNet
         {
             return Application.wrap(factory(Context.getCPtr(context)), true);
         }
+
+        internal IntPtr ExternalWindow
+        {
+            set
+            {
+                EngineParameters[Urho3D.EpExternalWindow] = value;
+            }
+        }
     }
 }

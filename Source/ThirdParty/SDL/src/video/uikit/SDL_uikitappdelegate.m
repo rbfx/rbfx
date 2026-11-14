@@ -46,6 +46,17 @@ static int exit_status;
 const char* resource_dir = 0;
 const char* documents_dir = 0;
 
+// Urho3D: IOS_DYLIB is defined for Urho3D so we need the SDL_main anyway
+#if defined(SDL_MAIN_NEEDED) // && !defined(IOS_DYLIB)
+/* SDL is being built as a static library, include main() */
+/* Urho3DNet: Disable main as it's defined in Xamarin application now
+int main(int argc, char *argv[])
+{
+	return SDL_UIKitRunApp(argc, argv, SDL_main);
+}
+*/
+#endif /* SDL_MAIN_NEEDED && !IOS_DYLIB */
+
 int SDL_UIKitRunApp(int argc, char *argv[], SDL_main_func mainFunction)
 {
     int i;
