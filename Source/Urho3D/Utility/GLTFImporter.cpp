@@ -125,13 +125,91 @@ unsigned FindCommonPrefixWord(const StringVector& strings)
     return prefix.size();
 }
 
-bool IsNegativeScale(const Vector3& scale) { return scale.x_ * scale.y_ * scale.y_ < 0.0f; }
+bool IsNegativeScale(const Vector3& scale) { return scale.x_ * scale.y_ * scale.z_ < 0.0f; }
 
 Vector3 MirrorX(const Vector3& vec) { return { -vec.x_, vec.y_, vec.z_ }; }
 
 Quaternion RotationFromVector(const Vector4& vec) { return { vec.w_, vec.x_, vec.y_, vec.z_ }; }
 
 Quaternion MirrorX(const Quaternion& rotation) { return { rotation.w_, rotation.x_, -rotation.y_, -rotation.z_ }; }
+
+Variant ScaleTangent(const Variant& tangent, float factor)
+{
+    switch (tangent.GetType())
+    {
+    case VAR_FLOAT: return tangent.GetFloat() * factor;
+    case VAR_VECTOR3: return tangent.GetVector3() * factor;
+    case VAR_QUATERNION: return tangent.GetQuaternion() * factor;
+    default: return tangent;
+    }
+}
+
+/// Convert glTF tangents from units per second to units per key frame segment.
+/// The runtime spline uses a normalized segment time, so it does not apply the segment duration itself.
+/// The first in-tangent and the last out-tangent use the duration of the nearest segment.
+void ScaleTangentsToSegments(
+    const ea::vector<float>& keys, ea::vector<Variant>& inTangents, ea::vector<Variant>& outTangents)
+{
+    const unsigned numKeys = keys.size();
+    if (numKeys < 2 || inTangents.size() != numKeys || outTangents.size() != numKeys)
+        return;
+
+    for (unsigned i = 0; i < numKeys; ++i)
+    {
+        const unsigned inSegment = i > 0 ? i - 1 : 0;
+        const unsigned outSegment = i + 1 < numKeys ? i : numKeys - 2;
+        inTangents[i] = ScaleTangent(inTangents[i], keys[inSegment + 1] - keys[inSegment]);
+        outTangents[i] = ScaleTangent(outTangents[i], keys[outSegment + 1] - keys[outSegment]);
+    }
+}
+
+Vector3 NormalizeSplineSample(const Vector3& value) { return value; }
+
+Quaternion NormalizeSplineSample(const Quaternion& value) { return value.Normalized(); }
+
+/// Sample glTF cubic spline data into linear key frames.
+/// The data has an in-tangent, a value and an out-tangent for each key. The tangents are in units per second.
+/// Each segment gets enough samples for the sample rate. The source key frames are always kept.
+template <class T>
+void SampleCubicSpline(const ea::vector<float>& keys, const ea::vector<T>& data, float sampleRate,
+    ea::vector<float>& sampledKeys, ea::vector<T>& sampledValues)
+{
+    sampledKeys.clear();
+    sampledValues.clear();
+
+    const unsigned numKeys = keys.size();
+    if (numKeys == 0)
+        return;
+
+    for (unsigned k = 0; k + 1 < numKeys; ++k)
+    {
+        const float duration = keys[k + 1] - keys[k];
+        const T& value0 = data[k * 3 + 1];
+        const T& outTangent0 = data[k * 3 + 2];
+        const T& inTangent1 = data[(k + 1) * 3];
+        const T& value1 = data[(k + 1) * 3 + 1];
+
+        const bool needSamples = sampleRate > 0.0f && duration > 0.0f;
+        const unsigned numSamples = needSamples ? static_cast<unsigned>(ea::max(1, CeilToInt(duration * sampleRate))) : 1;
+        for (unsigned j = 0; j < numSamples; ++j)
+        {
+            const float t = static_cast<float>(j) / numSamples;
+            const float tt = t * t;
+            const float ttt = tt * t;
+            const float h1 = 2.0f * ttt - 3.0f * tt + 1.0f;
+            const float h2 = -2.0f * ttt + 3.0f * tt;
+            const float h3 = (ttt - 2.0f * tt + t) * duration;
+            const float h4 = (ttt - tt) * duration;
+
+            sampledKeys.push_back(keys[k] + duration * t);
+            sampledValues.push_back(
+                NormalizeSplineSample(value0 * h1 + value1 * h2 + outTangent0 * h3 + inTangent1 * h4));
+        }
+    }
+
+    sampledKeys.push_back(keys.back());
+    sampledValues.push_back(NormalizeSplineSample(data[(numKeys - 1) * 3 + 1]));
+}
 
 Matrix3x4 MirrorX(Matrix3x4 mat)
 {
@@ -1576,18 +1654,24 @@ private:
 
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
                     {
-                        const auto morphWeightInTangents = ReadVerticalSlice(weightsValues, morphIndex * 3, numMorphs * 3);
-                        const auto morphWeightValues = ReadVerticalSlice(weightsValues, morphIndex * 3 + 1, numMorphs * 3);
-                        const auto morphWeightOutTangents = ReadVerticalSlice(weightsValues, morphIndex * 3 + 2, numMorphs * 3);
+                        const auto morphWeightInTangents = ReadVerticalSlice(weightsValues, morphIndex, numMorphs * 3);
+                        const auto morphWeightValues = ReadVerticalSlice(weightsValues, numMorphs + morphIndex, numMorphs * 3);
+                        const auto morphWeightOutTangents = ReadVerticalSlice(weightsValues, numMorphs * 2 + morphIndex, numMorphs * 3);
                         ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
-                        ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.inTangents_));
-                        ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.outTangents_));
+                        ea::copy(morphWeightInTangents.begin(), morphWeightInTangents.end(), ea::back_inserter(track.inTangents_));
+                        ea::copy(morphWeightOutTangents.begin(), morphWeightOutTangents.end(), ea::back_inserter(track.outTangents_));
                     }
                     else
                     {
                         const auto morphWeightValues = ReadVerticalSlice(weightsValues, morphIndex, numMorphs);
                         ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
                     }
+
+                    if (track.values_.size() != channelKeys.size())
+                        throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
+
+                    if (interpolation == KeyFrameInterpolation::TangentSpline)
+                        ScaleTangentsToSegments(track.keys_, track.inTangents_, track.outTangents_);
                 }
             }
             else if (targetNode.skeletonIndex_)
@@ -1604,44 +1688,35 @@ private:
 
                 if (newChannel == CHANNEL_POSITION)
                 {
-                    auto positionValues = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
-                    if (interpolation == KeyFrameInterpolation::TangentSpline)
-                        positionValues = ReadVerticalSlice(positionValues, 1, 3);
+                    ea::vector<float> keys;
+                    ea::vector<Vector3> positionValues;
+                    ReadBoneChannel(channelKeys, channelValuesAccessor, interpolation, animation.index_, keys, positionValues);
                     ApplyInlineTransformToPosition(positionValues);
-
-                    if (positionValues.size() != channelKeys.size())
-                        throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
 
                     track.positions_.RemoveAllKeyFrames();
                     for (unsigned i = 0; i < positionValues.size(); ++i)
-                        track.positions_.AddKeyFrame({channelKeys[i], positionValues[i]});
+                        track.positions_.AddKeyFrame({keys[i], positionValues[i]});
                 }
                 else if (newChannel == CHANNEL_ROTATION)
                 {
-                    auto rotationValues = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
-                    if (interpolation == KeyFrameInterpolation::TangentSpline)
-                        rotationValues = ReadVerticalSlice(rotationValues, 1, 3);
+                    ea::vector<float> keys;
+                    ea::vector<Quaternion> rotationValues;
+                    ReadBoneChannel(channelKeys, channelValuesAccessor, interpolation, animation.index_, keys, rotationValues);
                     ApplyInlineTransformToRotation(rotationValues);
-
-                    if (rotationValues.size() != channelKeys.size())
-                        throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
 
                     track.rotations_.RemoveAllKeyFrames();
                     for (unsigned i = 0; i < rotationValues.size(); ++i)
-                        track.rotations_.AddKeyFrame({channelKeys[i], rotationValues[i]});
+                        track.rotations_.AddKeyFrame({keys[i], rotationValues[i]});
                 }
                 else if (newChannel == CHANNEL_SCALE)
                 {
-                    auto scaleValues = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
-                    if (interpolation == KeyFrameInterpolation::TangentSpline)
-                        scaleValues = ReadVerticalSlice(scaleValues, 1, 3);
-
-                    if (scaleValues.size() != channelKeys.size())
-                        throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
+                    ea::vector<float> keys;
+                    ea::vector<Vector3> scaleValues;
+                    ReadBoneChannel(channelKeys, channelValuesAccessor, interpolation, animation.index_, keys, scaleValues);
 
                     track.scales_.RemoveAllKeyFrames();
                     for (unsigned i = 0; i < scaleValues.size(); ++i)
-                        track.scales_.AddKeyFrame({channelKeys[i], scaleValues[i]});
+                        track.scales_.AddKeyFrame({keys[i], scaleValues[i]});
                 }
             }
             else
@@ -1684,7 +1759,29 @@ private:
 
                 if (track.values_.size() != channelKeys.size())
                     throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
+
+                if (interpolation == KeyFrameInterpolation::TangentSpline)
+                    ScaleTangentsToSegments(track.keys_, track.inTangents_, track.outTangents_);
             }
+        }
+    }
+
+    /// Read bone channel key frames. Sample cubic spline data into linear key frames.
+    template <class T>
+    void ReadBoneChannel(const ea::vector<float>& channelKeys, const tg::Accessor& accessor,
+        KeyFrameInterpolation interpolation, unsigned animationIndex, ea::vector<float>& keys, ea::vector<T>& values) const
+    {
+        const auto data = bufferReader_.ReadAccessorChecked<T>(accessor);
+        const bool isSpline = interpolation == KeyFrameInterpolation::TangentSpline;
+        if (data.size() != channelKeys.size() * (isSpline ? 3 : 1))
+            throw RuntimeException("Animation #{} channel input and output are mismatched", animationIndex);
+
+        if (isSpline)
+            SampleCubicSpline(channelKeys, data, base_.GetSettings().splineSampleRate_, keys, values);
+        else
+        {
+            keys = channelKeys;
+            values = data;
         }
     }
 
@@ -3829,6 +3926,7 @@ void GLTFImporterSettings::SerializeInBlock(Archive& archive)
 
     SerializeOptionalValue(archive, "offsetMatrixError", offsetMatrixError_);
     SerializeOptionalValue(archive, "keyFrameTimeError", keyFrameTimeError_);
+    SerializeOptionalValue(archive, "splineSampleRate", splineSampleRate_);
     SerializeOptionalValue(archive, "nodeRenames", nodeRenames_);
 
     SerializeOptionalValue(archive, "gpuResources", gpuResources_);
