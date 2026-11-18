@@ -12,6 +12,7 @@
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/ModelView.h>
 #include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/Technique.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/RenderPipeline/ShaderConsts.h>
@@ -172,6 +173,95 @@ Connections:  {{
 }}
 )",
         numBones * 3, vertices, numBones, polygonIndices, objects, connections);
+}
+
+/// Create a glTF file with one triangle list. Each vertex has the full weight on a different joint.
+ea::string CreateOversizedSkinGLTF(unsigned numBones)
+{
+    REQUIRE(numBones % 3 == 0);
+
+    ea::vector<unsigned char> buffer;
+    const auto append = [&](const auto& value)
+    {
+        const auto* bytes = reinterpret_cast<const unsigned char*>(&value);
+        buffer.insert(buffer.end(), bytes, bytes + sizeof(value));
+    };
+
+    const unsigned positionsOffset = buffer.size();
+    for (unsigned i = 0; i < numBones; ++i)
+        append(Vector3{i % 3 == 1 ? 1.0f : 0.0f, static_cast<float>(i / 3 + (i % 3 == 2 ? 1 : 0)), 0.0f});
+    const unsigned normalsOffset = buffer.size();
+    for (unsigned i = 0; i < numBones; ++i)
+        append(Vector3::BACK);
+    const unsigned jointsOffset = buffer.size();
+    for (unsigned i = 0; i < numBones; ++i)
+        append(ea::array<unsigned short, 4>{static_cast<unsigned short>(i), 0, 0, 0});
+    const unsigned weightsOffset = buffer.size();
+    for (unsigned i = 0; i < numBones; ++i)
+        append(Vector4{1.0f, 0.0f, 0.0f, 0.0f});
+    const unsigned indicesOffset = buffer.size();
+    for (unsigned i = 0; i < numBones; ++i)
+        append(static_cast<unsigned short>(i));
+    while (buffer.size() % 4 != 0)
+        buffer.push_back(0);
+
+    ea::string jointNodes;
+    ea::string joints;
+    for (unsigned i = 0; i < numBones; ++i)
+    {
+        jointNodes += Format(R"(,{{"name":"Bone{}"}})", i);
+        joints += Format("{}{}", i == 0 ? "" : ",", i + 2);
+    }
+
+    return Format(R"({{
+        "asset":{{"version":"2.0"}},
+        "buffers":[{{"byteLength":{},"uri":"data:application/octet-stream;base64,{}"}}],
+        "bufferViews":[
+            {{"buffer":0,"byteOffset":{},"byteLength":{},"target":34962}},
+            {{"buffer":0,"byteOffset":{},"byteLength":{},"target":34962}},
+            {{"buffer":0,"byteOffset":{},"byteLength":{},"target":34962}},
+            {{"buffer":0,"byteOffset":{},"byteLength":{},"target":34962}},
+            {{"buffer":0,"byteOffset":{},"byteLength":{},"target":34963}}
+        ],
+        "accessors":[
+            {{"bufferView":0,"componentType":5126,"count":{},"type":"VEC3","min":[0,0,0],"max":[1,{},0]}},
+            {{"bufferView":1,"componentType":5126,"count":{},"type":"VEC3"}},
+            {{"bufferView":2,"componentType":5123,"count":{},"type":"VEC4"}},
+            {{"bufferView":3,"componentType":5126,"count":{},"type":"VEC4"}},
+            {{"bufferView":4,"componentType":5123,"count":{},"type":"SCALAR"}}
+        ],
+        "meshes":[{{"name":"Oversized","primitives":[{{
+            "attributes":{{"POSITION":0,"NORMAL":1,"JOINTS_0":2,"WEIGHTS_0":3}},"indices":4
+        }}]}}],
+        "skins":[{{"joints":[{}]}}],
+        "nodes":[{{"name":"Skinned","mesh":0,"skin":0}},{{"name":"Root","children":[{}]}}{}],
+        "scenes":[{{"nodes":[0,1]}}],"scene":0
+    }})",
+        buffer.size(), EncodeBase64(buffer), positionsOffset, normalsOffset - positionsOffset, normalsOffset,
+        jointsOffset - normalsOffset, jointsOffset, weightsOffset - jointsOffset, weightsOffset,
+        indicesOffset - weightsOffset, indicesOffset, numBones * 2, numBones, numBones / 3, numBones, numBones,
+        numBones, numBones, joints, joints, jointNodes);
+}
+
+/// Check that the model splits its geometry into bone palettes that the GPU supports.
+void CheckOversizedBonePalettes(Model* model, unsigned numWeightedBones)
+{
+    REQUIRE(model);
+    REQUIRE(model->GetGeometryBoneMappings().size() == model->GetNumGeometries());
+    CHECK(model->GetNumGeometries() > 1);
+
+    ea::unordered_set<unsigned> mappedBones;
+    unsigned numIndices = 0;
+    for (unsigned i = 0; i < model->GetNumGeometries(); ++i)
+    {
+        const ea::vector<unsigned>& mapping = model->GetGeometryBoneMappings()[i];
+        CHECK(mapping.size() <= Graphics::GetMaxBones());
+        mappedBones.insert(mapping.begin(), mapping.end());
+        REQUIRE(model->GetGeometry(i, 0));
+        numIndices += model->GetGeometry(i, 0)->GetIndexCount();
+    }
+    CHECK(mappedBones.size() == numWeightedBones);
+    CHECK(numIndices == numWeightedBones);
 }
 
 } // namespace
@@ -883,23 +973,64 @@ TEST_CASE("FBX importer splits oversized bone palettes")
     REQUIRE(importer.Process("", "Palette/", nullptr));
 
     auto cache = context->GetSubsystem<ResourceCache>();
-    Model* model = cache->GetExistingResource<Model>("Palette/Models/Oversized.mdl");
-    REQUIRE(model);
-    REQUIRE(model->GetGeometryBoneMappings().size() == model->GetNumGeometries());
-    CHECK(model->GetNumGeometries() > 1);
+    CheckOversizedBonePalettes(cache->GetExistingResource<Model>("Palette/Models/Oversized.mdl"), NumWeightedBones);
+}
 
-    ea::unordered_set<unsigned> mappedBones;
-    unsigned numIndices = 0;
-    for (unsigned i = 0; i < model->GetNumGeometries(); ++i)
-    {
-        const ea::vector<unsigned>& mapping = model->GetGeometryBoneMappings()[i];
-        CHECK(mapping.size() <= Graphics::GetMaxBones());
-        mappedBones.insert(mapping.begin(), mapping.end());
-        REQUIRE(model->GetGeometry(i, 0));
-        numIndices += model->GetGeometry(i, 0)->GetIndexCount();
-    }
-    CHECK(mappedBones.size() == NumWeightedBones);
-    CHECK(numIndices == NumWeightedBones);
+TEST_CASE("glTF importer splits oversized bone palettes")
+{
+    constexpr unsigned NumWeightedBones = 258;
+    const ea::string gltf = CreateOversizedSkinGLTF(NumWeightedBones);
+
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto fileSystem = context->GetSubsystem<FileSystem>();
+    TemporaryDir temporaryDir{context, fileSystem->GetTemporaryDir() + "rbfx-model-importer-tests"};
+    const ea::string fileName = temporaryDir.GetPath() + "oversized-skin.gltf";
+    File file{context, fileName, FILE_WRITE};
+    REQUIRE(file.Write(gltf.data(), gltf.size()) == gltf.size());
+    file.Close();
+
+    GLTFImporter importer{context, GetTestSettings()};
+    REQUIRE(importer.LoadFile(fileName));
+    REQUIRE(importer.Process(temporaryDir.GetPath(), "GLTFPalette/", nullptr));
+
+    auto cache = context->GetSubsystem<ResourceCache>();
+    CheckOversizedBonePalettes(
+        cache->GetExistingResource<Model>("GLTFPalette/Models/Oversized.mdl"), NumWeightedBones);
+}
+
+TEST_CASE("glTF importer gives normal map materials a low quality fallback technique")
+{
+    // The normal texture is a 1x1 PNG image.
+    static const ea::string gltf = R"({
+        "asset":{"version":"2.0"},
+        "images":[{"name":"Normal","mimeType":"image/png","uri":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="}],
+        "textures":[{"source":0}],
+        "materials":[{"name":"Bumpy","normalTexture":{"index":0}}],
+        "scenes":[{"nodes":[]}],"scene":0
+    })";
+
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto fileSystem = context->GetSubsystem<FileSystem>();
+    TemporaryDir temporaryDir{context, fileSystem->GetTemporaryDir() + "rbfx-model-importer-tests"};
+    const ea::string fileName = temporaryDir.GetPath() + "normal-map.gltf";
+    File file{context, fileName, FILE_WRITE};
+    REQUIRE(file.Write(gltf.data(), gltf.size()) == gltf.size());
+    file.Close();
+
+    GLTFImporter importer{context, GetTestSettings()};
+    REQUIRE(importer.LoadFile(fileName));
+    REQUIRE(importer.Process(temporaryDir.GetPath(), "GLTFNormalMap/", nullptr));
+
+    auto cache = context->GetSubsystem<ResourceCache>();
+    auto material = cache->GetExistingResource<Material>("GLTFNormalMap/Materials/Bumpy_LitNormalMap.xml");
+    REQUIRE(material);
+    REQUIRE(material->GetNumTechniques() == 2);
+    REQUIRE(material->GetTechniqueEntry(0).technique_);
+    CHECK(material->GetTechniqueEntry(0).technique_->GetName() == "Techniques/LitOpaqueNormalMap.xml");
+    CHECK(material->GetTechniqueEntry(0).qualityLevel_ == QUALITY_MEDIUM);
+    REQUIRE(material->GetTechniqueEntry(1).technique_);
+    CHECK(material->GetTechniqueEntry(1).technique_->GetName() == "Techniques/LitOpaque.xml");
+    CHECK(material->GetTechniqueEntry(1).qualityLevel_ == QUALITY_LOW);
 }
 
 TEST_CASE("FBX importer recalculates incomplete tangent bases")

@@ -10,24 +10,17 @@
 #include "Urho3D/Core/StringUtils.h"
 #include "Urho3D/Graphics/AnimatedModel.h"
 #include "Urho3D/Graphics/Animation.h"
-#include "Urho3D/Graphics/AnimationController.h"
 #include "Urho3D/Graphics/Graphics.h"
-#include "Urho3D/Graphics/Light.h"
 #include "Urho3D/Graphics/Material.h"
 #include "Urho3D/Graphics/Model.h"
 #include "Urho3D/Graphics/ModelView.h"
-#include "Urho3D/Graphics/Octree.h"
-#include "Urho3D/Graphics/Skybox.h"
 #include "Urho3D/Graphics/StaticModel.h"
 #include "Urho3D/Graphics/Technique.h"
 #include "Urho3D/Graphics/Texture2D.h"
-#include "Urho3D/Graphics/TextureCube.h"
-#include "Urho3D/Graphics/Zone.h"
 #include "Urho3D/IO/File.h"
 #include "Urho3D/IO/FileSystem.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/IO/MemoryBuffer.h"
-#include "Urho3D/RenderPipeline/RenderPipeline.h"
 #include "Urho3D/RenderPipeline/ShaderConsts.h"
 #include "Urho3D/Resource/Image.h"
 #include "Urho3D/Resource/ResourceCache.h"
@@ -35,15 +28,14 @@
 #include "Urho3D/Scene/PrefabResource.h"
 #include "Urho3D/Scene/Scene.h"
 #include "Urho3D/Utility/AnimationMetadata.h"
+#include "Urho3D/Utility/ModelImporterUtils.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
 #include <memory>
-#include <regex>
 #include <string>
 #include <ufbx.h>
 #include <unordered_map>
@@ -59,7 +51,7 @@ namespace Urho3D
 namespace
 {
 
-constexpr unsigned MaxNameAssignTries = 64 * 1024;
+using namespace ModelImporterUtils;
 
 std::string ToString(const ufbx_string& value)
 {
@@ -94,26 +86,6 @@ Matrix3x4 ToMatrix3x4(const ufbx_matrix& value)
         static_cast<float>(value.m03), static_cast<float>(value.m10), static_cast<float>(value.m11),
         static_cast<float>(value.m12), static_cast<float>(value.m13), static_cast<float>(value.m20),
         static_cast<float>(value.m21), static_cast<float>(value.m22), static_cast<float>(value.m23)};
-}
-
-Vector3 MirrorX(const Vector3& value)
-{
-    return {-value.x_, value.y_, value.z_};
-}
-
-Quaternion MirrorX(const Quaternion& value)
-{
-    return {value.w_, value.x_, -value.y_, -value.z_};
-}
-
-Matrix3x4 MirrorX(Matrix3x4 value)
-{
-    value.m01_ = -value.m01_;
-    value.m10_ = -value.m10_;
-    value.m02_ = -value.m02_;
-    value.m20_ = -value.m20_;
-    value.m03_ = -value.m03_;
-    return value;
 }
 
 /// Maximum number of segments for each NURBS surface span.
@@ -192,48 +164,6 @@ size_t GetSourceFileSize(const ea::string& fileName)
     return error ? 0 : static_cast<size_t>(ea::min<uintmax_t>(size, SIZE_MAX));
 }
 
-bool IsNameSkipped(const ea::string& name, const StringVector& skipTags)
-{
-    return ea::any_of(
-        skipTags.begin(), skipTags.end(), [&](const ea::string& tag) { return name.find(tag) != ea::string::npos; });
-}
-
-bool IsWordBorder(unsigned char first, unsigned char second)
-{
-    return std::isblank(first) || std::ispunct(first) || std::isalpha(first) != std::isalpha(second)
-        || (std::islower(first) && std::isupper(second));
-}
-
-unsigned FindCommonPrefixWord(
-    const ea::string& lhs, const ea::string& rhs, bool preserveNonEmptyLeft = true, bool preserveNonEmptyRight = true)
-{
-    if (lhs.empty() || rhs.empty())
-        return 0;
-
-    const unsigned minLength =
-        ea::min(lhs.size() - (preserveNonEmptyLeft ? 1 : 0), rhs.size() - (preserveNonEmptyRight ? 1 : 0));
-    auto iter = ea::mismatch(lhs.begin(), ea::next(lhs.begin(), minLength), rhs.begin()).first;
-    while (iter != lhs.begin())
-    {
-        const auto previous = ea::prev(iter);
-        if (IsWordBorder(*previous, *iter))
-            break;
-        --iter;
-    }
-    return static_cast<unsigned>(iter - lhs.begin());
-}
-
-unsigned FindCommonPrefixWord(const StringVector& strings)
-{
-    if (strings.size() <= 1)
-        return 0;
-
-    ea::string prefix = strings[0].substr(0, FindCommonPrefixWord(strings[0], strings[1]));
-    for (unsigned i = 2; i < strings.size(); ++i)
-        prefix = prefix.substr(0, FindCommonPrefixWord(prefix, strings[i], false));
-    return prefix.size();
-}
-
 struct SceneDeleter
 {
     void operator()(ufbx_scene* scene) const { ufbx_free_scene(scene); }
@@ -266,12 +196,11 @@ struct FBXSource
     ea::string animationNameOverride_;
 };
 
-struct ImagePixels
+struct DecodedImage
 {
-    int width_{};
-    int height_{};
+    /// The image in the RGBA format.
+    SharedPtr<Image> image_;
     bool twoChannel_{};
-    std::vector<unsigned char> rgba_;
     std::string name_;
 };
 
@@ -310,9 +239,7 @@ struct ImportedTexture
 struct ImportedMaterial
 {
     SharedPtr<Material> material_;
-    ea::string techniqueName_;
-    ea::string fallbackTechniqueName_;
-    MaterialQuality minQuality_{};
+    StandardMaterialTechniques techniques_;
 };
 
 /// The distance between LOD levels whose names carry level indices, in bounding sphere radii of the first level.
@@ -344,15 +271,6 @@ struct ImportedModel
 
 class FBXProcessor : public NonCopyable
 {
-    enum MaterialVariant
-    {
-        LitNormalMapMaterial,
-        LitMaterial,
-        UnlitMaterial,
-
-        NumMaterialVariants
-    };
-
 public:
     FBXProcessor(Context* context, const FBXImporterSettings& settings, std::vector<FBXSource>& sources,
         const ea::string& outputPath, const ea::string& resourceNamePrefix, FBXImporterCallback* callback,
@@ -361,16 +279,13 @@ public:
         , defaultMaterial_(defaultMaterial)
         , settings_(settings)
         , sources_(sources)
-        , outputPath_(outputPath)
-        , resourceNamePrefix_(resourceNamePrefix)
         , callback_(callback)
-        , mirrorX_(!settings.mirrorX_)
+        , transform_{!settings.mirrorX_, settings.scale_}
+        , resources_(context, outputPath, resourceNamePrefix)
     {
         if (sources_.empty() || !sources_[0].scene_)
             throw RuntimeException("Source FBX model is not loaded");
     }
-
-    ~FBXProcessor() { ReleaseManualResources(); }
 
     void Prepare()
     {
@@ -436,90 +351,30 @@ public:
         SaveResource(prefab_);
     }
 
-    const FBXImporter::ResourceToFileNameMap& GetResourceNames() const { return resourceNames_; }
+    const FBXImporter::ResourceToFileNameMap& GetResourceNames() const { return resources_.GetResourceNames(); }
     const StringVector& GetMissingTextures() const { return missingTextures_; }
 
 private:
-    void ReleaseManualResources()
-    {
-        auto cache = context_->GetSubsystem<ResourceCache>();
-        for (const auto& [type, name] : manualResources_)
-            cache->ReleaseResource(type, name, true);
-        manualResources_.clear();
-    }
-
     ea::string CreateResourceName(
         const ea::string& nameHint, const ea::string& prefix, const ea::string& defaultName, const ea::string& suffix)
     {
-        const ea::string body = !nameHint.empty() ? GetSanitizedName(nameHint) : defaultName;
-        for (unsigned i = 0; i < MaxNameAssignTries; ++i)
-        {
-            const ea::string localName =
-                i == 0 ? Format("{}{}{}", prefix, body, suffix) : Format("{}{}_{}{}", prefix, body, i, suffix);
-            if (!localResourceNames_.emplace(localName).second)
-                continue;
-
-            const ea::string resourceName = resourceNamePrefix_ + localName;
-            resourceNames_[resourceName] = outputPath_ + localName;
-            return resourceName;
-        }
-        throw RuntimeException("Cannot assign resource name");
+        return resources_.CreateResourceName(nameHint, prefix, defaultName, suffix);
     }
 
     const ea::string& GetAbsoluteFileName(const ea::string& resourceName) const
     {
-        const auto iter = resourceNames_.find(resourceName);
-        return iter != resourceNames_.end() ? iter->second : EMPTY_STRING;
+        return resources_.GetAbsoluteFileName(resourceName);
     }
 
-    void AddToResourceCache(Resource* resource)
-    {
-        resourcesToCache_.push_back(SharedPtr<Resource>{resource});
-        resource->SetAbsoluteFileName(GetAbsoluteFileName(resource->GetName()));
-    }
-
-    void CommitResources()
-    {
-        auto cache = context_->GetSubsystem<ResourceCache>();
-        for (const SharedPtr<Resource>& resource : resourcesToCache_)
-        {
-            cache->AddManualResource(resource);
-            manualResources_.emplace_back(resource->GetType(), resource->GetName());
-        }
-        resourcesToCache_.clear();
-    }
+    void AddToResourceCache(Resource* resource) { resources_.AddResource(resource); }
+    void CommitResources() { resources_.CommitResources(); }
+    void SaveResource(Resource* resource) const { resources_.SaveResource(resource); }
 
     void FinalizeMaterials()
     {
         auto cache = context_->GetSubsystem<ResourceCache>();
         for (const ImportedMaterial& imported : importedMaterials_)
-        {
-            imported.material_->SetNumTechniques(imported.fallbackTechniqueName_.empty() ? 1 : 2);
-            Technique* technique = cache->GetResource<Technique>(imported.techniqueName_);
-            if (!technique)
-                throw RuntimeException("Cannot find standard technique '{}'", imported.techniqueName_);
-            imported.material_->SetTechnique(0, technique, imported.minQuality_);
-            if (!imported.fallbackTechniqueName_.empty())
-            {
-                Technique* fallbackTechnique = cache->GetResource<Technique>(imported.fallbackTechniqueName_);
-                if (!fallbackTechnique)
-                    throw RuntimeException("Cannot find standard technique '{}'", imported.fallbackTechniqueName_);
-                imported.material_->SetTechnique(1, fallbackTechnique, QUALITY_LOW);
-            }
-        }
-    }
-
-    void SaveResource(Resource* resource)
-    {
-        if (!resource)
-            return;
-        const ea::string& fileName = GetAbsoluteFileName(resource->GetName());
-        if (fileName.empty())
-            throw RuntimeException(
-                "Cannot save imported resource '{}': file name is not assigned", resource->GetName());
-        resource->SetAbsoluteFileName(fileName);
-        if (!resource->SaveFile(fileName))
-            throw RuntimeException("Cannot save imported resource '{}'", resource->GetName());
+            SetStandardMaterialTechniques(*imported.material_, imported.techniques_, cache);
     }
 
     ea::string GetConfiguredNodeName(const ufbx_node& node) const
@@ -532,38 +387,26 @@ private:
 
     void InitializeNodeNames()
     {
-        std::unordered_map<std::string, unsigned> nameCounts;
+        ea::unordered_set<ea::string> usedNames;
         const ufbx_scene& scene = *sources_[0].scene_;
         for (const ufbx_node* node : scene.nodes)
         {
             const ea::string baseName = GetConfiguredNodeName(*node);
-            unsigned& count = nameCounts[baseName.c_str()];
-            const ea::string uniqueName = count++ == 0 ? baseName : Format("{}_{}", baseName, count);
+            const ea::string uniqueName =
+                GetUniqueName(baseName, [&](const ea::string& candidate) { return usedNames.contains(candidate); });
+            usedNames.insert(uniqueName);
             nodeNames_[node] = uniqueName;
             primaryNodesByConfiguredName_.emplace(baseName.c_str(), node);
         }
     }
 
-    Vector3 ConvertPosition(const ufbx_vec3& value) const
-    {
-        Vector3 result = ToVector3(value) * settings_.scale_;
-        return mirrorX_ ? MirrorX(result) : result;
-    }
+    Vector3 ConvertPosition(const ufbx_vec3& value) const { return transform_.ApplyToPosition(ToVector3(value)); }
 
-    Quaternion ConvertRotation(const ufbx_quat& value) const
-    {
-        const Quaternion result = ToQuaternion(value);
-        return mirrorX_ ? MirrorX(result) : result;
-    }
+    Quaternion ConvertRotation(const ufbx_quat& value) const { return transform_.ApplyToRotation(ToQuaternion(value)); }
 
     Matrix3x4 ConvertOffsetMatrix(const ufbx_matrix& value) const
     {
-        Matrix3x4 result = ToMatrix3x4(value);
-        if (mirrorX_)
-            result = MirrorX(result);
-        if (settings_.scale_ != 1.0f)
-            result = Matrix3x4::FromScale(settings_.scale_) * result * Matrix3x4::FromScale(1.0f / settings_.scale_);
-        return result;
+        return transform_.ApplyToOffsetMatrix(ToMatrix3x4(value));
     }
 
     static const ufbx_node* FindCommonAncestor(const ufbx_node* lhs, const ufbx_node* rhs)
@@ -953,18 +796,15 @@ private:
             node.attrib && node.attrib->name.length ? ToString(node.attrib->name).c_str() : nodeNames_.at(&node);
         model.baseMeshName_ = model.meshName_;
 
-        static const std::regex lodPattern{R"(^(.*)_LOD(\d+(\.\d+)?)$)"};
         // Match the mesh name first. Then match the node name, because exporters may name only the node.
-        const ea::string nodeName = GetConfiguredNodeName(node);
-        for (const ea::string* name : {static_cast<const ea::string*>(&model.meshName_), &nodeName})
+        for (const ea::string& name : {model.meshName_, GetConfiguredNodeName(node)})
         {
-            std::cmatch match;
-            if (std::regex_match(name->c_str(), match, lodPattern))
+            LodName lodName = ParseLodName(name);
+            if (lodName.distance_)
             {
-                model.baseMeshName_ = ea::string{match[1].first, match[1].second};
-                model.lodDistance_ = ToFloat(ea::string{match[2].first, match[2].second});
-                if (!match[3].matched && match[2].length() <= 4)
-                    model.lodNameNumber_ = ToUInt(ea::string{match[2].first, match[2].second});
+                model.baseMeshName_ = ea::move(lodName.baseName_);
+                model.lodDistance_ = lodName.distance_;
+                model.lodNameNumber_ = lodName.index_;
                 return;
             }
         }
@@ -995,17 +835,7 @@ private:
             return false;
         if (!lhs.IsSkinned())
             return true;
-        if (lhs.root_ != rhs.root_ || lhs.bones_.size() != rhs.bones_.size())
-            return false;
-        for (unsigned i = 0; i < lhs.bones_.size(); ++i)
-        {
-            const BoneView& lhsBone = lhs.bones_[i];
-            const BoneView& rhsBone = rhs.bones_[i];
-            if (lhsBone.name_ != rhsBone.name_ || lhsBone.parentIndex_ != rhsBone.parentIndex_
-                || !lhsBone.offsetMatrix_.Equals(rhsBone.offsetMatrix_, settings_.offsetMatrixError_))
-                return false;
-        }
-        return true;
+        return lhs.root_ == rhs.root_ && AreBonesEquivalent(lhs.bones_, rhs.bones_, settings_.offsetMatrixError_);
     }
 
     void ReuseEquivalentModels()
@@ -1089,29 +919,10 @@ private:
                         : *lod.lodDistance_;
                 }
             }
-            const auto getDistance = [&](unsigned lodIndex) { return lodDistances[lodIndex]; };
-            auto& finalGeometries = finalView->GetGeometries();
-            for (GeometryView& geometry : finalGeometries)
-            {
-                if (!geometry.lods_.empty())
-                {
-                    geometry.lods_.resize(1);
-                    geometry.lods_.front().lodDistance_ = getDistance(0);
-                }
-            }
-            for (unsigned lodIndex = 1; lodIndex < lods.size(); ++lodIndex)
-            {
-                const auto& sourceGeometries = lods[lodIndex]->modelView_->GetGeometries();
-                if (sourceGeometries.size() > finalGeometries.size())
-                    finalGeometries.resize(sourceGeometries.size());
-                for (unsigned geometryIndex = 0; geometryIndex < sourceGeometries.size(); ++geometryIndex)
-                {
-                    if (sourceGeometries[geometryIndex].lods_.empty())
-                        continue;
-                    finalGeometries[geometryIndex].lods_.push_back(sourceGeometries[geometryIndex].lods_.front());
-                    finalGeometries[geometryIndex].lods_.back().lodDistance_ = getDistance(lodIndex);
-                }
-            }
+            ea::vector<ModelView*> lodViews;
+            for (const ImportedModel* lod : lods)
+                lodViews.push_back(lod->modelView_);
+            CombineModelViewLODs(lodViews, lodDistances);
             const unsigned primaryModelIndex = modelIndexByNode_.at(lods.front()->sourceNode_);
             for (unsigned lodIndex = 0; lodIndex < lods.size(); ++lodIndex)
             {
@@ -1135,8 +946,8 @@ private:
                 model.model_ = iter->second;
                 continue;
             }
-            callback_->OnModelLoaded(*model.modelView_);
-            const ea::vector<unsigned> materialMapping = SplitOversizedGeometries(*model.modelView_);
+            ExportedModel exported = ExportModelView(*model.modelView_, *callback_);
+            const ea::vector<unsigned>& materialMapping = exported.materialMapping_;
             if (!materialMapping.empty())
             {
                 for (ImportedModel& candidate : models_)
@@ -1152,219 +963,12 @@ private:
                     }
                 }
             }
-            const ea::vector<ea::vector<unsigned>> geometryBoneMappings = RemapGeometryBones(*model.modelView_);
-            model.model_ = model.modelView_->ExportModel();
-            if (!geometryBoneMappings.empty())
-                model.model_->SetGeometryBoneMappings(geometryBoneMappings);
+            model.model_ = ea::move(exported.model_);
             AddToResourceCache(model.model_);
             modelsToSave_.push_back(model.model_);
             cookedViews[model.modelView_.Get()] = model.model_;
         }
         CookSkeletonDrivers();
-    }
-
-    static std::unordered_set<unsigned> CollectGeometryBones(const GeometryView& geometry, unsigned numBones)
-    {
-        std::unordered_set<unsigned> result;
-        for (const GeometryLODView& lod : geometry.lods_)
-        {
-            if (lod.vertexFormat_.blendIndices_ == ModelVertexFormat::Undefined)
-                continue;
-            for (const ModelVertex& vertex : lod.vertices_)
-            {
-                for (const auto [boneIndex, weight] : vertex.GetBlendIndicesAndWeights())
-                {
-                    if (weight <= 0.0f)
-                        continue;
-                    if (boneIndex >= numBones)
-                        throw RuntimeException("FBX geometry references invalid bone #{}", boneIndex);
-                    result.emplace(boneIndex);
-                }
-            }
-        }
-        return result;
-    }
-
-    static unsigned GetPrimitiveSize(PrimitiveType primitiveType)
-    {
-        switch (primitiveType)
-        {
-        case TRIANGLE_LIST: return 3;
-        case LINE_LIST: return 2;
-        case POINT_LIST: return 1;
-        default: return 0;
-        }
-    }
-
-    static ea::vector<GeometryView> SplitGeometry(const GeometryView& source, unsigned numBones)
-    {
-        struct Batch
-        {
-            GeometryView geometry_;
-            std::unordered_set<unsigned> bones_;
-            std::vector<std::unordered_map<unsigned, unsigned>> vertexMappings_;
-        };
-
-        const unsigned maxBones = Graphics::GetMaxBones();
-        std::vector<Batch> batches;
-        const auto addBatch = [&]() -> unsigned
-        {
-            Batch& batch = batches.emplace_back();
-            batch.geometry_.material_ = source.material_;
-            batch.geometry_.exported_ = source.exported_;
-            batch.geometry_.lods_.resize(source.lods_.size());
-            batch.vertexMappings_.resize(source.lods_.size());
-            batch.bones_.reserve(maxBones);
-            for (unsigned i = 0; i < source.lods_.size(); ++i)
-            {
-                batch.geometry_.lods_[i].primitiveType_ = source.lods_[i].primitiveType_;
-                batch.geometry_.lods_[i].lodDistance_ = source.lods_[i].lodDistance_;
-                batch.geometry_.lods_[i].vertexFormat_ = source.lods_[i].vertexFormat_;
-            }
-            return batches.size() - 1;
-        };
-
-        for (unsigned lodIndex = 0; lodIndex < source.lods_.size(); ++lodIndex)
-        {
-            const GeometryLODView& sourceLod = source.lods_[lodIndex];
-            if (sourceLod.indices_.empty())
-                continue;
-            const unsigned primitiveSize = GetPrimitiveSize(sourceLod.primitiveType_);
-            if (primitiveSize == 0 || sourceLod.indices_.size() % primitiveSize != 0)
-                throw RuntimeException(
-                    "Cannot split oversized FBX geometry with primitive type {}", sourceLod.primitiveType_);
-
-            for (unsigned primitiveBegin = 0; primitiveBegin < sourceLod.indices_.size();
-                primitiveBegin += primitiveSize)
-            {
-                ea::array<unsigned, ModelVertex::MaxBones * 3> primitiveBones;
-                unsigned numPrimitiveBones = 0;
-                for (unsigned i = 0; i < primitiveSize; ++i)
-                {
-                    const unsigned vertexIndex = sourceLod.indices_[primitiveBegin + i];
-                    if (vertexIndex >= sourceLod.vertices_.size())
-                        throw RuntimeException("FBX geometry references invalid vertex #{}", vertexIndex);
-                    if (sourceLod.vertexFormat_.blendIndices_ == ModelVertexFormat::Undefined)
-                        continue;
-                    for (const auto [boneIndex, weight] : sourceLod.vertices_[vertexIndex].GetBlendIndicesAndWeights())
-                    {
-                        if (weight <= 0.0f)
-                            continue;
-                        if (boneIndex >= numBones)
-                            throw RuntimeException("FBX geometry references invalid bone #{}", boneIndex);
-                        if (ea::find(primitiveBones.begin(), primitiveBones.begin() + numPrimitiveBones, boneIndex)
-                            == primitiveBones.begin() + numPrimitiveBones)
-                            primitiveBones[numPrimitiveBones++] = boneIndex;
-                    }
-                }
-
-                unsigned bestBatch = M_MAX_UNSIGNED;
-                unsigned bestOverlap = 0;
-                for (unsigned batchIndex = 0; batchIndex < batches.size(); ++batchIndex)
-                {
-                    const Batch& batch = batches[batchIndex];
-                    unsigned overlap = 0;
-                    for (unsigned i = 0; i < numPrimitiveBones; ++i)
-                        overlap += batch.bones_.find(primitiveBones[i]) != batch.bones_.end();
-                    if (batch.bones_.size() + numPrimitiveBones - overlap <= maxBones
-                        && (bestBatch == M_MAX_UNSIGNED || overlap > bestOverlap))
-                    {
-                        bestBatch = batchIndex;
-                        bestOverlap = overlap;
-                    }
-                }
-                if (bestBatch == M_MAX_UNSIGNED)
-                    bestBatch = addBatch();
-
-                Batch& batch = batches[bestBatch];
-                for (unsigned i = 0; i < numPrimitiveBones; ++i)
-                    batch.bones_.emplace(primitiveBones[i]);
-                GeometryLODView& targetLod = batch.geometry_.lods_[lodIndex];
-                auto& vertexMapping = batch.vertexMappings_[lodIndex];
-                for (unsigned i = 0; i < primitiveSize; ++i)
-                {
-                    const unsigned sourceIndex = sourceLod.indices_[primitiveBegin + i];
-                    const auto [iter, inserted] = vertexMapping.emplace(sourceIndex, targetLod.vertices_.size());
-                    if (inserted)
-                        targetLod.vertices_.push_back(sourceLod.vertices_[sourceIndex]);
-                    targetLod.indices_.push_back(iter->second);
-                }
-            }
-        }
-
-        ea::vector<GeometryView> result;
-        result.reserve(batches.size());
-        for (Batch& batch : batches)
-        {
-            for (unsigned lodIndex = 0; lodIndex < source.lods_.size(); ++lodIndex)
-            {
-                const GeometryLODView& sourceLod = source.lods_[lodIndex];
-                GeometryLODView& targetLod = batch.geometry_.lods_[lodIndex];
-                const auto& vertexMapping = batch.vertexMappings_[lodIndex];
-                for (const auto& [morphIndex, sourceMorphs] : sourceLod.morphs_)
-                {
-                    ModelVertexMorphVector targetMorphs;
-                    for (const ModelVertexMorph& sourceMorph : sourceMorphs)
-                    {
-                        if (const auto iter = vertexMapping.find(sourceMorph.index_); iter != vertexMapping.end())
-                        {
-                            ModelVertexMorph targetMorph = sourceMorph;
-                            targetMorph.index_ = iter->second;
-                            targetMorphs.push_back(targetMorph);
-                        }
-                    }
-                    if (!targetMorphs.empty())
-                    {
-                        NormalizeModelVertexMorphVector(targetMorphs);
-                        targetLod.morphs_[morphIndex] = ea::move(targetMorphs);
-                    }
-                }
-            }
-            result.push_back(ea::move(batch.geometry_));
-        }
-        return result;
-    }
-
-    static ea::vector<unsigned> SplitOversizedGeometries(ModelView& modelView)
-    {
-        if (modelView.GetBones().size() <= Graphics::GetMaxBones())
-            return {};
-
-        ea::vector<GeometryView> sourceGeometries = ea::move(modelView.GetGeometries());
-        ea::vector<GeometryView> result;
-        ea::vector<unsigned> materialMapping;
-        result.reserve(sourceGeometries.size());
-        unsigned sourceMaterialIndex = 0;
-        bool wasSplit = false;
-        for (GeometryView& source : sourceGeometries)
-        {
-            const unsigned currentMaterialIndex = sourceMaterialIndex;
-            if (source.exported_)
-                ++sourceMaterialIndex;
-
-            const unsigned numGeometryBones = CollectGeometryBones(source, modelView.GetBones().size()).size();
-            if (!source.exported_ || numGeometryBones <= Graphics::GetMaxBones())
-            {
-                if (source.exported_)
-                    materialMapping.push_back(currentMaterialIndex);
-                result.push_back(ea::move(source));
-                continue;
-            }
-
-            ea::vector<GeometryView> batches = SplitGeometry(source, modelView.GetBones().size());
-            if (batches.empty())
-                throw RuntimeException("Cannot split empty oversized FBX geometry");
-            URHO3D_LOGINFO("Split FBX model '{}' geometry {} ({} bones) into {} draw batches", modelView.GetName(),
-                currentMaterialIndex, numGeometryBones, batches.size());
-            for (GeometryView& batch : batches)
-            {
-                materialMapping.push_back(currentMaterialIndex);
-                result.push_back(ea::move(batch));
-            }
-            wasSplit = true;
-        }
-        modelView.SetGeometries(ea::move(result));
-        return wasSplit ? materialMapping : ea::vector<unsigned>{};
     }
 
     void CookSkeletonDrivers()
@@ -1409,72 +1013,6 @@ private:
             modelsToSave_.push_back(model);
             skeletonDriverModels_[root] = model;
         }
-    }
-
-    static ea::vector<ea::vector<unsigned>> RemapGeometryBones(ModelView& modelView)
-    {
-        if (modelView.GetBones().size() <= Graphics::GetMaxBones())
-            return {};
-
-        // Blend indices are bytes, so large skeletons need a compact palette for each geometry.
-        ea::vector<ea::vector<unsigned>> mappings;
-        ea::vector<ea::unordered_map<unsigned, unsigned>> localIndices;
-        for (GeometryView& geometry : modelView.GetGeometries())
-        {
-            if (!geometry.exported_)
-                continue;
-
-            ea::vector<unsigned>& mapping = mappings.emplace_back();
-            auto& indices = localIndices.emplace_back();
-            for (const GeometryLODView& lod : geometry.lods_)
-            {
-                if (lod.vertexFormat_.blendIndices_ == ModelVertexFormat::Undefined)
-                    continue;
-                for (const ModelVertex& vertex : lod.vertices_)
-                {
-                    for (const auto [boneIndex, weight] : vertex.GetBlendIndicesAndWeights())
-                    {
-                        if (weight <= 0.0f)
-                            continue;
-                        if (boneIndex >= modelView.GetBones().size())
-                            throw RuntimeException("FBX geometry references invalid bone #{}", boneIndex);
-                        if (!indices.contains(boneIndex))
-                        {
-                            indices[boneIndex] = mapping.size();
-                            mapping.push_back(boneIndex);
-                        }
-                    }
-                }
-            }
-        }
-
-        const auto oversized = ea::find_if(mappings.begin(), mappings.end(),
-            [](const ea::vector<unsigned>& mapping) { return mapping.size() > Graphics::GetMaxBones(); });
-        if (oversized != mappings.end())
-            throw RuntimeException(
-                "FBX geometry uses {} bones, but only {} are supported", oversized->size(), Graphics::GetMaxBones());
-
-        unsigned exportedGeometryIndex = 0;
-        for (GeometryView& geometry : modelView.GetGeometries())
-        {
-            if (!geometry.exported_)
-                continue;
-            const auto& indices = localIndices[exportedGeometryIndex++];
-            for (GeometryLODView& lod : geometry.lods_)
-            {
-                if (lod.vertexFormat_.blendIndices_ == ModelVertexFormat::Undefined)
-                    continue;
-                for (ModelVertex& vertex : lod.vertices_)
-                {
-                    for (unsigned i = 0; i < ModelVertex::MaxBones; ++i)
-                    {
-                        if (vertex.blendWeights_[i] > 0.0f)
-                            vertex.blendIndices_[i] = static_cast<float>(indices.at(vertex.blendIndices_[i]));
-                    }
-                }
-            }
-        }
-        return mappings;
     }
 
     void ImportMorphTargets(ImportedModel& importedModel)
@@ -1564,15 +1102,7 @@ private:
             return modelView;
         }
 
-        if (mirrorX_)
-            modelView->MirrorGeometriesX();
-        if (settings_.scale_ != 1.0f)
-            modelView->ScaleGeometries(settings_.scale_);
-        modelView->CalculateMissingNormals(true);
-        modelView->CalculateMissingTangents();
-        modelView->RepairBoneWeights();
-        modelView->RecalculateBoneBoundingBoxes();
-        modelView->Normalize();
+        FinalizeModelView(*modelView, transform_);
         return modelView;
     }
 
@@ -1944,90 +1474,50 @@ private:
 
         // Material::ResetToDefaults is a no-op on worker threads, so clone the prototype made on the main thread.
         SharedPtr<Material> material = defaultMaterial_->Clone();
-        ea::string techniqueName;
-        ea::string fallbackTechniqueName;
-        ea::string suffix;
-        if (variant == UnlitMaterial)
-        {
-            techniqueName = transparent ? "Techniques/UnlitTransparent.xml" : "Techniques/UnlitOpaque.xml";
-            suffix = "_Unlit";
-        }
-        else if (variant == LitNormalMapMaterial)
-        {
-            techniqueName = transparent ? (settings_.fadeTransparency_ ? "Techniques/LitTransparentFadeNormalMap.xml"
-                                                                       : "Techniques/LitTransparentNormalMap.xml")
-                                        : "Techniques/LitOpaqueNormalMap.xml";
-            fallbackTechniqueName = transparent
-                ? (settings_.fadeTransparency_ ? "Techniques/LitTransparentFade.xml" : "Techniques/LitTransparent.xml")
-                : "Techniques/LitOpaque.xml";
-            suffix = "_LitNormalMap";
-        }
-        else
-        {
-            techniqueName = transparent
-                ? (settings_.fadeTransparency_ ? "Techniques/LitTransparentFade.xml" : "Techniques/LitTransparent.xml")
-                : "Techniques/LitOpaque.xml";
-            suffix = "_Lit";
-        }
-        importedMaterials_.push_back({material, techniqueName, fallbackTechniqueName,
-            variant == LitNormalMapMaterial ? QUALITY_MEDIUM : QUALITY_LOW});
-        if (variant != UnlitMaterial)
-        {
-            material->SetVertexShaderDefines("PBR ");
-            material->SetPixelShaderDefines("PBR ");
-        }
-        if (sourceMaterial->features.double_sided.enabled)
-        {
-            material->SetCullMode(CULL_NONE);
-            material->SetShadowCullMode(CULL_NONE);
-        }
+        // Techniques are loaded later on the main thread.
+        importedMaterials_.push_back(
+            {material, GetStandardMaterialTechniques(variant, transparent, settings_.fadeTransparency_)});
+        SetStandardMaterialFlags(*material, variant, sourceMaterial->features.double_sided.enabled);
 
-        material->SetShaderParameter(ShaderConsts::Material_MatDiffColor, baseColor.LinearToGamma().ToVector4());
-        if (auto texture = GetBaseColorTexture(*sourceMaterial))
-            material->SetTexture(ShaderResources::Albedo, texture);
-        else if (settings_.highlightMissingTextures_ && pbr.base_color.texture_enabled
-            && GetFileTexture(pbr.base_color.texture) && !DecodeTexture(pbr.base_color.texture))
-            material->SetShaderParameter(ShaderConsts::Material_MatDiffColor, Vector4(1.0f, 0.1f, 0.9f, baseColor.a_));
+        StandardMaterialParameters parameters;
+        parameters.baseColor_ = baseColor;
+        parameters.albedoTexture_ = GetBaseColorTexture(*sourceMaterial);
         if (variant != UnlitMaterial)
         {
-            material->SetShaderParameter(ShaderConsts::Material_Metallic,
-                pbr.metalness.has_value ? static_cast<float>(pbr.metalness.value_real) : 0.0f);
+            parameters.metallic_ = pbr.metalness.has_value ? static_cast<float>(pbr.metalness.value_real) : 0.0f;
             const ufbx_material_map& roughnessMap = GetRoughnessMap(*sourceMaterial);
-            const SharedPtr<Texture2D> emissionTexture = GetTexture(pbr.emission_color);
+            parameters.emissionTexture_ = GetTexture(pbr.emission_color);
             bool hasRoughnessTexture = false;
-            const SharedPtr<Texture2D> propertiesTexture = GetPropertiesTexture(*sourceMaterial, hasRoughnessTexture);
+            parameters.propertiesTexture_ = GetPropertiesTexture(*sourceMaterial, hasRoughnessTexture);
             const bool glossinessTextureConverted =
                 sourceMaterial->features.roughness_as_glossiness.enabled && hasRoughnessTexture;
-            const float roughness = roughnessMap.has_value
+            parameters.roughness_ = roughnessMap.has_value
                 ? static_cast<float>(glossinessTextureConverted                      ? 1.0
                           : sourceMaterial->features.roughness_as_glossiness.enabled ? 1.0 - roughnessMap.value_real
                                                                                      : roughnessMap.value_real)
                 : 1.0f;
-            material->SetShaderParameter(ShaderConsts::Material_Roughness, roughness);
             const float emissionFactor =
                 pbr.emission_factor.has_value ? static_cast<float>(pbr.emission_factor.value_real) : 1.0f;
-            const Color emissive{static_cast<float>(pbr.emission_color.value_vec3.x) * emissionFactor,
+            parameters.emissiveColor_ = Color{static_cast<float>(pbr.emission_color.value_vec3.x) * emissionFactor,
                 static_cast<float>(pbr.emission_color.value_vec3.y) * emissionFactor,
                 static_cast<float>(pbr.emission_color.value_vec3.z) * emissionFactor};
-            material->SetShaderParameter(ShaderConsts::Material_MatEmissiveColor, emissive.LinearToGamma().ToVector3());
-            material->SetShaderParameter("OcclusionStrength",
-                pbr.ambient_occlusion.has_value ? static_cast<float>(pbr.ambient_occlusion.value_real) : 1.0f);
-
-            if (emissionTexture)
-                material->SetTexture(ShaderResources::Emission, emissionTexture);
-            if (propertiesTexture)
-                material->SetTexture(ShaderResources::Properties, propertiesTexture);
+            parameters.occlusionStrength_ =
+                pbr.ambient_occlusion.has_value ? static_cast<float>(pbr.ambient_occlusion.value_real) : 1.0f;
         }
         if (variant == LitNormalMapMaterial)
         {
-            material->SetShaderParameter(ShaderConsts::Material_NormalScale,
-                pbr.normal_map.has_value ? static_cast<float>(pbr.normal_map.value_real) : 1.0f);
-            material->SetTexture(ShaderResources::Normal, GetTexture(pbr.normal_map, true));
+            parameters.normalScale_ = pbr.normal_map.has_value ? static_cast<float>(pbr.normal_map.value_real) : 1.0f;
+            parameters.normalTexture_ = GetTexture(pbr.normal_map, true);
         }
+        SetStandardMaterialParameters(*material, variant, parameters);
+
+        if (!parameters.albedoTexture_ && settings_.highlightMissingTextures_ && pbr.base_color.texture_enabled
+            && GetFileTexture(pbr.base_color.texture) && !DecodeTexture(pbr.base_color.texture))
+            material->SetShaderParameter(ShaderConsts::Material_MatDiffColor, Vector4(1.0f, 0.1f, 0.9f, baseColor.a_));
         ApplyTextureTransform(*material, *sourceMaterial, variant);
 
-        const ea::string materialName =
-            CreateResourceName(ToString(sourceMaterial->name).c_str(), "Materials/", "Material", suffix + ".xml");
+        const ea::string materialName = CreateResourceName(
+            ToString(sourceMaterial->name).c_str(), "Materials/", "Material", GetMaterialVariantSuffix(variant) + ".xml");
         material->SetName(materialName);
         AddToResourceCache(material);
         materials_[sourceMaterial][variant] = material;
@@ -2048,10 +1538,14 @@ private:
         if (const auto iter = sourceTextures_.find(textureMapping); iter != sourceTextures_.end())
             return iter->second;
 
-        const std::shared_ptr<ImagePixels> pixels = DecodeTexture(fileTexture);
-        if (!pixels)
+        const std::shared_ptr<DecodedImage> decoded = DecodeTexture(fileTexture);
+        if (!decoded)
             return nullptr;
-        const SharedPtr<Texture2D> texture = AddTexture(*pixels, textureMapping, normalMap);
+        // Copy the image, because the decoded image is shared.
+        const SharedPtr<Image> image = decoded->image_->ConvertToRGBA();
+        if (normalMap && decoded->twoChannel_)
+            ReconstructNormalZ(*image);
+        const SharedPtr<Texture2D> texture = AddTexture(image, decoded->name_, textureMapping);
         sourceTextures_[textureMapping] = texture;
         return texture;
     }
@@ -2144,27 +1638,29 @@ private:
         if (!opacity)
             return GetTexture(baseTexture);
 
-        ImagePixels combined;
-        combined.width_ = std::max(base ? base->width_ : 0, opacity->width_);
-        combined.height_ = std::max(base ? base->height_ : 0, opacity->height_);
-        combined.name_ = base ? base->name_ + " Base Color" : opacity->name_ + " Opacity";
-        combined.rgba_.resize(static_cast<size_t>(combined.width_) * combined.height_ * 4);
-        for (int y = 0; y < combined.height_; ++y)
+        const Image& opacityImage = *opacity->image_;
+        const IntVector2 size = VectorMax(
+            base ? base->image_->GetSize().ToIntVector2() : IntVector2::ZERO, opacityImage.GetSize().ToIntVector2());
+        SharedPtr<Image> combined;
+        if (base)
+            combined = GetResizedRGBAImage(*base->image_, size);
+        else
         {
-            for (int x = 0; x < combined.width_; ++x)
-            {
-                const size_t index = (static_cast<size_t>(y) * combined.width_ + x) * 4;
-                for (unsigned channel = 0; channel < 3; ++channel)
-                    combined.rgba_[index + channel] =
-                        SampleTexture(base.get(), x, y, combined.width_, combined.height_, channel, 255);
-                const unsigned baseAlpha = SampleTexture(base.get(), x, y, combined.width_, combined.height_, 3, 255);
-                const unsigned opacityValue =
-                    std::min<unsigned>(SampleTexture(opacity.get(), x, y, combined.width_, combined.height_, 0, 255),
-                        SampleTexture(opacity.get(), x, y, combined.width_, combined.height_, 3, 255));
-                combined.rgba_[index + 3] = static_cast<unsigned char>(baseAlpha * opacityValue / 255);
-            }
+            combined = MakeShared<Image>(context_);
+            combined->SetSize(size.x_, size.y_, 4);
+            combined->Clear(Color::WHITE);
         }
-        return AddTexture(combined, baseMapping ? baseMapping : opacityMapping);
+        const SharedPtr<Image> resizedOpacity = GetResizedRGBAImage(opacityImage, size);
+        unsigned char* data = combined->GetData();
+        const unsigned char* opacityData = resizedOpacity->GetData();
+        const unsigned numPixels = static_cast<unsigned>(size.x_ * size.y_);
+        for (unsigned i = 0; i < numPixels; ++i)
+        {
+            const unsigned opacityValue = ea::min(opacityData[i * 4], opacityData[i * 4 + 3]);
+            data[i * 4 + 3] = static_cast<unsigned char>(data[i * 4 + 3] * opacityValue / 255);
+        }
+        const std::string name = base ? base->name_ + " Base Color" : opacity->name_ + " Opacity";
+        return AddTexture(combined, name, baseMapping ? baseMapping : opacityMapping);
     }
 
     SharedPtr<Texture2D> GetPropertiesTexture(const ufbx_material& sourceMaterial, bool& hasRoughnessTexture)
@@ -2205,40 +1701,26 @@ private:
         if (!roughness && !metalness && !occlusion)
             return nullptr;
 
-        ImagePixels packed;
-        packed.width_ = std::max(
-            {roughness ? roughness->width_ : 0, metalness ? metalness->width_ : 0, occlusion ? occlusion->width_ : 0});
-        packed.height_ = std::max({roughness ? roughness->height_ : 0, metalness ? metalness->height_ : 0,
-            occlusion ? occlusion->height_ : 0});
-        packed.name_ = "Properties";
-        packed.rgba_.resize(static_cast<size_t>(packed.width_) * packed.height_ * 4);
-        const float roughnessFactor = roughnessMap.has_value ? static_cast<float>(roughnessMap.value_real) : 1.0f;
-        for (int y = 0; y < packed.height_; ++y)
+        SharedPtr<Image> roughnessImage = roughness ? roughness->image_ : nullptr;
+        if (roughness && invertRoughness)
         {
-            for (int x = 0; x < packed.width_; ++x)
+            // Convert the glossiness to the roughness. Use a copy, because the decoded image is shared.
+            const float glossinessFactor =
+                roughnessMap.has_value ? static_cast<float>(roughnessMap.value_real) : 1.0f;
+            roughnessImage = roughness->image_->ConvertToRGBA();
+            unsigned char* data = roughnessImage->GetData();
+            const unsigned numPixels = static_cast<unsigned>(roughnessImage->GetWidth() * roughnessImage->GetHeight());
+            for (unsigned i = 0; i < numPixels; ++i)
             {
-                const size_t index = (static_cast<size_t>(y) * packed.width_ + x) * 4;
-                const unsigned char roughnessValue =
-                    SampleTexture(roughness.get(), x, y, packed.width_, packed.height_, 0, 255);
-                packed.rgba_[index + 0] = roughness && invertRoughness
-                    ? static_cast<unsigned char>(Clamp(RoundToInt(255.0f - roughnessValue * roughnessFactor), 0, 255))
-                    : roughnessValue;
-                packed.rgba_[index + 1] = SampleTexture(metalness.get(), x, y, packed.width_, packed.height_, 0, 255);
-                packed.rgba_[index + 2] = 255;
-                packed.rgba_[index + 3] = SampleTexture(occlusion.get(), x, y, packed.width_, packed.height_, 0, 255);
+                data[i * 4] =
+                    static_cast<unsigned char>(Clamp(RoundToInt(255.0f - data[i * 4] * glossinessFactor), 0, 255));
             }
         }
-        return AddTexture(packed, referenceMapping);
-    }
-
-    static unsigned char SampleTexture(const ImagePixels* image, int x, int y, int targetWidth, int targetHeight,
-        unsigned channel, unsigned char defaultValue)
-    {
-        if (!image)
-            return defaultValue;
-        const int sourceX = std::min(image->width_ - 1, x * image->width_ / targetWidth);
-        const int sourceY = std::min(image->height_ - 1, y * image->height_ / targetHeight);
-        return image->rgba_[(static_cast<size_t>(sourceY) * image->width_ + sourceX) * 4 + channel];
+        const SharedPtr<Image> packed = PackPropertiesImage(context_, {roughnessImage.Get(), 0},
+            {metalness ? metalness->image_.Get() : nullptr, 0}, {occlusion ? occlusion->image_.Get() : nullptr, 0});
+        if (!packed)
+            return nullptr;
+        return AddTexture(packed, "Properties", referenceMapping);
     }
 
     static const ufbx_texture* GetFileTexture(const ufbx_texture* texture)
@@ -2491,7 +1973,7 @@ private:
         }
     }
 
-    std::shared_ptr<ImagePixels> DecodeTexture(const ufbx_texture* sourceTexture)
+    std::shared_ptr<DecodedImage> DecodeTexture(const ufbx_texture* sourceTexture)
     {
         sourceTexture = GetFileTexture(sourceTexture);
         if (!sourceTexture)
@@ -2545,82 +2027,50 @@ private:
             return {};
         }
 
-        auto result = std::make_shared<ImagePixels>();
-        result->width_ = rgba->GetWidth();
-        result->height_ = rgba->GetHeight();
+        auto result = std::make_shared<DecodedImage>();
+        result->image_ = rgba;
         result->twoChannel_ = twoChannel;
         result->name_ = sourceTexture->name.length ? ToString(sourceTexture->name) : ToString(sourceTexture->filename);
-        const size_t dataSize = static_cast<size_t>(result->width_) * result->height_ * 4;
-        result->rgba_.assign(rgba->GetData(), rgba->GetData() + dataSize);
         decodedTextures_[sourceTexture] = result;
         return result;
     }
 
-    SharedPtr<Texture2D> AddTexture(
-        const ImagePixels& pixels, const ufbx_texture* sourceTexture, bool normalMap = false)
+    /// Compute the Z component of the normal map from the X and Y components.
+    static void ReconstructNormalZ(Image& image)
     {
-        ImportedTexture& imported = textures_.emplace_back();
-        imported.image_ = MakeShared<Image>(context_);
-        imported.image_->SetSize(pixels.width_, pixels.height_, 4);
-        imported.image_->SetData(pixels.rgba_.data());
-        if (normalMap && pixels.twoChannel_)
+        unsigned char* data = image.GetData();
+        const unsigned numPixels = static_cast<unsigned>(image.GetWidth() * image.GetHeight());
+        for (unsigned i = 0; i < numPixels; ++i)
         {
-            unsigned char* data = imported.image_->GetData();
-            for (size_t i = 0; i < pixels.rgba_.size(); i += 4)
-            {
-                const float x = data[i] / 127.5f - 1.0f;
-                const float y = data[i + 1] / 127.5f - 1.0f;
-                const float z = std::sqrt(std::max(0.0f, 1.0f - x * x - y * y));
-                data[i + 2] = static_cast<unsigned char>(std::lround((z * 0.5f + 0.5f) * 255.0f));
-            }
+            const float x = data[i * 4] / 127.5f - 1.0f;
+            const float y = data[i * 4 + 1] / 127.5f - 1.0f;
+            const float z = std::sqrt(std::max(0.0f, 1.0f - x * x - y * y));
+            data[i * 4 + 2] = static_cast<unsigned char>(std::lround((z * 0.5f + 0.5f) * 255.0f));
         }
-        const ea::string imageName = CreateResourceName(pixels.name_.c_str(), "Textures/", "Texture", ".png");
-        imported.image_->SetName(imageName);
-        imported.image_->SetAbsoluteFileName(GetAbsoluteFileName(imageName));
+    }
 
-        imported.texture_ = MakeShared<Texture2D>(context_);
-        imported.texture_->SetName(imageName);
-        const TextureAddressMode wrapU =
-            sourceTexture && sourceTexture->wrap_u == UFBX_WRAP_CLAMP ? ADDRESS_CLAMP : ADDRESS_WRAP;
-        const TextureAddressMode wrapV =
-            sourceTexture && sourceTexture->wrap_v == UFBX_WRAP_CLAMP ? ADDRESS_CLAMP : ADDRESS_WRAP;
-        imported.texture_->SetAddressMode(TextureCoordinate::U, wrapU);
-        imported.texture_->SetAddressMode(TextureCoordinate::V, wrapV);
-        if (wrapU != ADDRESS_WRAP || wrapV != ADDRESS_WRAP)
-        {
-            imported.sampler_ = MakeShared<XMLFile>(context_);
-            XMLElement root = imported.sampler_->CreateRoot("texture");
-            if (wrapU != ADDRESS_WRAP)
-            {
-                XMLElement child = root.CreateChild("address");
-                child.SetAttribute("coord", "u");
-                child.SetAttribute("mode", "clamp");
-            }
-            if (wrapV != ADDRESS_WRAP)
-            {
-                XMLElement child = root.CreateChild("address");
-                child.SetAttribute("coord", "v");
-                child.SetAttribute("mode", "clamp");
-            }
-            imported.sampler_->SetName(ReplaceExtension(imageName, ".xml"));
-            imported.sampler_->SetAbsoluteFileName(ReplaceExtension(GetAbsoluteFileName(imageName), ".xml"));
-        }
+    SharedPtr<Texture2D> AddTexture(const SharedPtr<Image>& image, const std::string& name, const ufbx_texture* mapping)
+    {
+        const ea::string imageName = CreateResourceName(name.c_str(), "Textures/", "Texture", ".png");
+        image->SetName(imageName);
+        image->SetAbsoluteFileName(GetAbsoluteFileName(imageName));
+
+        TextureSamplerParams samplerParams;
+        samplerParams.wrapU_ = mapping && mapping->wrap_u == UFBX_WRAP_CLAMP ? ADDRESS_CLAMP : ADDRESS_WRAP;
+        samplerParams.wrapV_ = mapping && mapping->wrap_v == UFBX_WRAP_CLAMP ? ADDRESS_CLAMP : ADDRESS_WRAP;
+        const TexturePlaceholder placeholder =
+            CreateTexturePlaceholder(context_, imageName, GetAbsoluteFileName(imageName), samplerParams);
+
+        ImportedTexture& imported = textures_.emplace_back();
+        imported.image_ = image;
+        imported.texture_ = placeholder.texture_;
+        imported.sampler_ = placeholder.sampler_;
         return imported.texture_;
     }
 
     void CreatePrefab()
     {
-        scene_ = MakeShared<Scene>(context_);
-        scene_->CreateComponent<Octree>();
-        auto renderPipeline = scene_->CreateComponent<RenderPipeline>();
-        if (settings_.preview_.highRenderQuality_)
-        {
-            auto pipelineSettings = renderPipeline->GetSettings();
-            pipelineSettings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
-            pipelineSettings.sceneProcessor_.pcfKernelSize_ = 5;
-            renderPipeline->SetSettings(pipelineSettings);
-            renderPipeline->SetRenderPassEnabled("Postprocess: FXAA v3", true);
-        }
+        scene_ = CreateImportScene(context_, settings_);
 
         assetRoot_ = scene_->CreateChild(settings_.assetName_);
         assetRoot_->SetRotation(settings_.rotation_);
@@ -2628,35 +2078,8 @@ private:
         AttachModels();
         AttachAnimationControllers();
 
-        if (!settings_.skipTags_.empty())
-        {
-            const auto children = assetRoot_->GetChildren(true);
-            const ea::vector<WeakPtr<Node>> weakChildren(children.begin(), children.end());
-            for (const auto& child : weakChildren)
-            {
-                if (child && IsNameSkipped(child->GetName(), settings_.skipTags_))
-                    child->Remove();
-            }
-        }
-        if (settings_.cleanupRootNodes_)
-        {
-            Node* newRoot = assetRoot_;
-            while (newRoot->GetNumChildren() == 1 && newRoot->GetNumComponents() == 0)
-                newRoot = newRoot->GetChild(0u);
-            if (newRoot != assetRoot_)
-            {
-                newRoot->SetParent(scene_);
-                newRoot->SetName(assetRoot_->GetName());
-                assetRoot_->Remove();
-                assetRoot_ = newRoot;
-            }
-        }
-
-        InitializeDefaultSceneContent();
-        prefab_ = MakeShared<PrefabResource>(context_);
-        prefab_->GetMutableScenePrefab() = scene_->GeneratePrefab();
-        prefab_->NormalizeIds();
-        prefab_->SetName(CreateResourceName("Prefab", "", "Prefab", ".prefab"));
+        assetRoot_ = FinalizeImportScene(*scene_, assetRoot_, settings_);
+        prefab_ = CreatePrefabFromScene(*scene_, CreateResourceName("Prefab", "", "Prefab", ".prefab"));
         AddToResourceCache(prefab_);
     }
 
@@ -2795,9 +2218,9 @@ private:
             const auto groupIter = animationsByGroup_.find(group);
             if (groupIter == animationsByGroup_.end() || groupIter->second.empty())
                 return;
-            auto controller = node.CreateComponent<AnimationController>();
-            if (const auto animationIter = groupIter->second.find(0); animationIter != groupIter->second.end())
-                controller->Play(animationIter->second->GetName(), 0, true);
+            const auto animationIter = groupIter->second.find(0);
+            CreateAnimationController(
+                node, animationIter != groupIter->second.end() ? animationIter->second.Get() : nullptr);
         };
         attach(*assetRoot_, nullptr);
         for (const ufbx_node* root : skeletonRoots_)
@@ -2810,26 +2233,7 @@ private:
     void InitializeComponent(StaticModel& component, const ImportedModel& imported)
     {
         component.SetEnabled(imported.sourceNode_->visible);
-        component.SetModel(imported.model_);
-        component.SetCastShadows(true);
-        for (unsigned i = 0; i < imported.materials_.size(); ++i)
-            component.SetMaterial(i, imported.materials_[i]);
-    }
-
-    void InitializeComponent(AnimatedModel& component, const ImportedModel& imported)
-    {
-        component.SetEnabled(imported.sourceNode_->visible);
-        component.SetModel(imported.model_, false);
-        component.SetCastShadows(true);
-        for (unsigned i = 0; i < imported.materials_.size(); ++i)
-            component.SetMaterial(i, imported.materials_[i]);
-        for (unsigned i = 0; i < imported.morphWeights_.size(); ++i)
-            component.SetMorphWeight(i, imported.morphWeights_[i]);
-        if (component.GetNumGeometries() == 0)
-        {
-            component.SetUpdateInvisible(true);
-            component.SetAnimationLodBias(0.0f);
-        }
+        InitializeModelComponent(component, imported.model_, imported.materials_, imported.morphWeights_, false);
     }
 
     const ufbx_node* ResolvePrimaryNode(const FBXSource& source, const ufbx_node& sourceNode) const
@@ -2874,7 +2278,6 @@ private:
             throw RuntimeException("Failed to bake FBX animation '{}': {}", nameHint, FormatUFBXError(error));
 
         std::unordered_map<const ufbx_node*, SharedPtr<Animation>> groupAnimations;
-        std::unordered_map<const ufbx_node*, float> groupLengths;
         const auto getAnimation = [&](const ufbx_node* group) -> Animation&
         {
             SharedPtr<Animation>& animation = groupAnimations[group];
@@ -2899,13 +2302,13 @@ private:
             {
                 if (boneNodes.find(primaryNode) == boneNodes.end())
                     continue;
-                ImportBoneAnimation(getAnimation(root), *primaryNode, bakedNode, groupLengths[root]);
+                ImportBoneAnimation(getAnimation(root), *primaryNode, bakedNode);
                 importedAsBone = true;
             }
             if (!importedAsBone)
-                ImportSceneNodeAnimation(getAnimation(nullptr), *primaryNode, bakedNode, groupLengths[nullptr]);
+                ImportSceneNodeAnimation(getAnimation(nullptr), *primaryNode, bakedNode);
         }
-        ImportMorphAnimation(groupLengths, getAnimation, source, *baked, ignoredNodes);
+        ImportMorphAnimation(getAnimation, source, *baked, ignoredNodes);
         if (!ignoredNodes.empty())
         {
             const StringVector names{ignoredNodes.begin(), ignoredNodes.end()};
@@ -2919,15 +2322,7 @@ private:
                 nonEmptyGroups.push_back(group);
         }
         ea::sort(nonEmptyGroups.begin(), nonEmptyGroups.end(), [&](const ufbx_node* lhs, const ufbx_node* rhs)
-        {
-            const auto getIndex = [&](const ufbx_node* root)
-            {
-                return root ? static_cast<unsigned>(
-                                  ea::find(skeletonRoots_.begin(), skeletonRoots_.end(), root) - skeletonRoots_.begin())
-                            : M_MAX_UNSIGNED;
-            };
-            return getIndex(lhs) < getIndex(rhs);
-        });
+            { return GetSkeletonIndex(lhs).value_or(M_MAX_UNSIGNED) < GetSkeletonIndex(rhs).value_or(M_MAX_UNSIGNED); });
         for (const ufbx_node* group : nonEmptyGroups)
         {
             SharedPtr<Animation> animation = groupAnimations.at(group);
@@ -2944,20 +2339,10 @@ private:
                 }
             }
             animation->AddMetadata(AnimationMetadata::SourceAnimationIndex, sourceAnimationIndex);
-            animation->SetLength(ea::max(groupLengths[group], static_cast<float>(baked->playback_duration)));
+            animation->SetLength(ea::max(GetAnimationLength(*animation), static_cast<float>(baked->playback_duration)));
 
-            ea::string groupNameHint = nameHint;
-            if (nonEmptyGroups.size() > 1)
-            {
-                if (group)
-                {
-                    const unsigned groupIndex = static_cast<unsigned>(
-                        ea::find(skeletonRoots_.begin(), skeletonRoots_.end(), group) - skeletonRoots_.begin());
-                    groupNameHint += Format("_{}", groupIndex);
-                }
-                else
-                    groupNameHint += "_R";
-            }
+            const ea::string groupNameHint = GetAnimationGroupNameHint(
+                nameHint, GetSkeletonIndex(group), static_cast<unsigned>(nonEmptyGroups.size()));
             const ea::string resourceName = CreateResourceName(groupNameHint, "Animations/", "Animation", ".ani");
             animation->SetName(resourceName);
             animation->SetAnimationName(GetFileName(resourceName));
@@ -2966,48 +2351,55 @@ private:
         }
     }
 
+    /// Return the index of the skeleton root. Return an empty value for null.
+    ea::optional<unsigned> GetSkeletonIndex(const ufbx_node* root) const
+    {
+        if (!root)
+            return ea::nullopt;
+        return static_cast<unsigned>(ea::find(skeletonRoots_.begin(), skeletonRoots_.end(), root) - skeletonRoots_.begin());
+    }
+
     void AddParentTrackMetadata(Animation& animation, const ufbx_node* root) const
     {
-        StringVariantMap parentTracks;
         const auto groupIter = skeletonBoneNodes_.find(root);
         if (groupIter == skeletonBoneNodes_.end())
             return;
+
         const std::unordered_set<const ufbx_node*>& boneNodes = groupIter->second;
+        ea::vector<AnimatedBone> bones;
+        std::unordered_map<const ufbx_node*, unsigned> nodeToBone;
         for (const ufbx_node* boneNode : boneNodes)
         {
-            const ea::string& boneName = nodeNames_.at(boneNode);
-            if (!animation.GetTrack(boneName))
-                continue;
-            const ufbx_node* parent = boneNode->parent;
-            while (parent && (boneNodes.find(parent) == boneNodes.end() || !animation.GetTrack(nodeNames_.at(parent))))
-                parent = parent->parent;
-            parentTracks[boneName] = parent ? Variant(nodeNames_.at(parent)) : Variant(EMPTY_STRING);
+            nodeToBone[boneNode] = static_cast<unsigned>(bones.size());
+            bones.push_back({nodeNames_.at(boneNode)});
         }
+        for (const ufbx_node* boneNode : boneNodes)
+        {
+            // The nearest parent bone can be above the nodes that are not bones.
+            const ufbx_node* parent = boneNode->parent;
+            while (parent && boneNodes.find(parent) == boneNodes.end())
+                parent = parent->parent;
+            if (parent)
+                bones[nodeToBone.at(boneNode)].parentIndex_ = nodeToBone.at(parent);
+        }
+
+        const StringVariantMap parentTracks = GetParentTrackNames(animation, bones);
         if (!parentTracks.empty())
             animation.AddMetadata(AnimationMetadata::ParentTracks, parentTracks);
     }
 
     void ImportBoneAnimation(
-        Animation& animation, const ufbx_node& primaryNode, const ufbx_baked_node& bakedNode, float& length)
+        Animation& animation, const ufbx_node& primaryNode, const ufbx_baked_node& bakedNode)
     {
         ea::vector<ea::pair<float, Vector3>> positions;
         ea::vector<ea::pair<float, Quaternion>> rotations;
         ea::vector<ea::pair<float, Vector3>> scales;
         for (const ufbx_baked_vec3& key : bakedNode.translation_keys)
-        {
             positions.emplace_back(static_cast<float>(key.time), ConvertPosition(key.value));
-            length = ea::max(length, static_cast<float>(key.time));
-        }
         for (const ufbx_baked_quat& key : bakedNode.rotation_keys)
-        {
             rotations.emplace_back(static_cast<float>(key.time), ConvertRotation(key.value));
-            length = ea::max(length, static_cast<float>(key.time));
-        }
         for (const ufbx_baked_vec3& key : bakedNode.scale_keys)
-        {
             scales.emplace_back(static_cast<float>(key.time), ToVector3(key.value));
-            length = ea::max(length, static_cast<float>(key.time));
-        }
         AnimationChannelFlags channels;
         if (!positions.empty())
             channels |= CHANNEL_POSITION;
@@ -3023,31 +2415,27 @@ private:
     }
 
     void ImportSceneNodeAnimation(
-        Animation& animation, const ufbx_node& primaryNode, const ufbx_baked_node& bakedNode, float& length)
+        Animation& animation, const ufbx_node& primaryNode, const ufbx_baked_node& bakedNode)
     {
         const ea::string nodePath = GetRuntimeNodePath(primaryNode);
-        ImportVariantTrack(animation, nodePath + "/@/Position", bakedNode.translation_keys,
-            [&](const ufbx_vec3& value) -> Variant { return ConvertPosition(value); }, length);
-        ImportVariantTrack(animation, nodePath + "/@/Rotation", bakedNode.rotation_keys,
-            [&](const ufbx_quat& value) -> Variant { return ConvertRotation(value); }, length);
-        ImportVariantTrack(animation, nodePath + "/@/Scale", bakedNode.scale_keys,
-            [&](const ufbx_vec3& value) -> Variant { return ToVector3(value); }, length);
+        ImportVariantTrack(animation, GetNodeTrackPath(nodePath, CHANNEL_POSITION), bakedNode.translation_keys,
+            [&](const ufbx_vec3& value) -> Variant { return ConvertPosition(value); });
+        ImportVariantTrack(animation, GetNodeTrackPath(nodePath, CHANNEL_ROTATION), bakedNode.rotation_keys,
+            [&](const ufbx_quat& value) -> Variant { return ConvertRotation(value); });
+        ImportVariantTrack(animation, GetNodeTrackPath(nodePath, CHANNEL_SCALE), bakedNode.scale_keys,
+            [&](const ufbx_vec3& value) -> Variant { return ToVector3(value); });
     }
 
     template <class T, class Convert>
     void ImportVariantTrack(
-        Animation& animation, const ea::string& path, const T& keys, const Convert& convert, float& length)
+        Animation& animation, const ea::string& path, const T& keys, const Convert& convert)
     {
         if (keys.count == 0)
             return;
         VariantAnimationTrack* track = animation.CreateVariantTrack(path);
         track->interpolation_ = KeyFrameInterpolation::Linear;
         for (const auto& key : keys)
-        {
-            const float time = static_cast<float>(key.time);
-            track->AddKeyFrame({time, convert(key.value)});
-            length = ea::max(length, time);
-        }
+            track->AddKeyFrame({static_cast<float>(key.time), convert(key.value)});
         track->Commit();
     }
 
@@ -3067,8 +2455,7 @@ private:
     }
 
     template <class GetAnimation>
-    void ImportMorphAnimation(std::unordered_map<const ufbx_node*, float>& groupLengths,
-        const GetAnimation& getAnimation, FBXSource& source, const ufbx_baked_anim& baked,
+    void ImportMorphAnimation(const GetAnimation& getAnimation, FBXSource& source, const ufbx_baked_anim& baked,
         ea::unordered_set<ea::string>& ignoredNodes)
     {
         for (const ufbx_node* sourceNode : source.scene_->nodes)
@@ -3128,8 +2515,8 @@ private:
             ea::vector<VariantAnimationTrack*> tracks;
             for (unsigned morphIndex = 0; morphIndex < targets.size(); ++morphIndex)
             {
-                const ea::string path = (group ? EMPTY_STRING : primaryModel.componentPath_)
-                    + Format("/@AnimatedModel#{}/Morphs/{}", primaryModel.componentIndex_, morphIndex);
+                const ea::string path = GetMorphTrackPath(
+                    group ? EMPTY_STRING : primaryModel.componentPath_, primaryModel.componentIndex_, morphIndex);
                 VariantAnimationTrack* track = animation.CreateVariantTrack(path);
                 track->interpolation_ = KeyFrameInterpolation::Linear;
                 tracks.push_back(track);
@@ -3145,7 +2532,6 @@ private:
                 const float time = static_cast<float>(timeValue);
                 for (unsigned morphIndex = 0; morphIndex < tracks.size(); ++morphIndex)
                     tracks[morphIndex]->AddKeyFrame({time, static_cast<float>(weights[morphIndex])});
-                groupLengths[group] = ea::max(groupLengths[group], time);
             }
             for (VariantAnimationTrack* track : tracks)
                 track->Commit();
@@ -3232,59 +2618,14 @@ private:
         return result;
     }
 
-    void InitializeDefaultSceneContent()
-    {
-        static const Vector3 defaultPosition{-1.0f, 2.0f, 1.0f};
-        auto cache = context_->GetSubsystem<ResourceCache>();
-        if (settings_.preview_.addLights_ && !scene_->FindComponent<Light>())
-        {
-            Node* node = scene_->CreateChild("Default Light");
-            node->SetPosition(defaultPosition);
-            node->SetDirection({1.0f, -2.0f, -1.0f});
-            auto light = node->CreateComponent<Light>();
-            light->SetLightType(LIGHT_DIRECTIONAL);
-            light->SetCastShadows(true);
-        }
-        if (settings_.preview_.addSkybox_ && !scene_->FindComponent<Skybox>())
-        {
-            auto skyboxMaterial = cache->GetResource<Material>(settings_.preview_.skyboxMaterial_);
-            auto boxModel = cache->GetResource<Model>("Models/Box.mdl");
-            if (skyboxMaterial && boxModel)
-            {
-                Node* node = scene_->CreateChild("Default Skybox");
-                node->SetPosition(defaultPosition);
-                auto skybox = node->CreateComponent<Skybox>();
-                skybox->SetModel(boxModel);
-                skybox->SetMaterial(skyboxMaterial);
-            }
-        }
-        if (settings_.preview_.addReflectionProbe_ && !scene_->FindComponent<Zone>())
-        {
-            auto texture = cache->GetResource<TextureCube>(settings_.preview_.reflectionProbeCubemap_);
-            if (texture)
-            {
-                Node* node = scene_->CreateChild("Default Zone");
-                node->SetPosition(defaultPosition);
-                auto zone = node->CreateComponent<Zone>();
-                zone->SetBackgroundBrightness(0.5f);
-                zone->SetZoneTexture(texture);
-            }
-        }
-    }
-
     Context* const context_{};
     Material* const defaultMaterial_{};
     const FBXImporterSettings settings_;
     std::vector<FBXSource>& sources_;
-    const ea::string outputPath_;
-    const ea::string resourceNamePrefix_;
     FBXImporterCallback* const callback_{};
-    const bool mirrorX_{};
+    const ImportTransform transform_;
 
-    ea::unordered_set<ea::string> localResourceNames_;
-    FBXImporter::ResourceToFileNameMap resourceNames_;
-    ea::vector<SharedPtr<Resource>> resourcesToCache_;
-    ea::vector<ea::pair<StringHash, ea::string>> manualResources_;
+    ImportedResourceRegistry resources_;
 
     std::unordered_map<const ufbx_node*, ea::string> nodeNames_;
     std::unordered_map<std::string, const ufbx_node*> primaryNodesByConfiguredName_;
@@ -3304,7 +2645,7 @@ private:
     ea::vector<ImportedMaterial> importedMaterials_;
     std::unordered_map<const ufbx_texture*, SharedPtr<Texture2D>> sourceTextures_;
     ea::vector<ImportedTexture> textures_;
-    std::unordered_map<const ufbx_texture*, std::shared_ptr<ImagePixels>> decodedTextures_;
+    std::unordered_map<const ufbx_texture*, std::shared_ptr<DecodedImage>> decodedTextures_;
     std::unordered_map<const ufbx_texture*, ea::string> resolvedTextureFiles_;
     StringVector textureSearchDirectories_;
     StringVector missingTextures_;
@@ -3514,14 +2855,7 @@ const FBXImporter::ResourceToFileNameMap& FBXImporter::GetSavedResources() const
 
 Transform FBXImporter::ConvertTransform(const Transform& sourceTransform) const
 {
-    Vector3 position = sourceTransform.position_ * settings_.scale_;
-    Quaternion rotation = sourceTransform.rotation_;
-    if (!settings_.mirrorX_)
-    {
-        position = MirrorX(position);
-        rotation = MirrorX(rotation);
-    }
-    return {position, rotation, sourceTransform.scale_};
+    return ImportTransform{!settings_.mirrorX_, settings_.scale_}.ApplyToTransform(sourceTransform);
 }
 
 } // namespace Urho3D

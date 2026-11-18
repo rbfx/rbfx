@@ -5,6 +5,7 @@
 #include "Urho3D/Precompiled.h"
 
 #include "Urho3D/Utility/GLTFImporter.h"
+#include "Urho3D/Utility/ModelImporterUtils.h"
 
 #include "Urho3D/Container/Functors.h"
 #include "Urho3D/Core/Context.h"
@@ -12,25 +13,17 @@
 #include "Urho3D/Core/StringUtils.h"
 #include "Urho3D/Graphics/AnimatedModel.h"
 #include "Urho3D/Graphics/Animation.h"
-#include "Urho3D/Graphics/AnimationController.h"
 #include "Urho3D/Graphics/AnimationTrack.h"
-#include "Urho3D/Graphics/Light.h"
 #include "Urho3D/Graphics/Material.h"
 #include "Urho3D/Graphics/Model.h"
 #include "Urho3D/Graphics/ModelView.h"
-#include "Urho3D/Graphics/Octree.h"
-#include "Urho3D/Graphics/Skybox.h"
 #include "Urho3D/Graphics/StaticModel.h"
 #include "Urho3D/Graphics/Technique.h"
 #include "Urho3D/Graphics/Texture.h"
 #include "Urho3D/Graphics/Texture2D.h"
-#include "Urho3D/Graphics/TextureCube.h"
-#include "Urho3D/Graphics/Zone.h"
 #include "Urho3D/IO/ArchiveSerialization.h"
 #include "Urho3D/IO/FileSystem.h"
 #include "Urho3D/IO/Log.h"
-#include "Urho3D/RenderPipeline/RenderPipeline.h"
-#include "Urho3D/RenderPipeline/ShaderConsts.h"
 #include "Urho3D/Resource/BinaryFile.h"
 #include "Urho3D/Resource/Image.h"
 #include "Urho3D/Resource/ResourceCache.h"
@@ -44,9 +37,7 @@
 #include <EASTL/unordered_map.h>
 #include <EASTL/unordered_set.h>
 
-#include <cctype>
 #include <exception>
-#include <regex>
 #include <tiny_gltf.h>
 
 #include "Urho3D/DebugNew.h"
@@ -59,7 +50,7 @@ namespace tg = tinygltf;
 namespace
 {
 
-const unsigned MaxNameAssignTries = 64*1024;
+using namespace ModelImporterUtils;
 
 template <class T, unsigned N, class U>
 ea::array<T, N> ToArray(const U& vec)
@@ -70,68 +61,9 @@ ea::array<T, N> ToArray(const U& vec)
     return result;
 }
 
-bool IsNameSkipped(const ea::string& name, const StringVector& skipTags)
-{
-    const auto isMatching = [&name](const ea::string& tag) { return name.find(tag) != ea::string::npos; };
-    return ea::any_of(skipTags.begin(), skipTags.end(), isMatching);
-}
-
-bool IsWordBorder(unsigned char first, unsigned char second)
-{
-    // Blanks and punctuation is always considered to be a word border
-    if (std::isblank(first) || std::ispunct(first))
-        return true;
-
-    // If symbol class changed, it is the word border
-    if (std::isalpha(first) != std::isalpha(second))
-        return true;
-
-    // If was lower case and became upper case, it is the word border
-    if (std::islower(first) && std::isupper(second))
-        return true;
-
-    return false;
-}
-
-unsigned FindCommonPrefixWord(const ea::string& lhs, const ea::string& rhs,
-    bool preserveNonEmptyLeft = true, bool preserveNonEmptyRight = true)
-{
-    if (lhs.empty() || rhs.empty())
-        return 0;
-
-    const unsigned minLength = ea::min(
-        lhs.size() - (preserveNonEmptyLeft ? 1 : 0),
-        rhs.size() - (preserveNonEmptyRight ? 1 : 0));
-    auto [iter, iter2] = ea::mismatch(lhs.begin(), ea::next(lhs.begin(), minLength), rhs.begin());
-
-    while (iter != lhs.begin())
-    {
-        const auto prev = ea::prev(iter);
-        if (IsWordBorder(*prev, *iter))
-            break;
-        --iter;
-    }
-    return static_cast<unsigned>(iter - lhs.begin());
-}
-
-unsigned FindCommonPrefixWord(const StringVector& strings)
-{
-    if (strings.size() <= 1)
-        return 0;
-
-    ea::string prefix = strings[0].substr(0, FindCommonPrefixWord(strings[0], strings[1]));
-    for (unsigned i = 2; i < strings.size(); ++i)
-        prefix = prefix.substr(0, FindCommonPrefixWord(prefix, strings[i], false));
-    return prefix.size();
-}
-
 bool IsNegativeScale(const Vector3& scale) { return scale.x_ * scale.y_ * scale.z_ < 0.0f; }
 
-Vector3 MirrorX(const Vector3& vec) { return { -vec.x_, vec.y_, vec.z_ }; }
-
 Quaternion RotationFromVector(const Vector4& vec) { return { vec.w_, vec.x_, vec.y_, vec.z_ }; }
-
-Quaternion MirrorX(const Quaternion& rotation) { return { rotation.w_, rotation.x_, -rotation.y_, -rotation.z_ }; }
 
 Variant ScaleTangent(const Variant& tangent, float factor)
 {
@@ -211,45 +143,8 @@ void SampleCubicSpline(const ea::vector<float>& keys, const ea::vector<T>& data,
     sampledValues.push_back(NormalizeSplineSample(data[(numKeys - 1) * 3 + 1]));
 }
 
-Matrix3x4 MirrorX(Matrix3x4 mat)
-{
-    mat.m01_ = -mat.m01_;
-    mat.m10_ = -mat.m10_;
-    mat.m02_ = -mat.m02_;
-    mat.m20_ = -mat.m20_;
-    mat.m03_ = -mat.m03_;
-    return mat;
-}
-
-template <class T>
-T ConditionalMirrorX(const T& value, bool mirror)
-{
-    return mirror ? MirrorX(value) : value;
-}
-
 /// Inline transformation applied to the scene at the lowest level.
-struct InlineTransform
-{
-    bool mirrorX_{};
-    float scale_{1.0f};
-
-    Vector3 ApplyToPosition(const Vector3& vec) const
-    {
-        return scale_ * ConditionalMirrorX(vec, mirrorX_);
-    }
-
-    Quaternion ApplyToRotation(const Quaternion& quat) const
-    {
-        return ConditionalMirrorX(quat, mirrorX_);
-    }
-
-    Matrix3x4 ApplyToInverseBindMatrix(const Matrix3x4& mat) const
-    {
-        return Matrix3x4::FromScale(scale_)
-            * ConditionalMirrorX(mat, mirrorX_)
-            * Matrix3x4::FromScale(1.0f / scale_);
-    }
-};
+using InlineTransform = ImportTransform;
 
 using SourceToDestinationMap = ea::unordered_map<int, int>;
 
@@ -382,80 +277,34 @@ public:
         : context_(context)
         , settings_(settings)
         , model_(ea::move(model))
-        , outputPath_(outputPath)
-        , resourceNamePrefix_(resourceNamePrefix)
         , callback_(callback)
+        , resources_(context, outputPath, resourceNamePrefix)
     {
-    }
-
-    ~GLTFImporterBase()
-    {
-        auto cache = context_->GetSubsystem<ResourceCache>();
-        for (const auto& [type, name] : manualResources_)
-            cache->ReleaseResource(type, name, true);
-    }
-
-    ea::string CreateLocalResourceName(const ea::string& nameHint,
-        const ea::string& prefix, const ea::string& defaultName, const ea::string& suffix)
-    {
-        const ea::string body = !nameHint.empty() ? GetSanitizedName(nameHint) : defaultName;
-        for (unsigned i = 0; i < MaxNameAssignTries; ++i)
-        {
-            const ea::string_view nameFormat = i != 0 ? "{0}{1}_{2}{3}" : "{0}{1}{3}";
-            const ea::string localResourceName = Format(nameFormat, prefix, body, i, suffix);
-            if (localResourceNames_.contains(localResourceName))
-                continue;
-
-            localResourceNames_.emplace(localResourceName);
-            return localResourceName;
-        }
-
-        // Should never happen
-        throw RuntimeException("Cannot assign resource name");
-    }
-
-    ea::string CreateResourceName(const ea::string& localResourceName)
-    {
-        const ea::string resourceName = resourceNamePrefix_ + localResourceName;
-        const ea::string absoluteFileName = outputPath_ + localResourceName;
-        resourceNameToAbsoluteFileName_[resourceName] = absoluteFileName;
-        return resourceName;
     }
 
     ea::string GetResourceName(const ea::string& nameHint,
         const ea::string& prefix, const ea::string& defaultName, const ea::string& suffix)
     {
-        const ea::string localResourceName = CreateLocalResourceName(nameHint, prefix, defaultName, suffix);
-        return CreateResourceName(localResourceName);
+        return resources_.CreateResourceName(nameHint, prefix, defaultName, suffix);
     }
 
-    const ea::string& GetAbsoluteFileName(const ea::string& resourceName)
+    const ea::string& GetAbsoluteFileName(const ea::string& resourceName) const
     {
-        const auto iter = resourceNameToAbsoluteFileName_.find(resourceName);
-        return iter != resourceNameToAbsoluteFileName_.end() ? iter->second : EMPTY_STRING;
+        return resources_.GetAbsoluteFileName(resourceName);
     }
 
     void AddToResourceCache(Resource* resource)
     {
-        auto cache = context_->GetSubsystem<ResourceCache>();
-        cache->AddManualResource(resource);
-        manualResources_.emplace_back(resource->GetType(), resource->GetName());
-        resource->SetAbsoluteFileName(GetAbsoluteFileName(resource->GetName()));
+        resources_.AddResource(resource);
+        resources_.CommitResources();
     }
 
-    void SaveResource(Resource* resource)
-    {
-        const ea::string& fileName = GetAbsoluteFileName(resource->GetName());
-        if (fileName.empty())
-            throw RuntimeException("Cannot save imported resource");
-        resource->SetAbsoluteFileName(fileName);
-        resource->SaveFile(fileName);
-    }
+    void SaveResource(Resource* resource) const { resources_.SaveResource(resource); }
 
     const tg::Model& GetModel() const { return model_; }
     Context* GetContext() const { return context_; }
     const GLTFImporterSettings& GetSettings() const { return settings_; }
-    const GLTFImporter::ResourceToFileNameMap& GetResourceNames() const { return resourceNameToAbsoluteFileName_; }
+    const GLTFImporter::ResourceToFileNameMap& GetResourceNames() const { return resources_.GetResourceNames(); }
     GLTFImporterCallback* GetCallback() const { return callback_; }
 
     void CheckAnimation(int index) const { CheckT(index, model_.animations, "Invalid animation #{} referenced"); }
@@ -480,14 +329,9 @@ private:
     Context* const context_{};
     const GLTFImporterSettings settings_;
     const tg::Model model_;
-    const ea::string outputPath_;
-    const ea::string resourceNamePrefix_;
     GLTFImporterCallback* const callback_{};
 
-    ea::unordered_set<ea::string> localResourceNames_;
-    GLTFImporter::ResourceToFileNameMap resourceNameToAbsoluteFileName_;
-
-    ea::vector<ea::pair<StringHash, ea::string>> manualResources_;
+    ImportedResourceRegistry resources_;
 };
 
 /// Utility to parse GLTF buffers.
@@ -1369,23 +1213,10 @@ private:
             [&](GLTFNode& boneNode)
         {
             const ea::string nameHint = !boneNode.name_.empty() ? boneNode.name_ : "Bone";
-
-            bool success = false;
-            for (unsigned i = 0; i < MaxNameAssignTries; ++i)
-            {
-                const ea::string_view nameFormat = i != 0 ? "{0}_{1}" : "{0}";
-                const ea::string name = Format(nameFormat, nameHint, i);
-                if (skeleton.boneNameToNode_.contains(name))
-                    continue;
-
-                boneNode.uniqueBoneName_ = name;
-                skeleton.boneNameToNode_.emplace(name, &boneNode);
-                success = true;
-                break;
-            }
-
-            if (!success)
-                throw RuntimeException("Failed to assign name to bone");
+            const ea::string name = GetUniqueName(
+                nameHint, [&](const ea::string& candidate) { return skeleton.boneNameToNode_.contains(candidate); });
+            boneNode.uniqueBoneName_ = name;
+            skeleton.boneNameToNode_.emplace(name, &boneNode);
         });
     }
 
@@ -1546,22 +1377,8 @@ private:
             const GLTFSkin& existingSkin = skins_[*existingMeshSkin.skin_];
             const GLTFSkin& newSkin = skins_[*skinIndex];
 
-            const bool areBonesMatching = ea::identical(
-                existingSkin.cookedBones_.begin(), existingSkin.cookedBones_.end(),
-                newSkin.cookedBones_.begin(), newSkin.cookedBones_.end(),
-                [&](const BoneView& lhs, const BoneView& rhs)
-            {
-                if (lhs.name_ != rhs.name_)
-                    return false;
-                if (lhs.parentIndex_ != rhs.parentIndex_)
-                    return false;
-                if (!lhs.offsetMatrix_.Equals(rhs.offsetMatrix_, base_.GetSettings().offsetMatrixError_))
-                    return false;
-                // Don't compare initial transforms and bounding shapes
-                return true;
-            });
-
-            if (areBonesMatching)
+            if (AreBonesEquivalent(
+                    existingSkin.cookedBones_, newSkin.cookedBones_, base_.GetSettings().offsetMatrixError_))
                 return pairIndex;
         }
 
@@ -1646,7 +1463,7 @@ private:
                 const auto weightsValues = bufferReader_.ReadAccessorChecked<float>(channelValuesAccessor);
                 for (unsigned morphIndex = 0; morphIndex < numMorphs; ++morphIndex)
                 {
-                    const ea::string trackPath = nodePath + Format("/@AnimatedModel#{}/Morphs/{}", componentIndex, morphIndex);
+                    const ea::string trackPath = GetMorphTrackPath(nodePath, componentIndex, morphIndex);
 
                     GLTFAttributeTrack& track = animationGroup.attributeTracksByPath_[trackPath];
                     track.interpolation_ = interpolation;
@@ -1723,7 +1540,7 @@ private:
             {
                 const AnimationChannel newChannel = ReadAnimationChannel(sourceChannel.target_path);
                 const ea::string nodePath = GetNodePathRelativeToSkeleton(targetNode, parentSkeletonIndex);
-                const ea::string trackPath = nodePath + "/" + ReadAttributeTrackName(newChannel);
+                const ea::string trackPath = GetNodeTrackPath(nodePath, newChannel);
 
                 if (animationGroup.attributeTracksByPath_.contains(trackPath))
                     throw RuntimeException("Duplicate animation track '{}'", trackPath);
@@ -1859,7 +1676,7 @@ private:
     void ApplyInlineTransformToInverseBindMatrix(ea::vector<Matrix3x4>& vec) const
     {
         ea::transform(vec.begin(), vec.end(), vec.begin(),
-            [&](const auto& value) { return inlineTransform_.ApplyToInverseBindMatrix(value); });
+            [&](const auto& value) { return inlineTransform_.ApplyToOffsetMatrix(value); });
     }
 
     unsigned GetChildIndex(const GLTFNode& node) const
@@ -1929,17 +1746,6 @@ private:
         else if (targetPath == "scale")
             return CHANNEL_SCALE;
         throw RuntimeException("Unknown animation channel '{}'", targetPath.c_str());
-    }
-
-    static ea::string ReadAttributeTrackName(AnimationChannel channel)
-    {
-        if (channel == CHANNEL_POSITION)
-            return "@/Position";
-        else if (channel == CHANNEL_ROTATION)
-            return "@/Rotation";
-        else if (channel == CHANNEL_SCALE)
-            return "@/Scale";
-        throw RuntimeException("Invalid animation channel '{}'", channel);
     }
 
     static ea::optional<unsigned> GetNearestParentSkeleton(const GLTFNode& node)
@@ -2131,9 +1937,10 @@ public:
             referenceTexture.nameHint_, "Textures/", "Texture", ".png");
 
         ImportedRMOTexture& result = texturesMRO_[key];
-        result.fakeTexture_ = MakeShared<Texture2D>(base_.GetContext());
-        result.fakeTexture_->SetName(imageName);
-        result.cookedSamplerParams_ = CookSamplerParams(result.fakeTexture_, referenceTexture.samplerParams_);
+        TexturePlaceholder placeholder = CreateTexturePlaceholder(
+            base_.GetContext(), imageName, base_.GetAbsoluteFileName(imageName), referenceTexture.samplerParams_);
+        result.fakeTexture_ = ea::move(placeholder.texture_);
+        result.cookedSamplerParams_ = ea::move(placeholder.sampler_);
         return result.fakeTexture_;
     }
 
@@ -2152,13 +1959,7 @@ public:
     }
 
 private:
-    struct SamplerParams
-    {
-        TextureFilterMode filterMode_{ FILTER_DEFAULT };
-        bool mipmaps_{ true };
-        TextureAddressMode wrapU_{ ADDRESS_WRAP };
-        TextureAddressMode wrapV_{ ADDRESS_WRAP };
-    };
+    using SamplerParams = TextureSamplerParams;
 
     struct ImportedTexture
     {
@@ -2288,8 +2089,6 @@ private:
         ImportedTexture result;
         result.nameHint_ = sourceImage.name.c_str();
         result.image_ = ImportImageAsIs(sourceTexture.source, sourceImage);
-        result.fakeTexture_ = MakeShared<Texture2D>(base_.GetContext());
-        result.fakeTexture_->SetName(result.image_->GetName());
         if (sourceTexture.sampler >= 0)
         {
             base_.CheckSampler(sourceTexture.sampler);
@@ -2300,68 +2099,12 @@ private:
             result.samplerParams_.wrapU_ = GetAddressMode(sourceSampler.wrapS);
             result.samplerParams_.wrapV_ = GetAddressMode(sourceSampler.wrapT);
         }
-        result.cookedSamplerParams_ = CookSamplerParams(result.image_, result.samplerParams_);
+        const ea::string& imageName = result.image_->GetName();
+        TexturePlaceholder placeholder = CreateTexturePlaceholder(
+            base_.GetContext(), imageName, base_.GetAbsoluteFileName(imageName), result.samplerParams_);
+        result.fakeTexture_ = ea::move(placeholder.texture_);
+        result.cookedSamplerParams_ = ea::move(placeholder.sampler_);
         return result;
-    }
-
-    SharedPtr<XMLFile> CookSamplerParams(Resource* image, const SamplerParams& samplerParams) const
-    {
-        static const ea::string addressModeNames[] =
-        {
-            "wrap",
-            "mirror",
-            "clamp",
-            "", // border is not supported
-        };
-
-        static const ea::string filterModeNames[] =
-        {
-            "nearest",
-            "bilinear",
-            "trilinear",
-            "anisotropic",
-            "nearestanisotropic",
-            "default"
-        };
-
-        auto xmlFile = MakeShared<XMLFile>(base_.GetContext());
-
-        XMLElement rootElement = xmlFile->CreateRoot("texture");
-
-        if (samplerParams.wrapU_ != ADDRESS_WRAP)
-        {
-            XMLElement childElement = rootElement.CreateChild("address");
-            childElement.SetAttribute("coord", "u");
-            childElement.SetAttribute("mode", addressModeNames[samplerParams.wrapU_]);
-        };
-
-        if (samplerParams.wrapV_ != ADDRESS_WRAP)
-        {
-            XMLElement childElement = rootElement.CreateChild("address");
-            childElement.SetAttribute("coord", "v");
-            childElement.SetAttribute("mode", addressModeNames[samplerParams.wrapV_]);
-        };
-
-        if (samplerParams.filterMode_ != FILTER_DEFAULT)
-        {
-            XMLElement childElement = rootElement.CreateChild("filter");
-            childElement.SetAttribute("mode", filterModeNames[samplerParams.filterMode_]);
-        }
-
-        if (!samplerParams.mipmaps_)
-        {
-            XMLElement childElement = rootElement.CreateChild("mipmap");
-            childElement.SetBool("enable", false);
-        }
-
-        // Don't create XML if all parameters are default
-        if (!rootElement.GetChild())
-            return nullptr;
-
-        const ea::string& imageName = image->GetName();
-        xmlFile->SetName(ReplaceExtension(imageName, ".xml"));
-        xmlFile->SetAbsoluteFileName(ReplaceExtension(base_.GetAbsoluteFileName(imageName), ".xml"));
-        return xmlFile;
     }
 
     SharedPtr<Image> ImportRMOTexture(
@@ -2382,50 +2125,12 @@ private:
                 metallicRoughnessTextureIndex, occlusionTextureIndex);
         }
 
-        const IntVector3 metallicRoughnessImageSize = metallicRoughnessImage ? metallicRoughnessImage->GetSize() : IntVector3::ZERO;
-        const IntVector3 occlusionImageSize = occlusionImage ? occlusionImage->GetSize() : IntVector3::ZERO;
-        const IntVector2 repackedImageSize = VectorMax(metallicRoughnessImageSize.ToIntVector2(), occlusionImageSize.ToIntVector2());
-
-        if (repackedImageSize.x_ <= 0 || repackedImageSize.y_ <= 0)
+        // The glTF texture keeps roughness in green and metallic in blue.
+        SharedPtr<Image> finalImage = PackPropertiesImage(base_.GetContext(), {metallicRoughnessImage, 1},
+            {metallicRoughnessImage, 2}, {occlusionImage, 0});
+        if (!finalImage)
             throw RuntimeException("Repacked metallic-roughness-occlusion texture has invalid size");
-
-        if (metallicRoughnessImage && metallicRoughnessImageSize.ToIntVector2() != repackedImageSize)
-            metallicRoughnessImage->Resize(repackedImageSize.x_, repackedImageSize.y_);
-
-        if (occlusionImage && occlusionImageSize.ToIntVector2() != repackedImageSize)
-            occlusionImage->Resize(repackedImageSize.x_, repackedImageSize.y_);
-
-        auto finalImage = MakeShared<Image>(base_.GetContext());
         finalImage->SetName(name);
-        finalImage->SetSize(repackedImageSize.x_, repackedImageSize.y_, 1, occlusionImage ? 4 : 3);
-
-        for (const IntVector2 texel : IntRect{ IntVector2::ZERO, repackedImageSize })
-        {
-            // 0xOO__MMRR
-            unsigned color{};
-            if (metallicRoughnessImage)
-            {
-                // 0x__MMRR__
-                const unsigned value = metallicRoughnessImage->GetPixelInt(texel.x_, texel.y_);
-                color |= (value >> 8) & 0xffff;
-            }
-            else
-            {
-                color |= 0x0000ffff;
-            }
-            if (occlusionImage)
-            {
-                // 0x______OO
-                const unsigned value = occlusionImage->GetPixelInt(texel.x_, texel.y_);
-                color |= (value & 0xff) << 24;
-            }
-            else
-            {
-                color |= 0xff000000;
-            }
-            finalImage->SetPixelInt(texel.x_, texel.y_, color);
-        }
-
         return finalImage;
     }
 
@@ -2442,23 +2147,11 @@ private:
 class GLTFMaterialImporter : public NonCopyable
 {
 public:
-    /// Specifies material variant of specific material.
-    /// If specific variant is not supported, highest available variant is selected.
-    enum MaterialVariant
-    {
-        LitNormalMapMaterial,
-        LitMaterial,
-        UnlitMaterial,
-
-        NumMaterialVariants
-    };
-
     explicit GLTFMaterialImporter(GLTFImporterBase& base, GLTFTextureImporter& textureImporter)
         : base_(base)
         , model_(base_.GetModel())
         , textureImporter_(textureImporter)
     {
-        InitializeStandardTechniques();
         InitializeMaterials();
         textureImporter_.CookTextures();
     }
@@ -2478,35 +2171,6 @@ public:
     }
 
 private:
-    void InitializeStandardTechniques()
-    {
-        litOpaqueNormalMapTechnique_ = LoadTechnique("Techniques/LitOpaqueNormalMap.xml");
-        litOpaqueTechnique_ = LoadTechnique("Techniques/LitOpaque.xml");
-        unlitOpaqueTechnique_ = LoadTechnique("Techniques/UnlitOpaque.xml");
-
-        if (base_.GetSettings().fadeTransparency_)
-        {
-            litTransparentNormalMapTechnique_ = LoadTechnique("Techniques/LitTransparentFadeNormalMap.xml");
-            litTransparentTechnique_ = LoadTechnique("Techniques/LitTransparentFade.xml");
-        }
-        else
-        {
-            litTransparentNormalMapTechnique_ = LoadTechnique("Techniques/LitTransparentNormalMap.xml");
-            litTransparentTechnique_ = LoadTechnique("Techniques/LitTransparent.xml");
-        }
-
-        unlitTransparentTechnique_ = LoadTechnique("Techniques/UnlitTransparent.xml");
-    }
-
-    Technique* LoadTechnique(const ea::string& name)
-    {
-        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
-        auto technique = cache->GetResource<Technique>(name);
-        if (!technique)
-            throw RuntimeException("Cannot find standard technique '{}'", name);
-        return technique;
-    }
-
     void InitializeMaterials()
     {
         materials_.resize(static_cast<unsigned>(model_.materials.size()));
@@ -2535,30 +2199,19 @@ private:
         auto material = MakeShared<Material>(base_.GetContext());
 
         InitializeTechnique(*material, sourceMaterial, variant);
-        InitializeBaseColor(*material, sourceMaterial);
+        InitializeMaterialName(*material, sourceMaterial, GetMaterialVariantSuffix(variant));
 
-        switch (variant)
+        // Only reference the textures that the variant uses, because the importer saves only these textures.
+        StandardMaterialParameters parameters;
+        InitializeBaseColor(parameters, sourceMaterial);
+        if (variant != UnlitMaterial)
         {
-        case UnlitMaterial:
-            InitializeMaterialName(*material, sourceMaterial, "_Unlit");
-            break;
-
-        case LitMaterial:
-            InitializeMaterialName(*material, sourceMaterial, "_Lit");
-            InitializeRoughnessMetallicOcclusion(*material, sourceMaterial);
-            InitializeEmissiveMap(*material, sourceMaterial);
-            break;
-
-        case LitNormalMapMaterial:
-            InitializeMaterialName(*material, sourceMaterial, "_LitNormalMap");
-            InitializeRoughnessMetallicOcclusion(*material, sourceMaterial);
-            InitializeNormalMap(*material, sourceMaterial);
-            InitializeEmissiveMap(*material, sourceMaterial);
-            break;
-
-        default:
-            break;
+            InitializeRoughnessMetallicOcclusion(parameters, sourceMaterial);
+            InitializeEmissiveMap(parameters, sourceMaterial);
         }
+        if (variant == LitNormalMapMaterial)
+            InitializeNormalMap(parameters, sourceMaterial);
+        SetStandardMaterialParameters(*material, variant, parameters);
 
         base_.AddToResourceCache(material);
         return material;
@@ -2566,19 +2219,12 @@ private:
 
     void InitializeTechnique(Material& material, const tg::Material& sourceMaterial, MaterialVariant variant) const
     {
-        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
-
-        const bool isLit = !IsUnlitMaterial(sourceMaterial);
         const bool isOpaque = sourceMaterial.alphaMode == "OPAQUE";
         const bool isAlphaMask = sourceMaterial.alphaMode == "MASK";
         const bool isTransparent = sourceMaterial.alphaMode == "BLEND";
 
         if (!isOpaque && !isAlphaMask && !isTransparent)
             throw RuntimeException("Unknown alpha mode '{}'", sourceMaterial.alphaMode.c_str());
-
-        Technique* litNormalMapTechnique = isOpaque || isAlphaMask ? litOpaqueNormalMapTechnique_ : litTransparentNormalMapTechnique_;
-        Technique* litTechnique = isOpaque || isAlphaMask ? litOpaqueTechnique_ : litTransparentTechnique_;
-        Technique* unlitTechnique = isOpaque || isAlphaMask ? unlitOpaqueTechnique_ : unlitTransparentTechnique_;
 
         ea::string shaderDefines;
         if (isAlphaMask)
@@ -2590,38 +2236,19 @@ private:
         if (isAlphaMask && sourceMaterial.alphaCutoff != 0.5)
             URHO3D_LOGWARNING("Material '{}' has non-standard alpha cutoff", sourceMaterial.name.c_str());
 
-        if (variant == LitNormalMapMaterial && sourceMaterial.normalTexture.index >= 0 && isLit)
-        {
-            shaderDefines += "PBR ";
-            material.SetTechnique(0, litNormalMapTechnique, QUALITY_MEDIUM);
-            material.SetTechnique(1, litTechnique, QUALITY_LOW);
-        }
-        else if (variant == LitMaterial && isLit)
-        {
-            shaderDefines += "PBR ";
-            material.SetTechnique(0, litTechnique, QUALITY_LOW);
-        }
-        else
-        {
-            material.SetTechnique(0, unlitTechnique, QUALITY_LOW);
-        }
-
-        material.SetVertexShaderDefines(shaderDefines);
-        material.SetPixelShaderDefines(shaderDefines);
-
-        if (sourceMaterial.doubleSided)
-        {
-            material.SetCullMode(CULL_NONE);
-            material.SetShadowCullMode(CULL_NONE);
-        }
+        // InitializeMaterials creates the lit variants only for lit materials with the necessary textures.
+        const StandardMaterialTechniques techniques =
+            GetStandardMaterialTechniques(variant, isTransparent, base_.GetSettings().fadeTransparency_);
+        SetStandardMaterialTechniques(material, techniques, base_.GetContext()->GetSubsystem<ResourceCache>());
+        SetStandardMaterialFlags(material, variant, sourceMaterial.doubleSided, shaderDefines);
     }
 
-    void InitializeBaseColor(Material& material, const tg::Material& sourceMaterial) const
+    void InitializeBaseColor(StandardMaterialParameters& parameters, const tg::Material& sourceMaterial) const
     {
         const tg::PbrMetallicRoughness& pbr = sourceMaterial.pbrMetallicRoughness;
 
         const Vector4 baseColor{ ToArray<float, 4>(pbr.baseColorFactor).data() };
-        material.SetShaderParameter(ShaderConsts::Material_MatDiffColor, Color(baseColor).LinearToGamma().ToVector4());
+        parameters.baseColor_ = Color(baseColor);
 
         if (pbr.baseColorTexture.index >= 0)
         {
@@ -2632,17 +2259,17 @@ private:
                     sourceMaterial.name.c_str(), pbr.baseColorTexture.index);
             }
 
-            const SharedPtr<Texture2D> diffuseTexture = textureImporter_.ReferenceTextureAsIs(pbr.baseColorTexture.index);
-            material.SetTexture(ShaderResources::Albedo, diffuseTexture);
+            parameters.albedoTexture_ = textureImporter_.ReferenceTextureAsIs(pbr.baseColorTexture.index);
         }
     }
 
-    void InitializeRoughnessMetallicOcclusion(Material& material, const tg::Material& sourceMaterial) const
+    void InitializeRoughnessMetallicOcclusion(
+        StandardMaterialParameters& parameters, const tg::Material& sourceMaterial) const
     {
         const tg::PbrMetallicRoughness& pbr = sourceMaterial.pbrMetallicRoughness;
 
-        material.SetShaderParameter(ShaderConsts::Material_Metallic, static_cast<float>(pbr.metallicFactor));
-        material.SetShaderParameter(ShaderConsts::Material_Roughness, static_cast<float>(pbr.roughnessFactor));
+        parameters.metallic_ = static_cast<float>(pbr.metallicFactor);
+        parameters.roughness_ = static_cast<float>(pbr.roughnessFactor);
 
         // Occlusion and metallic-roughness textures are backed together,
         // ignore occlusion if is uses different UV.
@@ -2679,16 +2306,15 @@ private:
                 }
 
                 // TODO: Add support in standard shader
-                material.SetShaderParameter("OcclusionStrength", static_cast<float>(sourceMaterial.occlusionTexture.strength));
+                parameters.occlusionStrength_ = static_cast<float>(sourceMaterial.occlusionTexture.strength);
             }
 
-            const SharedPtr<Texture2D> metallicRoughnessTexture = textureImporter_.ReferenceRoughnessMetallicOcclusionTexture(
+            parameters.propertiesTexture_ = textureImporter_.ReferenceRoughnessMetallicOcclusionTexture(
                 metallicRoughnessTextureIndex, occlusionTextureIndex);
-            material.SetTexture(ShaderResources::Properties, metallicRoughnessTexture);
         }
     }
 
-    void InitializeNormalMap(Material& material, const tg::Material& sourceMaterial) const
+    void InitializeNormalMap(StandardMaterialParameters& parameters, const tg::Material& sourceMaterial) const
     {
         const int normalTextureIndex = sourceMaterial.normalTexture.index;
         if (normalTextureIndex >= 0)
@@ -2700,18 +2326,15 @@ private:
                     sourceMaterial.name.c_str(), normalTextureIndex);
             }
 
-            material.SetShaderParameter(ShaderConsts::Material_NormalScale, static_cast<float>(sourceMaterial.normalTexture.scale));
-
-            const SharedPtr<Texture2D> normalTexture = textureImporter_.ReferenceTextureAsIs(
-                normalTextureIndex);
-            material.SetTexture(ShaderResources::Normal, normalTexture);
+            parameters.normalScale_ = static_cast<float>(sourceMaterial.normalTexture.scale);
+            parameters.normalTexture_ = textureImporter_.ReferenceTextureAsIs(normalTextureIndex);
         }
     }
 
-    void InitializeEmissiveMap(Material& material, const tg::Material& sourceMaterial)
+    void InitializeEmissiveMap(StandardMaterialParameters& parameters, const tg::Material& sourceMaterial)
     {
         const Vector3 emissiveColor{ ToArray<float, 3>(sourceMaterial.emissiveFactor).data() };
-        material.SetShaderParameter(ShaderConsts::Material_MatEmissiveColor, Color(emissiveColor).LinearToGamma().ToVector3());
+        parameters.emissiveColor_ = Color(emissiveColor);
 
         const int emissiveTextureIndex = sourceMaterial.emissiveTexture.index;
         if (emissiveTextureIndex >= 0)
@@ -2723,8 +2346,7 @@ private:
                     sourceMaterial.name.c_str(), emissiveTextureIndex);
             }
 
-            const SharedPtr<Texture2D> emissiveTexture = textureImporter_.ReferenceTextureAsIs(emissiveTextureIndex);
-            material.SetTexture(ShaderResources::Emission, emissiveTexture);
+            parameters.emissionTexture_ = textureImporter_.ReferenceTextureAsIs(emissiveTextureIndex);
         }
     }
 
@@ -2743,14 +2365,6 @@ private:
     GLTFImporterBase& base_;
     const tg::Model& model_;
     GLTFTextureImporter& textureImporter_;
-
-    Technique* litOpaqueNormalMapTechnique_{};
-    Technique* litOpaqueTechnique_{};
-    Technique* unlitOpaqueTechnique_{};
-
-    Technique* litTransparentNormalMapTechnique_{};
-    Technique* litTransparentTechnique_{};
-    Technique* unlitTransparentTechnique_{};
 
     struct ImportedMaterial
     {
@@ -2821,9 +2435,9 @@ private:
             model.meshName_ = sourceMesh.name.c_str();
             model.skin_ = pair->skin_;
 
-            const auto [baseName, distance] = ParseLodDistance(model.meshName_);
-            model.baseMeshName_ = baseName;
-            model.lodDistance_ = distance;
+            LodName lodName = ParseLodName(model.meshName_);
+            model.baseMeshName_ = ea::move(lodName.baseName_);
+            model.lodDistance_ = lodName.distance_;
 
             model.modelView_ = ImportModelView(sourceMesh, hierarchyAnalyzer_.GetSkinBones(pair->skin_));
         }
@@ -2839,42 +2453,16 @@ private:
             const auto lods = FindLods(importedModel);
             URHO3D_ASSERT(!lods.empty());
 
-            auto finalModelView = lods[0]->modelView_;
-            auto& finalGeometries = finalModelView->GetGeometries();
-
-            // Set LOD distance for the first LOD
-            for (GeometryView& geometryView : finalGeometries)
+            ea::vector<ModelView*> lodViews;
+            ea::vector<float> lodDistances;
+            for (const ImportedModel* lod : lods)
             {
-                if (geometryView.lods_.empty())
-                    continue;
-
-                if (geometryView.lods_.size() > 1)
-                    geometryView.lods_.resize(1);
-                geometryView.lods_[0].lodDistance_ = *lods[0]->lodDistance_;
+                lodViews.push_back(lod->modelView_);
+                lodDistances.push_back(*lod->lodDistance_);
             }
+            CombineModelViewLODs(lodViews, lodDistances);
 
-            // Append other LODs
-            // TODO: Handle materials more gracefully
-            for (unsigned lodIndex = 1; lodIndex < lods.size(); ++lodIndex)
-            {
-                const auto& otherModelView = lods[lodIndex]->modelView_;
-                const auto& otherGeometries = otherModelView->GetGeometries();
-                const float lodDistance = *lods[lodIndex]->lodDistance_;
-
-                const unsigned numOtherGeometries = otherGeometries.size();
-                if (numOtherGeometries > finalGeometries.size())
-                    finalGeometries.resize(numOtherGeometries);
-
-                for (unsigned geometryIndex = 0; geometryIndex < numOtherGeometries; ++geometryIndex)
-                {
-                    const auto& otherGeometryView = otherGeometries[geometryIndex];
-                    auto& geometryView = finalGeometries[geometryIndex];
-
-                    geometryView.lods_.push_back(otherGeometryView.lods_[0]);
-                    geometryView.lods_.back().lodDistance_ = lodDistance;
-                }
-            }
-
+            const SharedPtr<ModelView> finalModelView = lods[0]->modelView_;
             for (ImportedModel* otherImportedModel : lods)
             {
                 otherImportedModel->modelView_ = finalModelView;
@@ -2888,22 +2476,21 @@ private:
         ea::unordered_map<SharedPtr<ModelView>, SharedPtr<Model>> viewToModel;
         for (ImportedModel& importedModel : models_)
         {
-            importedModel.materials_ = importedModel.modelView_->ExportMaterialList();
-
+            ModelView& modelView = *importedModel.modelView_;
             SharedPtr<Model>& model = viewToModel[importedModel.modelView_];
             if (!model)
             {
                 const ea::string modelName =
                     base_.GetResourceName(importedModel.baseMeshName_, "Models/", "Model", ".mdl");
-                importedModel.modelView_->SetName(modelName);
+                modelView.SetName(modelName);
 
-                base_.GetCallback()->OnModelLoaded(*importedModel.modelView_);
-
-                model = importedModel.modelView_->ExportModel();
+                // Each geometry keeps its material name, so the material list follows the split.
+                model = ExportModelView(modelView, *base_.GetCallback()).model_;
                 base_.AddToResourceCache(model);
                 modelsToSave_.push_back(model);
             }
 
+            importedModel.materials_ = modelView.ExportMaterialList();
             importedModel.model_ = model;
         }
     }
@@ -2931,19 +2518,6 @@ private:
         const auto takeSecond = [](const auto& pair) { return pair.second; };
         ea::transform(lods.begin(), lods.end(), ea::back_inserter(result), takeSecond);
         return result;
-    }
-
-    static ea::pair<ea::string, ea::optional<float>> ParseLodDistance(const ea::string& name)
-    {
-        static const std::regex r{R"(^(.*)_LOD(\d+(\.\d+)?)$)"};
-        std::cmatch match;
-        if (std::regex_match(name.c_str(), match, r))
-        {
-            const ea::string baseName{match[1].first, match[1].second};
-            const float distance = ToFloat(ea::string{match[2].first, match[2].second});
-            return {baseName, distance};
-        }
-        return {name, ea::nullopt};
     }
 
     const ImportedModel& GetImportedModel(int meshIndex, int skinIndex) const
@@ -3019,28 +2593,18 @@ private:
             }
         }
 
-        const InlineTransform& transform = hierarchyAnalyzer_.GetInlineTransform();
-        if (transform.mirrorX_)
-            modelView->MirrorGeometriesX();
-        if (transform.scale_ != 1.0f)
-            modelView->ScaleGeometries(transform.scale_);
-
-        modelView->CalculateMissingNormals(true);
-        modelView->CalculateMissingTangents();
-        modelView->RecalculateBoneBoundingBoxes();
-        modelView->RepairBoneWeights();
-        modelView->Normalize();
+        FinalizeModelView(*modelView, hierarchyAnalyzer_.GetInlineTransform());
         return modelView;
     }
 
-    static GLTFMaterialImporter::MaterialVariant GetMaterialVariant(const GeometryLODView& lodView)
+    static MaterialVariant GetMaterialVariant(const GeometryLODView& lodView)
     {
         if (lodView.IsTriangleGeometry() || lodView.vertexFormat_.tangent_ != ModelVertexFormat::Undefined)
-            return GLTFMaterialImporter::LitNormalMapMaterial;
+            return LitNormalMapMaterial;
         else if (lodView.vertexFormat_.normal_ != ModelVertexFormat::Undefined)
-            return GLTFMaterialImporter::LitMaterial;
+            return LitMaterial;
         else
-            return GLTFMaterialImporter::UnlitMaterial;
+            return UnlitMaterial;
     }
 
     static PrimitiveType GetPrimitiveType(int primitiveMode)
@@ -3251,7 +2815,9 @@ private:
 
             for (const auto& [groupIndex, group] : sourceAnimation.animationGroups_)
             {
-                const ea::string animationNameHint = GetAnimationGroupName(sourceAnimation, groupIndex);
+                const ea::string animationNameHint = GetAnimationGroupNameHint(
+                    !sourceAnimation.name_.empty() ? sourceAnimation.name_ : Format("Animation_{}", sourceAnimation.index_),
+                    groupIndex, static_cast<unsigned>(sourceAnimation.animationGroups_.size()));
                 const ea::string animationName = base_.GetResourceName(animationNameHint, "Animations/", "Animation", ".ani");
 
                 auto animation = ImportAnimation(animationName, groupIndex, group);
@@ -3329,112 +2895,30 @@ private:
         return animation;
     }
 
-    using GLTFNodeAndParentVector = ea::vector<ea::pair<GLTFNode*, GLTFNode*>>;
-
     void FillAnimationTrackParents(Animation& animation, const GLTFSkeleton& skeleton) const
-    {
-        GLTFNodeAndParentVector animatedNodes;
-        EnumerateNodesAndParents(animatedNodes, skeleton);
-        if (animatedNodes.empty())
-            return;
-
-        const auto animationTrackNames = GetAnimationTrackNames(animation);
-        StripUnreferencedNodes(animatedNodes, animationTrackNames, *skeleton.rootNode_->skeletonIndex_);
-
-        StringVariantMap nodeToParentNames;
-        for (const auto& [node, parentNode] : animatedNodes)
-        {
-            if (parentNode)
-                nodeToParentNames[*node->uniqueBoneName_] = *parentNode->uniqueBoneName_;
-            else
-                nodeToParentNames[*node->uniqueBoneName_] = "";
-        }
-        animation.AddMetadata(AnimationMetadata::ParentTracks, nodeToParentNames);
-    }
-
-    static void EnumerateNodesAndParents(GLTFNodeAndParentVector& result, const GLTFSkeleton& skeleton)
     {
         if (!skeleton.rootNode_->skeletonIndex_)
             return;
 
         const unsigned skeletonIndex = *skeleton.rootNode_->skeletonIndex_;
+        ea::vector<AnimatedBone> bones;
+        ea::unordered_map<const GLTFNode*, unsigned> nodeToBone;
         GLTFHierarchyAnalyzer::ForEachSkeletonNode(*skeleton.rootNode_, skeletonIndex,
             [&](GLTFNode& node)
         {
-            if (node.parent_ && node.parent_->skeletonIndex_ == skeletonIndex)
-                result.emplace_back(&node, node.parent_);
-            else
-                result.emplace_back(&node, nullptr);
+            nodeToBone[&node] = static_cast<unsigned>(bones.size());
+            bones.push_back({node.uniqueBoneName_.value_or(EMPTY_STRING)});
         });
-    }
+        if (bones.empty())
+            return;
 
-    static ea::unordered_set<ea::string> GetAnimationTrackNames(const Animation& animation)
-    {
-        ea::unordered_set<ea::string> result;
-        for (const auto& [_, track] : animation.GetTracks())
-            result.emplace(track.name_);
-        return result;
-    }
-
-    static bool IsNodeBoneTracked(const GLTFNode& node, const ea::unordered_set<ea::string>& trackNames)
-    {
-        return node.uniqueBoneName_ && trackNames.contains(*node.uniqueBoneName_);
-    }
-
-    static void StripUnreferencedNodes(
-        GLTFNodeAndParentVector& result, const ea::unordered_set<ea::string>& trackNames, unsigned skeletonIndex)
-    {
-        for (auto& [node, parentNode] : result)
+        for (const auto& [node, boneIndex] : nodeToBone)
         {
-            if (!IsNodeBoneTracked(*node, trackNames))
-            {
-                node = nullptr;
-                continue;
-            }
-
-            while (parentNode && !IsNodeBoneTracked(*parentNode, trackNames))
-            {
-                parentNode = parentNode->parent_;
-                if (parentNode && parentNode->skeletonIndex_ != skeletonIndex)
-                    parentNode = nullptr;
-            }
+            if (node->parent_ && node->parent_->skeletonIndex_ == skeletonIndex)
+                bones[boneIndex].parentIndex_ = nodeToBone.at(node->parent_);
         }
 
-        ea::erase_if(result, [](const ea::pair<GLTFNode*, GLTFNode*>& pair) { return !pair.first; });
-    }
-
-    static ea::string GetAnimationGroupName(const GLTFAnimation& animation, ea::optional<unsigned> groupIndex)
-    {
-        const ea::string namePrefix = !animation.name_.empty() ? animation.name_ : Format("Animation_{}", animation.index_);
-        if (animation.animationGroups_.size() <= 1)
-            return namePrefix;
-
-        const ea::string groupSuffix = groupIndex ? Format("_{}", *groupIndex) : "_R";
-        return namePrefix + groupSuffix;
-    }
-
-    template <class T>
-    static ea::optional<float> GetTrackLength(const T& track)
-    {
-        if (track.keyFrames_.empty())
-            return ea::nullopt;
-        return track.keyFrames_.back().time_;
-    }
-
-    static float GetAnimationLength(const Animation& animation)
-    {
-        float length = 0.0f;
-        for (const auto& [nameHash, track] : animation.GetTracks())
-        {
-            if (const auto trackLength = GetTrackLength(track))
-                length = ea::max(length, *trackLength);
-        }
-        for (const auto& [nameHash, track] : animation.GetVariantTracks())
-        {
-            if (const auto trackLength = GetTrackLength(track))
-                length = ea::max(length, *trackLength);
-        }
-        return length;
+        animation.AddMetadata(AnimationMetadata::ParentTracks, GetParentTrackNames(animation, bones));
     }
 
     GLTFImporterBase& base_;
@@ -3485,7 +2969,7 @@ private:
             const tg::Scene& sourceScene = model_.scenes[sceneIndex];
             ImportedScene& scene = scenes_[sceneIndex];
             scene.index_ = sceneIndex;
-            scene.scene_ = MakeShared<Scene>(base_.GetContext());
+            scene.scene_ = CreateImportScene(base_.GetContext(), base_.GetSettings());
 
             const ea::string sceneName = numScenes == 1 ? "Prefab" : sourceScene.name.c_str();
             const ea::string sceneFolder = numScenes == 1 ? "" : "Prefabs/";
@@ -3500,17 +2984,6 @@ private:
         auto scene = importedScene.scene_;
 
         const ea::string prefabName = base_.GetResourceName(sceneName, prefix, "Prefab", ".prefab");
-        scene->CreateComponent<Octree>();
-
-        auto renderPipeline = scene->CreateComponent<RenderPipeline>();
-        if (settings.preview_.highRenderQuality_)
-        {
-            auto pipelineSettings = renderPipeline->GetSettings();
-            pipelineSettings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
-            pipelineSettings.sceneProcessor_.pcfKernelSize_ = 5;
-            renderPipeline->SetSettings(pipelineSettings);
-            renderPipeline->SetRenderPassEnabled("Postprocess: FXAA v3", true);
-        }
 
         Node* rootNode = scene->CreateChild(settings.assetName_);
         rootNode->SetRotation(settings.rotation_);
@@ -3527,37 +3000,9 @@ private:
                 scene->CreateChild("Disabled Node Placeholder");
         }
 
-        if (!settings.skipTags_.empty())
-        {
-            const auto children = rootNode->GetChildren(true);
-            const ea::vector<WeakPtr<Node>> weakChildren(children.begin(), children.end());
-            for (const auto& child : weakChildren)
-            {
-                if (child && IsNameSkipped(child->GetName(), settings.skipTags_))
-                    child->Remove();
-            }
-        }
+        FinalizeImportScene(*scene, rootNode, settings);
 
-        if (settings.cleanupRootNodes_)
-        {
-            Node* newRootNode = rootNode;
-            while (newRootNode->GetNumChildren() == 1 && newRootNode->GetNumComponents() == 0)
-                newRootNode = newRootNode->GetChild(0u);
-
-            if (newRootNode != rootNode)
-            {
-                newRootNode->SetParent(scene);
-                newRootNode->SetName(rootNode->GetName());
-                rootNode->Remove();
-            }
-        }
-
-        InitializeDefaultSceneContent(importedScene);
-
-        importedScene.prefab_ = MakeShared<PrefabResource>(base_.GetContext());
-        importedScene.prefab_->GetMutableScenePrefab() = scene->GeneratePrefab();
-        importedScene.prefab_->NormalizeIds();
-        importedScene.prefab_->SetName(prefabName);
+        importedScene.prefab_ = CreatePrefabFromScene(*scene, prefabName);
         base_.AddToResourceCache(importedScene.prefab_);
     }
 
@@ -3579,9 +3024,7 @@ private:
                 const GLTFNode& skinnedMeshNode = hierarchyAnalyzer_.GetNode(nodeIndex);
                 // Always create animated model in order to preserve morph animation order
                 auto animatedModel = node->CreateComponent<AnimatedModel>();
-                InitializeComponentModelAndMaterials(*animatedModel, *skinnedMeshNode.mesh_, *skinnedMeshNode.skin_);
-                InitializeDefaultMorphWeights(*animatedModel, skinnedMeshNode);
-                TweakEmptyAnimatedModel(*animatedModel);
+                InitializeComponent(*animatedModel, *skinnedMeshNode.mesh_, *skinnedMeshNode.skin_, &skinnedMeshNode);
             }
 
             if (animationImporter_.HasAnimations())
@@ -3621,14 +3064,12 @@ private:
                 if (hierarchyAnalyzer_.GetNumMorphsInMesh(*sourceNode.mesh_) > 0)
                 {
                     auto animatedModel = node->CreateComponent<AnimatedModel>();
-                    InitializeComponentModelAndMaterials(*animatedModel, *sourceNode.mesh_, -1);
-                    InitializeDefaultMorphWeights(*animatedModel, sourceNode);
-                    TweakEmptyAnimatedModel(*animatedModel);
+                    InitializeComponent(*animatedModel, *sourceNode.mesh_, -1, &sourceNode);
                 }
                 else
                 {
                     auto staticModel = node->CreateComponent<StaticModel>();
-                    InitializeComponentModelAndMaterials(*staticModel, *sourceNode.mesh_, -1);
+                    InitializeComponent(*staticModel, *sourceNode.mesh_, -1, nullptr);
                 }
             }
 
@@ -3639,108 +3080,38 @@ private:
         }
     }
 
-    void InitializeComponentModelAndMaterials(StaticModel& staticModel, int meshIndex, int skinIndex) const
+    /// Initialize the component. Copy the morph weights of the node if it is not null.
+    void InitializeComponent(StaticModel& component, int meshIndex, int skinIndex, const GLTFNode* morphSource) const
     {
         auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
 
         Model* model = modelImporter_.GetModel(meshIndex, skinIndex);
+        const unsigned numMorphs = model ? model->GetNumMorphs() : 0;
+        if (morphSource && numMorphs != morphSource->morphWeights_.size())
+            throw RuntimeException("Cannot setup mesh morphs");
+
         if (!model)
-            return;
-
-        staticModel.SetModel(model);
-        staticModel.SetCastShadows(true);
-
-        const ResourceRefList& materialList = modelImporter_.GetModelMaterials(meshIndex, skinIndex);
-        if (materialList.type_ != Material::GetTypeStatic())
-            return;
-
-        for (unsigned i = 0; i < materialList.names_.size(); ++i)
         {
-            auto material = cache->GetResource<Material>(materialList.names_[i]);
-            staticModel.SetMaterial(i, material);
+            if (auto animatedModel = component.Cast<AnimatedModel>())
+                TweakEmptyAnimatedModel(*animatedModel);
+            return;
         }
+
+        ea::vector<SharedPtr<Material>> materials;
+        const ResourceRefList& materialList = modelImporter_.GetModelMaterials(meshIndex, skinIndex);
+        if (materialList.type_ == Material::GetTypeStatic())
+        {
+            for (const ea::string& materialName : materialList.names_)
+                materials.emplace_back(cache->GetResource<Material>(materialName));
+        }
+
+        const ea::vector<float> morphWeights = morphSource ? morphSource->morphWeights_ : ea::vector<float>{};
+        InitializeModelComponent(component, model, materials, morphWeights);
     }
 
     void InitializeAnimationController(Node& node, ea::optional<unsigned> groupIndex)
     {
-        auto animationController = node.CreateComponent<AnimationController>();
-        if (Animation* animation = animationImporter_.FindAnimation(defaultAnimationIndex_, groupIndex))
-            animationController->Play(animation->GetName(), 0, true);
-    }
-
-    void InitializeDefaultSceneContent(ImportedScene& importedScene)
-    {
-        static const Vector3 defaultPosition{ -1.0f, 2.0f, 1.0f };
-
-        auto cache = base_.GetContext()->GetSubsystem<ResourceCache>();
-        auto scene = importedScene.scene_;
-        const GLTFImporterSettings& settings = base_.GetSettings();
-
-        if (settings.preview_.addLights_ && !scene->FindComponent<Light>())
-        {
-            // Model forward is Z+, make default lighting from top right when looking at forward side of model.
-            Node* node = scene->CreateChild("Default Light");
-            node->SetPosition(defaultPosition);
-            node->SetDirection({ 1.0f, -2.0f, -1.0f });
-            auto light = node->CreateComponent<Light>();
-            light->SetLightType(LIGHT_DIRECTIONAL);
-            light->SetCastShadows(true);
-        }
-
-        if (settings.preview_.addSkybox_ && !scene->FindComponent<Skybox>())
-        {
-            static const ea::string skyboxModelName = "Models/Box.mdl";
-
-            auto skyboxMaterial = cache->GetResource<Material>(settings.preview_.skyboxMaterial_);
-            auto boxModel = cache->GetResource<Model>(skyboxModelName);
-
-            if (!skyboxMaterial)
-                URHO3D_LOGWARNING("Cannot add default skybox with material '{}'", settings.preview_.skyboxMaterial_);
-            else if (!boxModel)
-                URHO3D_LOGWARNING("Cannot add default skybox with model '{}'", skyboxModelName);
-            else
-            {
-                Node* skyboxNode = scene->CreateChild("Default Skybox");
-                skyboxNode->SetPosition(defaultPosition);
-                auto skybox = skyboxNode->CreateComponent<Skybox>();
-                skybox->SetModel(boxModel);
-                skybox->SetMaterial(skyboxMaterial);
-            }
-        }
-
-        if (settings.preview_.addReflectionProbe_ && !scene->FindComponent<Zone>())
-        {
-            auto skyboxTexture = cache->GetResource<TextureCube>(settings.preview_.reflectionProbeCubemap_);
-            if (!skyboxTexture)
-                URHO3D_LOGWARNING("Cannot add default reflection probe with material '{}'", settings.preview_.reflectionProbeCubemap_);
-            else
-            {
-                Node* zoneNode = scene->CreateChild("Default Zone");
-                zoneNode->SetPosition(defaultPosition);
-                auto zone = zoneNode->CreateComponent<Zone>();
-                zone->SetBackgroundBrightness(0.5f);
-                zone->SetZoneTexture(skyboxTexture);
-            }
-        }
-    }
-
-    void InitializeDefaultMorphWeights(AnimatedModel& animatedModel, const GLTFNode& sourceNode)
-    {
-        const unsigned numMorphs = animatedModel.GetNumMorphs();
-        if (numMorphs != sourceNode.morphWeights_.size())
-            throw RuntimeException("Cannot setup mesh morphs");
-
-        for (unsigned morphIndex = 0; morphIndex < numMorphs; ++morphIndex)
-            animatedModel.SetMorphWeight(morphIndex, sourceNode.morphWeights_[morphIndex]);
-    }
-
-    void TweakEmptyAnimatedModel(AnimatedModel& animatedModel)
-    {
-        if (animatedModel.GetNumGeometries() == 0)
-        {
-            animatedModel.SetUpdateInvisible(true);
-            animatedModel.SetAnimationLodBias(0.0f);
-        }
+        CreateAnimationController(node, animationImporter_.FindAnimation(defaultAnimationIndex_, groupIndex));
     }
 
     static void RegisterNode(ImportedScene& importedScene, Node& node, const GLTFNode& sourceNode)
@@ -3889,10 +3260,7 @@ public:
 
     Transform ConvertTransform(const Transform& sourceTransform) const
     {
-        const InlineTransform& inlineTransform = hierarchyAnalyzer_.GetInlineTransform();
-        const Vector3 position_ = inlineTransform.ApplyToPosition(sourceTransform.position_);
-        const Quaternion rotation_ = inlineTransform.ApplyToRotation(sourceTransform.rotation_);
-        return {position_, rotation_, sourceTransform.scale_};
+        return hierarchyAnalyzer_.GetInlineTransform().ApplyToTransform(sourceTransform);
     }
 
     const ResourceToFileNameMap& GetResourceNames() const { return importerContext_.GetResourceNames(); }
