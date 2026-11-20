@@ -32,6 +32,23 @@ DataChannelConnection::~DataChannelConnection()
         URHO3D_LOGWARNING(
             "DataChannelConnection was not properly disconnected before destruction. Forcing disconnect.");
     }
+
+#ifndef URHO3D_PLATFORM_WEB
+    // The members close the channels when the members are destroyed. A closed channel calls its callbacks.
+    // The callbacks use "this", which is not valid then. Thus remove the callbacks before the members are destroyed.
+    // A callback in a different thread can hold the callback lock. Then the reset waits until that callback returns.
+    // The callbacks do not wait for the main thread, so the wait is short and cannot deadlock.
+    for (const auto& dataChannel : dataChannels_)
+    {
+        if (dataChannel)
+            dataChannel->resetCallbacks();
+    }
+    if (peer_)
+        peer_->resetCallbacks();
+    if (websocket_)
+        websocket_->resetCallbacks();
+#endif
+    state_ = NetworkConnectionState::Disconnected;
 }
 
 void DataChannelConnection::RegisterObject(Context* context)

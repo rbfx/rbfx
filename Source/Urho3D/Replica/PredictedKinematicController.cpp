@@ -129,9 +129,18 @@ void PredictedKinematicController::InitializeCommon()
     networkStepTime_ = 1.0f / replicationManager->GetUpdateFrequency();
 }
 
+void PredictedKinematicController::OnSceneSet(Scene* previousScene, Scene* scene)
+{
+    BaseClassName::OnSceneSet(previousScene, scene);
+
+    // The physics world of the old scene can continue to send events. Stop them.
+    if (!scene)
+        UnsubscribeFromEvent(E_PHYSICSPRESTEP);
+}
+
 void PredictedKinematicController::OnServerFrameBegin(NetworkFrame serverFrame)
 {
-    if (!IsConnectedToComponents())
+    if (!GetScene() || !IsConnectedToComponents())
         return;
 
     UpdateEffectiveVelocity(networkStepTime_);
@@ -141,7 +150,7 @@ void PredictedKinematicController::OnServerFrameBegin(NetworkFrame serverFrame)
 
 void PredictedKinematicController::OnPhysicsSynchronizedOnClient(NetworkFrame frame)
 {
-    if (!IsConnectedToComponents())
+    if (!GetScene() || !IsConnectedToComponents())
         return;
 
     CheckAndCorrectController(frame);
@@ -165,7 +174,11 @@ void PredictedKinematicController::ApplyActionsOnClient()
 
 void PredictedKinematicController::UpdateEffectiveVelocity(float timeStep)
 {
-    const DoubleVector3 currentPosition = GetScene()->ToAbsoluteWorldPosition(node_->GetWorldPosition());
+    Scene* scene = GetScene();
+    if (!scene)
+        return;
+
+    const DoubleVector3 currentPosition = scene->ToAbsoluteWorldPosition(node_->GetWorldPosition());
     effectiveVelocity_ = (currentPosition - previousPosition_).Cast<Vector3>() / timeStep;
     previousPosition_ = currentPosition;
 }

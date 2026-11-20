@@ -122,7 +122,10 @@ void Network::OnConnectionDisconnecting(NetworkConnection* connection)
 
 void Network::OnServerStopping(NetworkServer* server)
 {
-    stoppingServers_.insert(SharedPtr<NetworkServer>(server));
+    // Only the disconnect of the last connection removes the server from the set.
+    // A server without connections gets no disconnect. Thus do not keep it, or it stays alive until exit.
+    if (!server->GetConnections().empty())
+        stoppingServers_.insert(SharedPtr<NetworkServer>(server));
 }
 
 void Network::HandleClientDisconnected(VariantMap& eventData)

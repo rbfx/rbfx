@@ -33,6 +33,7 @@ class URHO3D_API DataChannelServer : public NetworkServer
 
 public:
     explicit DataChannelServer(Context* context);
+    ~DataChannelServer() override;
 
     static void RegisterObject(Context* context);
 

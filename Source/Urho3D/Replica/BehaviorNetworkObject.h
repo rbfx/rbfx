@@ -43,6 +43,7 @@ protected:
     /// Component implementation
     /// @{
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// @}
 
 private:

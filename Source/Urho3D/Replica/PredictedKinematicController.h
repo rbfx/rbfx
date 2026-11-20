@@ -65,6 +65,9 @@ public:
     /// @}
 
 protected:
+    /// Implement Component.
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
+
     /// Implement BaseFeedbackBehavior.
     /// @{
     void OnServerFrameBegin(NetworkFrame serverFrame) override;

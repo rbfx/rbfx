@@ -5,6 +5,7 @@
 #include "Urho3D/Precompiled.h"
 
 #include "Urho3D/Core/Context.h"
+#include "Urho3D/Network/NetworkEvents.h"
 #include "Urho3D/Replica/BehaviorNetworkObject.h"
 #include "Urho3D/Scene/SceneEvents.h"
 
@@ -44,6 +45,17 @@ void NetworkBehavior::OnNodeSet(Node* previousNode, Node* currentNode)
     {
         owner_->InvalidateBehaviors();
         owner_ = nullptr;
+    }
+}
+
+void NetworkBehavior::OnSceneSet(Scene* previousScene, Scene* scene)
+{
+    // The network sends the server frame events to all subscribers.
+    // A behavior without a scene must not get them, because its callbacks use the scene.
+    if (!scene)
+    {
+        UnsubscribeFromEvent(E_BEGINSERVERNETWORKFRAME);
+        UnsubscribeFromEvent(E_ENDSERVERNETWORKFRAME);
     }
 }
 

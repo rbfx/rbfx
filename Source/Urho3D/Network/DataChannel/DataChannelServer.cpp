@@ -25,6 +25,18 @@ DataChannelServer::DataChannelServer(Context* context)
     SetConnectionFactory([this] { return MakeShared<DataChannelConnection>(context_); });
 }
 
+DataChannelServer::~DataChannelServer()
+{
+#ifndef URHO3D_PLATFORM_WEB
+    // The client callback uses "this". Remove it and stop the server thread before the members are destroyed.
+    if (webSocketServer_)
+    {
+        webSocketServer_->onClient(nullptr);
+        webSocketServer_->stop();
+    }
+#endif
+}
+
 void DataChannelServer::RegisterObject(Context* context)
 {
     context->AddAbstractReflection<DataChannelServer>(Category_Network);
