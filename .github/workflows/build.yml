@@ -121,6 +121,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: rbfx/ci
+          ref: ${{ vars.RBFX_CI_REF || 'master' }}
           path: rbfx-ci
           fetch-depth: 1
 
@@ -164,6 +165,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: rbfx/ci
+          ref: ${{ vars.RBFX_CI_REF || 'master' }}
           path: rbfx-ci
           fetch-depth: 1
 
