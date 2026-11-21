@@ -49,7 +49,7 @@ bool LoadSceneFromParams(Context* context, Scene* scene, const StringVariantMap&
 
 TEST_CASE("Server-client scene loader sequence")
 {
-    auto context = Tests::CreateCompleteContext();
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     auto sceneA = CreateSceneAndResource(context, "Scenes/TestSceneLoader_ReloadA.bin", "MarkerA");
     auto sceneB = CreateSceneAndResource(context, "Scenes/TestSceneLoader_ReloadB.bin", "MarkerB");
