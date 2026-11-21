@@ -115,6 +115,13 @@ ea::string DynamicLibraryPluginInstance::GetAbsoluteFileName(const ea::string& n
     if (fs->FileExists(fileName))
         return fileName;
 
+#if URHO3D_SCRIPT_RUNTIME
+    // Managed plugins are always "<name>.dll", on every platform.
+    const ea::string managedFileName = Format("{}{}.dll", directory, name);
+    if (fs->FileExists(managedFileName))
+        return managedFileName;
+#endif
+
     return EMPTY_STRING;
 }
 

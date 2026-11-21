@@ -11,6 +11,7 @@
 #include "Urho3D/Engine/EngineEvents.h"
 #include "Urho3D/IO/IOEvents.h"
 #include "Urho3D/IO/Log.h"
+#include "Urho3D/Plugins/PluginManager.h"
 #if URHO3D_SCRIPT_RUNTIME
 #include "Urho3D/Script/Script.h"
 #endif
@@ -104,6 +105,18 @@ int Application::Run()
             SendEvent(E_APPLICATIONSTOPPED);
             return exitCode_;
         }
+
+#if URHO3D_PLUGINS && URHO3D_SCRIPT_RUNTIME
+        // Load runtime scripts before Start() so that script component types exist.
+        if (engine_->GetParameter(EP_ENGINE_AUTO_LOAD_SCRIPTS).GetBool())
+        {
+            auto* pluginManager = GetSubsystem<PluginManager>();
+            StringVector plugins = pluginManager->GetLoadedPlugins();
+            plugins.push_back("Automatic:Scripts");
+            pluginManager->SetPluginsLoaded(plugins);
+            pluginManager->Commit();
+        }
+#endif
 
         Start();
         SendEvent(E_APPLICATIONSTARTED);
