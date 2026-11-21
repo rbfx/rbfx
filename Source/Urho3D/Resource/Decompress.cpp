@@ -223,6 +223,7 @@ static void DecompressBC5(unsigned char* rgba, const void* block)
     for (unsigned i = 0; i < 16; ++i)
         rgba[4 * i + 3] = 255;
 
+    // BC5 stores red and green. Each channel uses the encoding of the DXT5 alpha block.
     DecompressAlphaDXT5(rgba, block, 0);
     DecompressAlphaDXT5(rgba, reinterpret_cast<const unsigned char*>(block) + 8, 1);
 }
