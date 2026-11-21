@@ -251,3 +251,61 @@ TEST_CASE("glTF importer samples cubic spline bone animation")
     CHECK(unsampled[0].position_.Equals(Vector3::ZERO));
     CHECK(unsampled[1].position_.Equals(Vector3{-1.0f, 0.0f, 0.0f}));
 }
+
+TEST_CASE("glTF importer samples cubic spline bone animation with a constant step")
+{
+    // The keys are at 0, 0.25 and 1 second. The bone stays at 0 until 0.25 s, then it moves to 1 on X.
+    // All tangents are zero. The key at 0.25 s is not on the sample grid, so the importer does not keep it.
+    // The importer mirrors X to convert glTF to left-handed space, so the expected X values are negative.
+    static const ea::string gltf = R"({
+        "asset":{"version":"2.0"},
+        "buffers":[{"byteLength":260,"uri":"data:application/octet-stream;base64,AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAIA/AAABAAIAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAAAAAACAPgAAgD8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAAAAAAAAAAA="}],
+        "bufferViews":[
+            {"buffer":0,"byteOffset":0,"byteLength":36,"target":34962},
+            {"buffer":0,"byteOffset":36,"byteLength":36,"target":34962},
+            {"buffer":0,"byteOffset":72,"byteLength":6,"target":34963},
+            {"buffer":0,"byteOffset":80,"byteLength":12,"target":34962},
+            {"buffer":0,"byteOffset":92,"byteLength":48,"target":34962},
+            {"buffer":0,"byteOffset":140,"byteLength":12},
+            {"buffer":0,"byteOffset":152,"byteLength":108}
+        ],
+        "accessors":[
+            {"bufferView":0,"componentType":5126,"count":3,"type":"VEC3","min":[0,0,0],"max":[1,1,0]},
+            {"bufferView":1,"componentType":5126,"count":3,"type":"VEC3"},
+            {"bufferView":2,"componentType":5123,"count":3,"type":"SCALAR"},
+            {"bufferView":3,"componentType":5121,"count":3,"type":"VEC4"},
+            {"bufferView":4,"componentType":5126,"count":3,"type":"VEC4"},
+            {"bufferView":5,"componentType":5126,"count":3,"type":"SCALAR","min":[0],"max":[1]},
+            {"bufferView":6,"componentType":5126,"count":9,"type":"VEC3"}
+        ],
+        "meshes":[{"name":"Triangle","primitives":[{
+            "attributes":{"POSITION":0,"NORMAL":1,"JOINTS_0":3,"WEIGHTS_0":4},"indices":2
+        }]}],
+        "skins":[{"joints":[1]}],
+        "nodes":[{"name":"Skinned","mesh":0,"skin":0},{"name":"Bone"}],
+        "animations":[{"name":"Move","samplers":[{
+            "input":5,"output":6,"interpolation":"CUBICSPLINE"
+        }],"channels":[{"sampler":0,"target":{"node":1,"path":"translation"}}]}],
+        "scenes":[{"nodes":[0,1]}],"scene":0
+    })";
+
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    // The second segment starts at 0.25 s and is 0.75 s long, so 0.5 s is at one third of it.
+    const auto sampled = ImportBoneKeyFrames(context, gltf, 2.0f);
+    REQUIRE(sampled.size() == 3);
+    CHECK(sampled[0].time_ == 0.0f);
+    CHECK(sampled[1].time_ == 0.5f);
+    CHECK(sampled[2].time_ == 1.0f);
+    CHECK(sampled[0].position_.Equals(Vector3::ZERO));
+    CHECK(sampled[1].position_.Equals(Vector3{-7.0f / 27.0f, 0.0f, 0.0f}));
+    CHECK(sampled[2].position_.Equals(Vector3{-1.0f, 0.0f, 0.0f}));
+
+    const float sampleRate = 30.0f;
+    const auto dense = ImportBoneKeyFrames(context, gltf, sampleRate);
+    REQUIRE(dense.size() == 31);
+    for (unsigned i = 1; i < dense.size(); ++i)
+        CHECK(Equals(dense[i].time_ - dense[i - 1].time_, 1.0f / sampleRate, 0.00001f));
+    CHECK(dense.back().time_ == 1.0f);
+    CHECK(dense.back().position_.Equals(Vector3{-1.0f, 0.0f, 0.0f}));
+}

@@ -167,9 +167,10 @@ Vector3 NormalizeSplineSample(const Vector3& value) { return value; }
 
 Quaternion NormalizeSplineSample(const Quaternion& value) { return value.Normalized(); }
 
-/// Sample glTF cubic spline data into linear key frames.
+/// Sample glTF cubic spline data into linear key frames with a constant time step.
 /// The data has an in-tangent, a value and an out-tangent for each key. The tangents are in units per second.
-/// Each segment gets enough samples for the sample rate. The source key frames are always kept.
+/// The step is the value nearest to the sample period that divides the track length.
+/// The first and the last source key frames are exact. The other source key frames are not kept.
 template <class T>
 void SampleCubicSpline(const ea::vector<float>& keys, const ea::vector<T>& data, float sampleRate,
     ea::vector<float>& sampledKeys, ea::vector<T>& sampledValues)
@@ -181,34 +182,40 @@ void SampleCubicSpline(const ea::vector<float>& keys, const ea::vector<T>& data,
     if (numKeys == 0)
         return;
 
-    for (unsigned k = 0; k + 1 < numKeys; ++k)
+    const float length = keys.back() - keys.front();
+    if (sampleRate <= 0.0f || length <= 0.0f)
     {
+        sampledKeys = keys;
+        for (unsigned k = 0; k < numKeys; ++k)
+            sampledValues.push_back(NormalizeSplineSample(data[k * 3 + 1]));
+        return;
+    }
+
+    const unsigned numSteps = static_cast<unsigned>(ea::max(1, RoundToInt(length * sampleRate)));
+    unsigned k = 0;
+    for (unsigned i = 0; i <= numSteps; ++i)
+    {
+        const float time = i < numSteps ? keys.front() + length * i / numSteps : keys.back();
+        while (k + 2 < numKeys && keys[k + 1] <= time)
+            ++k;
+
         const float duration = keys[k + 1] - keys[k];
         const T& value0 = data[k * 3 + 1];
         const T& outTangent0 = data[k * 3 + 2];
         const T& inTangent1 = data[(k + 1) * 3];
         const T& value1 = data[(k + 1) * 3 + 1];
 
-        const bool needSamples = sampleRate > 0.0f && duration > 0.0f;
-        const unsigned numSamples = needSamples ? static_cast<unsigned>(ea::max(1, CeilToInt(duration * sampleRate))) : 1;
-        for (unsigned j = 0; j < numSamples; ++j)
-        {
-            const float t = static_cast<float>(j) / numSamples;
-            const float tt = t * t;
-            const float ttt = tt * t;
-            const float h1 = 2.0f * ttt - 3.0f * tt + 1.0f;
-            const float h2 = -2.0f * ttt + 3.0f * tt;
-            const float h3 = (ttt - 2.0f * tt + t) * duration;
-            const float h4 = (ttt - tt) * duration;
+        const float t = duration > 0.0f ? Clamp((time - keys[k]) / duration, 0.0f, 1.0f) : 1.0f;
+        const float tt = t * t;
+        const float ttt = tt * t;
+        const float h1 = 2.0f * ttt - 3.0f * tt + 1.0f;
+        const float h2 = -2.0f * ttt + 3.0f * tt;
+        const float h3 = (ttt - 2.0f * tt + t) * duration;
+        const float h4 = (ttt - tt) * duration;
 
-            sampledKeys.push_back(keys[k] + duration * t);
-            sampledValues.push_back(
-                NormalizeSplineSample(value0 * h1 + value1 * h2 + outTangent0 * h3 + inTangent1 * h4));
-        }
+        sampledKeys.push_back(time);
+        sampledValues.push_back(NormalizeSplineSample(value0 * h1 + value1 * h2 + outTangent0 * h3 + inTangent1 * h4));
     }
-
-    sampledKeys.push_back(keys.back());
-    sampledValues.push_back(NormalizeSplineSample(data[(numKeys - 1) * 3 + 1]));
 }
 
 Matrix3x4 MirrorX(Matrix3x4 mat)
