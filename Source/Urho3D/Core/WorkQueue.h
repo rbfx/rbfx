@@ -27,6 +27,13 @@ class TaskScheduler;
 namespace Urho3D
 {
 
+namespace Detail
+{
+
+class WorkCompletionTokenImpl;
+
+}
+
 class HiresTimer;
 class WorkQueue;
 
@@ -34,9 +41,11 @@ class WorkQueue;
 enum class TaskPriority
 {
     /// Special priority. Tasks of Immediate priority are executed and completed on CompleteImmediateForThisThread call.
+    /// Immediate priority is intended for tasks that block the main thread and must be completed as soon as possible.
     /// @note If CompleteImmediateForThisThread is not called, "Immediate" tasks will be executed on Update.
     /// @note Tasks of other priorities should not post tasks of Immediate priority.
     Immediate,
+
     /// Other priorities.
     /// @{
     Highest,
@@ -95,6 +104,12 @@ private:
     WorkFunction workLambda_;
 };
 
+/// Task completion token. Pass it when posting a task to observe its completion.
+/// One token can only observe at most one task. Only supported in threaded environment.
+/// May be reused after task completion.
+/// Completion token cannot be used with Immediate-priority tasks.
+using WorkCompletionToken = ea::shared_ptr<Detail::WorkCompletionTokenImpl>;
+
 /// Work queue subsystem for multithreading.
 /// Tasks can be posted from any thread, but it is the most efficient from main thread or worker threads.
 /// Tasks posted from other threads may be posted with up to one frame delay and require heap allocation.
@@ -115,12 +130,17 @@ public:
     /// Do work in main thread. Usually called once per frame.
     void Update();
 
+    /// Create new task completion token. It can be reused after it's waited on.
+    static WorkCompletionToken CreateCompletionToken();
+
     /// Post the task for any processing thread.
-    void PostTask(TaskFunction&& task, TaskPriority priority = TaskPriority::Medium);
-    template <class T> void PostTask(T task, TaskPriority priority = TaskPriority::Medium);
+    /// If token is provided when task is posted, this token must be waited on via CompleteTask.
+    void PostTask(TaskFunction&& task, TaskPriority priority = TaskPriority::Medium, WorkCompletionToken completionToken = nullptr);
+    template <class T> void PostTask(T task, TaskPriority priority = TaskPriority::Medium, WorkCompletionToken completionToken = nullptr);
     /// Post the task for specified processing thread.
-    void PostTaskForThread(TaskFunction&& task, TaskPriority priority, unsigned threadIndex);
-    template <class T> void PostTaskForThread(T task, TaskPriority priority, unsigned threadIndex);
+    /// If token is provided when task is posted, this token must be waited on via CompleteTask.
+    void PostTaskForThread(TaskFunction&& task, TaskPriority priority, unsigned threadIndex, WorkCompletionToken completionToken);
+    template <class T> void PostTaskForThread(T task, TaskPriority priority, unsigned threadIndex, WorkCompletionToken completionToken);
     /// Post the task for main thread.
     void PostTaskForMainThread(TaskFunction&& task, TaskPriority priority = TaskPriority::Medium);
     template <class T> void PostTaskForMainThread(T task, TaskPriority priority = TaskPriority::Medium);
@@ -131,6 +151,9 @@ public:
     void RunTaskOnMainThread(TaskFunction&& task);
     template <class T> void RunTaskOnMainThread(T task);
 
+    /// Complete specific task. Will also run tasks of specified priority or higher.
+    /// Can be called only from main thread or from another task.
+    void CompleteTask(WorkCompletionToken completionToken, TaskPriority priority = TaskPriority::Low);
     /// Complete tasks with Immediate priority, posted from this thread.
     /// Can be called only from main thread or from another task.
     void CompleteImmediateForThisThread();
@@ -182,6 +205,7 @@ private:
 
 #ifdef URHO3D_THREADING
     template <class T> void SetupInternalTask(T* internalTask, TaskFunction&& task, TaskPriority priority);
+    template <class T> void SetupCompletionToken(T* internalTask, WorkCompletionToken completionToken);
 
     /// Thread-safe pool for infrequent low-priority tasks.
     template <class T>
@@ -355,32 +379,44 @@ template <class T> TaskFunction WorkQueue::WrapTask(T&& task)
         return [task = ea::move(task)](unsigned, WorkQueue*) mutable { task(); };
 }
 
-template <class T> void WorkQueue::PostTask(T task, TaskPriority priority)
+template <class T> void WorkQueue::PostTask(T task, TaskPriority priority, WorkCompletionToken completionToken)
 {
     if (!IsProcessingThread())
     {
-        auto wrappedTask = [task = ea::move(task), priority](WorkQueue* workQueue) mutable
-        { workQueue->PostTask(ea::move(task), priority); };
+        // clang-format off
+        auto wrappedTask = [task = ea::move(task), completionToken = ea::move(completionToken), priority](
+            WorkQueue* workQueue) mutable
+        {
+            workQueue->PostTask(ea::move(task), priority, completionToken);
+        };
+        // clang-format on
 
         PostTaskForMainThread(ea::move(wrappedTask), priority);
         return;
     }
 
-    PostTask(WrapTask(ea::move(task)), priority);
+    PostTask(WrapTask(ea::move(task)), priority, completionToken);
 }
 
-template <class T> void WorkQueue::PostTaskForThread(T task, TaskPriority priority, unsigned threadIndex)
+template <class T>
+void WorkQueue::PostTaskForThread(
+    T task, TaskPriority priority, unsigned threadIndex, WorkCompletionToken completionToken)
 {
     if (!IsProcessingThread())
     {
-        auto wrappedTask = [task = ea::move(task), priority, threadIndex](WorkQueue* workQueue) mutable
-        { workQueue->PostTaskForThread(ea::move(task), priority, threadIndex); };
+        // clang-format off
+        auto wrappedTask = [task = ea::move(task), completionToken = ea::move(completionToken), priority, threadIndex](
+            WorkQueue* workQueue) mutable
+        {
+            workQueue->PostTaskForThread(ea::move(task), priority, threadIndex, completionToken);
+        };
+        // clang-format on
 
         PostTaskForMainThread(ea::move(wrappedTask), priority);
         return;
     }
 
-    PostTaskForThread(WrapTask(ea::move(task)), priority, threadIndex);
+    PostTaskForThread(WrapTask(ea::move(task)), priority, threadIndex, completionToken);
 }
 
 template <class T> void WorkQueue::PostTaskForMainThread(T task, TaskPriority priority)

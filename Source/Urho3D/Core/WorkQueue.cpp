@@ -28,6 +28,12 @@ namespace
 unsigned threadIndexCount{};
 WorkQueue* workQueue{};
 
+enum class TaskReleaseMode : unsigned char
+{
+    Automatic,
+    Manual
+};
+
 #ifdef URHO3D_THREADING
 template <class T> struct ReleaseInternalTask : enki::ICompletable
 {
@@ -35,10 +41,13 @@ template <class T> struct ReleaseInternalTask : enki::ICompletable
 
     void OnDependenciesComplete(enki::TaskScheduler* taskScheduler, uint32_t threadNum) override
     {
+        auto task = const_cast<T*>(static_cast<const T*>(dependency_.GetDependencyTask()));
+        const auto releaseMode = task->GetReleaseMode();
+
         enki::ICompletable::OnDependenciesComplete(taskScheduler, threadNum);
 
-        auto task = const_cast<T*>(static_cast<const T*>(dependency_.GetDependencyTask()));
-        task->Release();
+        if (releaseMode == TaskReleaseMode::Automatic)
+            task->Release();
     }
 };
 #endif
@@ -50,7 +59,34 @@ TaskPriority ConvertLegacyPriority(unsigned priority)
         : static_cast<TaskPriority>(static_cast<unsigned>(TaskPriority::Low) - ea::min(priority, 2u));
 }
 
+/// Base class for pinned and unpinned tasks.
+class BaseInternalTaskInPool
+{
+public:
+    void SetReleaseMode(TaskReleaseMode mode) { releaseMode_ = mode; }
+
+    TaskReleaseMode GetReleaseMode() const { return releaseMode_; }
+
+    virtual void Release() = 0;
+
+private:
+    TaskReleaseMode releaseMode_{};
+};
+
 } // namespace
+
+namespace Detail
+{
+
+struct WorkCompletionTokenImpl
+{
+#ifdef URHO3D_THREADING
+    const enki::ICompletable* completionFence_{};
+    BaseInternalTaskInPool* poolTask_{};
+#endif
+};
+
+} // namespace Detail
 
 #ifdef URHO3D_THREADING
 
@@ -130,7 +166,7 @@ template <class T> void WorkQueue::TaskStack<T>::Purge()
     nextFreeIndex_ = 0;
 }
 
-class WorkQueue::InternalTaskInPool : public enki::ITaskSet
+class WorkQueue::InternalTaskInPool : public enki::ITaskSet, public BaseInternalTaskInPool
 {
 public:
     TaskFunction function_;
@@ -141,7 +177,9 @@ public:
         releaser_.SetDependency(releaser_.dependency_, this);
     }
 
-    void Release() { owner_->Release(this); }
+    const enki::ICompletable* GetCompletionFence() const { return &releaser_; }
+
+    void Release() override { owner_->Release(this); }
 
     void ExecuteRange(enki::TaskSetPartition range, uint32_t threadNum) override
     {
@@ -155,7 +193,7 @@ private:
     ReleaseInternalTask<InternalTaskInPool> releaser_;
 };
 
-class WorkQueue::InternalPinnedTaskInPool : public enki::IPinnedTask
+class WorkQueue::InternalPinnedTaskInPool : public enki::IPinnedTask, public BaseInternalTaskInPool
 {
 public:
     TaskFunction function_;
@@ -166,7 +204,9 @@ public:
         releaser_.SetDependency(releaser_.dependency_, this);
     }
 
-    void Release() { owner_->Release(this); }
+    const enki::ICompletable* GetCompletionFence() const { return &releaser_; }
+
+    void Release() override { owner_->Release(this); }
 
     void Execute() override
     {
@@ -277,7 +317,8 @@ void WorkQueue::Initialize(unsigned numThreads)
         for (unsigned i = 1; i < numProcessingThreads_; ++i)
         {
             const std::string threadName = fmt::format("Worker {}", i);
-            PostTaskForThread([=]() { SetProfilerThreadName(threadName.c_str()); }, TaskPriority::Immediate, i);
+            PostTaskForThread(
+                [=]() { SetProfilerThreadName(threadName.c_str()); }, TaskPriority::Immediate, i, nullptr);
         }
         taskScheduler_->WaitforAll();
 
@@ -296,6 +337,11 @@ void WorkQueue::Update()
 {
     HiresTimer budgetTimer;
     UpdateOnMainThread(&budgetTimer);
+}
+
+WorkCompletionToken WorkQueue::CreateCompletionToken()
+{
+    return ea::make_shared<Detail::WorkCompletionTokenImpl>();
 }
 
 unsigned WorkQueue::ExecuteWithinBudget(
@@ -388,14 +434,33 @@ template <class T> void WorkQueue::SetupInternalTask(T* internalTask, TaskFuncti
     internalTask->function_ = ea::move(task);
     internalTask->m_Priority = static_cast<enki::TaskPriority>(priority);
 }
+
+template <class T> void WorkQueue::SetupCompletionToken(T* internalTask, WorkCompletionToken completionToken)
+{
+    if (!completionToken)
+        internalTask->SetReleaseMode(TaskReleaseMode::Automatic);
+    else
+    {
+        internalTask->SetReleaseMode(TaskReleaseMode::Manual);
+        completionToken->completionFence_ = internalTask->GetCompletionFence();
+        completionToken->poolTask_ = internalTask;
+    }
+}
 #endif
 
-void WorkQueue::PostTask(TaskFunction&& task, TaskPriority priority)
+void WorkQueue::PostTask(TaskFunction&& task, TaskPriority priority, WorkCompletionToken completionToken)
 {
+    URHO3D_ASSERTLOG(!completionToken || priority != TaskPriority::Immediate);
+
     if (!IsProcessingThread())
     {
-        auto wrappedTask = [task = ea::move(task), priority](unsigned, WorkQueue* queue) mutable
-        { queue->PostTask(ea::move(task), priority); };
+        // clang-format off
+        auto wrappedTask = [task = ea::move(task), completionToken = ea::move(completionToken), priority](
+            unsigned, WorkQueue* queue) mutable
+        {
+            queue->PostTask(ea::move(task), priority, completionToken);
+        };
+        // clang-format on
 
         PostTaskForMainThread(ea::move(wrappedTask), priority);
         return;
@@ -415,24 +480,33 @@ void WorkQueue::PostTask(TaskFunction&& task, TaskPriority priority)
         {
             InternalTaskInPool* internalTask = globalTaskPool_.Allocate();
             SetupInternalTask(internalTask, ea::move(task), priority);
+            SetupCompletionToken(internalTask, completionToken);
             taskScheduler_->AddTaskSetToPipe(internalTask);
         }
         return;
     }
 #endif
 
-    if (priority == TaskPriority::Immediate)
+    if (priority == TaskPriority::Immediate || completionToken)
         task(0, this);
     else
         fallbackTaskQueue_.push_back(ea::move(task));
 }
 
-void WorkQueue::PostTaskForThread(TaskFunction&& task, TaskPriority priority, unsigned threadIndex)
+void WorkQueue::PostTaskForThread(
+    TaskFunction&& task, TaskPriority priority, unsigned threadIndex, WorkCompletionToken completionToken)
 {
+    URHO3D_ASSERTLOG(!completionToken || priority != TaskPriority::Immediate);
+
     if (!IsProcessingThread())
     {
-        auto wrappedTask = [task = ea::move(task), priority, threadIndex](unsigned, WorkQueue* queue) mutable
-        { queue->PostTaskForThread(ea::move(task), priority, threadIndex); };
+        // clang-format off
+        auto wrappedTask = [task = ea::move(task), completionToken = ea::move(completionToken), priority, threadIndex](
+            unsigned, WorkQueue* queue) mutable
+        {
+            queue->PostTaskForThread(ea::move(task), priority, threadIndex, completionToken);
+        };
+        // clang-format on
 
         PostTaskForMainThread(ea::move(wrappedTask), priority);
         return;
@@ -452,6 +526,7 @@ void WorkQueue::PostTaskForThread(TaskFunction&& task, TaskPriority priority, un
         {
             InternalPinnedTaskInPool* internalTask = globalPinnedTaskPool_.Allocate();
             SetupInternalTask(internalTask, ea::move(task), priority);
+            SetupCompletionToken(internalTask, completionToken);
             internalTask->threadNum = threadIndex;
             taskScheduler_->AddPinnedTask(internalTask);
         }
@@ -459,7 +534,7 @@ void WorkQueue::PostTaskForThread(TaskFunction&& task, TaskPriority priority, un
     }
 #endif
 
-    if (priority == TaskPriority::Immediate)
+    if (priority == TaskPriority::Immediate || completionToken)
         task(0, this);
     else
         fallbackTaskQueue_.push_back(ea::move(task));
@@ -470,7 +545,7 @@ void WorkQueue::PostTaskForMainThread(TaskFunction&& task, TaskPriority priority
 #ifdef URHO3D_THREADING
     if (taskScheduler_ && IsProcessingThread())
     {
-        PostTaskForThread(ea::move(task), priority, 0);
+        PostTaskForThread(ea::move(task), priority, 0, nullptr);
         return;
     }
 #endif
@@ -519,6 +594,22 @@ void WorkQueue::CompleteImmediateForAnotherThread(unsigned threadIndex)
     }
 #endif
     // Fallback queue never contains immediate tasks
+}
+
+void WorkQueue::CompleteTask(WorkCompletionToken completionToken, TaskPriority priority)
+{
+#ifdef URHO3D_THREADING
+    if (taskScheduler_ && completionToken && completionToken->completionFence_ && completionToken->poolTask_)
+    {
+        taskScheduler_->WaitforTask(completionToken->completionFence_, static_cast<enki::TaskPriority>(priority));
+
+        URHO3D_ASSERT(completionToken->poolTask_->GetReleaseMode() == TaskReleaseMode::Manual);
+        completionToken->poolTask_->Release();
+
+        completionToken->completionFence_ = nullptr;
+        completionToken->poolTask_ = nullptr;
+    }
+#endif
 }
 
 void WorkQueue::CompleteImmediateForThisThread()
