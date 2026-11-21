@@ -3,102 +3,15 @@
 
 #include "../CommonUtils.h"
 
-#include <Urho3D/Core/Exception.h>
-#include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/Animation.h>
-#include <Urho3D/Graphics/Geometry.h>
-#include <Urho3D/Graphics/Graphics.h>
-#include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/ModelView.h>
-#include <Urho3D/Graphics/StaticModel.h>
-#include <Urho3D/IO/File.h>
-#include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/RenderPipeline/ShaderConsts.h>
-#include <Urho3D/Resource/Image.h>
+#include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Scene/PrefabResource.h>
-#include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Utility/GLTFImporter.h>
-
-#include <cmath>
-#include <thread>
 
 namespace
 {
-
-class CaptureImporterCallback : public GLTFImporterCallback
-{
-public:
-    bool failOnModel_{};
-    unsigned numVertices_{};
-    unsigned numIndices_{};
-    unsigned numBones_{};
-    bool windingMatchesNormal_{};
-    bool materialWasCached_{};
-    Vector3 tangent_;
-    ea::vector<PrimitiveType> primitiveTypes_;
-    ea::vector<ModelVertexMorph> vertexMorphs_;
-    ea::string materialName_;
-    ea::vector<ea::string> artificialSkinNodes_;
-    ResourceCache* resourceCache_{};
-    ea::array<ea::vector<float>, 2> inTangents_;
-    ea::array<ea::vector<float>, 2> outTangents_;
-    ea::vector<ea::string> variantTrackNames_;
-    ea::unordered_map<ea::string, ea::vector<AnimationKeyFrame>> boneKeyFrames_;
-
-    void OnModelLoaded(ModelView& modelView) override
-    {
-        numBones_ = modelView.GetBones().size();
-        if (modelView.GetGeometries().empty() || modelView.GetGeometries()[0].lods_.empty())
-            return;
-        for (const GeometryView& geometry : modelView.GetGeometries())
-        {
-            for (const GeometryLODView& geometryLOD : geometry.lods_)
-            {
-                primitiveTypes_.push_back(geometryLOD.primitiveType_);
-                if (const auto iter = geometryLOD.morphs_.find(0); iter != geometryLOD.morphs_.end())
-                    vertexMorphs_.insert(vertexMorphs_.end(), iter->second.begin(), iter->second.end());
-            }
-        }
-        const GeometryLODView& lod = modelView.GetGeometries()[0].lods_[0];
-        numVertices_ = lod.vertices_.size();
-        numIndices_ = lod.indices_.size();
-        materialName_ = modelView.GetGeometries()[0].material_;
-        materialWasCached_ =
-            resourceCache_ && !materialName_.empty() && resourceCache_->GetExistingResource<Material>(materialName_);
-        if (!lod.vertices_.empty())
-            tangent_ = lod.vertices_[0].GetTangent();
-        if (lod.indices_.size() >= 3)
-        {
-            const ModelVertex& v0 = lod.vertices_[lod.indices_[0]];
-            const ModelVertex& v1 = lod.vertices_[lod.indices_[1]];
-            const ModelVertex& v2 = lod.vertices_[lod.indices_[2]];
-            const Vector3 faceNormal =
-                (v1.GetPosition() - v0.GetPosition()).CrossProduct(v2.GetPosition() - v0.GetPosition());
-            windingMatchesNormal_ = faceNormal.DotProduct(v0.GetNormal()) > 0.0f;
-        }
-        if (failOnModel_)
-            throw RuntimeException("Expected importer callback failure");
-    }
-
-    void OnAnimationLoaded(Animation& animation) override
-    {
-        for (const auto& [_, track] : animation.GetTracks())
-            boneKeyFrames_[track.name_] = track.keyFrames_;
-        for (const auto& [_, track] : animation.GetVariantTracks())
-        {
-            variantTrackNames_.push_back(track.name_);
-            const unsigned morphIndex = track.name_.ends_with("/Morphs/0") ? 0 : 1;
-            for (const Variant& tangent : track.inTangents_)
-                inTangents_[morphIndex].push_back(tangent.GetFloat());
-            for (const Variant& tangent : track.outTangents_)
-                outTangents_[morphIndex].push_back(tangent.GetFloat());
-        }
-    }
-
-    ea::vector<ea::string> GetArtificialSkinNodes() override { return artificialSkinNodes_; }
-};
 
 GLTFImporterSettings GetTestSettings()
 {
@@ -109,6 +22,60 @@ GLTFImporterSettings GetTestSettings()
     settings.preview_.addReflectionProbe_ = false;
     settings.preview_.highRenderQuality_ = false;
     return settings;
+}
+
+/// Import glTF text from memory. The imported resources stay in the resource cache while the importer is alive.
+SharedPtr<GLTFImporter> ImportGLTF(Context* context, const ea::string& gltf, const GLTFImporterSettings& settings)
+{
+    // The importer loads only the binary format from memory, so put the text in a GLB container.
+    ea::string json = gltf;
+    json.resize((json.size() + 3) / 4 * 4, ' ');
+
+    VectorBuffer glb;
+    glb.WriteUInt(0x46546C67); // "glTF"
+    glb.WriteUInt(2);
+    glb.WriteUInt(12 + 8 + json.size());
+    glb.WriteUInt(json.size());
+    glb.WriteUInt(0x4E4F534A); // "JSON"
+    glb.Write(json.data(), json.size());
+
+    auto importer = MakeShared<GLTFImporter>(context, settings);
+    REQUIRE(importer->LoadFileBinary(glb.GetBuffer()));
+    REQUIRE(importer->Process("", "Test/", nullptr));
+    return importer;
+}
+
+const VariantAnimationTrack* FindVariantTrack(const Animation& animation, const ea::string& nameSuffix)
+{
+    for (const auto& [_, track] : animation.GetVariantTracks())
+    {
+        if (track.name_.ends_with(nameSuffix))
+            return &track;
+    }
+    return nullptr;
+}
+
+ea::vector<float> ToFloats(const ea::vector<Variant>& values)
+{
+    ea::vector<float> result;
+    for (const Variant& value : values)
+        result.push_back(value.GetFloat());
+    return result;
+}
+
+/// Import glTF text with the given spline sample rate. Return the key frames of the "Bone" track.
+ea::vector<AnimationKeyFrame> ImportBoneKeyFrames(Context* context, const ea::string& gltf, float sampleRate)
+{
+    GLTFImporterSettings settings = GetTestSettings();
+    settings.splineSampleRate_ = sampleRate;
+    const auto importer = ImportGLTF(context, gltf, settings);
+
+    auto cache = context->GetSubsystem<ResourceCache>();
+    auto animation = cache->GetExistingResource<Animation>("Test/Animations/Move.ani");
+    REQUIRE(animation);
+    const AnimationTrack* track = animation->GetTrack(ea::string{"Bone"});
+    REQUIRE(track);
+    return track->keyFrames_;
 }
 
 } // namespace
@@ -148,23 +115,35 @@ TEST_CASE("glTF importer preserves handedness and cubic morph tangents")
     })";
 
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto fileSystem = context->GetSubsystem<FileSystem>();
-    TemporaryDir temporaryDir{context, fileSystem->GetTemporaryDir() + "rbfx-model-importer-tests"};
-    const ea::string fileName = temporaryDir.GetPath() + "handedness.gltf";
-    File file{context, fileName, FILE_WRITE};
-    REQUIRE(file.Write(gltf.data(), gltf.size()) == gltf.size());
-    file.Close();
+    auto cache = context->GetSubsystem<ResourceCache>();
+    const auto importer = ImportGLTF(context, gltf, GetTestSettings());
 
-    CaptureImporterCallback callback;
-    GLTFImporter importer{context, GetTestSettings()};
-    REQUIRE(importer.LoadFile(fileName));
-    REQUIRE(importer.Process(temporaryDir.GetPath(), "Test/", &callback));
+    auto model = cache->GetExistingResource<Model>("Test/Models/Triangle.mdl");
+    REQUIRE(model);
+    auto modelView = MakeShared<ModelView>(context);
+    REQUIRE(modelView->ImportModel(model));
+    REQUIRE(modelView->GetGeometries().size() == 1);
+    REQUIRE(modelView->GetGeometries()[0].lods_.size() == 1);
 
-    CHECK(callback.windingMatchesNormal_);
-    CHECK(callback.inTangents_[0] == ea::vector<float>{10.0f, 30.0f});
-    CHECK(callback.outTangents_[0] == ea::vector<float>{20.0f, 40.0f});
-    CHECK(callback.inTangents_[1] == ea::vector<float>{11.0f, 31.0f});
-    CHECK(callback.outTangents_[1] == ea::vector<float>{21.0f, 41.0f});
+    // The winding of the first triangle agrees with the vertex normal.
+    const GeometryLODView& lod = modelView->GetGeometries()[0].lods_[0];
+    REQUIRE(lod.indices_.size() == 3);
+    const ModelVertex& v0 = lod.vertices_[lod.indices_[0]];
+    const ModelVertex& v1 = lod.vertices_[lod.indices_[1]];
+    const ModelVertex& v2 = lod.vertices_[lod.indices_[2]];
+    const Vector3 faceNormal = (v1.GetPosition() - v0.GetPosition()).CrossProduct(v2.GetPosition() - v0.GetPosition());
+    CHECK(faceNormal.DotProduct(v0.GetNormal()) > 0.0f);
+
+    auto animation = cache->GetExistingResource<Animation>("Test/Animations/Morph.ani");
+    REQUIRE(animation);
+    const VariantAnimationTrack* morph0 = FindVariantTrack(*animation, "/Morphs/0");
+    const VariantAnimationTrack* morph1 = FindVariantTrack(*animation, "/Morphs/1");
+    REQUIRE(morph0);
+    REQUIRE(morph1);
+    CHECK(ToFloats(morph0->inTangents_) == ea::vector<float>{10.0f, 30.0f});
+    CHECK(ToFloats(morph0->outTangents_) == ea::vector<float>{20.0f, 40.0f});
+    CHECK(ToFloats(morph1->inTangents_) == ea::vector<float>{11.0f, 31.0f});
+    CHECK(ToFloats(morph1->outTangents_) == ea::vector<float>{21.0f, 41.0f});
 }
 
 TEST_CASE("glTF importer scales cubic morph tangents by key frame segment duration")
@@ -204,22 +183,19 @@ TEST_CASE("glTF importer scales cubic morph tangents by key frame segment durati
     })";
 
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto fileSystem = context->GetSubsystem<FileSystem>();
-    TemporaryDir temporaryDir{context, fileSystem->GetTemporaryDir() + "rbfx-model-importer-tests"};
-    const ea::string fileName = temporaryDir.GetPath() + "tangent-scale.gltf";
-    File file{context, fileName, FILE_WRITE};
-    REQUIRE(file.Write(gltf.data(), gltf.size()) == gltf.size());
-    file.Close();
+    auto cache = context->GetSubsystem<ResourceCache>();
+    const auto importer = ImportGLTF(context, gltf, GetTestSettings());
 
-    CaptureImporterCallback callback;
-    GLTFImporter importer{context, GetTestSettings()};
-    REQUIRE(importer.LoadFile(fileName));
-    REQUIRE(importer.Process(temporaryDir.GetPath(), "Test/", &callback));
-
-    CHECK(callback.inTangents_[0] == ea::vector<float>{2.0f, 2.0f, 6.0f});
-    CHECK(callback.outTangents_[0] == ea::vector<float>{6.0f, 18.0f, 18.0f});
-    CHECK(callback.inTangents_[1] == ea::vector<float>{4.0f, 4.0f, 12.0f});
-    CHECK(callback.outTangents_[1] == ea::vector<float>{8.0f, 24.0f, 24.0f});
+    auto animation = cache->GetExistingResource<Animation>("Test/Animations/Morph.ani");
+    REQUIRE(animation);
+    const VariantAnimationTrack* morph0 = FindVariantTrack(*animation, "/Morphs/0");
+    const VariantAnimationTrack* morph1 = FindVariantTrack(*animation, "/Morphs/1");
+    REQUIRE(morph0);
+    REQUIRE(morph1);
+    CHECK(ToFloats(morph0->inTangents_) == ea::vector<float>{2.0f, 2.0f, 6.0f});
+    CHECK(ToFloats(morph0->outTangents_) == ea::vector<float>{6.0f, 18.0f, 18.0f});
+    CHECK(ToFloats(morph1->inTangents_) == ea::vector<float>{4.0f, 4.0f, 12.0f});
+    CHECK(ToFloats(morph1->outTangents_) == ea::vector<float>{8.0f, 24.0f, 24.0f});
 }
 
 TEST_CASE("glTF importer samples cubic spline bone animation")
@@ -260,26 +236,8 @@ TEST_CASE("glTF importer samples cubic spline bone animation")
     })";
 
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto fileSystem = context->GetSubsystem<FileSystem>();
-    TemporaryDir temporaryDir{context, fileSystem->GetTemporaryDir() + "rbfx-model-importer-tests"};
-    const ea::string fileName = temporaryDir.GetPath() + "spline-bone.gltf";
-    File file{context, fileName, FILE_WRITE};
-    REQUIRE(file.Write(gltf.data(), gltf.size()) == gltf.size());
-    file.Close();
 
-    const auto importBoneKeyFrames = [&](float sampleRate)
-    {
-        GLTFImporterSettings settings = GetTestSettings();
-        settings.splineSampleRate_ = sampleRate;
-        CaptureImporterCallback callback;
-        GLTFImporter importer{context, settings};
-        REQUIRE(importer.LoadFile(fileName));
-        REQUIRE(importer.Process(temporaryDir.GetPath(), "Test/", &callback));
-        REQUIRE(callback.boneKeyFrames_.contains("Bone"));
-        return callback.boneKeyFrames_["Bone"];
-    };
-
-    const auto sampled = importBoneKeyFrames(2.0f);
+    const auto sampled = ImportBoneKeyFrames(context, gltf, 2.0f);
     REQUIRE(sampled.size() == 3);
     CHECK(sampled[0].time_ == 0.0f);
     CHECK(sampled[1].time_ == 0.5f);
@@ -288,7 +246,7 @@ TEST_CASE("glTF importer samples cubic spline bone animation")
     CHECK(sampled[1].position_.Equals(Vector3{-0.875f, 0.0f, 0.0f}));
     CHECK(sampled[2].position_.Equals(Vector3{-1.0f, 0.0f, 0.0f}));
 
-    const auto unsampled = importBoneKeyFrames(0.0f);
+    const auto unsampled = ImportBoneKeyFrames(context, gltf, 0.0f);
     REQUIRE(unsampled.size() == 2);
     CHECK(unsampled[0].position_.Equals(Vector3::ZERO));
     CHECK(unsampled[1].position_.Equals(Vector3{-1.0f, 0.0f, 0.0f}));
