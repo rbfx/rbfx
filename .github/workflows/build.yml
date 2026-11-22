@@ -130,7 +130,9 @@ jobs:
         # Matrix planning is profile-independent and exposes only `matrix`.
         uses: ./rbfx-ci/.github/actions/ci-prepare-matrix
         with:
-          platforms: all
+          platforms: |
+            all
+            -uwp
           runners: linux:ubuntu-24.04
 
   Build:

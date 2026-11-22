@@ -10,7 +10,7 @@ It is an experimental fork of [Urho3D](https://github.com/urho3d/Urho3D) game en
 * **Free and Open Source Software**, and it will stay this way;
 * Suitable for 3D games and applications;
 * Moderately lightweight and modular;
-* Supported for Windows, Linux, MacOS, Android, iOS, Web and XBox (via UWP);
+* Supported for Windows, Linux, MacOS, Android, iOS, Web;
 * Just a C++ library with a couple of tools;
 * There are optional experimental C# bindings.
 
@@ -50,14 +50,14 @@ available for the latest successful build of `master` branch.
 
 ## Supported Platforms
 
-| Graphics API/Platform | Windows | UWP | Linux | MacOS | iOS | Android | Web |
-| --------------------- |:-------:|:---:|:-----:|:-----:|:---:|:-------:|:---:|
-| Direct3D 11.1         | ✔       | ✔   |       |       |     |         |     |
-| Direct3D 12           | ✔       | ✔   |       |       |     |         |     |
-| Vulkan 1.0            | ✔       |     | ✔     | ✔*    | ✔*  | ✔       |     |
-| OpenGL 4.1            | ✔       |     | ✔     | ✔     |     |         |     |
-| OpenGL ES 3.0         |         |     |       |       | ✔   | ✔       |     |
-| WebGL 2.0             |         |     |       |       |     |         | ✔   |
+| Graphics API/Platform | Windows | Linux | MacOS | iOS | Android | Web |
+| --------------------- |:-------:|:-----:|:-----:|:---:|:-------:|:---:|
+| Direct3D 11.1         | ✔       |       |       |     |         |     |
+| Direct3D 12           | ✔       |       |       |     |         |     |
+| Vulkan 1.0            | ✔       | ✔     | ✔*    | ✔*  | ✔       |     |
+| OpenGL 4.1            | ✔       | ✔     | ✔     |     |         |     |
+| OpenGL ES 3.0         |         |       |       | ✔   | ✔       |     |
+| WebGL 2.0             |         |       |       |     |         | ✔   |
 
 (*) `Vulkan` is supported on MacOS and iOS via `MoltenVK`. Additional setup is required.
 
