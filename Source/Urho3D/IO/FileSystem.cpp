@@ -733,12 +733,7 @@ bool FileSystem::Copy(const ea::string& srcFileName, const ea::string& destFileN
     if (!destFile->IsOpen())
         return false;
 
-    unsigned fileSize = srcFile->GetSize();
-    ea::shared_array<unsigned char> buffer(new unsigned char[fileSize]);
-
-    unsigned bytesRead = srcFile->Read(buffer.get(), fileSize);
-    unsigned bytesWritten = destFile->Write(buffer.get(), fileSize);
-    return bytesRead == fileSize && bytesWritten == fileSize;
+    return destFile->Copy(srcFile.Get());
 }
 
 bool FileSystem::Rename(const ea::string& srcFileName, const ea::string& destFileName)
