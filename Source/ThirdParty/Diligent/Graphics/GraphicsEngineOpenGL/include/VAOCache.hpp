@@ -30,6 +30,7 @@
 #include <cstring>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "GraphicsTypes.h"
 #include "Buffer.h"
@@ -126,8 +127,11 @@ private:
     Threading::SpinLock                                                                    m_CacheLock;
     std::unordered_map<VAOHashKey, GLObjectWrappers::GLVertexArrayObj, VAOHashKey::Hasher> m_Cache;
 
-    std::unordered_map<UniqueIdentifier, std::vector<VAOHashKey>> m_PSOToKey;
-    std::unordered_map<UniqueIdentifier, std::vector<VAOHashKey>> m_BuffToKey;
+    // One PSO may have thousands of keys, and erasing one must be fast, so use sets.
+    using VAOHashKeySet = std::unordered_set<VAOHashKey, VAOHashKey::Hasher>;
+
+    std::unordered_map<UniqueIdentifier, VAOHashKeySet> m_PSOToKey;
+    std::unordered_map<UniqueIdentifier, VAOHashKeySet> m_BuffToKey;
 
     // Any draw command fails if no VAO is bound. We will use this empty
     // VAO for draw commands with null input layout, such as these that

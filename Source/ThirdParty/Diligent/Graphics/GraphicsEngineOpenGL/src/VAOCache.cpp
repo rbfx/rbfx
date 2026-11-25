@@ -29,8 +29,6 @@
 
 #include "VAOCache.hpp"
 
-#include <unordered_set>
-
 #include "RenderDeviceGLImpl.hpp"
 #include "BufferGLImpl.hpp"
 #include "PipelineStateGLImpl.hpp"
@@ -116,55 +114,37 @@ void VAOCache::Clear()
 
 void VAOCache::ClearStaleKeys(const std::vector<VAOHashKey>& StaleKeys)
 {
-    // Collect unique PSOs and buffers used in stale keys.
-    std::unordered_set<UniqueIdentifier> CandidatePSOs;
-    std::unordered_set<UniqueIdentifier> CandidateBuffers;
+    // Erases the key from the set of one PSO or buffer, and the set itself once it is empty.
+    auto EraseKey = [](std::unordered_map<UniqueIdentifier, VAOHashKeySet>& IdToKeys,
+                       UniqueIdentifier                                     Id,
+                       const VAOHashKey&                                    Key) //
+    {
+        const auto it = IdToKeys.find(Id);
+        // Not found when Id is the destroyed object's, whose set OnDestroyBuffer() or OnDestroyPSO() has
+        // already erased, or when the key uses the same buffer twice and the first call emptied its set.
+        if (it == IdToKeys.end())
+            return;
+
+        it->second.erase(Key);
+        if (it->second.empty())
+            IdToKeys.erase(it);
+    };
+
     for (const auto& StaleKey : StaleKeys)
     {
-        CandidatePSOs.emplace(StaleKey.PsoUId);
+        EraseKey(m_PSOToKey, StaleKey.PsoUId, StaleKey);
 
         if (StaleKey.IndexBufferUId != 0)
-            CandidateBuffers.emplace(StaleKey.IndexBufferUId);
+            EraseKey(m_BuffToKey, StaleKey.IndexBufferUId, StaleKey);
 
         for (auto SlotMask = StaleKey.UsedSlotsMask; SlotMask != 0;)
         {
             const auto SlotBit = ExtractLSB(SlotMask);
             const auto Slot    = PlatformMisc::GetLSB(SlotBit);
             VERIFY_EXPR(StaleKey.Streams[Slot].BufferUId >= 0);
-            CandidateBuffers.emplace(StaleKey.Streams[Slot].BufferUId);
+            EraseKey(m_BuffToKey, StaleKey.Streams[Slot].BufferUId, StaleKey);
         }
     }
-
-    auto RemoveStaleEntries = [this](const std::unordered_set<UniqueIdentifier>&                    CandidateIds,
-                                     std::unordered_map<UniqueIdentifier, std::vector<VAOHashKey>>& IdToKey) //
-    {
-        auto EraseSwap = [](std::vector<VAOHashKey>& Keys, size_t Index) //
-        {
-            if (Index != Keys.size() - 1)
-                std::swap(Keys[Index], Keys.back());
-            Keys.pop_back();
-        };
-
-        // Delete stale entries that reference dead keys
-        for (const auto Id : CandidateIds)
-        {
-            const auto it = IdToKey.find(Id);
-            if (it != IdToKey.end())
-            {
-                // This vector may shrink during iteration
-                auto& Keys = it->second;
-                for (size_t i = 0; i < Keys.size();)
-                {
-                    if (m_Cache.find(Keys[i]) == m_Cache.end())
-                        EraseSwap(Keys, i); // There is no more VAO with this key
-                    else
-                        ++i;
-                }
-            }
-        }
-    };
-    RemoveStaleEntries(CandidatePSOs, m_PSOToKey);
-    RemoveStaleEntries(CandidateBuffers, m_BuffToKey);
 }
 
 VAOCache::VAOHashKey::VAOHashKey(const VAOAttribs& Attribs) :
@@ -338,12 +318,12 @@ const GLObjectWrappers::GLVertexArrayObj& VAOCache::GetVAO(const VAOAttribs& Att
         // New element must be actually inserted
         VERIFY(NewElems.second, "New element was not inserted into the cache");
         VERIFY_EXPR(Key.PsoUId == Attribs.PSO.GetUniqueID());
-        m_PSOToKey[Key.PsoUId].push_back(Key);
+        m_PSOToKey[Key.PsoUId].insert(Key);
 
         if (Attribs.pIndexBuffer)
         {
             VERIFY_EXPR(Key.IndexBufferUId == Attribs.pIndexBuffer->GetUniqueID());
-            m_BuffToKey[Key.IndexBufferUId].push_back(Key);
+            m_BuffToKey[Key.IndexBufferUId].insert(Key);
         }
 
         for (auto SlotMask = Key.UsedSlotsMask; SlotMask != 0;)
@@ -359,7 +339,7 @@ const GLObjectWrappers::GLVertexArrayObj& VAOCache::GetVAO(const VAOAttribs& Att
             }
 #endif
 
-            m_BuffToKey[Key.Streams[Slot].BufferUId].push_back(Key);
+            m_BuffToKey[Key.Streams[Slot].BufferUId].insert(Key);
         }
         return NewElems.first->second;
     }
