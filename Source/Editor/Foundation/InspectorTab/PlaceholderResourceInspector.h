@@ -41,6 +41,7 @@ private:
         ea::string resourceName_;
     };
     ea::optional<SingleResource> singleResource_;
+    ea::string singleResourcePreview_;
 
     struct MultipleResources
     {
