@@ -420,8 +420,11 @@ if (WEB)
     target_compile_options(Urho3D PRIVATE $<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:-O3>)
     target_link_options(Urho3D PRIVATE $<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:-sAGGRESSIVE_VARIABLE_ELIMINATION=1>)
     target_compile_options(Urho3D PUBLIC $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:${EMCC_WITH_SOURCE_MAPS_FLAG}>)
-    target_link_libraries(Urho3D PUBLIC -sFETCH -sDISABLE_EXCEPTION_CATCHING=1 -sFORCE_FILESYSTEM=1 -sDISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 -lidbfs.js)
-    target_link_libraries(Urho3D PUBLIC --bind)
+
+    # Linker flags that belong ONLY tothe main executable (MAIN_MODULE), not shared libraries (SIDE_MODULE):
+    target_link_libraries(Urho3D PUBLIC "$<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:-sFETCH -sDISABLE_EXCEPTION_CATCHING=1 -sFORCE_FILESYSTEM=1 -sDISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 -lidbfs.js --bind>"
+    )
+
     if (NOT EMSCRIPTEN_TOTAL_MEMORY OR "${EMSCRIPTEN_TOTAL_MEMORY}" STREQUAL "0")
         target_link_libraries(Urho3D PUBLIC "-s ALLOW_MEMORY_GROWTH=1" --no-heap-copy)
     else ()
