@@ -98,7 +98,7 @@ ea::string DynamicLibraryPluginInstance::GetTemporaryPdbName(const ea::string& f
 
 ea::string DynamicLibraryPluginInstance::GetAbsoluteFileName(const ea::string& name, bool original) const
 {
-#if __linux__ || __APPLE__
+#if __linux__ || __APPLE__ || __EMSCRIPTEN__
     static const ea::string_view prefix = "lib";
 #else
     static const ea::string_view prefix = "";

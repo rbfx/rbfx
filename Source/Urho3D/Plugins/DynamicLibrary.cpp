@@ -152,7 +152,7 @@ bool DynamicLibrary::Load(const ea::string& path)
     {
 #if _WIN32
         handle_ = (uintptr_t)LoadLibrary(path.data());
-#elif __linux__ || __APPLE__
+#elif __linux__ || __APPLE__ || __EMSCRIPTEN__
         handle_ = (uintptr_t)dlopen(path.c_str(), RTLD_NOW);
 #else
         URHO3D_LOGERROR("Plugin loading is not supported on this platform.");
@@ -167,7 +167,7 @@ bool DynamicLibrary::Load(const ea::string& path)
     {
         path_.clear();
         moduleType_ = MODULE_INVALID;
-#if __linux__ || __APPLE__
+#if __linux__ || __APPLE__ || __EMSCRIPTEN__
         URHO3D_LOGERROR("dlerror: {}", dlerror());
 #endif
     }
@@ -191,12 +191,12 @@ bool DynamicLibrary::Unload()
     {
 #if _WIN32
         FreeLibrary((HMODULE)handle_);
-#elif __linux__ || __APPLE__
+#elif __linux__ || __APPLE__ || __EMSCRIPTEN__
         dlclose((void*)handle_);
 #else
         URHO3D_LOGERROR("Plugin loading is not supported on this platform.");
         return false;
-#endif  // __linux__ || __APPLE__
+#endif  // __linux__ || __APPLE__ || __EMSCRIPTEN__
     }
 
     handle_ = 0;
@@ -221,7 +221,7 @@ void* DynamicLibrary::GetSymbol(const ea::string& symbol)
 
 #if _WIN32
     return (void*)GetProcAddress((HMODULE)handle_, symbol.c_str());
-#elif __linux__ || __APPLE__
+#elif __linux__ || __APPLE__ || __EMSCRIPTEN__
     return dlsym((void*)handle_, symbol.c_str());
 #else
     URHO3D_LOGERROR("Plugin symbol retrieval is not supported on this platform.");
@@ -327,6 +327,27 @@ ModuleType DynamicLibrary::ReadModuleInformation(Context* context, const ea::str
         }
     }
 #endif  // __linux__
+
+#if __EMSCRIPTEN__
+
+    if (!path.ends_with(".so"))
+        return MODULE_INVALID;
+
+    File file(context);
+    if (!file.Open(path, FILE_READ) || file.GetSize() < 4)
+        return MODULE_INVALID;
+
+    unsigned char magic[4]{};
+    if (file.Read(magic, 4) != 4)
+        return MODULE_INVALID;
+
+    // WebAssembly binary magic: \0asm
+    if (magic[0] != 0x00 || magic[1] != 'a' || magic[2] != 's' || magic[3] != 'm')
+        return MODULE_INVALID;
+
+    return MODULE_NATIVE;
+
+#endif // __EMSCRIPTEN__
 
 #if _WIN32 || URHO3D_CSHARP
     if (path.ends_with(".dll"))

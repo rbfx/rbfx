@@ -40,7 +40,7 @@ ea::string PathToName(const ea::string& path)
     if (path.ends_with(DYN_LIB_SUFFIX))
     {
         ea::string name = GetFileName(path);
-#if __linux__ || __APPLE__
+#if __linux__ || __APPLE__ || __EMSCRIPTEN__
         if (name.starts_with("lib"))
             name = name.substr(3);
 #endif
