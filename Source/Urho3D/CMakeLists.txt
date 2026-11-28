@@ -35,7 +35,6 @@ endmacro()
 define_engine_source_files (Container Core IO Math)
 
 define_engine_source_files (Audio Engine Graphics Input Plugins RenderAPI RenderPipeline Resource Scene Script Shader UI Utility)
-list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
 
 if (URHO3D_PARTICLE_GRAPH)
     define_engine_source_files (Particles)
@@ -506,65 +505,6 @@ endif ()
 # Group them together under 'Resources' in Xcode IDE
 source_group(Resources FILES ${RESOURCE_FILES})     # RESOURCE_PAKS could be empty if packaging is not requested
 target_sources(Urho3D PRIVATE ${RESOURCE_DIRS})
-
-if (URHO3D_CSHARP)
-    # Not necessary for build, but required so that users can import Urho3D.i in their bindings .i
-    target_include_directories(Urho3D PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/CSharp/Swig>
-    )
-
-    csharp_bind_target(
-        TARGET Urho3D
-        SWIG ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig/Urho3D.i
-        CSPROJ ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.csproj
-        NAMESPACE Urho3DNet
-    )
-    if (URHO3D_SYSTEMUI)
-        csharp_bind_target(
-            TARGET ImGui
-            EMBED Urho3D
-            SWIG ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig/ImGui.i
-            NAMESPACE ImGuiNet
-            INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
-        )
-    endif ()
-    unset (CMAKE_SWIG_OUTDIR)
-
-    add_target_csharp(
-        TARGET Urho3DNet.Scripts
-        PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.Scripts.csproj
-        OUTPUT ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Urho3DNet.Scripts
-        DEPENDS Urho3DNet
-    )
-
-    add_target_csharp(
-        TARGET Urho3DNet.CodeGenerator
-        PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.CodeGenerator.csproj
-        OUTPUT ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Urho3DNet.CodeGenerator
-    )
-
-    file (GLOB_RECURSE EXTRA_NATIVE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h)
-    file (GLOB_RECURSE EXTRA_NATIVE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.cpp)
-    file (GLOB_RECURSE WRAPPER_FILES)
-
-    target_sources(Urho3D PRIVATE
-        ${EXTRA_NATIVE_HEADERS}
-        ${EXTRA_NATIVE_SOURCES}
-    )
-
-    if (MSVC)
-        target_compile_options(Urho3D PRIVATE /bigobj)
-    endif ()
-
-    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/CSharp)
-    install (FILES ${EXTRA_NATIVE_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/CSharp/Native)
-endif ()
-
-# Install C# dependencies
-if (URHO3D_CSHARP)
-   install (SCRIPT ${rbfx_SOURCE_DIR}/CMake/Install.cmake)
-endif ()
 
 ################################################### SDK preparation ####################################################
 

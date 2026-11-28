@@ -119,6 +119,13 @@ void PluginStack::CopyBinariesToTemporaryDirectory()
 
     StringVector binaries;
     fs->ScanDir(binaries, binaryDirectory_, Format("*{}", DYN_LIB_SUFFIX), SCAN_FILES);
+#if URHO3D_SCRIPT_RUNTIME && !_WIN32
+    {
+        StringVector managed;
+        fs->ScanDir(managed, binaryDirectory_, "*.dll", SCAN_FILES);
+        binaries.insert(binaries.end(), managed.begin(), managed.end());
+    }
+#endif
     RemoveUnwantedBinaries(binaries);
 
     if (!fs->CreateDirsRecursive(temporaryDirectory_))
@@ -327,7 +334,7 @@ PluginManager::PluginManager(Context* context)
         AddStaticPlugin(application);
     }
 
-#if URHO3D_PLUGINS && URHO3D_CSHARP
+#if URHO3D_PLUGINS && URHO3D_SCRIPT_RUNTIME
     auto scriptBundlePlugin = MakeShared<ScriptBundlePluginInstance>(context_);
     scriptBundlePlugin->SetName("Automatic:Scripts");
     AddDynamicPlugin(scriptBundlePlugin);

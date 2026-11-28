@@ -73,30 +73,6 @@ if (DESKTOP)
     )
 endif ()
 
-if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
-    # Generate a VS solution for C# projects when outside of visual studio.
-    vs_generate_sln(${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln ${RBFX_CSPROJ_LIST})
-
-    if (LINUX)
-        # On linux instance of dotnet may hang indefinitely which prevents CMake from detecting build completion and hangs the build.
-        # 2025-11: Issue persists on CI (dotnet 8.0), even though builds seem to succeed locally.
-        set (DOTNET_LINUX_MSBUILD_WORKAROUND COMMAND ${rbfx_SOURCE_DIR}/script/.kill_dangling_dotnet.sh ${DOTNET})
-    elseif ("${CMAKE_GENERATOR}" MATCHES "^Xcode")
-        # On MacOS Xcode pollutes environment which causes MSBuild to compile all managed targets into Urho3DNet assembly and compilation fails because file contents is not what next build step expects.
-        set (DOTNET_MACOS_MSBUILD_WORKAROUND env -u TARGET_NAME -u TARGETNAME)
-    endif ()
-    add_custom_target(BuildManagedTargets ALL
-        COMMAND ${DOTNET_MACOS_MSBUILD_WORKAROUND} ${DOTNET} build ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln
-            -restore -noLogo -interactive:false -nr:false -p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
-            -consoleLoggerParameters:ErrorsOnly -p:Platform=${URHO3D_PLATFORM} -p:Configuration=${URHO3D_CONFIG}
-            ${DOTNET_LINUX_MSBUILD_WORKAROUND}
-        DEPENDS Urho3D COMMAND_EXPAND_LISTS)
-    foreach (TARGET libEditorWrapper libPlayer TestsLib)
-        if (TARGET ${TARGET})
-            add_dependencies(BuildManagedTargets ${TARGET})
-        endif ()
-    endforeach ()
-endif ()
 install(FILES
     ${rbfx_SOURCE_DIR}/script/rbfx.natvis
     DESTINATION ${CMAKE_INSTALL_DATADIR})

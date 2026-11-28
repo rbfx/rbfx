@@ -120,7 +120,6 @@ Thumbs.db
 *.DotSettings
 *.DotSettings.user
 __pycache__
-*.csproj.user
 *venv
 .directory
 .gdbinit
@@ -131,8 +130,5 @@ compile_commands.json
 CMakeDoxyFile.in
 CMakeDoxygenDefaults.cmake
 
-# Packaging
-packaging/nuget/local-repository/
-packaging/nuget/out/
-packaging/nuget/in/
-packaging/nuget/rbfx-*.zip
+# Local packaging artifacts
+packaging/nuget/

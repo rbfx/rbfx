@@ -10,7 +10,7 @@ else ()
     execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT_DATA)
 endif ()
 string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT_DATA "${ENVIRONMENT_DATA}")
-set(IMPORT_URHO3D_VARIABLES_FROM_ENV BUILD_SHARED_LIBS SWIG_EXECUTABLE SWIG_DIR)
+set(IMPORT_URHO3D_VARIABLES_FROM_ENV BUILD_SHARED_LIBS)
 foreach(key ${ENVIRONMENT_DATA})
     list (FIND IMPORT_URHO3D_VARIABLES_FROM_ENV ${key} _index)
     if ("${key}" MATCHES "^(URHO3D_|CMAKE_|ANDROID_).+" OR ${_index} GREATER -1)
@@ -179,12 +179,7 @@ cmake_dependent_option(URHO3D_OCULUS_QUEST       "Enable experimental native bui
 cmake_dependent_option(URHO3D_XR                 "Enable OpenXR support"                                 ${URHO3D_ENABLE_ALL} "WIN32 OR LINUX OR URHO3D_OCULUS_QUEST;NOT MINGW;NOT UWP" OFF)
 
 # Features
-cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "(BUILD_SHARED_LIBS OR IOS);NOT MINGW"   OFF)
-# Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks
-# At the moment only netstandard2.1 supported
-set(URHO3D_NETFX netstandard2.1 CACHE STRING "TargetFramework value for .NET libraries")
-set_property(CACHE URHO3D_NETFX PROPERTY STRINGS netstandard2.1)
-set(URHO3D_NETFX_RUNTIME_VERSION OFF CACHE STRING "Version of runtime to use.")
+option                (URHO3D_SCRIPT_RUNTIME     "Enable hooks for an external script runtime (script object handles in RefCounted, script plugins)" OFF)
 option                (URHO3D_DEBUG_ASSERT       "Enable Urho3D assert macros"                           ${URHO3D_ENABLE_ALL}                                    )
 cmake_dependent_option(URHO3D_FILEWATCHER        "Watch filesystem for resource changes"                 ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN;NOT UWP"        OFF)
 option                (URHO3D_HASH_DEBUG         "Enable StringHash name debugging"                      ${URHO3D_ENABLE_ALL}                                    )
@@ -223,10 +218,6 @@ if (WIN32)
     option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                     OFF)
 endif ()
 
-if (URHO3D_CSHARP)
-    set (URHO3D_MONOLITHIC_HEADER ON)   # Used by wrapper code
-endif ()
-
 # Implicit configuration
 if (ANDROID OR EMSCRIPTEN OR IOS)
     set (URHO3D_SSE OFF)
@@ -238,10 +229,6 @@ elseif (URHO3D_TOOLS OR URHO3D_EDITOR)
 endif ()
 
 if (EMSCRIPTEN)
-    if (URHO3D_CSHARP)
-        message(WARNING "C# is not supported in this configuration.")
-        set (URHO3D_CSHARP OFF)
-    endif ()
     if (BUILD_SHARED_LIBS)
         set (BUILD_SHARED_LIBS OFF)
         message(WARNING "Shared builds unsupported when compiling with emscripten")     # For now.
@@ -254,11 +241,6 @@ endif ()
 
 if (ANDROID)
     set (SDL_CPUINFO ON)
-endif ()
-
-# UWP does not support other framework types.
-if (UWP)
-    set (URHO3D_NETFX netstandard2.0)
 endif ()
 
 # At the end because it depends on URHO3D_SYSTEMUI which is may be off, but implicitly enabled if URHO3D_TOOLS is enabled.

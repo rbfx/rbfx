@@ -137,7 +137,7 @@ public:
     /// Return true if script runtime object wrapping this native object exists.
     bool HasScriptObject() const
     {
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
         return scriptObject_ != nullptr;
 #else
         return false;
@@ -147,7 +147,7 @@ public:
     /// Return true if script reference is strong.
     bool IsScriptStrongRef() const
     {
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
         return isScriptStrongRef_;
 #else
         return false;
@@ -155,7 +155,7 @@ public:
     }
 
 protected:
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     /// Returns handle to wrapper script object. This is scripting-runtime-dependent.
     void* GetScriptObject() const { return scriptObject_; }
     /// Sets handle to wrapper script object. This is scripting-runtime-dependent.
@@ -168,7 +168,7 @@ private:
     /// Pointer to the reference count structure.
     RefCount* refCount_{};
 
-#if URHO3D_CSHARP
+#if URHO3D_SCRIPT_RUNTIME
     /// A handle to script object that wraps this native instance.
     mutable void* scriptObject_{};
     /// GC Handle type (strong vs weak).

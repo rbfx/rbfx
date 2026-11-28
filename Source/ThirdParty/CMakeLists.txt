@@ -409,9 +409,6 @@ if (URHO3D_XR)
     target_include_directories(openxr_loader INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/OpenXRSDK/include>)
 endif ()
 
-# When crosscompiling, swig will be built as part of native tools build. See Source/CMakeLists.txt.
-add_subdirectory(swig)
-
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)
 
 set_property_recursive(. POSITION_INDEPENDENT_CODE ON)

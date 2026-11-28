@@ -12,7 +12,7 @@ It is an experimental fork of [Urho3D](https://github.com/urho3d/Urho3D) game en
 * Moderately lightweight and modular;
 * Supported for Windows, Linux, MacOS, Android, iOS, Web;
 * Just a C++ library with a couple of tools;
-* There are optional experimental C# bindings.
+* C# bindings are in a separate repository, `rbfx-csharp`. They need an engine built with `URHO3D_SCRIPT_RUNTIME=ON` and `URHO3D_MONOLITHIC_HEADER=ON`.
 
 **Note**: The Framework is not yet released and is undergoing active development.
 Backward compatibility is (mostly) preserved on resource level, but C++ API is prone to changes.
@@ -114,7 +114,7 @@ Here are some reasons why you may want to try this one:
     Consider using [U3D](https://github.com/u3d-community/U3D) or [Urho3D](https://github.com/urho3d/Urho3D).
 
 * You want C#-oriented Urho3D.
-    While this framework *does* have C# bindings, C# is not a first-class citizen here and its support is lacking.
+    C# bindings are in a separate repository, `rbfx-csharp`. See the note above.
     Consider using [Urho.Net](https://github.com/Urho-Net).
 
 

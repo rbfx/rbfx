@@ -58,6 +58,9 @@ void ResetContext()
 
 SharedPtr<Context> CreateCompleteContext()
 {
+    // Only one complete context can exist at a time: RmlUI context names are global.
+    ResetContext();
+
     auto context = MakeShared<Context>();
     auto engine = new Engine(context);
     auto fs = context->GetSubsystem<FileSystem>();

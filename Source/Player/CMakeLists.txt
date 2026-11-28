@@ -11,28 +11,17 @@ target_include_directories(PlayerLibrary PUBLIC
 target_link_libraries(PlayerLibrary PUBLIC Urho3D)
 
 if (NOT URHO3D_NO_EDITOR_PLAYER_EXE)
-    if (ANDROID OR URHO3D_CSHARP)
+    if (ANDROID)
         add_library (libPlayer MODULE ${SOURCE_FILES} Player.cpp)
         set_target_properties(libPlayer PROPERTIES PREFIX "")
         set (PLAYER_TARGET libPlayer)
-        if (URHO3D_CSHARP)
-            add_target_csharp(
-                TARGET Player
-                EXE
-                PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ManagedHost/Player.csproj
-                OUTPUT ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Player
-                DEPENDS Urho3DNet)
-            if (TARGET Player)
-                add_dependencies(Player libPlayer Urho3DNet)
-            endif ()
-            install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Player${CMAKE_EXECUTABLE_SUFFIX}" DESTINATION ${CMAKE_INSTALL_BINDIR})
-        endif ()
     elseif (NOT WEB)
         # Player executable is not usefil in web builds, because there would be no way to load user code.
         if (NOT URHO3D_WIN32_CONSOLE)
             set (TARGET_TYPE WIN32)
         endif ()
         add_executable (Player ${TARGET_TYPE} Player.cpp)
+        target_compile_definitions(Player PRIVATE URHO3D_PLAYER_EXECUTABLE=1)
         set (PLAYER_TARGET Player)
     endif ()
 

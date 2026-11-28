@@ -55,7 +55,6 @@ pushd cmake-build
 echo cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
 cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
 echo "Platform: !VS_PLATFORM!"
-msbuild rbfx.sln /p:Platform="!VS_PLATFORM!" /t:restore
 popd
 
 :quit
