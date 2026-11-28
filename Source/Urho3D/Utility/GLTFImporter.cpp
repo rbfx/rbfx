@@ -10,6 +10,7 @@
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/Exception.h"
 #include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/Core/VariantCurve.h"
 #include "Urho3D/Graphics/AnimatedModel.h"
 #include "Urho3D/Graphics/Animation.h"
 #include "Urho3D/Graphics/AnimationController.h"
@@ -167,10 +168,44 @@ Vector3 NormalizeSplineSample(const Vector3& value) { return value; }
 
 Quaternion NormalizeSplineSample(const Quaternion& value) { return value.Normalized(); }
 
+template <class T> VariantCurve CreateVariantCurve(const ea::vector<float>& keys, const ea::vector<T>& data)
+{
+    VariantCurve curve;
+    curve.interpolation_ = KeyFrameInterpolation::TangentSpline;
+
+    for (unsigned i = 0; i < keys.size(); ++i)
+    {
+        curve.AddKeyFrame({keys[i], data[i * 3 + 1]});
+        curve.inTangents_.push_back(data[i * 3]);
+        curve.outTangents_.push_back(data[i * 3 + 2]);
+    }
+
+    ScaleTangentsToSegments(keys, curve.inTangents_, curve.outTangents_);
+    curve.Commit();
+
+    return curve;
+}
+
+ea::vector<float> SampleAnimationKeys(const ea::vector<float>& keys, float sampleRate)
+{
+    const int firstFrame = CeilToInt((keys.front() - M_LARGE_EPSILON) * sampleRate);
+    const int lastFrame = FloorToInt((keys.back() + M_LARGE_EPSILON) * sampleRate);
+
+    ea::vector<float> result;
+
+    if (!Equals(firstFrame / sampleRate, keys.front(), M_LARGE_EPSILON))
+        result.push_back(keys.front());
+    for (int i = firstFrame; i <= lastFrame; ++i)
+        result.push_back(i / sampleRate);
+    if (!Equals(lastFrame / sampleRate, keys.back(), M_LARGE_EPSILON))
+        result.push_back(keys.back());
+
+    return result;
+}
+
 /// Sample glTF cubic spline data into linear key frames with a constant time step.
 /// The data has an in-tangent, a value and an out-tangent for each key. The tangents are in units per second.
-/// The step is the value nearest to the sample period that divides the track length.
-/// The first and the last source key frames are exact. The other source key frames are not kept.
+/// The first and the last source key frames are exact. The other key frames are exactly `integer / sampleRate`.
 template <class T>
 void SampleCubicSpline(const ea::vector<float>& keys, const ea::vector<T>& data, float sampleRate,
     ea::vector<float>& sampledKeys, ea::vector<T>& sampledValues)
@@ -178,44 +213,20 @@ void SampleCubicSpline(const ea::vector<float>& keys, const ea::vector<T>& data,
     sampledKeys.clear();
     sampledValues.clear();
 
-    const unsigned numKeys = keys.size();
-    if (numKeys == 0)
-        return;
-
-    const float length = keys.back() - keys.front();
-    if (sampleRate <= 0.0f || length <= 0.0f)
+    // This should not happen for valid animations.
+    if (keys.empty() || sampleRate <= 0.0f || keys.back() <= keys.front())
     {
         sampledKeys = keys;
-        for (unsigned k = 0; k < numKeys; ++k)
+        for (unsigned k = 0; k < keys.size(); ++k)
             sampledValues.push_back(NormalizeSplineSample(data[k * 3 + 1]));
         return;
     }
 
-    const unsigned numSteps = static_cast<unsigned>(ea::max(1, RoundToInt(length * sampleRate)));
-    unsigned k = 0;
-    for (unsigned i = 0; i <= numSteps; ++i)
-    {
-        const float time = i < numSteps ? keys.front() + length * i / numSteps : keys.back();
-        while (k + 2 < numKeys && keys[k + 1] <= time)
-            ++k;
+    sampledKeys = SampleAnimationKeys(keys, sampleRate);
+    const VariantCurve curve = CreateVariantCurve(keys, data);
 
-        const float duration = keys[k + 1] - keys[k];
-        const T& value0 = data[k * 3 + 1];
-        const T& outTangent0 = data[k * 3 + 2];
-        const T& inTangent1 = data[(k + 1) * 3];
-        const T& value1 = data[(k + 1) * 3 + 1];
-
-        const float t = duration > 0.0f ? Clamp((time - keys[k]) / duration, 0.0f, 1.0f) : 1.0f;
-        const float tt = t * t;
-        const float ttt = tt * t;
-        const float h1 = 2.0f * ttt - 3.0f * tt + 1.0f;
-        const float h2 = -2.0f * ttt + 3.0f * tt;
-        const float h3 = (ttt - 2.0f * tt + t) * duration;
-        const float h4 = (ttt - tt) * duration;
-
-        sampledKeys.push_back(time);
-        sampledValues.push_back(NormalizeSplineSample(value0 * h1 + value1 * h2 + outTangent0 * h3 + inTangent1 * h4));
-    }
+    for (const float sampleTime : sampledKeys)
+        sampledValues.push_back(NormalizeSplineSample(curve.Sample(sampleTime).Get<T>()));
 }
 
 Matrix3x4 MirrorX(Matrix3x4 mat)

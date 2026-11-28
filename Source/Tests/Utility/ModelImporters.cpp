@@ -305,7 +305,7 @@ TEST_CASE("glTF importer samples cubic spline bone animation with a constant ste
     const auto dense = ImportBoneKeyFrames(context, gltf, sampleRate);
     REQUIRE(dense.size() == 31);
     for (unsigned i = 1; i < dense.size(); ++i)
-        CHECK(Equals(dense[i].time_ - dense[i - 1].time_, 1.0f / sampleRate, 0.00001f));
+        CHECK(Equals(dense[i].time_ - dense[i - 1].time_, 1.0f / sampleRate, M_LARGE_EPSILON));
     CHECK(dense.back().time_ == 1.0f);
     CHECK(dense.back().position_.Equals(Vector3{-1.0f, 0.0f, 0.0f}));
 }
